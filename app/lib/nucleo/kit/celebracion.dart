@@ -361,7 +361,8 @@ class _PintorConfeti extends CustomPainter {
 ///
 /// Con «reducir movimiento»: solo el ✓ (con fundido), sin confeti.
 /// Anuncia [etiqueta] al lector de pantalla y vibra con éxito cuando el ✓
-/// aterriza (≈0,36 s).
+/// aterriza (≈0,36 s). Con [conCheck] en `false` no pone ✓ (solo confeti):
+/// para pantallas que ya dibujan el suyo.
 ///
 /// ```dart
 /// await celebrar(context);                       // ✓ + confeti
@@ -372,6 +373,7 @@ Future<void> celebrar(
   String etiqueta = 'Listo',
   bool conConfeti = true,
   bool grande = false,
+  bool conCheck = true,
 }) {
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   if (overlay == null) return Future.value();
@@ -381,6 +383,7 @@ Future<void> celebrar(
     builder: (_) => _EscenaCelebracion(
       conConfeti: conConfeti,
       grande: grande,
+      conCheck: conCheck,
       alTerminar: () {
         if (entrada.mounted) entrada.remove();
         entrada.dispose();
@@ -397,10 +400,15 @@ class _EscenaCelebracion extends StatefulWidget {
   const _EscenaCelebracion({
     required this.conConfeti,
     required this.grande,
+    required this.conCheck,
     required this.alTerminar,
   });
   final bool conConfeti;
   final bool grande;
+
+  /// `false`: solo el confeti (la pantalla ya dibuja su propio ✓ y no se
+  /// duplica).
+  final bool conCheck;
   final VoidCallback alTerminar;
 
   @override
@@ -444,11 +452,12 @@ class _EscenaCelebracionState extends State<_EscenaCelebracion> with SingleTicke
         fit: StackFit.expand,
         children: [
           if (widget.conConfeti) Celebracion(grande: widget.grande),
-          Align(
-            alignment: const Alignment(0, -0.3),
-            // El ✓ se va con un fundido en el último 20 %.
-            child: FadeTransition(opacity: _salida, child: const CheckDibujado(tamano: 96)),
-          ),
+          if (widget.conCheck)
+            Align(
+              alignment: const Alignment(0, -0.3),
+              // El ✓ se va con un fundido en el último 20 %.
+              child: FadeTransition(opacity: _salida, child: const CheckDibujado(tamano: 96)),
+            ),
         ],
       ),
     );
