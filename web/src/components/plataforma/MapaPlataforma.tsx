@@ -161,8 +161,8 @@ export default function MapaPlataforma({ zonas, acciones = [], reportes = [], mo
             <Marker key={a.id} position={[a.lat, a.lon]} icon={iconoAccion(a.tipo)} title={a.nombre} interactive={!marcar}>
               <Popup>
                 <strong>{a.nombre}</strong><br />
-                {TIPOS_ACCION[a.tipo].etiqueta} · {SECTORES[a.sector].nombre} · {a.hectareas.toLocaleString('es-CO')} ha<br />
-                Plan: {ACCIONES_PLAN[a.accion_plan].etiqueta}{a.prioridad_plan ? ` · prioridad ${a.prioridad_plan}` : ''}<br />
+                {TIPOS_ACCION[a.tipo].etiqueta} · {a.sector ? SECTORES[a.sector].nombre : 'Sin sector confirmado'} · {a.canal === 'whatsapp' ? 'Área sin informar' : `${a.hectareas.toLocaleString('es-CO')} ha`}<br />
+                Plan: {a.accion_plan ? ACCIONES_PLAN[a.accion_plan].etiqueta : 'Pendiente de verificar'}{a.prioridad_plan ? ` · prioridad ${a.prioridad_plan}` : ''}<br />
                 <span style={{ color: '#f8d86f', fontWeight: 900, fontSize: 11 }}>{ESTADOS_ACCION[a.estado].etiqueta}</span><br />
                 <a href={`/plataforma/seguimiento?accion=${a.id}`}>Ver seguimiento</a>
               </Popup>

@@ -119,7 +119,7 @@ export default function SeguimientoAcciones(props: Props) {
 
   const filtradas = filtro === 'todas' ? acciones : acciones.filter((a) => a.estado === filtro);
   const accion = acciones.find((a) => a.id === seleccion) ?? null;
-  const actorDe = (id: string) => actores.find((a) => a.id === id)?.nombre ?? 'Actor no disponible';
+  const actorDe = (a: Accion) => a.proponente || actores.find((actor) => actor.id === a.actor_id)?.nombre || 'Actor no disponible';
   const linea = useMemo(() => (accion ? cambios.filter((c) => c.accion_id === accion.id).sort((x, y) => x.fecha.localeCompare(y.fecha)) : []), [accion, cambios]);
   const ahora = new Date().toISOString();
   const proximas = [...jornadas].sort((a, b) => a.inicio.localeCompare(b.inicio));
@@ -146,8 +146,8 @@ export default function SeguimientoAcciones(props: Props) {
                   {filtradas.map((a) => (
                     <tr key={a.id} className={cn('border-b border-white/25', seleccion === a.id && 'bg-white/10')}>
                       <td className="py-2 pr-3 font-bold">{a.nombre}</td>
-                      <td className="py-2 pr-3 text-suave">{actorDe(a.actor_id)}</td>
-                      <td className="py-2 pr-3 text-suave">{ACCIONES_PLAN[a.accion_plan].etiqueta}{a.prioridad_plan ? ` · ${NIVEL[a.prioridad_plan]}` : ''}</td>
+                      <td className="py-2 pr-3 text-suave">{actorDe(a)}</td>
+                      <td className="py-2 pr-3 text-suave">{a.accion_plan ? ACCIONES_PLAN[a.accion_plan].etiqueta : 'Pendiente de verificar'}{a.prioridad_plan ? ` · ${NIVEL[a.prioridad_plan]}` : ''}</td>
                       <td className="py-2 pr-3"><Chip estado={a.estado} /></td>
                       <td className="py-2"><button type="button" onClick={() => ver(a.id)} className="min-h-11 px-3 text-xs font-black uppercase tracking-wider text-dorado-300 hover:underline" aria-label={`Ver detalle de ${a.nombre}`}>Ver</button></td>
                     </tr>
@@ -168,11 +168,11 @@ export default function SeguimientoAcciones(props: Props) {
                 <div className="mt-2"><Chip estado={accion.estado} /></div>
               </div>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
-                <div><dt className="etiqueta-campo text-suave">Actor</dt><dd>{actorDe(accion.actor_id)}</dd></div>
-                <div><dt className="etiqueta-campo text-suave">Sector</dt><dd>{SECTORES[accion.sector].largo}</dd></div>
-                <div><dt className="etiqueta-campo text-suave">Hectáreas</dt><dd>{accion.hectareas.toLocaleString('es-CO')} ha</dd></div>
+                <div><dt className="etiqueta-campo text-suave">Actor</dt><dd>{actorDe(accion)}</dd></div>
+                <div><dt className="etiqueta-campo text-suave">Sector</dt><dd>{accion.sector ? SECTORES[accion.sector].largo : 'Pendiente de verificar'}</dd></div>
+                <div><dt className="etiqueta-campo text-suave">Hectáreas</dt><dd>{accion.canal === 'whatsapp' ? 'Sin informar' : `${accion.hectareas.toLocaleString('es-CO')} ha`}</dd></div>
                 <div><dt className="etiqueta-campo text-suave">Sitio</dt><dd>{accion.lat.toFixed(5)}, {accion.lon.toFixed(5)}</dd></div>
-                <div className="col-span-2"><dt className="etiqueta-campo text-suave">Plan de manejo heredado</dt><dd>{ACCIONES_PLAN[accion.accion_plan].etiqueta}{accion.prioridad_plan ? ` · prioridad ${NIVEL[accion.prioridad_plan].toLowerCase()}` : ''}{accion.plan_aproximado ? ' (aproximado)' : ' · capa de prioridades de la C.R.A.'}</dd></div>
+                <div className="col-span-2"><dt className="etiqueta-campo text-suave">Plan de manejo</dt><dd>{accion.accion_plan ? ACCIONES_PLAN[accion.accion_plan].etiqueta : 'Pendiente de verificar'}{accion.prioridad_plan ? ` · prioridad ${NIVEL[accion.prioridad_plan].toLowerCase()}` : ''}{accion.accion_plan ? (accion.plan_aproximado ? ' (aproximado)' : ' · capa de prioridades de la C.R.A.') : ''}</dd></div>
                 {accion.comunidad_coparticipante && <div className="col-span-2"><dt className="etiqueta-campo text-suave">Comunidad coparticipante</dt><dd>{accion.comunidad_coparticipante}</dd></div>}
               </dl>
               {accion.descripcion && <p className="text-suave">{accion.descripcion}</p>}

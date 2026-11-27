@@ -81,7 +81,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
                 {enCurso.map((a) => (
                   <tr key={a.id} className="border-b border-white/25">
                     <td className="py-2 pr-2"><a href={`/plataforma/seguimiento?accion=${a.id}`} className="hover:text-dorado-300 hover:underline">{a.nombre}</a></td>
-                    <td className="py-2 pr-2 text-suave">{SECTORES[a.sector].nombre}</td>
+                    <td className="py-2 pr-2 text-suave">{a.sector ? SECTORES[a.sector].nombre : 'Sin sector confirmado'}</td>
                     <td className="py-2"><span className={cn('inline-block whitespace-nowrap px-2 py-0.5 text-[10px] font-black tracking-[0.1em]', ESTADOS_ACCION[a.estado].clase)}>{ESTADOS_ACCION[a.estado].etiqueta}</span></td>
                   </tr>
                 ))}

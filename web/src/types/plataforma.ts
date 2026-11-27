@@ -16,11 +16,13 @@ export interface Actor {
 }
 export interface Requerimiento { id: string; texto: string; cumplido: boolean }
 export interface Accion {
-  id: string; nombre: string; tipo: TipoAccion; actor_id: string; sector: SectorId;
-  lat: number; lon: number; hectareas: number; accion_plan: AccionPlan;
+  id: string; nombre: string; tipo: TipoAccion; actor_id: string; sector: SectorId | null;
+  lat: number; lon: number; hectareas: number; accion_plan: AccionPlan | null;
   prioridad_plan: NivelPlan | null; plan_aproximado: boolean; estado: EstadoAccion;
   descripcion: string; comunidad_coparticipante: string; requerimientos: Requerimiento[];
   observaciones: string[]; creada_en: string;
+  /** Datos públicos de origen para propuestas recibidas por Zanky. */
+  codigo_bot?: string; canal?: 'whatsapp'; proponente?: string; tipo_actor?: TipoActor;
 }
 export interface CambioAccion {
   id: string; accion_id: string; estado: EstadoAccion; usuario_id: string;
