@@ -272,7 +272,7 @@ class _Fuentes extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Text(
-      'Datos: INVEMAR · OpenStreetMap · Open-Meteo',
+      'Datos: CRA (cartografía 1:5.000) · OpenStreetMap · Open-Meteo',
       style: t.bodySmall!.copyWith(color: _blancoSuave.withValues(alpha: 0.85)),
     );
   }

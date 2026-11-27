@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 
 import 'reporte.dart';
+import 'roles.dart';
 import 'tipos.dart';
 
 /// El perfil del ciudadano, guardado solo en su teléfono.
@@ -28,6 +29,7 @@ class Perfil {
     this.colegio = '',
     this.cedulaHash,
     this.anonimoPorDefecto = false,
+    this.rol = RolUsuario.ciudadano,
     this.consentimiento,
     required this.creado,
     String? sal,
@@ -42,6 +44,9 @@ class Perfil {
   String colegio;
   String? cedulaHash;
   bool anonimoPorDefecto;
+
+  /// Cómo participa (solo cambia lo que ve en Inicio y Guardián; no da permisos).
+  RolUsuario rol;
 
   /// Sal aleatoria de esta instalación (32 bytes en base64). Se guarda en el perfil y se
   /// borra con él al usar «Borrar mis datos de este teléfono».
@@ -83,6 +88,7 @@ class Perfil {
         'cedula_hash': cedulaHash,
         'sal': sal,
         'anonimo': anonimoPorDefecto,
+        'rol': rol.id,
         'consentimiento': consentimiento?.toIso8601String(),
         'creado': creado.toIso8601String(),
       };
@@ -97,6 +103,7 @@ class Perfil {
         sal: j['sal'] as String?,
         cedulaHash: j['sal'] == null ? null : j['cedula_hash'] as String?,
         anonimoPorDefecto: j['anonimo'] as bool? ?? false,
+        rol: RolUsuario.deId(j['rol']),
         consentimiento: j['consentimiento'] == null ? null : DateTime.parse(j['consentimiento'] as String),
         creado: DateTime.parse(j['creado'] as String),
       );

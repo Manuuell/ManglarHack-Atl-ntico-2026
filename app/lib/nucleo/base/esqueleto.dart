@@ -63,33 +63,49 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
         ),
       );
     }
+    // El brillo es una banda que se TRASLADA (transform) sobre el color base:
+    // no se recalcula ningún degradado por cuadro ni se toca el layout.
     return ExcludeSemantics(
       child: RepaintBoundary(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            // Banda clara que barre de izquierda a derecha. El centro se
-            // mueve entre 0.25 y 0.75 para que las tres paradas queden
-            // siempre dentro de [0, 1] y en orden, sin recortes.
-            final centro = 0.25 + 0.5 * _controller.value;
-            return Container(
-              width: widget.width,
-              height: widget.height,
-              decoration: BoxDecoration(
-                borderRadius: widget.borderRadius,
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [
-                    colors.surfaceAlt,
-                    colors.border,
-                    colors.surfaceAlt,
+        child: ClipRRect(
+          borderRadius: widget.borderRadius,
+          child: SizedBox(
+            width: widget.width,
+            height: widget.height,
+            child: LayoutBuilder(
+              builder: (context, caja) {
+                final ancho = caja.maxWidth.isFinite ? caja.maxWidth : 240.0;
+                final banda = (ancho * 0.55).clamp(72.0, 220.0);
+                return Stack(
+                  children: [
+                    ColoredBox(color: colors.surfaceAlt, child: const SizedBox.expand()),
+                    AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, hijo) => Transform.translate(
+                        offset: Offset(-banda + (ancho + banda) * _controller.value, 0),
+                        child: hijo,
+                      ),
+                      child: SizedBox(
+                        width: banda,
+                        height: double.infinity,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                colors.border.withValues(alpha: 0),
+                                colors.border,
+                                colors.border.withValues(alpha: 0),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
-                  stops: [centro - 0.25, centro, centro + 0.25],
-                ),
-              ),
-            );
-          },
+                );
+              },
+            ),
+          ),
         ),
       ),
     );

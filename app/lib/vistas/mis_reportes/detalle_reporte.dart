@@ -1,3 +1,4 @@
+import '../../nucleo/kit/ruta_borde.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import 'foto_reporte.dart';
@@ -20,7 +22,8 @@ import 'mapa_detalle.dart';
 /// La usan «Mis reportes» y el mapa.
 Future<void> abrirDetalleReporte(BuildContext context, Reporte reporte) {
   return Navigator.of(context).push<void>(
-    MaterialPageRoute<void>(
+    RutaBorde<void>(
+      sinMovimiento: MediaQuery.disableAnimationsOf(context),
       settings: RouteSettings(name: 'reporte/${reporte.id}'),
       builder: (_) => PantallaDetalleReporte(reporte: reporte),
     ),
@@ -43,6 +46,7 @@ class PantallaDetalleReporte extends StatelessWidget {
 
     final secciones = <Widget>[
       _Titulo(reporte: r),
+      if (r.envio == Envio.rechazado) _AvisoRechazado(reporte: r),
       if (r.estado == EstadoReporte.descartado) _AvisoDescartado(reporte: r),
       _Tarjeta(
         titulo: 'El camino de tu reporte',
@@ -402,6 +406,60 @@ class _Titulo extends StatelessWidget {
   }
 }
 
+/// El servidor no aceptó el reporte: se dice por qué y se deja volver a intentar (por si
+/// el problema era del servidor y ya se corrigió).
+class _AvisoRechazado extends StatelessWidget {
+  const _AvisoRechazado({required this.reporte});
+  final Reporte reporte;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final e = Zanky.de(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Zc.prioridad[5]!.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(Zr.m),
+        border: Border.all(color: Zc.prioridad[5]!.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.error_outline_rounded, size: 20, color: Zc.fango),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('El servidor no aceptó este reporte', style: tt.titleSmall),
+                    const SizedBox(height: 4),
+                    Text(textoMotivoRechazo(reporte), style: tt.bodyMedium?.copyWith(color: Zc.texto)),
+                    const SizedBox(height: 4),
+                    Text('Sigue guardado en tu teléfono; no se perdió.', style: tt.bodySmall),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          BotonZ(
+            texto: 'Volver a intentar',
+            icono: Icons.refresh_rounded,
+            color: Zc.sol,
+            colorTexto: Zc.raiz,
+            cargando: e.sincronizando,
+            onTap: () => Zanky.leer(context).reintentar(reporte),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _AvisoDescartado extends StatelessWidget {
   const _AvisoDescartado({required this.reporte});
   final Reporte reporte;
@@ -493,7 +551,7 @@ class _Tarjeta extends StatelessWidget {
 
 /// La prioridad que suman los motivos guardados en el teléfono (los mismos pesos de
 /// `Prioridad.calcular`), para saber si el servidor la cambió después. Null si no hay
-/// motivos. TODO(datos): cuando `Reporte` guarde `prioridadLocal`, usar ese número.
+/// motivos (solo para reportes viejos que no guardaron `prioridadLocal`).
 int? prioridadDeMotivos(Reporte r) {
   final m = r.motivosPrioridad;
   if (m.isEmpty) return null;
@@ -509,6 +567,22 @@ int? prioridadDeMotivos(Reporte r) {
   return p.round().clamp(1, 5);
 }
 
+/// Lo que se dice cuando el servidor cambió la prioridad que calculó el teléfono. La
+/// recalcula el servidor (no una persona de la CRA): sin el viento y contando los reportes
+/// de otras personas.
+String textoPrioridadRecalculada(int servidor, int telefono) =>
+    'El servidor la recalculó a $servidor (${Prioridad.nombres[servidor] ?? ''}): no usa el viento y cuenta los '
+    'reportes de otras personas. Estos motivos son la estimación de tu teléfono: llegaban a $telefono.';
+
+/// Qué decir de la foto en «Los datos». Tras el envío queda solo una miniatura (o nada).
+String textoFotoDelReporte(Reporte r) {
+  if (r.fotoRef == null) {
+    return r.fotoReducida ? 'La foto ya está en la CRA; en tu teléfono no quedó copia' : 'Sin foto';
+  }
+  if (r.fotoReducida) return 'Miniatura: la foto completa ya está en la CRA';
+  return r.fotoDeCamara ? 'Tomada con la cámara en el momento' : 'Elegida de la galería';
+}
+
 class _Motivos extends StatelessWidget {
   const _Motivos({required this.reporte});
   final Reporte reporte;
@@ -520,7 +594,7 @@ class _Motivos extends StatelessWidget {
     final motivos = reporte.motivosPrioridad;
     // La prioridad que se muestra es la del servidor; los motivos son los que calculó
     // el teléfono al crear el reporte. Si no cuadran, se dice.
-    final estimada = prioridadDeMotivos(reporte);
+    final estimada = reporte.prioridadLocal ?? prioridadDeMotivos(reporte);
     final ajustada = reporte.envio == Envio.enviado && estimada != null && estimada != reporte.prioridad;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,8 +623,7 @@ class _Motivos extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(Zr.s)),
             child: Text(
-              'La CRA la ajustó a ${reporte.prioridad} (${Prioridad.nombres[reporte.prioridad] ?? ''}) al revisar el caso. '
-              'Estos motivos son la estimación que hizo tu teléfono: llegaron a $estimada.',
+              textoPrioridadRecalculada(reporte.prioridad, estimada),
               style: tt.bodyMedium?.copyWith(color: Zc.texto),
             ),
           ),
@@ -646,7 +719,11 @@ class _Datos extends StatelessWidget {
         'Llegó a la CRA',
         enviado
             ? (r.enviadoEn != null ? fechaLarga(r.enviadoEn!) : 'Ya llegó')
-            : (r.envio == Envio.enviando ? 'Enviándose ahora' : 'Todavía no: sigue en tu teléfono'),
+            : (r.envio == Envio.enviando
+                ? 'Enviándose ahora'
+                : r.envio == Envio.rechazado
+                    ? 'No: el servidor no lo aceptó'
+                    : 'Todavía no: sigue en tu teléfono'),
       ),
       if (r.capturadoSinSenal)
         (
@@ -660,9 +737,7 @@ class _Datos extends StatelessWidget {
       ('Tamaño', '${r.magnitud.nombre} · ${r.magnitud.ejemplo.toLowerCase()}'),
       (
         'Foto',
-        r.fotoRef == null
-            ? 'Sin foto'
-            : (r.fotoDeCamara ? 'Tomada con la cámara en el momento' : 'Elegida de la galería'),
+        textoFotoDelReporte(r),
       ),
       ('Reporte anónimo', r.anonimo ? 'Sí: no lleva tu nombre' : 'No: va con tu perfil'),
     ];
@@ -714,11 +789,10 @@ class _Acciones extends StatelessWidget {
   }
 
   Future<void> _compartir(BuildContext context) async {
-    final mensajero = ScaffoldMessenger.of(context);
     try {
       await SharePlus.instance.share(ShareParams(text: _texto(), subject: 'Caso ${reporte.caso} en Zanky'));
     } catch (_) {
-      mensajero.showSnackBar(const SnackBar(content: Text('No pude abrir el menú de compartir.')));
+      if (context.mounted) avisar(context, 'No pude abrir el menú de compartir.', tipo: TipoAviso.error);
     }
   }
 
