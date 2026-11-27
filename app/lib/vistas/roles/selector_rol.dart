@@ -5,6 +5,7 @@ import '../../datos/guardian.dart';
 import '../../datos/roles.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 
@@ -162,7 +163,10 @@ class _HojaRolState extends State<_HojaRol> {
     });
     try {
       await estado.guardarPerfil(_conRol(base, r));
-      if (mounted) Navigator.of(context).maybePop();
+      if (mounted) {
+        avisar(context, 'Ahora ves Inicio como ${r.nombre.toLowerCase()}.', tipo: TipoAviso.exito);
+        Navigator.of(context).maybePop();
+      }
     } catch (_) {
       if (mounted) {
         setState(() {

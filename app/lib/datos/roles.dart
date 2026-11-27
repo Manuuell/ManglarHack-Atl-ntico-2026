@@ -353,3 +353,11 @@ List<SeccionGuardian> seccionesDeGuardian(RolUsuario rol, {bool conPerfil = true
     SeccionGuardian.panel,
   ];
 }
+
+/// «AP» de «Ana Pérez»; vacío sin nombre (el carné pone entonces el ícono del rol).
+String inicialesDe(String nombre) {
+  final partes = nombre.trim().split(RegExp(r'\s+')).where((x) => x.isNotEmpty).toList();
+  if (partes.isEmpty) return '';
+  if (partes.length == 1) return partes.first[0].toUpperCase();
+  return '${partes[0][0]}${partes[1][0]}'.toUpperCase();
+}

@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../datos/guardian.dart';
+import '../../datos/roles.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/kit/aviso.dart';
@@ -292,8 +293,10 @@ class _Frente extends StatelessWidget {
                       children: [
                         ajustado('Guardián del manglar del Atlántico',
                             tt.labelMedium?.copyWith(color: blanco.withValues(alpha: 0.82))),
-                        if (colegio.isNotEmpty)
-                          ajustado(colegio, tt.bodySmall?.copyWith(color: blanco.withValues(alpha: 0.92))),
+                        ajustado(
+                          colegio.isEmpty ? perfil.rol.nombre : '${perfil.rol.nombre} · $colegio',
+                          tt.bodySmall?.copyWith(color: blanco.withValues(alpha: 0.92)),
+                        ),
                       ],
                     ),
                   ),
@@ -303,10 +306,36 @@ class _Frente extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            ajustado(
-              perfil.nombreVisible,
-              tt.titleLarge?.copyWith(
-                  color: blanco, fontSize: ancho * 0.07, fontWeight: FontWeight.w700, height: 1.1, letterSpacing: -0.4),
+            Row(
+              children: [
+                // Como el carné de la universidad: las iniciales en un círculo (o el ícono del rol).
+                Container(
+                  width: ancho * 0.1,
+                  height: ancho * 0.1,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: blanco.withValues(alpha: 0.18),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: blanco.withValues(alpha: 0.5)),
+                  ),
+                  child: inicialesDe(perfil.nombre).isEmpty
+                      ? Icon(perfil.rol.icono, size: ancho * 0.05, color: blanco)
+                      : Text(inicialesDe(perfil.nombre),
+                          style: tt.labelMedium?.copyWith(color: blanco, fontSize: ancho * 0.04)),
+                ),
+                SizedBox(width: ancho * 0.03),
+                Expanded(
+                  child: ajustado(
+                    perfil.nombreVisible,
+                    tt.titleLarge?.copyWith(
+                        color: blanco,
+                        fontSize: ancho * 0.07,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                        letterSpacing: -0.4),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Container(
@@ -385,7 +414,8 @@ class _Reverso extends StatelessWidget {
                   Text(perfil.codigo,
                       style: tt.titleMedium?.copyWith(
                           color: blanco, letterSpacing: 1.4, fontFeatures: const [FontFeature.tabularFigures()])),
-                  const SizedBox(height: 10),
+                  Text(perfil.rol.nombre, style: tt.labelSmall?.copyWith(color: blanco.withValues(alpha: 0.82))),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       _Cifra(valor: progreso.enviados, texto: 'enviados'),
