@@ -21,7 +21,7 @@ Datos (`lib/datos/experiencia/`):
   fechas en español con hora de Colombia.
 - `participacion.dart`: `AlmacenParticipacion` (asistencia 40 puntos; reto 10 por acierto y solo suma si mejora el mejor
   resultado). Se guarda solo en el teléfono (shared_preferences), aparte de los puntos de los reportes.
-- `preguntas_zanky.dart`: 28 preguntas frecuentes con fuente, búsqueda por palabras sin conexión; si no sabe, lo dice.
+- `preguntas_zanky.dart`: 29 preguntas frecuentes con fuente, búsqueda por palabras sin conexión; si no sabe, lo dice.
 - `ia_zanky.dart`: IA «lista, sin conectar». Solo responde con servidor configurado y `--dart-define=ZANKY_IA=true`
   (llama a la función `zanky-chat` del servidor; no hay claves de IA en la app).
 - `trivia.dart`: 15 retos con explicación y fuente; `retoPara(codigo)` es determinista por código.
