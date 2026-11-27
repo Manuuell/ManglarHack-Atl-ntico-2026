@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import '../../lib/popupsQueCaben';
 import type { KeyboardEvent } from 'react';
 import { geoJSON, circleMarker } from 'leaflet';
 import type { FeatureCollection, Geometry } from 'geojson';

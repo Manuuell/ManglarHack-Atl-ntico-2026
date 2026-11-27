@@ -1,6 +1,7 @@
 // Capas de la Corporación: KMZ/KML → GeoJSON en el navegador, con vista previa
 // y guardado para que el workflow las dibuje. Solo cliente (Leaflet, DOMParser).
 import 'leaflet/dist/leaflet.css';
+import '../../lib/popupsQueCaben';
 import '../../styles/mapa.css';
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { geoJSON } from 'leaflet';

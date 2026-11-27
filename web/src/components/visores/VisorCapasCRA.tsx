@@ -4,6 +4,7 @@
 // Mapa a la izquierda y lista a la derecha (debajo en el teléfono); al tocar un
 // elemento de la lista, el mapa vuela hasta él y abre su ventana.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import '../../lib/popupsQueCaben';
 import L from 'leaflet';
 import { GeoJSON, MapContainer, Pane, TileLayer, ZoomControl, useMap } from 'react-leaflet';
 import { Flame } from 'lucide-react';
