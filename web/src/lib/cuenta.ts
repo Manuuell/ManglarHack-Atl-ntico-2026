@@ -3,6 +3,7 @@
 // navegador (localStorage) y se renueva sola. Reportar NO exige cuenta: la cuenta solo suma (seguir
 // los reportes propios, el perfil). Sin web/.env no hay servidor y el panel lo dice.
 import { useSyncExternalStore } from 'react';
+import { pedirBot } from './bot';
 
 const URL_BASE = String(import.meta.env.PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, '');
 const CLAVE = String(import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '');
@@ -21,10 +22,28 @@ export interface Usuario {
   nombre: string;
   sector: string | null;
   creado_en: string | null;
+  /** Celular en dígitos (57…) y si aceptó recibir invitaciones por WhatsApp. */
+  telefono: string | null;
+  whatsapp_ok: boolean;
 }
 export interface Sesion { access_token: string; refresh_token: string; expira_en: number; usuario: Usuario }
 
 export class ErrorCuenta extends Error {}
+
+/** Normaliza un celular colombiano: 10 dígitos que empiezan por 3 → con 57 adelante. null si va vacío. */
+export function normalizarCelular(texto: string): string | null | 'invalido' {
+  const d = texto.replace(/\D/g, '');
+  if (!d) return null;
+  const n = d.length === 10 && d.startsWith('3') ? `57${d}` : d;
+  return n.length >= 10 && n.length <= 15 ? n : 'invalido';
+}
+
+/** Celular para mostrarlo: 57 300 123 4567 → 300 123 4567. */
+export function celularLegible(n: string | null): string {
+  if (!n) return '';
+  const local = n.startsWith('57') && n.length === 12 ? n.slice(2) : n;
+  return local.length === 10 ? `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}` : local;
+}
 
 const objeto = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 
@@ -37,6 +56,8 @@ function aUsuario(u: unknown): Usuario {
     id: u.id, correo, nombre,
     sector: typeof meta.sector === 'string' && meta.sector ? meta.sector : null,
     creado_en: typeof u.created_at === 'string' ? u.created_at : null,
+    telefono: typeof meta.telefono === 'string' && meta.telefono ? meta.telefono : null,
+    whatsapp_ok: meta.whatsapp_ok === true && typeof meta.telefono === 'string' && meta.telefono !== '',
   };
 }
 
@@ -123,16 +144,22 @@ function aSesion(d: unknown): Sesion {
 const volver = () => `${location.origin}/`;
 
 /** Crea la cuenta. «sesion» si el servidor la deja entrar ya; «confirmar» si antes hay que confirmar el correo. */
-export async function registrarse(p: { nombre: string; correo: string; clave: string; sector: string | null }): Promise<'sesion' | 'confirmar'> {
+export async function registrarse(p: { nombre: string; correo: string; clave: string; sector: string | null; telefono: string | null; whatsappOk: boolean }): Promise<'sesion' | 'confirmar'> {
+  const ahora = new Date().toISOString();
+  const whatsapp = Boolean(p.telefono && p.whatsappOk);
   const d = await auth(`signup?redirect_to=${encodeURIComponent(volver())}`, {
-    cuerpo: { email: p.correo.trim(), password: p.clave, data: { nombre: p.nombre.trim(), sector: p.sector, consentimiento_ley_1581: new Date().toISOString() } },
+    cuerpo: {
+      email: p.correo.trim(), password: p.clave,
+      data: { nombre: p.nombre.trim(), sector: p.sector, consentimiento_ley_1581: ahora, telefono: p.telefono, whatsapp_ok: whatsapp, whatsapp_consentimiento_en: whatsapp ? ahora : null },
+    },
   });
-  if (objeto(d) && typeof d.access_token === 'string') { guardar(aSesion(d)); return 'sesion'; }
+  if (objeto(d) && typeof d.access_token === 'string') { guardar(aSesion(d)); void sincronizarContacto(); return 'sesion'; }
   return 'confirmar';
 }
 
 export async function iniciarSesion(correo: string, clave: string): Promise<void> {
   guardar(aSesion(await auth('token?grant_type=password', { cuerpo: { email: correo.trim(), password: clave } })));
+  void sincronizarContacto();
 }
 
 export async function cerrarSesion(): Promise<void> {
@@ -166,10 +193,41 @@ async function conSesion(): Promise<Sesion> {
   return s;
 }
 
-export async function actualizarPerfil(p: { nombre: string; sector: string | null }): Promise<void> {
+export async function actualizarPerfil(p: { nombre: string; sector: string | null; telefono: string | null; whatsappOk: boolean }): Promise<void> {
   const s = await conSesion();
-  const u = aUsuario(await auth('user', { metodo: 'PUT', token: s.access_token, cuerpo: { data: { nombre: p.nombre.trim(), sector: p.sector } } }));
+  const whatsapp = Boolean(p.telefono && p.whatsappOk);
+  // La fecha del consentimiento de WhatsApp se fija al aceptarlo y se borra al retirarlo.
+  const consentimiento = whatsapp ? (s.usuario.whatsapp_ok && s.usuario.telefono === p.telefono ? undefined : new Date().toISOString()) : null;
+  const data: Record<string, unknown> = { nombre: p.nombre.trim(), sector: p.sector, telefono: p.telefono, whatsapp_ok: whatsapp };
+  if (consentimiento !== undefined) data.whatsapp_consentimiento_en = consentimiento;
+  const u = aUsuario(await auth('user', { metodo: 'PUT', token: s.access_token, cuerpo: { data } }));
   guardar({ ...s, usuario: u });
+  void sincronizarContacto();
+}
+
+/**
+ * Avisa al servidor de Zanky que la cuenta cambió: él lee de Supabase (no de este navegador) el nombre,
+ * el celular y el permiso de WhatsApp, para las invitaciones del panel de administración. Si falla, no
+ * bloquea nada: se reintenta en el próximo inicio de sesión o cambio de perfil.
+ */
+export async function sincronizarContacto(): Promise<void> {
+  try {
+    const s = await renovarSesion();
+    if (s) await pedirBot('/api/cuenta/contacto', { metodo: 'POST', token: s.access_token, cuerpo: {} });
+  } catch { /* sin servidor de Zanky: se reintenta después */ }
+}
+
+let adminCache: { token: string; yo: { correo: string; rol: string } | null } | null = null;
+
+/** Rol de administración de la cuenta según el servidor de Zanky, o null si no tiene (o no hay servidor). */
+export async function rolDeAdmin(): Promise<{ correo: string; rol: string } | null> {
+  const s = await renovarSesion().catch(() => null);
+  if (!s) return null;
+  if (adminCache?.token === s.access_token) return adminCache.yo;
+  let yo: { correo: string; rol: string } | null = null;
+  try { yo = await pedirBot<{ correo: string; rol: string }>('/api/admin/yo', { token: s.access_token }); } catch { yo = null; }
+  adminCache = { token: s.access_token, yo };
+  return yo;
 }
 
 export async function cambiarClave(clave: string): Promise<void> {
@@ -194,5 +252,6 @@ export async function tomarSesionDelEnlace(): Promise<{ tipo: string } | { error
   const refresh = p.get('refresh_token') ?? '';
   const usuario = aUsuario(await auth('user', { metodo: 'GET', token: access }));
   guardar({ access_token: access, refresh_token: refresh, expira_en: Date.now() + Number(p.get('expires_in') ?? 3600) * 1000, usuario });
+  void sincronizarContacto();
   return { tipo: p.get('type') ?? 'signup' };
 }
