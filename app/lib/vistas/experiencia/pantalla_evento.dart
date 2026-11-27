@@ -259,9 +259,6 @@ class _TarjetaJornada extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final fraccion = j.cupos <= 0
-        ? 0.0
-        : (j.inscritos / j.cupos).clamp(0.0, 1.0);
     return _Caja(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,50 +295,22 @@ class _TarjetaJornada extends StatelessWidget {
             texto: 'Punto de encuentro',
             detalle: j.puntoEncuentro,
           ),
-          if (j.cupos > 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.groups_rounded,
-                        size: 20,
-                        color: Zc.hoja,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          j.llena
-                              ? 'Cupos llenos (${j.inscritos} de ${j.cupos})'
-                              : '${j.cuposLibres} cupos libres de ${j.cupos}',
-                          style: tt.titleSmall,
-                        ),
-                      ),
-                    ],
+          // Como el bot y la web: las jornadas no tienen límite de cupos.
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                const Icon(Icons.groups_rounded, size: 20, color: Zc.hoja),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${j.inscritos} ${j.inscritos == 1 ? 'inscrito' : 'inscritos'} · cupos sin límite',
+                    style: tt.titleSmall,
                   ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(99),
-                    child: TweenAnimationBuilder<double>(
-                      tween: Tween(end: fraccion),
-                      duration: sinMovimiento(context)
-                          ? Duration.zero
-                          : Zm.largo,
-                      curve: Zm.entrar,
-                      builder: (_, v, _) => LinearProgressIndicator(
-                        value: v,
-                        minHeight: 8,
-                        backgroundColor: Zc.linea,
-                        color: j.llena ? Zc.prioridad[4] : Zc.hoja,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
           if (j.queLlevar.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('Qué llevar', style: tt.labelSmall),

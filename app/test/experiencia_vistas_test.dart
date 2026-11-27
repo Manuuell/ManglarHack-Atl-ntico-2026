@@ -174,8 +174,7 @@ void main() {
     await _montar(t, PantallaEvento(codigo: 'jornada-1', fuente: _FuenteFija(), almacen: AlmacenParticipacion()));
     expect(find.textContaining('domingo 29 de noviembre'), findsOneWidget);
     expect(find.textContaining('Ecoparque Ciénaga de Mallorquín'), findsOneWidget);
-    // Sin límite de cupos (contrato del bot 2b1f7e9): no se habla de «cupos libres».
-    expect(find.textContaining('cupos libres'), findsNothing);
+    expect(find.textContaining('cupos sin límite'), findsOneWidget);
     expect(find.text('Guantes de trabajo'), findsOneWidget);
     expect(find.text('Datos de ejemplo'), findsOneWidget);
     expect(find.textContaining('Bienvenido a «Jornada de siembra en el caño»'), findsOneWidget);
@@ -213,9 +212,6 @@ void main() {
       await _montar(t, PantallaEvento(codigo: 'jornada-1', fuente: _FuenteFija(), almacen: almacen),
           estado: _estado(conPerfil: false));
       await t.scrollUntilVisible(find.text('Registrar mi asistencia (+40)'), 200, scrollable: find.byType(Scrollable).first);
-      // Sin el bloque de cupos (jornadas sin límite) la página es más corta: se centra el botón antes de tocarlo.
-      await t.ensureVisible(find.text('Registrar mi asistencia (+40)'));
-      await _avanzar(t);
       await t.tap(find.text('Registrar mi asistencia (+40)'));
       await _avanzar(t);
       // Sin llenar nada: no registra y marca lo que falta.

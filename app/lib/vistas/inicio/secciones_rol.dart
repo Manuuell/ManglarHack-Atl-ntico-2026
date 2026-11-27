@@ -787,23 +787,11 @@ class Asistentes extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              j.sinLimite ? 'inscritos · sin límite de cupos' : 'inscritos de ${j.cupos} cupos',
+                              '${j.inscritos == 1 ? 'inscrito' : 'inscritos'} · cupos sin límite',
                               style: tt.bodyMedium,
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(99),
-                        child: LinearProgressIndicator(
-                          value: j.cupos == 0
-                              ? 0
-                              : (j.inscritos / j.cupos).clamp(0.0, 1.0),
-                          minHeight: 8,
-                          color: Zc.hoja,
-                          backgroundColor: Zc.hojaClara,
-                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
