@@ -25,3 +25,7 @@ build/
 # Sistema
 .DS_Store
 *.log
+
+# Configuración personal de agentes (lleva claves)
+.claude/settings.local.json
+

@@ -8,6 +8,7 @@ Aquí está la información común del equipo para que todos trabajemos con lo m
 | 02 | [Evento y entrega](02-evento-y-entrega.md) | Horario, checklist de Byte Arena, quién es quién, plantilla de ficha técnica y estructura del pitch |
 | 03 | [Solución Zanqui](03-solucion-zanqui.md) | Mascota, las tres piezas, cómo respondemos las 3 preguntas, datos abiertos, seguridad, modelo de datos y reparto |
 | 04 | [Datos](04-datos.md) | Polígonos del manglar (KMZ de la CRA y capa de INVEMAR), cómo convertirlos y fuentes públicas opcionales |
+| 05 | [Coordinación y reglas](05-coordinacion-y-reglas.md) | Reparto, alcance pedido, correo de agentes de Mesa, reglas del repo, contrato común, la vara y los hitos del día |
 
 ## Lo esencial en 30 segundos
 
