@@ -10,7 +10,9 @@ import 'package:latlong2/latlong.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/zonas.dart';
+import '../../nucleo/base/hoja.dart';
 import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../../nucleo/base/transicion_pestanas.dart';
 import '../mis_reportes/detalle_reporte.dart';
@@ -243,6 +245,9 @@ class _PantallaMapaState extends State<PantallaMapa>
         if (_camara.isAnimating) _camara.stop();
       },
       onTap: _alTocarMapa,
+      // Mantener presionado (o clic derecho en la web): «Reportar aquí» con el punto ya marcado.
+      onLongPress: (_, p) => _reportarAqui(p),
+      onSecondaryTap: (_, p) => _reportarAqui(p),
     );
   }
 
@@ -503,6 +508,38 @@ class _PantallaMapaState extends State<PantallaMapa>
   }
 
   // ------------------------------------------------------------------ toques y hojas
+
+  /// El punto donde se mantuvo presionado pasa al flujo de reporte ya marcado. Antes se
+  /// confirma en una hoja con el botón visible: nada ocurre por un gesto accidental.
+  Future<void> _reportarAqui(LatLng p) async {
+    vibrar(Vibracion.media);
+    final u = _manglar.ubicar(p);
+    final dentro = u.dentro;
+    final ok = await mostrarHojaZ<bool>(
+      context,
+      nombre: 'mapa/reportar_aqui',
+      contenido: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Semantics(header: true, child: Text('¿Reportar aquí?', style: Theme.of(ctx).textTheme.titleLarge)),
+          const SizedBox(height: 6),
+          Text(
+            dentro
+                ? 'Este punto está dentro de ${u.zona.nombre}. Lo dejo marcado y tú cuentas qué viste.'
+                : 'Este punto queda fuera del manglar, cerca de ${u.zona.nombre}. Lo dejo marcado y puedes moverlo después.',
+            style: Theme.of(ctx).textTheme.bodyMedium,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 18),
+          BotonZ(texto: 'Reportar aquí', icono: Icons.add_a_photo_rounded, onTap: () => Navigator.pop(ctx, true)),
+          const SizedBox(height: 8),
+          BotonZ(texto: 'Cancelar', secundario: true, color: Zc.textoSuave, onTap: () => Navigator.pop(ctx, false)),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    abrirReporte(context, punto: p);
+  }
 
   void _alTocarMapa(TapPosition posicion, LatLng p) {
     if (_capa == CapaMapa.prioridad) {

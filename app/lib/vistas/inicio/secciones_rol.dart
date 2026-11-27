@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../nucleo/kit/menu_mantenido.dart';
+import 'jornada_acciones.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../../datos/experiencia/entrada_evento.dart' hide EntradaEvento;
@@ -593,10 +595,11 @@ class SeccionJornadas extends StatelessWidget {
                       children: [
                         for (final (i, j) in lista.take(3).indexed) ...[
                           if (i > 0) const Divider(height: 18, color: Zc.linea),
-                          Presionable(
+                          MenuMantenido(
+                            etiqueta: j.titulo,
+                            acciones: accionesJornada(context, j),
+                            alTocar: () => abrirEvento(context, j.id),
                             escala: 0.98,
-                            etiqueta: '${j.titulo}, ${fechaLarga(j.inicio)}',
-                            onTap: () => abrirEvento(context, j.id),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(minHeight: 48),
                               child: Row(

@@ -26,7 +26,7 @@ import 'package:zanky/vistas/comun/capa_avisos.dart';
 
 import 'apoyo_datos.dart';
 
-const _tamanos = <(String, Size)>[('360x800', Size(360, 800)), ('390x844', Size(390, 844))];
+const _tamanos = <(String, Size)>[('360x800', Size(360, 800)), ('390x844', Size(390, 844)), ('1280x800', Size(1280, 800))];
 const _letras = [1.0, 1.3, 2.0];
 
 ControladorAdmin _controlador({bool servidor = false, List<ReporteAdmin>? semilla, bool demo = false}) {

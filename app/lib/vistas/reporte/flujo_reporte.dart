@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/fotos.dart';
@@ -22,14 +23,14 @@ import 'paso_ubicacion.dart';
 /// Abre el flujo de reporte a pantalla completa. [tipo] llega elegido desde el inicio
 /// (y entonces se empieza en «¿Dónde?»). [zonaId] centra el mapa de «¿Dónde?» en esa
 /// zona mientras no haya GPS.
-Future<void> abrirReporte(BuildContext context, {TipoAmenaza? tipo, String? zonaId}) {
+Future<void> abrirReporte(BuildContext context, {TipoAmenaza? tipo, String? zonaId, LatLng? punto}) {
   final estado = Zanky.leer(context);
   return Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder<void>(
       fullscreenDialog: true,
       transitionDuration: Zm.largo,
       reverseTransitionDuration: Zm.medio,
-      pageBuilder: (_, _, _) => FlujoReporte(estado: estado, tipo: tipo, zonaId: zonaId),
+      pageBuilder: (_, _, _) => FlujoReporte(estado: estado, tipo: tipo, zonaId: zonaId, punto: punto),
       // Sube desde abajo como una hoja grande: se entiende que es una tarea aparte.
       transitionsBuilder: (_, a, _, hijo) => SlideTransition(
         position: Tween(begin: const Offset(0, 1), end: Offset.zero)
@@ -41,8 +42,11 @@ Future<void> abrirReporte(BuildContext context, {TipoAmenaza? tipo, String? zona
 }
 
 class FlujoReporte extends StatefulWidget {
-  const FlujoReporte({super.key, required this.estado, this.tipo, this.zonaId});
+  const FlujoReporte({super.key, required this.estado, this.tipo, this.zonaId, this.punto});
   final EstadoZanky estado;
+
+  /// Punto ya elegido (mantener presionado en el mapa): llega marcado, la persona solo lo acepta.
+  final LatLng? punto;
   final TipoAmenaza? tipo;
   final String? zonaId;
 
@@ -59,6 +63,13 @@ class _FlujoReporteState extends State<FlujoReporte> {
   Reporte? _guardado;
 
   static const _pasos = ['Qué viste', 'Dónde', 'Foto', 'Detalles'];
+
+  @override
+  void initState() {
+    super.initState();
+    final p = widget.punto;
+    if (p != null) _b.marcarEnMapa(p);
+  }
 
   @override
   void dispose() {

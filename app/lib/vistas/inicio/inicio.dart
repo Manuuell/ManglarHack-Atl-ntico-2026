@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/experiencia/entrada_evento.dart' hide EntradaEvento;
@@ -11,7 +12,10 @@ import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/kit/accion_gesto.dart';
 import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/menu_mantenido.dart';
+import '../../nucleo/kit/tirar_actualizar.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../admin/panel_cra.dart';
@@ -42,6 +46,81 @@ class Inicio extends StatefulWidget {
 
 class _InicioState extends State<Inicio> {
   int _dato = -1;
+
+  /// Secciones que la persona ocultó con el menú (mantener presionado). Duran la sesión
+  /// y se devuelven con «Mostrar» al final de la lista.
+  final Set<SeccionInicio> _ocultas = {};
+
+  /// Las que se pueden abrir con el menú: las que tienen un campo de texto o ya tienen su
+  /// propio mantener (jornadas) quedan fuera para no pelear con ellos.
+  static const _sinMenu = {
+    SeccionInicio.panel,
+    SeccionInicio.reportar,
+    SeccionInicio.queHagoYa,
+    SeccionInicio.reporteRapido,
+    SeccionInicio.evento,
+    SeccionInicio.qrEvento,
+    SeccionInicio.asistentes,
+    SeccionInicio.jornadasCerca,
+    SeccionInicio.misJornadas,
+  };
+
+  static String _nombre(SeccionInicio s) => switch (s) {
+        SeccionInicio.estadoReportes => 'Tus reportes',
+        SeccionInicio.progreso => 'Tu progreso',
+        SeccionInicio.retoManglar => 'El reto del manglar',
+        SeccionInicio.rankingColegio => 'Ranking de tu colegio',
+        SeccionInicio.mision => 'La misión de la semana',
+        SeccionInicio.queVer => 'Qué ver en el manglar',
+        SeccionInicio.queNoHacer => 'Qué no hacer en el manglar',
+        SeccionInicio.clima => 'El clima en el manglar',
+        SeccionInicio.pronostico => 'El pronóstico del manglar',
+        SeccionInicio.sabiasQue => '¿Sabías qué?',
+        _ => 'Zanky',
+      };
+
+  Future<void> _compartirSeccion(BuildContext context, SeccionInicio s) async {
+    try {
+      await SharePlus.instance.share(ShareParams(
+        text: 'Mira «${_nombre(s)}» en Zanky: la app para cuidar el manglar de la ciénaga de Mallorquín.',
+        subject: 'Zanky',
+      ));
+    } catch (_) {
+      if (context.mounted) avisar(context, 'No pude abrir el menú de compartir.', tipo: TipoAviso.error);
+    }
+  }
+
+  /// Mantener presionada una tarjeta: reportar aquí, compartir u ocultarla (con «Deshacer»).
+  Widget _conMenu(BuildContext context, SeccionInicio s, Widget hijo) {
+    if (_sinMenu.contains(s)) return hijo;
+    return MenuMantenido(
+      etiqueta: _nombre(s),
+      acciones: [
+        AccionGesto(
+          etiqueta: 'Reportar aquí',
+          icono: Icons.add_a_photo_rounded,
+          alEjecutar: () => abrirReporte(context),
+        ),
+        AccionGesto(
+          etiqueta: 'Compartir',
+          icono: Icons.ios_share_rounded,
+          alEjecutar: () => _compartirSeccion(context, s),
+        ),
+        AccionGesto(
+          etiqueta: 'Ocultar sección',
+          icono: Icons.visibility_off_rounded,
+          alEjecutar: () {
+            setState(() => _ocultas.add(s));
+            avisar(context, '«${_nombre(s)}» oculta',
+                accion: AccionAviso('Deshacer', () {
+                  if (mounted) setState(() => _ocultas.remove(s));
+                }));
+          },
+        ),
+      ],
+      child: hijo,
+    );
+  }
 
   String _saludo() {
     final h = DateTime.now().hour;
@@ -163,11 +242,10 @@ class _InicioState extends State<Inicio> {
     final rolPanel = (admin != null && admin.dentro) ? admin.rol : null;
     final progreso = estado.progreso;
     final resumen = ResumenReportes.de(estado.reportes);
-    final secciones = seccionesDeInicio(rol, rolPanel: rolPanel);
+    final secciones = seccionesDeInicio(rol, rolPanel: rolPanel).where((s) => !_ocultas.contains(s)).toList();
     var i = 0;
-    return RefreshIndicator(
-      color: Zc.hoja,
-      onRefresh: () async {
+    return TirarActualizar(
+      alActualizar: () async {
         await Future.wait([estado.sincronizar(), estado.cargarClima()]);
       },
       child: ListView(
@@ -211,9 +289,26 @@ class _InicioState extends State<Inicio> {
           const SizedBox(height: 14),
           const FranjaConexion(),
           for (final seccion in secciones) ...[
-            EntradaEscalonada(index: i++, child: _seccion(context, seccion, estado, progreso, resumen)),
+            EntradaEscalonada(index: i++, child: _conMenu(context, seccion, _seccion(context, seccion, estado, progreso, resumen))),
             const SizedBox(height: 16),
           ],
+          if (_ocultas.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Presionable(
+                etiqueta: 'Mostrar ${_ocultas.length} ${_ocultas.length == 1 ? 'sección oculta' : 'secciones ocultas'}',
+                onTap: () => setState(_ocultas.clear),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: Zc.hojaClara, borderRadius: BorderRadius.circular(Zr.m)),
+                  child: Text(
+                    'Mostrar ${_ocultas.length} ${_ocultas.length == 1 ? 'sección oculta' : 'secciones ocultas'}',
+                    style: tt.labelLarge?.copyWith(color: Zc.hoja),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
