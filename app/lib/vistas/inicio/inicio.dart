@@ -3,17 +3,28 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../datos/estado.dart';
+import '../../datos/experiencia/entrada_evento.dart' hide EntradaEvento;
+import '../../datos/resumen_reportes.dart';
+import '../../datos/roles.dart';
 import '../../datos/guardian.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
+import '../admin/panel_cra.dart';
+import '../admin/piezas_admin.dart';
 import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
+import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
+import '../guardian/editar_perfil.dart';
+import '../roles/selector_rol.dart';
+import 'que_hago_ya.dart';
+import 'secciones_rol.dart';
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
 
@@ -34,12 +45,113 @@ class _InicioState extends State<Inicio> {
     return h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
   }
 
+  Widget _seccion(BuildContext context, SeccionInicio s, EstadoZanky estado, Progreso progreso,
+      ResumenReportes resumen) {
+    final perfil = estado.perfil;
+    switch (s) {
+      case SeccionInicio.panel:
+        return const BandejaPanel();
+      case SeccionInicio.queHagoYa:
+        final admin = AdminScope.maybeDe(context);
+        final enPanel = admin != null && admin.dentro;
+        return QueHagoYa(
+          accion: queHagoYa(ContextoYa(
+            rol: perfil?.rol ?? RolUsuario.ciudadano,
+            hora: DateTime.now().hour,
+            rolPanel: enPanel ? admin.rol : null,
+            sinVerPanel: enPanel ? admin.sinVer : 0,
+            porEnviar: estado.pendientes,
+            rechazados: estado.rechazados,
+            enLinea: estado.enLinea,
+            enviados: progreso.enviados,
+            tieneColegio: (perfil?.colegio.trim() ?? '').isNotEmpty,
+            eventoAbierto: entradaEvento.value != null,
+          )),
+          alTocar: (d) => _ir(context, d),
+        );
+      case SeccionInicio.reportar:
+        return const _TarjetaReportar();
+      case SeccionInicio.reporteRapido:
+        return const _Rapidos();
+      case SeccionInicio.estadoReportes:
+        return EstadoMisReportes(resumen: resumen);
+      case SeccionInicio.progreso:
+        return _Progreso(progreso: progreso);
+      case SeccionInicio.retoManglar:
+        return const RetoManglar();
+      case SeccionInicio.rankingColegio:
+        return RankingColegio(
+          colegio: perfil?.colegio.trim() ?? '',
+          progreso: progreso,
+          servidorConectado: estado.servidor.configurado,
+        );
+      case SeccionInicio.mision:
+        return _Mision(mision: Mision.deLaSemana(DateTime.now()));
+      case SeccionInicio.queVer:
+        return const QueVer();
+      case SeccionInicio.queNoHacer:
+        return const QueNoHacer();
+      case SeccionInicio.jornadasCerca:
+        return const SeccionJornadas(vista: VistaJornadas.visitante);
+      case SeccionInicio.misJornadas:
+        return const SeccionJornadas(vista: VistaJornadas.organizador);
+      case SeccionInicio.qrEvento:
+        return const QrDelEvento();
+      case SeccionInicio.asistentes:
+        return const Asistentes();
+      case SeccionInicio.evento:
+        return const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: EntradaEvento());
+      case SeccionInicio.clima:
+        return _TarjetaClima(estado: estado);
+      case SeccionInicio.sabiasQue:
+        return _SabiasQue(hectareas: estado.manglar.areaTotalHa);
+    }
+  }
+
+  /// A dónde lleva la sugerencia de «¿Qué hago ya?».
+  Future<void> _ir(BuildContext context, DestinoYa d) async {
+    switch (d) {
+      case DestinoYa.reportar:
+        abrirReporte(context);
+      case DestinoYa.mapa:
+        Raiz.irA(context, 1);
+      case DestinoYa.misReportes:
+        Raiz.irA(context, 2);
+      case DestinoYa.guardian:
+        Raiz.irA(context, 3);
+      case DestinoYa.perfil:
+        mostrarEditarPerfil(context);
+      case DestinoYa.panel:
+        if (AdminScope.maybeDe(context) != null) abrirPanelCra(context);
+      case DestinoYa.evento:
+        final abierto = entradaEvento.value;
+        if (abierto != null) {
+          abrirEvento(context, abierto.codigo);
+          return;
+        }
+        final proximas = proximasJornadas(await cargaJornadasInicio(), DateTime.now());
+        if (!context.mounted) return;
+        if (proximas.isNotEmpty) {
+          abrirEvento(context, proximas.first.id);
+        } else {
+          avisar(context, 'No hay jornadas programadas. Escribe el código de un evento en «¿Estás en una jornada?».');
+        }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final estado = Zanky.de(context);
     final tt = Theme.of(context).textTheme;
     final nombre = estado.perfil?.nombre.trim().split(' ').first ?? '';
     final arriba = MediaQuery.paddingOf(context).top;
+    final perfil = estado.perfil;
+    final rol = perfil?.rol ?? RolUsuario.ciudadano;
+    final admin = AdminScope.maybeDe(context);
+    final rolPanel = (admin != null && admin.dentro) ? admin.rol : null;
+    final progreso = estado.progreso;
+    final resumen = ResumenReportes.de(estado.reportes);
+    final secciones = seccionesDeInicio(rol, rolPanel: rolPanel);
     var i = 0;
     return RefreshIndicator(
       color: Zc.hoja,
@@ -62,6 +174,7 @@ class _InicioState extends State<Inicio> {
                       Text(_saludo().toUpperCase(), style: tt.labelSmall?.copyWith(color: Zc.hoja)),
                       const SizedBox(height: 2),
                       Text(nombre.isEmpty ? 'Guardián del manglar' : nombre, style: tt.headlineMedium),
+                      if (perfil != null) _PildoraRol(rol: rol),
                     ],
                   ),
                 ),
@@ -85,24 +198,53 @@ class _InicioState extends State<Inicio> {
           ),
           const SizedBox(height: 14),
           const FranjaConexion(),
-          EntradaEscalonada(index: i++, child: const _TarjetaReportar()),
-          const SizedBox(height: 18),
-          EntradaEscalonada(index: i++, child: const _Rapidos()),
-          const SizedBox(height: 18),
-          EntradaEscalonada(index: i++, child: _Progreso(progreso: estado.progreso)),
-          const SizedBox(height: 14),
-          // Entrar a un evento por su código o enlace (el QR de una jornada abre lo mismo).
-          EntradaEscalonada(
-            index: i++,
-            child: const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: EntradaEvento()),
-          ),
-          const SizedBox(height: 14),
-          EntradaEscalonada(index: i++, child: _TarjetaClima(estado: estado)),
-          const SizedBox(height: 14),
-          EntradaEscalonada(index: i++, child: _Mision(mision: Mision.deLaSemana(DateTime.now()))),
-          const SizedBox(height: 22),
-          EntradaEscalonada(index: i++, child: _SabiasQue(hectareas: estado.manglar.areaTotalHa)),
+          for (final seccion in secciones) ...[
+            EntradaEscalonada(index: i++, child: _seccion(context, seccion, estado, progreso, resumen)),
+            const SizedBox(height: 16),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// El rol de quien mira, en una píldora que lo cambia con un toque (también en Guardián).
+class _PildoraRol extends StatelessWidget {
+  const _PildoraRol({required this.rol});
+  final RolUsuario rol;
+
+  @override
+  Widget build(BuildContext context) {
+    return Presionable(
+      etiqueta: 'Tu rol: ${rol.nombre}. Toca para cambiarlo',
+      onTap: () => mostrarCambiarRol(context),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          widthFactor: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: rol.color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(rol.icono, size: 16, color: rol.color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  rol.nombre,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Zc.texto),
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(Icons.expand_more_rounded, size: 16, color: Zc.textoSuave),
+            ]),
+          ),
+        ),
       ),
     );
   }
