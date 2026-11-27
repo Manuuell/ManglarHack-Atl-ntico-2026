@@ -17,6 +17,7 @@ import path from 'path';
 import { api } from './api/rutas';
 import { iniciarJornadas } from './api/almacenJornadas';
 import { atenderRespuestaInvitacion } from './api/respuestas';
+import { alertasActuales, alertasSimulacro, iniciarAlertas } from './alertas/motor';
 
 type ConCuerpoCrudo = Request & { cuerpoCrudo?: Buffer };
 
@@ -158,6 +159,20 @@ app.post('/chat', async (req, res) => {
   }
 });
 
+// --- Alertas del manglar (públicas: datos del IDEAM, DIMAR, la C.R.A. y la comunidad) ---------
+
+app.get('/alertas', async (req, res) => {
+  // Datos públicos y sin nada personal: cualquier sitio puede mostrarlos.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  try {
+    res.json(req.query.simulacro === '1' ? await alertasSimulacro() : await alertasActuales());
+  } catch (err) {
+    console.warn(`[alertas] ${(err as Error).message}`);
+    res.status(502).json({ error: 'sin_datos', mensaje: 'No pudimos leer las fuentes en este momento.' });
+  }
+});
+
 // --- Datos abiertos (públicos, anonimizados) -------------------------------
 
 app.get('/datos-abiertos/reportes.geojson', (_req, res) => {
@@ -238,6 +253,7 @@ export function iniciar(): void {
   iniciarJornadas();
   const n = cargarZonas(config.zonasGeojson);
   for (const aviso of avisosDeConfiguracion()) console.warn(`[config] ${aviso}`);
+  iniciarAlertas();
   setInterval(() => void reintentarPendientes(), 60_000);
   void reintentarPendientes();
   app.listen(config.port, () => {
