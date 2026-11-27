@@ -46,20 +46,22 @@ const COMO_REPORTAR: Record<Canal, string> = {
   web: 'En la página está el botón «Reportar un problema» (marca el sitio en el mapa y sube una foto); también se puede por WhatsApp con Zanky BOT o desde la app.',
 };
 const LARGO: Record<Canal, string> = {
-  whatsapp: 'máximo unas 70 palabras, sin títulos ni listas largas',
-  web: 'máximo unas 90 palabras; puedes usar una lista corta si ayuda',
+  whatsapp: 'máximo unas 70 palabras, sin títulos ni listas largas. Formato de WhatsApp: para resaltar usa *así* (un solo asterisco); nunca ** ni #',
+  web: 'máximo unas 90 palabras; puedes usar una lista corta con guiones. Para resaltar usa **así**; nunca títulos con #',
 };
 
 async function contextoJornadas(canal: Canal): Promise<string> {
   try {
-    const { jornadas } = await proximasJornadas();
+    const { jornadas, aviso } = await proximasJornadas();
     if (!jornadas.length) return 'Próximas jornadas: no hay jornadas publicadas por ahora.';
     const lineas = jornadas.slice(0, 4).map(j =>
       `- ${j.titulo}: ${fmt.larga(j.inicio)}, ${fmt.hora(j.inicio)} a ${fmt.hora(j.fin)}, en ${j.punto_encuentro}. ` +
       `Cupos libres: ${Math.max(0, j.cupos - j.inscritos)} de ${j.cupos}. Inscripción: ${enlaceInvitacion(j)} · Ese día, con Zanky: ${enlaceEventoZanky(j)}` +
       (canal === 'whatsapp' ? ' (o escribir «jornadas» aquí)' : ''),
     );
-    return `Próximas jornadas (datos de la plataforma; si dicen «Datos de ejemplo», acláralo):\n${lineas.join('\n')}`;
+    return `Próximas jornadas (datos de la plataforma). Cuando hables de una, da su enlace de inscripción.` +
+      (aviso ? ` Aviso de la plataforma: «${aviso}»; si dice «Datos de ejemplo», acláralo en una frase corta.` : '') +
+      `\n${lineas.join('\n')}`;
   } catch {
     return 'Próximas jornadas: no se pudieron consultar ahora; sugiere verlas en mimanglar.sentralabs.co/plataforma/jornadas.';
   }
@@ -103,5 +105,12 @@ export async function responder(historial: Turno[], canal: Canal): Promise<strin
   const datos = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const texto = datos.choices?.[0]?.message?.content?.trim();
   if (!texto) throw new ErrorIA('OpenAI respondió vacío');
-  return texto.slice(0, 1500);
+  return aFormato(texto, canal).slice(0, 1500);
+}
+
+/** Por si el modelo se sale del formato: WhatsApp resalta con *un* asterisco y ninguno usa títulos #. */
+export function aFormato(texto: string, canal: Canal): string {
+  let t = texto.replace(/^#{1,6}\s+/gm, '');
+  if (canal === 'whatsapp') t = t.replace(/\*\*(.+?)\*\*/g, '*$1*');
+  return t.trim();
 }
