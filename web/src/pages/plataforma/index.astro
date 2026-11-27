@@ -1,10 +1,16 @@
 ---
 import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
-import Card from '../../components/ui/Card.astro';
+import InicioPlataforma from '../../components/plataforma/InicioPlataforma';
+import { obtenerPoligonos, obtenerReportes } from '../../lib/datos';
+import { obtenerAcciones, obtenerJornadas } from '../../lib/plataforma/datos';
+import { aReportePublico } from '../../lib/privacidad';
+
+const [zonas, reportes, acciones, jornadas] = await Promise.all([obtenerPoligonos(), obtenerReportes(), obtenerAcciones(), obtenerJornadas()]);
+const publicos = reportes.map(aReportePublico);
 ---
+
 <PlataformaLayout title="Inicio · Plataforma abierta del manglar" activa="inicio">
- <Card class="p-6 sm:p-8">
-  <p class="rotulo text-dorado-300">Inicio</p>
-  <h2 class="titular mt-4 text-2xl">Sección en construcción</h2>
- </Card>
+  <InicioPlataforma client:only="react" zonas={zonas} acciones={acciones} reportes={publicos} jornadas={jornadas}>
+    <div slot="fallback" class="grid h-[620px] place-items-center border border-linea bg-fondo-alt text-tenue">Cargando el mapa del manglar y de las acciones…</div>
+  </InicioPlataforma>
 </PlataformaLayout>

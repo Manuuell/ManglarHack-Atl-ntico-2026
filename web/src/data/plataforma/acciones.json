@@ -1,7 +1,7 @@
 [
   {
     "id": "accion-a",
-    "nombre": "Siembra de mangle rojo en el ca?o",
+    "nombre": "Siembra de mangle rojo en el caño",
     "tipo": "siembra",
     "actor_id": "pescadores-demo",
     "sector": "mallorquin",
@@ -12,8 +12,8 @@
     "prioridad_plan": "media",
     "plan_aproximado": false,
     "estado": "en_ejecucion",
-    "descripcion": "Datos de ejemplo. Siembra de mangle rojo en el ca?o. Sitio y plan provisionales; requieren validaci?n de la C.R.A.",
-    "comunidad_coparticipante": "Asociaci?n de pescadores de la ci?naga",
+    "descripcion": "Datos de ejemplo. Siembra de mangle rojo en el caño. Sitio y plan provisionales; requieren validación de la C.R.A.",
+    "comunidad_coparticipante": "Asociación de pescadores de la ciénaga",
     "requerimientos": [
       {
         "id": "siembra-1",
@@ -51,7 +51,7 @@
   },
   {
     "id": "accion-b",
-    "nombre": "Siembra del ca?o Balboa",
+    "nombre": "Siembra del caño Balboa",
     "tipo": "siembra",
     "actor_id": "fundacion-demo",
     "sector": "balboa",
@@ -62,8 +62,8 @@
     "prioridad_plan": "media",
     "plan_aproximado": false,
     "estado": "aprobada",
-    "descripcion": "Datos de ejemplo. Siembra del ca?o Balboa. Sitio y plan provisionales; requieren validaci?n de la C.R.A.",
-    "comunidad_coparticipante": "Asociaci?n de pescadores de la ci?naga",
+    "descripcion": "Datos de ejemplo. Siembra del caño Balboa. Sitio y plan provisionales; requieren validación de la C.R.A.",
+    "comunidad_coparticipante": "Asociación de pescadores de la ciénaga",
     "requerimientos": [
       {
         "id": "siembra-1",
@@ -101,7 +101,7 @@
   },
   {
     "id": "accion-c",
-    "nombre": "Vig?as del manglar del Totumo",
+    "nombre": "Vigías del manglar del Totumo",
     "tipo": "conservacion_vigilancia",
     "actor_id": "pescadores-demo",
     "sector": "totumo",
@@ -112,8 +112,8 @@
     "prioridad_plan": "media",
     "plan_aproximado": false,
     "estado": "en_revision",
-    "descripcion": "Datos de ejemplo. Vig?as del manglar del Totumo. Sitio y plan provisionales; requieren validaci?n de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
-    "comunidad_coparticipante": "Asociaci?n de pescadores de la ci?naga",
+    "descripcion": "Datos de ejemplo. Vigías del manglar del Totumo. Sitio y plan provisionales; requieren validación de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
+    "comunidad_coparticipante": "Asociación de pescadores de la ciénaga",
     "requerimientos": [
       {
         "id": "conservacion_vigilancia-1",
@@ -146,7 +146,7 @@
   },
   {
     "id": "accion-d",
-    "nombre": "Reapertura de ca?o en Puerto Velero",
+    "nombre": "Reapertura de caño en Puerto Velero",
     "tipo": "restauracion_hidrologica",
     "actor_id": "universidad-demo",
     "sector": "balboa",
@@ -157,8 +157,8 @@
     "prioridad_plan": "alta",
     "plan_aproximado": false,
     "estado": "con_observaciones",
-    "descripcion": "Datos de ejemplo. Reapertura de ca?o en Puerto Velero. Sitio y plan provisionales; requieren validaci?n de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
-    "comunidad_coparticipante": "Asociaci?n de pescadores de la ci?naga",
+    "descripcion": "Datos de ejemplo. Reapertura de caño en Puerto Velero. Sitio y plan provisionales; requieren validación de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
+    "comunidad_coparticipante": "Asociación de pescadores de la ciénaga",
     "requerimientos": [
       {
         "id": "restauracion_hidrologica-1",
@@ -187,13 +187,13 @@
       }
     ],
     "observaciones": [
-      "Adjuntar el perfil del ca?o y el manejo de sedimentos para evaluar efectos sobre el intercambio de agua antes de autorizar la reapertura."
+      "Adjuntar el perfil del caño y el manejo de sedimentos para evaluar efectos sobre el intercambio de agua antes de autorizar la reapertura."
     ],
     "creada_en": "2026-11-10T09:00:00-05:00"
   },
   {
     "id": "accion-e",
-    "nombre": "Monitoreo escolar del manglar de Santa Ver?nica",
+    "nombre": "Monitoreo escolar del manglar de Santa Verónica",
     "tipo": "conservacion_vigilancia",
     "actor_id": "colegio-demo",
     "sector": "manaties",
@@ -204,7 +204,7 @@
     "prioridad_plan": "alta",
     "plan_aproximado": false,
     "estado": "propuesta",
-    "descripcion": "Datos de ejemplo. Monitoreo escolar del manglar de Santa Ver?nica. Sitio y plan provisionales; requieren validaci?n de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
+    "descripcion": "Datos de ejemplo. Monitoreo escolar del manglar de Santa Verónica. Sitio y plan provisionales; requieren validación de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
     "comunidad_coparticipante": "[comunidad por acordar]",
     "requerimientos": [
       {

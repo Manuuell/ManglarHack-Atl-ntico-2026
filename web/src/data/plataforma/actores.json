@@ -1,7 +1,7 @@
 [
   {
     "id": "pescadores-demo",
-    "nombre": "Asociaci?n de pescadores de la ci?naga",
+    "nombre": "Asociación de pescadores de la ciénaga",
     "tipo": "comunidad",
     "correo": "pescadores-demo@ejemplo.org",
     "sector": "mallorquin",
@@ -16,7 +16,7 @@
   },
   {
     "id": "universidad-demo",
-    "nombre": "Universidad del Atl?ntico, grupo de ecosistemas costeros",
+    "nombre": "Universidad del Atlántico, grupo de ecosistemas costeros",
     "tipo": "academia",
     "correo": "universidad-demo@ejemplo.org",
     "sector": "balboa",
@@ -30,7 +30,7 @@
   },
   {
     "id": "fundacion-demo",
-    "nombre": "Fundaci?n Manglar Vivo",
+    "nombre": "Fundación Manglar Vivo",
     "tipo": "ong",
     "correo": "fundacion-demo@ejemplo.org",
     "sector": "totumo",
@@ -44,7 +44,7 @@
   },
   {
     "id": "colegio-demo",
-    "nombre": "Instituci?n Educativa T?cnica de Santa Ver?nica",
+    "nombre": "Institución Educativa Técnica de Santa Verónica",
     "tipo": "academia",
     "correo": "colegio-demo@ejemplo.org",
     "sector": "manaties",

@@ -25,7 +25,7 @@
         "tomada_en": "2026-08-15T08:00:00-05:00"
       }
     ],
-    "observaciones": "Datos de ejemplo. 12 fotos declaradas; se incluyen 3 im?genes de muestra, no evidencia de campo.",
+    "observaciones": "Datos de ejemplo. 12 fotos declaradas; se incluyen 3 imágenes de muestra, no evidencia de campo.",
     "autor_id": "pescadores-demo"
   },
   {
@@ -54,7 +54,7 @@
         "tomada_en": "2026-11-15T08:00:00-05:00"
       }
     ],
-    "observaciones": "Datos de ejemplo. 3 im?genes de muestra, no evidencia de campo. Se observa menor supervivencia y mayor altura media en este escenario simulado.",
+    "observaciones": "Datos de ejemplo. 3 imágenes de muestra, no evidencia de campo. Se observa menor supervivencia y mayor altura media en este escenario simulado.",
     "autor_id": "pescadores-demo"
   }
 ]

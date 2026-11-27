@@ -14,7 +14,7 @@
     "estado": "en_revision",
     "usuario_id": "moderador-cra-demo",
     "rol": "moderador",
-    "nota": "Datos de ejemplo. Revisi?n iniciada.",
+    "nota": "Datos de ejemplo. Revisión iniciada.",
     "fecha": "2026-04-16T09:00:00-05:00"
   },
   {
@@ -32,7 +32,7 @@
     "estado": "en_ejecucion",
     "usuario_id": "moderador-cra-demo",
     "rol": "moderador",
-    "nota": "Datos de ejemplo. Inicio de ejecuci?n registrado.",
+    "nota": "Datos de ejemplo. Inicio de ejecución registrado.",
     "fecha": "2026-04-18T09:00:00-05:00"
   },
   {
@@ -50,7 +50,7 @@
     "estado": "en_revision",
     "usuario_id": "moderador-cra-demo",
     "rol": "moderador",
-    "nota": "Datos de ejemplo. Revisi?n iniciada.",
+    "nota": "Datos de ejemplo. Revisión iniciada.",
     "fecha": "2026-11-11T09:00:00-05:00"
   },
   {
@@ -77,7 +77,7 @@
     "estado": "en_revision",
     "usuario_id": "moderador-cra-demo",
     "rol": "moderador",
-    "nota": "Datos de ejemplo. Revisi?n iniciada.",
+    "nota": "Datos de ejemplo. Revisión iniciada.",
     "fecha": "2026-11-11T09:00:00-05:00"
   },
   {
@@ -95,7 +95,7 @@
     "estado": "en_revision",
     "usuario_id": "moderador-cra-demo",
     "rol": "moderador",
-    "nota": "Datos de ejemplo. Revisi?n iniciada.",
+    "nota": "Datos de ejemplo. Revisión iniciada.",
     "fecha": "2026-11-11T09:00:00-05:00"
   },
   {
@@ -104,7 +104,7 @@
     "estado": "con_observaciones",
     "usuario_id": "moderador-cra-demo",
     "rol": "moderador",
-    "nota": "Datos de ejemplo. Adjuntar el perfil del ca?o y el manejo de sedimentos para evaluar efectos sobre el intercambio de agua antes de autorizar la reapertura.",
+    "nota": "Datos de ejemplo. Adjuntar el perfil del caño y el manejo de sedimentos para evaluar efectos sobre el intercambio de agua antes de autorizar la reapertura.",
     "fecha": "2026-11-12T09:00:00-05:00"
   },
   {
