@@ -13,6 +13,10 @@ import { enviarReporte } from './backend/envio';
 import { backendActivo } from './backend/supabase';
 import { enviadoTarde } from './flujos/textos';
 import { ErrorIA, iaActiva, responder, Turno } from './ia/zanky';
+import path from 'path';
+import { api } from './api/rutas';
+import { iniciarJornadas } from './api/almacenJornadas';
+import { atenderRespuestaInvitacion } from './api/respuestas';
 
 type ConCuerpoCrudo = Request & { cuerpoCrudo?: Buffer };
 
@@ -32,6 +36,10 @@ app.use(
     },
   }),
 );
+
+// API de la web y del panel admin (jornadas, inscripciones, cuentas, invitaciones) e imágenes de invitación.
+app.use('/api', api);
+app.use('/invitaciones', express.static(path.join(__dirname, '../publico/invitaciones'), { maxAge: '1h' }));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, simulacion: config.dryRun, reportes: almacen.todos().length });
@@ -59,7 +67,8 @@ function encolar(m: MensajeEntrante): void {
     .then(async () => {
       console.log(`[entrante] ${quien} ${m.entrada.tipo}`);
       await whatsapp.marcarLeido(m.messageId).catch(err => console.warn(`[leido] ${(err as Error).message}`));
-      await atender(m);
+      // «No podré ir» de una invitación por plantilla: se atiende aparte del flujo de conversación.
+      if (!(await atenderRespuestaInvitacion(m))) await atender(m);
       console.log(`[respondido] ${quien}`);
     })
     .catch(err => console.error(`[flujo] error atendiendo ${m.messageId}:`, (err as Error).message))
@@ -226,6 +235,7 @@ async function reintentarPendientes(): Promise<void> {
 
 export function iniciar(): void {
   almacen.iniciarAlmacen();
+  iniciarJornadas();
   const n = cargarZonas(config.zonasGeojson);
   for (const aviso of avisosDeConfiguracion()) console.warn(`[config] ${aviso}`);
   setInterval(() => void reintentarPendientes(), 60_000);

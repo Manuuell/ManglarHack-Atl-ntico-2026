@@ -37,6 +37,20 @@ export const config = {
   /** Tope de preguntas a la IA: por IP cada 10 minutos y en total por hora (para que el costo no se dispare). */
   chatPorIp: Number(env.CHAT_POR_IP ?? 20),
   chatPorHora: Number(env.CHAT_POR_HORA ?? 400),
+  /** Web de Zanky (enlaces de invitación y CORS de la API /api). */
+  webUrl: (env.WEB_URL ?? 'https://mimanglar.sentralabs.co').replace(/\/$/, ''),
+  /**
+   * Panel admin: cuentas de la web (Supabase Auth) con rol admin o moderador_cra en panel_roles, o con su correo
+   * en esta lista (separados por coma). Los scripts del servidor pueden usar además x-api-key = PANEL_API_KEY.
+   */
+  adminCorreos: (env.ADMIN_CORREOS ?? '').split(',').map(c => c.trim().toLowerCase()).filter(Boolean),
+  /** Plantilla aprobada de WhatsApp para invitar a una jornada: imagen, 4 variables, botón de URL y «No podré ir». */
+  plantillaInvitacion: env.PLANTILLA_INVITACION ?? 'nodo_recordatorio_evento',
+  plantillaIdioma: env.PLANTILLA_IDIOMA ?? 'es',
+  /** El botón de URL de la plantilla termina en este sufijo + id de la jornada; nginx lo redirige a la web. */
+  prefijoBotonEvento: env.PREFIJO_BOTON_EVENTO ?? 'zanky-',
+  /** Imagen del encabezado de la invitación cuando la jornada no trae la suya (JPG o PNG público, menos de 5 MB). */
+  imagenInvitacion: env.IMAGEN_INVITACION ?? 'https://zanqui.sentralabs.co/invitaciones/jornada-limpieza-manglar.jpg',
   /** Más allá de esta distancia se pregunta si la ubicación es correcta. */
   distanciaSospechosaM: 3000,
   /** Reportes por persona en una hora antes de frenar el envío. */

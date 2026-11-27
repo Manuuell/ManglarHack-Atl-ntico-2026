@@ -1,4 +1,5 @@
 import { config } from '../config';
+import { jornada as jornadaGuardada, jornadasPublicadas } from '../api/almacenJornadas';
 
 /**
  * Jornadas comunitarias (siembras, limpiezas, recorridos de vigías, monitoreo). Las publica la web en
@@ -9,6 +10,8 @@ export type TipoJornada = 'siembra' | 'limpieza' | 'recorrido_vigias' | 'monitor
 
 export interface Jornada {
   id: string;
+  /** Solo en el almacén del bot: true si es una jornada de ejemplo de la demostración. */
+  ejemplo?: boolean;
   titulo: string;
   tipo: TipoJornada;
   inicio: string;
@@ -39,6 +42,13 @@ function esJornada(x: any): x is Jornada {
 
 /** Las jornadas que todavía no terminan, de la más próxima a la más lejana. */
 export async function proximasJornadas(): Promise<{ jornadas: Jornada[]; aviso: string }> {
+  // Fuente de verdad: el almacén del bot (api/almacenJornadas). La web solo es respaldo mientras está vacío.
+  const locales = jornadasPublicadas();
+  if (locales.length) {
+    const ahora = Date.now();
+    const jornadas = locales.filter(j => Date.parse(j.fin) > ahora);
+    return { aviso: jornadas.some(j => j.ejemplo) ? 'Algunas jornadas son datos de ejemplo de la demostración.' : '', jornadas };
+  }
   if (!cache || Date.now() - cache.cuando > CINCO_MIN) {
     const res = await fetch(config.jornadasUrl, { signal: AbortSignal.timeout(8_000), headers: { Accept: 'application/json' } });
     if (!res.ok) throw new Error(`jornadas ${res.status}`);
@@ -53,7 +63,7 @@ export async function proximasJornadas(): Promise<{ jornadas: Jornada[]; aviso: 
 }
 
 export function buscarJornada(id: string): Jornada | undefined {
-  return cache?.jornadas.find(j => j.id === id);
+  return jornadaGuardada(id) ?? cache?.jornadas.find(j => j.id === id);
 }
 
 const zona = { timeZone: 'America/Bogota' } as const;

@@ -334,7 +334,8 @@ async function enviarInvitacion(de: string, s: Sesion, id: string): Promise<void
   const { aviso } = await proximasJornadas().catch(() => ({ aviso: '' }));
   const j = buscarJornada(id);
   if (!j) return mostrarJornadas(de, s);
-  await whatsapp.texto(de, T.invitacionJornada(j, aviso));
+  // Las jornadas del almacén dicen una por una si son de ejemplo; las reales van sin el aviso.
+  await whatsapp.texto(de, T.invitacionJornada(j, j.ejemplo === false ? '' : aviso));
   await whatsapp.botones(de, '¿Qué más quieres hacer?', T.BOTONES_DESPUES_DE_JORNADA);
 }
 

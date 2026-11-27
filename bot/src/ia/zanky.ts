@@ -57,15 +57,17 @@ async function contextoJornadas(canal: Canal): Promise<string> {
   try {
     const { jornadas, aviso } = await proximasJornadas();
     if (!jornadas.length) return 'Próximas jornadas: no hay jornadas publicadas por ahora.';
-    const ejemplo = /ejemplo/i.test(aviso);
-    titulosDeEjemplo = ejemplo ? jornadas.map(j => j.titulo.toLowerCase()) : [];
+    // Cada jornada dice si es de ejemplo (almacén del bot); si no lo dice, manda el aviso general.
+    const deEjemplo = (j: (typeof jornadas)[number]) => j.ejemplo ?? /ejemplo/i.test(aviso);
+    const ejemplo = jornadas.slice(0, 4).some(deEjemplo);
+    titulosDeEjemplo = jornadas.filter(deEjemplo).map(j => j.titulo.toLowerCase());
     const lineas = jornadas.slice(0, 4).map(j =>
-      `- ${j.titulo}${ejemplo ? ' [Datos de ejemplo]' : ''}: ${fmt.larga(j.inicio)}, ${fmt.hora(j.inicio)} a ${fmt.hora(j.fin)}, en ${j.punto_encuentro}. ` +
+      `- ${j.titulo}${deEjemplo(j) ? ' [Datos de ejemplo]' : ''}: ${fmt.larga(j.inicio)}, ${fmt.hora(j.inicio)} a ${fmt.hora(j.fin)}, en ${j.punto_encuentro}. ` +
       `Cupos libres: ${Math.max(0, j.cupos - j.inscritos)} de ${j.cupos}. Inscripción: ${enlaceInvitacion(j)} · Ese día, con Zanky: ${enlaceEventoZanky(j)}` +
       (canal === 'whatsapp' ? ' (o escribir «jornadas» aquí)' : ''),
     );
     return `Próximas jornadas (datos de la plataforma). Cuando hables de una, da su enlace de inscripción.` +
-      (ejemplo ? ' Son DATOS DE EJEMPLO de la demostración: dilo siempre al mencionarlas (por ejemplo «ojo, por ahora son datos de ejemplo»).' : '') +
+      (ejemplo ? ' Las marcadas [Datos de ejemplo] son de la demostración: dilo siempre al mencionarlas (por ejemplo «ojo, esa es de ejemplo»). Las demás son reales.' : '') +
       ' Escribe las direcciones web tal cual, sin corchetes ni formato de enlace.' +
       `\n${lineas.join('\n')}`;
   } catch {
