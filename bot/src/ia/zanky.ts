@@ -54,13 +54,15 @@ async function contextoJornadas(canal: Canal): Promise<string> {
   try {
     const { jornadas, aviso } = await proximasJornadas();
     if (!jornadas.length) return 'Próximas jornadas: no hay jornadas publicadas por ahora.';
+    const ejemplo = /ejemplo/i.test(aviso);
     const lineas = jornadas.slice(0, 4).map(j =>
-      `- ${j.titulo}: ${fmt.larga(j.inicio)}, ${fmt.hora(j.inicio)} a ${fmt.hora(j.fin)}, en ${j.punto_encuentro}. ` +
+      `- ${j.titulo}${ejemplo ? ' [Datos de ejemplo]' : ''}: ${fmt.larga(j.inicio)}, ${fmt.hora(j.inicio)} a ${fmt.hora(j.fin)}, en ${j.punto_encuentro}. ` +
       `Cupos libres: ${Math.max(0, j.cupos - j.inscritos)} de ${j.cupos}. Inscripción: ${enlaceInvitacion(j)} · Ese día, con Zanky: ${enlaceEventoZanky(j)}` +
       (canal === 'whatsapp' ? ' (o escribir «jornadas» aquí)' : ''),
     );
     return `Próximas jornadas (datos de la plataforma). Cuando hables de una, da su enlace de inscripción.` +
-      (aviso ? ` Aviso de la plataforma: «${aviso}»; si dice «Datos de ejemplo», acláralo en una frase corta.` : '') +
+      (ejemplo ? ' Son DATOS DE EJEMPLO de la demostración: dilo siempre al mencionarlas (por ejemplo «ojo, por ahora son datos de ejemplo»).' : '') +
+      ' Escribe las direcciones web tal cual, sin corchetes ni formato de enlace.' +
       `\n${lineas.join('\n')}`;
   } catch {
     return 'Próximas jornadas: no se pudieron consultar ahora; sugiere verlas en mimanglar.sentralabs.co/plataforma/jornadas.';
@@ -111,6 +113,9 @@ export async function responder(historial: Turno[], canal: Canal): Promise<strin
 /** Por si el modelo se sale del formato: WhatsApp resalta con *un* asterisco y ninguno usa títulos #. */
 export function aFormato(texto: string, canal: Canal): string {
   let t = texto.replace(/^#{1,6}\s+/gm, '');
-  if (canal === 'whatsapp') t = t.replace(/\*\*(.+?)\*\*/g, '*$1*');
+  if (canal === 'whatsapp') {
+    t = t.replace(/\*\*(.+?)\*\*/g, '*$1*');
+    t = t.replace(/\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)/g, (_m, txt: string, url: string) => (txt.trim() === url ? url : `${txt}: ${url}`));
+  }
   return t.trim();
 }
