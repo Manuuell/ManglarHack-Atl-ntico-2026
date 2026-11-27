@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -14,6 +15,7 @@ import '../../nucleo/tema.dart';
 import '../../nucleo/base/transicion_pestanas.dart';
 import '../mis_reportes/detalle_reporte.dart';
 import '../reporte/flujo_reporte.dart';
+import 'capa_prioridad.dart';
 import 'controles.dart';
 import 'hojas.dart';
 import 'marcadores.dart';
@@ -87,10 +89,19 @@ class _PantallaMapaState extends State<PantallaMapa>
   bool _preparado = false;
   late final Widget _capaTeselas;
   late final Widget _capaZonas;
+  late final Widget _capaContorno;
   final _capaResalte = <String, Widget>{};
   final _limitesZona = <String, LatLngBounds>{};
   late LatLngBounds _limitesTodo;
   late MapOptions _opciones;
+
+  // Capa de prioridades de conservación de la CRA: se lee de los assets la primera vez que se
+  // pide y se queda en memoria (sin red). El manglar sigue siendo la capa por defecto.
+  CapaMapa _capa = CapaMapa.manglar;
+  CapaPrioridadMapa? _prioridad;
+  bool _cargandoPrioridad = false;
+  bool _falloPrioridad = false;
+  PoligonoPrioridad? _prioridadSel;
 
   // Datos del mapa.
   int _firma = 0;
@@ -158,6 +169,8 @@ class _PantallaMapaState extends State<PantallaMapa>
     // Los 144 polígonos (~21 000 vértices) se crean aquí, una sola vez. flutter_map los
     // simplifica según el zoom y deja de dibujar los que quedan fuera de la pantalla.
     final base = <Polygon>[];
+    final contorno = <Polygon>[];
+    final bordeContorno = Zc.raiz.withValues(alpha: 0.85);
     for (final z in _manglar.zonas) {
       _limitesZona[z.id] = limitesDe(z.cajas);
       for (final anillo in z.poligonos) {
@@ -169,6 +182,7 @@ class _PantallaMapaState extends State<PantallaMapa>
             borderStrokeWidth: 1.4,
           ),
         );
+        contorno.add(Polygon(points: anillo, borderColor: bordeContorno, borderStrokeWidth: 1.2));
       }
       _capaResalte[z.id] = PolygonLayer(
         polygons: [
@@ -184,6 +198,8 @@ class _PantallaMapaState extends State<PantallaMapa>
       );
     }
     _capaZonas = PolygonLayer(polygons: base, polygonCulling: true);
+    // Con la capa de prioridades, el manglar queda solo como contorno (sin relleno que mezcle).
+    _capaContorno = PolygonLayer(polygons: contorno, polygonCulling: true);
 
     _capaTeselas = TileLayer(
       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -433,9 +449,69 @@ class _PantallaMapaState extends State<PantallaMapa>
     _volar(ajuste.center, math.max(ajuste.zoom, _mapa.camera.zoom + 1));
   }
 
+  // ------------------------------------------------------------------ capa de prioridades
+
+  void _elegirCapa(CapaMapa c) {
+    if (c == _capa) return;
+    setState(() {
+      _capa = c;
+      _prioridadSel = null;
+    });
+    if (c == CapaMapa.prioridad && _prioridad == null) _cargarPrioridad();
+  }
+
+  Future<void> _cargarPrioridad() async {
+    if (_cargandoPrioridad) return;
+    setState(() {
+      _cargandoPrioridad = true;
+      _falloPrioridad = false;
+    });
+    try {
+      final capa = await CapaPrioridadMapa.cargador();
+      if (!mounted) return;
+      setState(() => _prioridad = capa);
+    } catch (_) {
+      if (mounted) setState(() => _falloPrioridad = true);
+    } finally {
+      if (mounted) setState(() => _cargandoPrioridad = false);
+    }
+  }
+
+  /// Hoja del polígono de prioridad tocado; mientras está abierta, queda resaltado.
+  Future<void> _abrirPrioridad(PoligonoPrioridad q) async {
+    setState(() => _prioridadSel = q);
+    await abrirHojaPrioridad(context, poligono: q);
+    if (mounted && _prioridadSel == q) setState(() => _prioridadSel = null);
+  }
+
+  /// El polígono resaltado: un solo `Polygon` con el borde gordo (se arma al tocar).
+  Widget _capaPrioridadSel() {
+    final q = _prioridadSel;
+    if (q == null) return const SizedBox.shrink();
+    List<LatLng> pts(Float64List r) => [for (var i = 0; i < r.length; i += 2) LatLng(r[i + 1], r[i])];
+    return PolygonLayer(
+      polygons: [
+        Polygon(
+          points: pts(q.anillos.first),
+          holePointsList: q.anillos.length > 1 ? [for (var h = 1; h < q.anillos.length; h++) pts(q.anillos[h])] : null,
+          color: colorPrioridadCra(q.prioridad).withValues(alpha: 0.2),
+          borderColor: Zc.raiz,
+          borderStrokeWidth: 3,
+        ),
+      ],
+    );
+  }
+
   // ------------------------------------------------------------------ toques y hojas
 
   void _alTocarMapa(TapPosition posicion, LatLng p) {
+    if (_capa == CapaMapa.prioridad) {
+      final q = _prioridad?.en(p);
+      if (q != null) {
+        _abrirPrioridad(q);
+        return;
+      }
+    }
     final u = _manglar.ubicar(p);
     // Un poco de margen para el dedo: los bordes del manglar son finos.
     final margen = metrosPorPixel(p.latitude, _mapa.camera.zoom) * 18;
@@ -633,7 +709,12 @@ class _PantallaMapaState extends State<PantallaMapa>
             options: _opciones,
             children: [
               _capaTeselas,
-              _capaZonas,
+              _capa == CapaMapa.manglar ? _capaZonas : const SizedBox.shrink(),
+              if (_capa == CapaMapa.prioridad) ...[
+                _prioridad?.capa ?? const SizedBox.shrink(),
+                _capaPrioridadSel(),
+                _capaContorno,
+              ],
               _capaResalte[_zonaSel] ?? const SizedBox.shrink(),
               // Con el mapa lejos, el nombre de cada zona (de cerca, el polígono habla solo).
               ValueListenableBuilder<int>(
@@ -828,6 +909,22 @@ class _PantallaMapaState extends State<PantallaMapa>
                     }),
                   ),
                 ),
+              Align(
+                alignment: Alignment.bottomLeft,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: SelectorCapa(
+                      capa: _capa,
+                      alElegir: _elegirCapa,
+                      cargando: _cargandoPrioridad,
+                      fallo: _falloPrioridad,
+                      alReintentar: _cargarPrioridad,
+                    ),
+                  ),
+                ),
+              ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [

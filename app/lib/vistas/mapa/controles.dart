@@ -3,10 +3,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../datos/prioridad.dart';
+import '../../datos/zonas.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
+import 'capa_prioridad.dart';
 import 'marcadores.dart';
 
 /// Superficie de vidrio, igual que la barra de pestañas: se ve el mapa detrás.
@@ -347,6 +349,206 @@ class _Clave extends StatelessWidget {
           ],
         ),
       );
+}
+
+/// Control segmentado «Manglar | Prioridad CRA» y, con la prioridad activa, su leyenda compacta
+/// (Alta / Media / Baja) en la misma pieza de vidrio: no tapa más mapa que una píldora.
+class SelectorCapa extends StatelessWidget {
+  const SelectorCapa({
+    super.key,
+    required this.capa,
+    required this.alElegir,
+    this.cargando = false,
+    this.fallo = false,
+    this.alReintentar,
+  });
+
+  final CapaMapa capa;
+  final ValueChanged<CapaMapa> alElegir;
+
+  /// Se está leyendo la capa de prioridades de los assets.
+  final bool cargando;
+
+  /// La lectura falló (no debería: el archivo viene dentro de la app).
+  final bool fallo;
+  final VoidCallback? alReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final verPrioridad = capa == CapaMapa.prioridad;
+    return Vidrio(
+      radio: 22,
+      relleno: const EdgeInsets.all(4),
+      child: AnimatedSize(
+        duration: context.resolveDuration(Zm.medio),
+        curve: Zm.entrar,
+        alignment: Alignment.topCenter,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Semantics(
+              container: true,
+              label: 'Capa del mapa',
+              child: Row(
+                children: [
+                  for (final c in CapaMapa.values)
+                    Expanded(
+                      child: _Segmento(
+                        texto: c.nombre,
+                        icono: c == CapaMapa.manglar ? Icons.eco_rounded : Icons.layers_rounded,
+                        elegido: capa == c,
+                        ocupado: c == CapaMapa.prioridad && cargando && capa == c,
+                        alTocar: () => alElegir(c),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (verPrioridad)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+                child: fallo
+                    ? Row(
+                        children: [
+                          const Icon(Icons.error_outline_rounded, size: 18, color: Zc.fango),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'No pude leer la capa de prioridades.',
+                              style: tt.bodySmall?.copyWith(color: Zc.texto),
+                            ),
+                          ),
+                          if (alReintentar != null)
+                            Presionable(
+                              etiqueta: 'Reintentar la capa de prioridades',
+                              onTap: alReintentar,
+                              child: Container(
+                                constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+                                alignment: Alignment.center,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: Text('Reintentar', style: tt.labelMedium?.copyWith(color: Zc.hoja)),
+                              ),
+                            ),
+                        ],
+                      )
+                    : Semantics(
+                        container: true,
+                        label: 'Leyenda de la prioridad de conservación de la CRA: '
+                            'alta, media y baja. Toca una zona del mapa para ver su acción y escenario.',
+                        excludeSemantics: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Wrap(
+                              spacing: 14,
+                              runSpacing: 4,
+                              children: [
+                                for (final p in PrioridadCRA.values) _MuestraPrioridad(p),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Toca una zona para ver su acción y escenario',
+                              style: tt.bodySmall?.copyWith(color: Zc.textoSuave),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Segmento extends StatelessWidget {
+  const _Segmento({
+    required this.texto,
+    required this.icono,
+    required this.elegido,
+    required this.alTocar,
+    this.ocupado = false,
+  });
+
+  final String texto;
+  final IconData icono;
+  final bool elegido;
+  final bool ocupado;
+  final VoidCallback alTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final tinta = elegido ? Colors.white : Zc.raiz;
+    return Semantics(
+      inMutuallyExclusiveGroup: true,
+      selected: elegido,
+      child: Presionable(
+        etiqueta: elegido ? '$texto, capa activa' : 'Ver la capa $texto',
+        onTap: elegido ? null : alTocar,
+        child: AnimatedContainer(
+          duration: context.resolveDuration(Zm.corto),
+          curve: Zm.entrar,
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: elegido ? Zc.hoja : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (ocupado)
+                SizedBox.square(
+                  dimension: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2.2, color: tinta),
+                )
+              else
+                Icon(icono, size: 17, color: tinta),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  texto,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(color: tinta),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MuestraPrioridad extends StatelessWidget {
+  const _MuestraPrioridad(this.p);
+  final PrioridadCRA p;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = colorPrioridadCra(p);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 18,
+          height: 14,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: Color.lerp(color, Zc.raiz, 0.35)!, width: p == PrioridadCRA.alta ? 2 : 1.2),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(p.nombre, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Zc.texto)),
+      ],
+    );
+  }
 }
 
 /// Estado vacío honesto: nada inventado, con Zanky y la siguiente acción.
