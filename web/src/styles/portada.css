@@ -100,7 +100,7 @@ body.portada {
 .cab.flotante .cab-marca .logo-cra { height: 32px; filter: brightness(0) saturate(100%) invert(11%) sepia(39%) saturate(2410%) hue-rotate(181deg) brightness(92%); }
 .cab-marca .sep { width: 1px; height: 26px; background: currentColor; opacity: .3; }
 .cab-marca .nombre { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-titulo); font-weight: 800; font-size: 21px; letter-spacing: -.04em; }
-.cab-marca .nombre img { width: 30px; height: 30px; object-fit: contain; }
+.cab-marca .nombre img { width: 36px; height: 36px; object-fit: contain; }
 .cab-nav { display: flex; gap: 2px; margin-inline: auto; }
 .cab-nav a {
   text-decoration: none; font-weight: 500; font-size: 15px; padding: 9px 14px; border-radius: 999px;
@@ -120,7 +120,7 @@ body.portada {
   .cab-marca { gap: 9px; }
   .cab-marca .logo-cra { height: 32px; }
   .cab-marca .nombre { font-size: 18px; }
-  .cab-marca .nombre img { width: 26px; height: 26px; }
+  .cab-marca .nombre img { width: 32px; height: 32px; }
 }
 
 /* -- hero ---------------------------------------------------------------------- */
