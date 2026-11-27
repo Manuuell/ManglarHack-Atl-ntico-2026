@@ -18,6 +18,7 @@ Future<void> abrirHojaZona(
   required int ultimas24h,
   required int mios,
   required VoidCallback alReportar,
+  String textoVacio = 'Todavía no hay reportes en esta zona.',
 }) {
   return mostrarHojaZ<void>(
     context,
@@ -25,7 +26,7 @@ Future<void> abrirHojaZona(
     contenido: (c) {
       final tt = Theme.of(c).textTheme;
       final cuantos = reportes == 0
-          ? 'Todavía no hay reportes en esta zona.'
+          ? textoVacio
           : '$reportes ${reportes == 1 ? 'reporte' : 'reportes'} aquí'
               '${ultimas24h > 0 ? ' · $ultimas24h en las últimas 24 h' : ''}'
               '${mios > 0 ? ' · ${mios == 1 ? '1 es tuyo' : '$mios son tuyos'}' : ''}';

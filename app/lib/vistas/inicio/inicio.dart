@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../datos/estado.dart';
@@ -284,12 +286,47 @@ class _Progreso extends StatelessWidget {
   }
 }
 
-class _TarjetaClima extends StatelessWidget {
+class _TarjetaClima extends StatefulWidget {
   const _TarjetaClima({required this.estado});
   final EstadoZanky estado;
 
   @override
+  State<_TarjetaClima> createState() => _TarjetaClimaState();
+}
+
+class _TarjetaClimaState extends State<_TarjetaClima> {
+  /// La lectura del tiempo tarda como mucho 8 s; pasado ese margen sin datos y sin caché
+  /// el esqueleto deja de mentir («cargando») y la tarjeta dice la verdad.
+  static const _espera = Duration(seconds: 10);
+  bool _esperando = true;
+  Timer? _plazo;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.estado.clima == null) _plazo = Timer(_espera, _vencio);
+  }
+
+  void _vencio() {
+    if (mounted) setState(() => _esperando = false);
+  }
+
+  Future<void> _reintentar() async {
+    _plazo?.cancel();
+    setState(() => _esperando = true);
+    await widget.estado.cargarClima();
+    if (mounted) setState(() => _esperando = false);
+  }
+
+  @override
+  void dispose() {
+    _plazo?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final estado = widget.estado;
     final tt = Theme.of(context).textTheme;
     final c = estado.clima;
     return Padding(
@@ -297,7 +334,9 @@ class _TarjetaClima extends StatelessWidget {
       child: TarjetaZ(
         color: Zc.cienagaClara,
         child: c == null
-            ? const Skeleton(width: double.infinity, height: 92)
+            ? (_esperando
+                ? const Skeleton(width: double.infinity, height: 92)
+                : _ClimaSinDatos(onReintentar: _reintentar))
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -305,7 +344,12 @@ class _TarjetaClima extends StatelessWidget {
                     children: [
                       const Icon(Icons.water_rounded, color: Zc.cienaga, size: 18),
                       const SizedBox(width: 6),
-                      Expanded(child: Text('Ciénaga de Mallorquín, ahora', style: tt.labelMedium?.copyWith(color: Zc.cienaga))),
+                      Expanded(
+                        child: Text(
+                          estado.climaDeCache ? 'Ciénaga de Mallorquín, última lectura' : 'Ciénaga de Mallorquín, ahora',
+                          style: tt.labelMedium?.copyWith(color: Zc.cienaga),
+                        ),
+                      ),
                       if (estado.climaDeCache)
                         Text('sin señal · ${haceCuanto(c.leido)}', style: tt.labelSmall),
                     ],
@@ -335,6 +379,36 @@ class _TarjetaClima extends StatelessWidget {
                 ],
               ),
       ),
+    );
+  }
+}
+
+/// Sin señal y sin ninguna lectura guardada: se dice, sin esqueleto animado, y se puede
+/// volver a intentar.
+class _ClimaSinDatos extends StatelessWidget {
+  const _ClimaSinDatos({required this.onReintentar});
+  final VoidCallback onReintentar;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Row(
+      children: [
+        const Icon(Icons.cloud_off_rounded, color: Zc.cienaga, size: 22),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Sin señal por ahora', style: tt.titleSmall?.copyWith(color: Zc.texto)),
+              const SizedBox(height: 2),
+              Text('El tiempo de la ciénaga aparece cuando vuelva la conexión.', style: tt.bodySmall),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        TextButton(onPressed: onReintentar, child: const Text('Reintentar')),
+      ],
     );
   }
 }

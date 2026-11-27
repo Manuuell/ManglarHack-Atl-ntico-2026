@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../datos/estado.dart';
+import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
@@ -14,15 +15,16 @@ import 'paso_tipo.dart';
 import 'paso_ubicacion.dart';
 
 /// Abre el flujo de reporte a pantalla completa. [tipo] llega elegido desde el inicio
-/// (y entonces se empieza en «¿Dónde?»).
-Future<void> abrirReporte(BuildContext context, {TipoAmenaza? tipo}) {
+/// (y entonces se empieza en «¿Dónde?»). [zonaId] centra el mapa de «¿Dónde?» en esa
+/// zona mientras no haya GPS.
+Future<void> abrirReporte(BuildContext context, {TipoAmenaza? tipo, String? zonaId}) {
   final estado = Zanky.leer(context);
   return Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder<void>(
       fullscreenDialog: true,
       transitionDuration: Zm.largo,
       reverseTransitionDuration: Zm.medio,
-      pageBuilder: (_, _, _) => FlujoReporte(estado: estado, tipo: tipo),
+      pageBuilder: (_, _, _) => FlujoReporte(estado: estado, tipo: tipo, zonaId: zonaId),
       // Sube desde abajo como una hoja grande: se entiende que es una tarea aparte.
       transitionsBuilder: (_, a, _, hijo) => SlideTransition(
         position: Tween(begin: const Offset(0, 1), end: Offset.zero)
@@ -34,9 +36,10 @@ Future<void> abrirReporte(BuildContext context, {TipoAmenaza? tipo}) {
 }
 
 class FlujoReporte extends StatefulWidget {
-  const FlujoReporte({super.key, required this.estado, this.tipo});
+  const FlujoReporte({super.key, required this.estado, this.tipo, this.zonaId});
   final EstadoZanky estado;
   final TipoAmenaza? tipo;
+  final String? zonaId;
 
   @override
   State<FlujoReporte> createState() => _FlujoReporteState();
@@ -99,13 +102,43 @@ class _FlujoReporteState extends State<FlujoReporte> {
       return;
     }
     vibrar(Vibracion.media);
-    final r = await _b.enviar();
+    final Reporte r;
+    try {
+      r = await _b.enviar();
+    } catch (_) {
+      // Casi siempre es el guardado de la foto (sin espacio en el navegador o el teléfono).
+      if (mounted) await _avisarFalloGuardado();
+      return;
+    }
     if (!mounted) return;
     await Navigator.of(context).pushReplacement(PageRouteBuilder<void>(
       transitionDuration: Zm.largo,
       pageBuilder: (_, _, _) => ReporteEnviado(reporteId: r.id),
       transitionsBuilder: (_, a, _, hijo) => FadeTransition(opacity: a, child: hijo),
     ));
+  }
+
+  /// El guardado falló: nada se perdió (el borrador sigue aquí). Se ofrece reintentar o,
+  /// si hay foto, seguir sin ella (la foto es lo que más espacio pide).
+  Future<void> _avisarFalloGuardado() async {
+    final conFoto = _b.foto != null;
+    final seguirSinFoto = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('No pude guardar tu reporte'),
+        content: Text(conFoto
+            ? 'Puede que no quede espacio para guardar la foto. No perdiste nada: puedes reintentar o guardar el reporte sin foto.'
+            : 'Puede que no quede espacio para guardarlo. No perdiste nada: puedes reintentar.'),
+        actions: [
+          if (conFoto) TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Seguir sin foto')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Reintentar')),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (seguirSinFoto == true) _b.quitarFoto();
+    if (seguirSinFoto != null) await _siguiente();
   }
 
   Future<void> _cerrar() async {
@@ -169,7 +202,7 @@ class _FlujoReporteState extends State<FlujoReporte> {
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
                     PasoTipo(borrador: _b, onElegido: () => _ir(1)),
-                    PasoUbicacion(borrador: _b),
+                    PasoUbicacion(borrador: _b, zonaId: widget.zonaId),
                     PasoEvidencia(borrador: _b),
                     PasoDetalles(borrador: _b),
                   ],

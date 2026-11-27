@@ -17,6 +17,14 @@ String fechaLarga(DateTime t) {
   return '${l.day} ${_meses[l.month - 1]} ${l.year}, $hm';
 }
 
+/// El hallazgo 17 agrega `Envio.rechazado` (el servidor dijo que no, y reintentar no
+/// sirve). Se mira por nombre para que esta pantalla compile antes y después del cambio.
+bool envioRechazado(Reporte r) => r.envio.name == 'rechazado';
+
+/// La nota con la que el teléfono apunta «Recibido» al crear el reporte: es un apunte
+/// local, no un aviso de la CRA, y no debe salir como si lo fuera.
+bool _notaLocal(CambioEstado c) => c.nota?.trim() == 'Creado en el teléfono';
+
 enum _Fase { hecho, actual, futuro }
 
 class _Paso {
@@ -45,7 +53,8 @@ class LineaTiempo extends StatelessWidget {
 
   CambioEstado? _cambio(EstadoReporte s) {
     for (final c in reporte.historial.reversed) {
-      if (c.estado == s) return c;
+      // El apunte local de «Recibido» (hora de captura) no vale: «Recibido» lo dice la CRA.
+      if (c.estado == s && !(s == EstadoReporte.recibido && _notaLocal(c))) return c;
     }
     return null;
   }
@@ -70,6 +79,15 @@ class LineaTiempo extends StatelessWidget {
           fase: _Fase.hecho,
           color: Zc.cienaga,
           icono: Icons.cloud_done_rounded,
+        )
+      else if (envioRechazado(r))
+        const _Paso(
+          titulo: 'La CRA no pudo recibirlo',
+          detalle: 'El servidor rechazó este reporte y reintentar no lo arregla. '
+              'Revisa la ubicación y la información, o haz uno nuevo.',
+          fase: _Fase.actual,
+          color: Zc.fango,
+          icono: Icons.error_outline_rounded,
         )
       else
         _Paso(
@@ -103,6 +121,7 @@ class LineaTiempo extends StatelessWidget {
         pasos.add(_Paso(
           titulo: s.nombre,
           detalle: lineas.isEmpty ? null : lineas.join('\n'),
+          // «Recibido» sin aviso real de la CRA: la hora en que salió del teléfono.
           fecha: cambio?.fecha ?? (s == EstadoReporte.recibido ? r.enviadoEn : null),
           fase: actual ? _Fase.actual : _Fase.hecho,
           color: ChipEstado.colorDe(s),
@@ -269,6 +288,11 @@ class _PuntoLatiendo extends StatefulWidget {
 
 class _PuntoLatiendoState extends State<_PuntoLatiendo> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+  // La curva y los Tween se crean una vez: crearlos en build sumaba un listener al
+  // controlador por cada reconstrucción.
+  late final CurvedAnimation _curva = CurvedAnimation(parent: _c, curve: Curves.easeInOut);
+  late final Animation<double> _escala = Tween(begin: 1.0, end: 1.65).animate(_curva);
+  late final Animation<double> _opacidad = Tween(begin: 0.45, end: 0.0).animate(_curva);
 
   @override
   void didChangeDependencies() {
@@ -283,13 +307,13 @@ class _PuntoLatiendoState extends State<_PuntoLatiendo> with SingleTickerProvide
 
   @override
   void dispose() {
+    _curva.dispose();
     _c.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final curva = CurvedAnimation(parent: _c, curve: Curves.easeInOut);
     return RepaintBoundary(
       child: SizedBox(
         width: 28,
@@ -299,9 +323,9 @@ class _PuntoLatiendoState extends State<_PuntoLatiendo> with SingleTickerProvide
           alignment: Alignment.center,
           children: [
             ScaleTransition(
-              scale: Tween(begin: 1.0, end: 1.65).animate(curva),
+              scale: _escala,
               child: FadeTransition(
-                opacity: Tween(begin: 0.45, end: 0.0).animate(curva),
+                opacity: _opacidad,
                 child: Container(
                   width: 28,
                   height: 28,

@@ -104,7 +104,7 @@ class _PasoDetallesState extends State<PasoDetalles> {
             titulo: 'Reportar en anónimo',
             detalle: b.anonimo
                 ? 'La CRA no sabrá quién eres. Pesa un poco menos en la confianza.'
-                : 'Tu nombre ayuda a la CRA a confiar en el reporte. Nunca se publica.',
+                : 'Va con tu código de guardián, no con tu nombre. Ayuda a la CRA a confiar en el reporte.',
             valor: b.anonimo,
             onCambio: (v) => b.cambiar(() => b.anonimo = v),
           ),
