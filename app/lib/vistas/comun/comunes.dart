@@ -88,7 +88,7 @@ class ChipEstado extends StatelessWidget {
       Envio.enCola => ('En el teléfono · se envía con señal', Zc.textoSuave, Icons.schedule_rounded),
       Envio.enviando => ('Enviando…', Zc.cienaga, Icons.cloud_upload_rounded),
       Envio.error => ('Reintentando', Zc.sol, Icons.refresh_rounded),
-      Envio.rechazado => ('La CRA no pudo recibirlo', Zc.prioridad[5]!, Icons.error_outline_rounded),
+      Envio.rechazado => ('No se pudo enviar', Zc.prioridad[5]!, Icons.error_outline_rounded),
       Envio.enviado => (reporte.estado.nombre, _colorEstado(reporte.estado), _iconoEstado(reporte.estado)),
     };
     return Row(

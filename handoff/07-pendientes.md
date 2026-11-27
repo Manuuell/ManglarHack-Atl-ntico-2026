@@ -30,13 +30,13 @@ Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
 - [ ] **Todos** — Validar con los mentores (antes de las 11:00): lista de **tipos de amenaza**, su **gravedad**, la
   **prioridad de conservación** de cada zona y el nombre de Zanky con los mentores comunitarios.
 - [ ] **Todos** — Pedir la **rúbrica del jurado** y alinear el pitch con ella.
-- [ ] **Todos** — Cuando llegue el **KMZ de la CRA**: guardarlo en `datos/cra/`, convertirlo a GeoJSON y regenerar
-  `app/assets/datos/manglar_zonas.json` (`node app/tool/preparar_zonas.mjs ruta.geojson`) y `backend/supabase/zonas.sql`.
+- [x] **Todos** — KMZ de la CRA convertido: `app/assets/datos/manglar_zonas.json` y `prioridades_cra.json`
+  (`node app/tool/preparar_capas_cra.mjs`) y el SQL en partes (`node backend/supabase/generar_zonas.mjs`).
 
 ## B. Backend común (`backend/`, Á)
 
 - [x] Esquema propuesto: PostGIS, RLS, roles en una sola función, auditoría, datos abiertos, realtime.
-- [ ] **Á** — Crear el proyecto Supabase (cuenta del equipo) y correr `schema.sql` → `zonas.sql` → `seed_demo.sql`.
+- [ ] **Á** — Crear el proyecto Supabase (cuenta del equipo) y correr `schema.sql` → `zonas-1..3.sql` → `prioridades-1..6.sql` → `seed_demo.sql` (orden y pesos en `backend/supabase/README.md` §1).
 - [ ] **Á** — Prueba de punta a punta contra la base real (los 6 riesgos de `backend/supabase/README.md`).
 - [ ] Límite por IP para reportes anónimos (función en el borde).
 - [ ] Quitar metadatos (EXIF/GPS) de las fotos en el servidor.

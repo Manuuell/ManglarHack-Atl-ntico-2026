@@ -18,6 +18,7 @@ import 'package:zanky/nucleo/tema.dart';
 import 'package:zanky/vistas/reporte/borrador.dart';
 import 'package:zanky/vistas/reporte/enviado.dart';
 import 'package:zanky/vistas/reporte/flujo_reporte.dart';
+import 'package:zanky/vistas/reporte/paso_detalles.dart';
 import 'package:zanky/vistas/reporte/paso_ubicacion.dart';
 
 late Manglar _manglar;
@@ -27,12 +28,15 @@ class _EstadoQueFalla extends EstadoZanky {
   int fallos = 1;
   int llamadas = 0;
 
+  /// Si no es null, se lanza esto en vez de «sin espacio».
+  Object? errorQueLanza;
+
   @override
   Future<Reporte> agregar(Reporte r, Uint8List? foto) async {
     llamadas++;
     if (fallos > 0) {
       fallos--;
-      throw const FileSystemException('No space left on device');
+      throw errorQueLanza ?? const FileSystemException('No space left on device');
     }
     return super.agregar(r, foto);
   }
@@ -115,6 +119,17 @@ void main() {
       expect(detalle(Envio.error, error: 'TimeoutException'), contains('No se pudo enviar todavía'));
     });
 
+    test('un rechazo definitivo dice el motivo, también sin señal', () {
+      final r = _reporte(Envio.rechazado)..motivoRechazo = 'El punto queda fuera del Atlántico';
+      for (final linea in [true, false]) {
+        final t = textoEnvio(r: r, servidorConfigurado: true, enLinea: linea);
+        expect(t.$1, 'No se pudo enviar');
+        expect(t.$2, 'El punto queda fuera del Atlántico');
+      }
+      expect(textoEnvio(r: _reporte(Envio.rechazado), servidorConfigurado: true, enLinea: true).$2,
+          'El servidor no aceptó este reporte.');
+    });
+
     test('demostración y enviado', () {
       expect(detalle(Envio.enCola, conf: false), contains('Modo demostración'));
       final enviado = detalle(Envio.enviado);
@@ -179,6 +194,16 @@ void main() {
     });
   });
 
+  testWidgets('«Reportar aquí» desde el mapa: el flujo llega con el punto ya marcado', (tester) async {
+    final e = EstadoZanky()..manglar = _manglar;
+    final z = _manglar.zonas.first;
+    final punto = LatLng(z.centro.latitude, z.centro.longitude);
+    await _montar(tester, e, FlujoReporte(estado: e, tipo: TipoAmenaza.quema, punto: punto));
+    // Sin tocar el mapa: el punto prellenado ya se puede usar.
+    expect(find.text('Usar este punto'), findsOneWidget);
+    await _cerrar(tester);
+  });
+
   testWidgets('si el guardado falla, avisa con amabilidad y deja reintentar', (tester) async {
     final e = _EstadoQueFalla()..manglar = _manglar;
     // Se prueba el flujo real: el borrador propio del flujo recibe el punto con un toque.
@@ -192,16 +217,96 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.textContaining('Guardar reporte'));
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600)); // la hoja se monta en el cuadro siguiente y sube
 
     expect(find.text('No pude guardar tu reporte'), findsOneWidget);
     expect(e.llamadas, 1);
 
     await tester.tap(find.text('Reintentar'));
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump(const Duration(milliseconds: 600));
+    // Se cierra la hoja, guarda, el ✓ del botón se dibuja y pasa a la confirmación.
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(e.llamadas, 2);
     expect(find.text('No pude guardar tu reporte'), findsNothing);
     expect(find.byType(ReporteEnviado), findsOneWidget);
     await _cerrar(tester);
+  });
+
+  testWidgets('un error que no es de espacio muestra su mensaje y no ofrece «Seguir sin foto»', (tester) async {
+    final e = _EstadoQueFalla()..manglar = _manglar;
+    e.errorQueLanza = StateError('algo raro');
+    await _montar(tester, e, FlujoReporte(estado: e, tipo: TipoAmenaza.quema));
+    await tester.tapAt(tester.getCenter(find.byType(FlutterMap)));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Usar este punto'));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.text('Seguir sin foto'));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.textContaining('Guardar reporte'));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600)); // la hoja se monta en el cuadro siguiente y sube
+
+    expect(find.textContaining('No pude guardar el reporte en'), findsOneWidget, reason: 'el mensaje real, no uno genérico');
+    expect(find.text('Seguir sin foto'), findsNothing);
+    await _cerrar(tester);
+  });
+
+  testWidgets('con el disco lleno el mensaje dice que falta espacio', (tester) async {
+    final e = _EstadoQueFalla()..manglar = _manglar;
+    await _montar(tester, e, FlujoReporte(estado: e, tipo: TipoAmenaza.quema));
+    await tester.tapAt(tester.getCenter(find.byType(FlutterMap)));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Usar este punto'));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.text('Seguir sin foto'));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.textContaining('Guardar reporte'));
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600)); // la hoja se monta en el cuadro siguiente y sube
+    expect(find.textContaining('No queda espacio'), findsOneWidget);
+    await _cerrar(tester);
+  });
+
+  group('punto fuera de lo que acepta el servidor', () {
+    testWidgets('no se puede usar ni seguir, y se dice por qué', (tester) async {
+      final e = EstadoZanky()..manglar = _manglar;
+      await _montar(tester, e, FlujoReporte(estado: e, tipo: TipoAmenaza.quema));
+      // Bogotá: fuera de la caja del servidor. Se marca en el borrador real del flujo.
+      final b = tester.widget<PasoUbicacion>(find.byType(PasoUbicacion)).borrador;
+      b.marcarEnMapa(const LatLng(4.711, -74.072));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(b.puntoAceptado, isFalse);
+      expect(find.text('Marca otro punto en el mapa'), findsOneWidget);
+      expect(find.text('Usar este punto'), findsNothing);
+      expect(find.textContaining('el servidor no lo recibe'), findsWidgets);
+      await tester.tap(find.text('Marca otro punto en el mapa'));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.byType(PasoUbicacion), findsOneWidget, reason: 'no avanzó al paso siguiente');
+      expect(find.text('Seguir sin foto'), findsNothing);
+
+      // Un punto del Atlántico lo vuelve a habilitar.
+      b.marcarEnMapa(const LatLng(11.05316, -74.85094));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Usar este punto'), findsOneWidget);
+      await _cerrar(tester);
+    });
+  });
+
+  group('LimitadorPuntosDeCodigo (diff G)', () {
+    const f = LimitadorPuntosDeCodigo(5);
+    TextEditingValue pega(String t) =>
+        f.formatEditUpdate(TextEditingValue.empty, TextEditingValue(text: t, selection: TextSelection.collapsed(offset: t.length)));
+
+    test('corta por puntos de código, no por unidades UTF-16', () {
+      final r = pega('😀😀😀😀😀😀😀'); // 7 emojis = 14 unidades UTF-16
+      expect(r.text.runes.length, 5);
+      expect(r.text, '😀😀😀😀😀');
+      expect(r.selection.baseOffset, r.text.length);
+    });
+
+    test('lo corto pasa igual', () {
+      expect(pega('hola').text, 'hola');
+    });
   });
 }

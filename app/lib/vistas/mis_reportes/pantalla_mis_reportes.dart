@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
-import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/base/esqueleto.dart';
+import '../../nucleo/kit/fila_deslizable.dart';
+import '../../nucleo/kit/menu_mantenido.dart';
+import '../../nucleo/kit/tirar_actualizar.dart';
+import 'detalle_reporte.dart';
+import '../../nucleo/kit/estado_vacio.dart';
+import '../../nucleo/kit/segmentado.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
-import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
-import 'detalle_reporte.dart';
-import 'linea_tiempo.dart' show envioRechazado;
+import 'gestos_reporte.dart';
 import 'tarjeta_reporte.dart';
 
 enum _Filtro { todos, pendientes, validados }
@@ -50,10 +53,12 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
 
   static String? _resumen(List<Reporte> todos) {
     final enCra = todos.where((r) => r.envio == Envio.enviado).length;
-    final enTel = todos.length - enCra;
+    final noAceptados = todos.where((r) => r.envio == Envio.rechazado).length;
+    final enTel = todos.length - enCra - noAceptados;
     final partes = [
       if (enCra > 0) '$enCra en la CRA',
       if (enTel > 0) '$enTel en el teléfono',
+      if (noAceptados > 0) '$noAceptados no aceptado${noAceptados == 1 ? '' : 's'}',
     ];
     return partes.isEmpty ? null : partes.join(' · ');
   }
@@ -63,14 +68,23 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
     final e = Zanky.de(context);
     final todos = e.reportes;
     final filtrados = todos.where(_pasa).toList();
-    final enTel = filtrados.where((r) => r.envio != Envio.enviado).toList();
+    final enTel = filtrados.where((r) => r.envio != Envio.enviado && r.envio != Envio.rechazado).toList();
+    final rechazados = filtrados.where((r) => r.envio == Envio.rechazado).toList();
     final enCra = filtrados.where((r) => r.envio == Envio.enviado).toList();
+
+    // Primera vuelta con el servidor y nada guardado todavía: esqueletos con la forma de las tarjetas.
+    final cargando = todos.isEmpty && e.servidor.configurado && e.sincronizando && e.ultimaSincronizacion == null;
 
     final filas = <Object>[
       if (enTel.isNotEmpty) ...[
         const _Seccion('En tu teléfono'),
         const _AvisoEnvio(),
         ...enTel,
+      ],
+      if (rechazados.isNotEmpty) ...[
+        const _Seccion('No aceptados'),
+        const _AvisoRechazados(),
+        ...rechazados,
       ],
       if (enCra.isNotEmpty) ...[
         const _Seccion('En la CRA'),
@@ -88,21 +102,24 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
           if (todos.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: _Segmentado(
+              child: SegmentadoZ(
                 valor: _filtro.index,
                 etiquetas: const ['Todos', 'Pendientes', 'Validados'],
                 alCambiar: (i) => setState(() => _filtro = _Filtro.values[i]),
               ),
             ),
           Expanded(
-            child: RefreshIndicator(
-              color: Zc.hoja,
-              backgroundColor: Zc.superficie,
-              onRefresh: _actualizar,
+            child: TirarActualizar(
+              alActualizar: _actualizar,
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
-                  if (todos.isEmpty)
+                  if (cargando)
+                    const SliverPadding(
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, 110),
+                      sliver: SliverToBoxAdapter(child: _EsqueletosLista()),
+                    )
+                  else if (todos.isEmpty)
                     const SliverFillRemaining(hasScrollBody: false, child: _VacioTotal())
                   else if (filtrados.isEmpty)
                     SliverFillRemaining(hasScrollBody: false, child: _VacioFiltro(_filtro))
@@ -126,10 +143,27 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
   Widget _fila(BuildContext context, Object fila, int i) {
     final Widget w;
     if (fila is Reporte) {
+      final acc = AccionesReporte(context, fila);
+      final quitable = EstadoZanky.sePuedeQuitar(fila);
+      final tarjeta = TarjetaReporte(
+        reporte: fila,
+        alTocar: () => abrirDetalleReporte(context, fila),
+      );
+      // Deslizar: derecha compartir, izquierda quitar. Mantener o clic derecho: menú con vista previa.
       w = Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: RepaintBoundary(
-          child: TarjetaReporte(reporte: fila, alTocar: () => abrirDetalleReporte(context, fila)),
+          child: MenuMantenido(
+            etiqueta: '${fila.tipo.nombre}, caso ${fila.caso}',
+            vistaPrevia: (_) => VistaPreviaReporte(reporte: fila),
+            acciones: [acc.abrir, acc.compartir, if (quitable) acc.quitar],
+            child: FilaDeslizable(
+              radio: BorderRadius.circular(Zr.l),
+              accionesInicio: [acc.compartir],
+              accionesFin: [if (quitable) acc.quitar],
+              hijo: tarjeta,
+            ),
+          ),
         ),
       );
     } else {
@@ -155,6 +189,24 @@ class _Seccion extends StatelessWidget {
       );
 }
 
+/// Explica qué pasó con los reportes que el servidor no aceptó (no se reintentan solos).
+class _AvisoRechazados extends StatelessWidget {
+  const _AvisoRechazados();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: Zc.solClaro, borderRadius: BorderRadius.circular(Zr.m)),
+          child: Text(
+            'El servidor no aceptó estos reportes y no se reenvían solos. Ábrelos para ver el motivo y volver a intentar.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Zc.texto),
+          ),
+        ),
+      );
+}
+
 /// Explica qué pasa con lo que sigue en el teléfono y deja enviarlo a mano.
 class _AvisoEnvio extends StatelessWidget {
   const _AvisoEnvio();
@@ -169,8 +221,6 @@ class _AvisoEnvio extends StatelessWidget {
       texto = 'Modo demostración: estos reportes se quedan en este teléfono, no se envían a nadie.';
     } else if (!e.enLinea) {
       texto = 'Sin señal por ahora. Se envían solos cuando vuelva; no tienes que hacer nada.';
-    } else if (e.reportes.any(envioRechazado)) {
-      texto = 'La CRA no pudo recibir alguno de tus reportes. Ábrelo para ver qué pasó.';
     } else if (conError) {
       texto = 'Alguno no pudo enviarse. Lo vuelvo a intentar solo, y también puedes probar ahora.';
     } else {
@@ -222,24 +272,14 @@ class _VacioTotal extends StatelessWidget {
   const _VacioTotal();
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 110),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const ZankyMascota(tamano: 190, animo: Animo.curioso),
-            const SizedBox(height: 20),
-            const BurbujaZanky(
-              texto: 'Aún no has reportado nada. Cuando veas algo raro en el manglar, tócame aquí abajo.',
-            ),
-            const SizedBox(height: 24),
-            BotonZ(
-              texto: 'Hacer mi primer reporte',
-              icono: Icons.add_a_photo_rounded,
-              onTap: () => abrirReporte(context),
-            ),
-          ],
-        ),
+  Widget build(BuildContext context) => EstadoVacio(
+        titulo: 'Aún no has reportado nada',
+        texto: 'Cuando veas algo raro en el manglar, tócame aquí abajo.',
+        tamanoZanky: 170,
+        conBurbuja: true,
+        textoAccion: 'Hacer mi primer reporte',
+        iconoAccion: Icons.add_a_photo_rounded,
+        alAccion: () => abrirReporte(context),
       );
 }
 
@@ -250,128 +290,42 @@ class _VacioFiltro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final (titulo, texto) = switch (filtro) {
-      _Filtro.pendientes => ('Nada pendiente', 'Todo lo que reportaste ya fue revisado. ¡Gracias por vigilar!'),
+    final (titulo, texto, animo) = switch (filtro) {
+      _Filtro.pendientes => ('Nada pendiente', 'Todo lo que reportaste ya fue revisado. ¡Gracias por vigilar!', Animo.feliz),
       _Filtro.validados => (
           'Aún no hay validados',
-          'Cuando la CRA o un vigía confirme uno de tus reportes, aparecerá aquí.'
+          'Cuando la CRA o un vigía confirme uno de tus reportes, aparecerá aquí.',
+          Animo.curioso
         ),
-      _Filtro.todos => ('Nada por aquí', 'No hay reportes que mostrar.'),
+      _Filtro.todos => ('Nada por aquí', 'No hay reportes que mostrar.', Animo.curioso),
     };
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 8, 32, 110),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return EstadoVacio(
+      // La llave lleva el filtro: al cambiar de pestaña Zanky vuelve a brotar.
+      key: ValueKey(filtro),
+      titulo: titulo,
+      texto: texto,
+      animo: animo,
+      tamanoZanky: 120,
+      relleno: const EdgeInsets.fromLTRB(32, 8, 32, 110),
+    );
+  }
+}
+
+/// Esqueletos con la forma de las tarjetas mientras llega la primera respuesta.
+class _EsqueletosLista extends StatelessWidget {
+  const _EsqueletosLista();
+
+  @override
+  Widget build(BuildContext context) => Column(
         children: [
-          const ZankyMascota(tamano: 110),
-          const SizedBox(height: 14),
-          Text(titulo, style: tt.titleLarge, textAlign: TextAlign.center),
-          const SizedBox(height: 6),
-          Text(texto, style: tt.bodyMedium, textAlign: TextAlign.center),
+          for (var i = 0; i < 4; i++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: EntradaEscalonada(
+                index: i,
+                child: const Skeleton(height: 130, borderRadius: BorderRadius.all(Radius.circular(Zr.l))),
+              ),
+            ),
         ],
-      ),
-    );
-  }
-}
-
-/// Selector de tres opciones propio: la píldora blanca se desliza con un resorte
-/// (solo `transform`, sin relayout) y cada opción mide 44 px de alto.
-class _Segmentado extends StatefulWidget {
-  const _Segmentado({required this.valor, required this.etiquetas, required this.alCambiar});
-  final int valor;
-  final List<String> etiquetas;
-  final ValueChanged<int> alCambiar;
-
-  @override
-  State<_Segmentado> createState() => _SegmentadoState();
-}
-
-class _SegmentadoState extends State<_Segmentado> with SingleTickerProviderStateMixin {
-  late final AnimationController _pos = AnimationController.unbounded(vsync: this, value: widget.valor.toDouble());
-
-  @override
-  void didUpdateWidget(_Segmentado old) {
-    super.didUpdateWidget(old);
-    if (old.valor == widget.valor) return;
-    final destino = widget.valor.toDouble();
-    if (context.animationsDisabled) {
-      _pos.value = destino;
-    } else {
-      _pos.animateWith(SpringSimulation(AppMotion.resorteFirme, _pos.value, destino, _pos.velocity));
-    }
-  }
-
-  @override
-  void dispose() {
-    _pos.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final n = widget.etiquetas.length;
-    final tt = Theme.of(context).textTheme;
-    return Container(
-      height: 44,
-      decoration: BoxDecoration(
-        color: Zc.linea.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(Zr.s + 2),
-      ),
-      child: LayoutBuilder(
-        builder: (context, c) {
-          final ancho = c.maxWidth / n;
-          return Stack(
-            children: [
-              AnimatedBuilder(
-                animation: _pos,
-                builder: (context, hijo) => Transform.translate(offset: Offset(_pos.value * ancho, 0), child: hijo),
-                child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: SizedBox(
-                    width: ancho - 6,
-                    height: 38,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Zc.superficie,
-                        borderRadius: BorderRadius.circular(Zr.s),
-                        boxShadow: const [BoxShadow(color: Color(0x1A0B2E24), blurRadius: 8, offset: Offset(0, 2))],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  for (var i = 0; i < n; i++)
-                    Expanded(
-                      child: Semantics(
-                        selected: i == widget.valor,
-                        child: Presionable(
-                          onTap: i == widget.valor ? null : () => widget.alCambiar(i),
-                          escala: 0.96,
-                          etiqueta: widget.etiquetas[i],
-                          child: SizedBox(
-                            height: 44,
-                            child: Center(
-                              child: AnimatedDefaultTextStyle(
-                                duration: Zm.corto,
-                                style: tt.labelLarge!.copyWith(
-                                  color: i == widget.valor ? Zc.texto : Zc.textoSuave,
-                                ),
-                                child: FittedBox(fit: BoxFit.scaleDown, child: Text(widget.etiquetas[i])),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+      );
 }

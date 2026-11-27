@@ -2,11 +2,15 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../datos/admin/controlador_admin.dart';
 import '../datos/estado.dart';
 import '../nucleo/base/transicion_pestanas.dart';
 import '../nucleo/presionable.dart';
 import '../nucleo/tema.dart';
+import 'admin/piezas_admin.dart';
+import 'comun/capa_avisos.dart';
 import 'guardian/pantalla_guardian.dart';
+import 'comun/zanky_mascota.dart';
 import 'inicio/inicio.dart';
 import 'mapa/pantalla_mapa.dart';
 import 'mis_reportes/pantalla_mis_reportes.dart';
@@ -29,6 +33,10 @@ class Raiz extends StatefulWidget {
 class _RaizState extends State<Raiz> {
   int _actual = 0;
 
+  /// El panel de la CRA: vive con la raíz para que su consulta periódica y el contador
+  /// del ícono sigan mientras se navega, y se detiene al cerrarla.
+  ControladorAdmin? _admin;
+
   @override
   void initState() {
     super.initState();
@@ -36,8 +44,22 @@ class _RaizState extends State<Raiz> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _admin ??= ControladorAdmin(servidor: Zanky.leer(context).servidor);
+    // Una sola vez: las imágenes de Zanky ya en memoria antes del primer cambio de ánimo.
+    if (!_precargado) {
+      _precargado = true;
+      precargarZanky(context);
+    }
+  }
+
+  bool _precargado = false;
+
+  @override
   void dispose() {
     Raiz._pedida.removeListener(_atenderPedido);
+    _admin?.dispose();
     super.dispose();
   }
 
@@ -57,16 +79,22 @@ class _RaizState extends State<Raiz> {
   @override
   Widget build(BuildContext context) {
     final abajo = MediaQuery.paddingOf(context).bottom;
-    return Scaffold(
-      extendBody: true,
-      body: AnimatedTabStack(
-        index: _actual,
-        ordenPrecarga: const [1, 2, 3],
-        children: const [Inicio(), PantallaMapa(), PantallaMisReportes(), PantallaGuardian()],
-      ),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.fromLTRB(14, 0, 14, abajo > 0 ? abajo : 12),
-        child: _BarraPestanas(actual: _actual, onCambio: _ir),
+    return AdminScope(
+      controlador: _admin!,
+      child: Scaffold(
+        extendBody: true,
+        body: CapaAvisos(
+          verMisReportes: () => _ir(2),
+          child: AnimatedTabStack(
+            index: _actual,
+            ordenPrecarga: const [1, 2, 3],
+            children: const [Inicio(), PantallaMapa(), PantallaMisReportes(), PantallaGuardian()],
+          ),
+        ),
+        bottomNavigationBar: Padding(
+          padding: EdgeInsets.fromLTRB(14, 0, 14, abajo > 0 ? abajo : 12),
+          child: _BarraPestanas(actual: _actual, onCambio: _ir),
+        ),
       ),
     );
   }
@@ -87,6 +115,9 @@ class _BarraPestanas extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pendientes = Zanky.de(context).pendientes;
+    // El número del panel de la CRA aparece en Guardián solo si hay sesión del equipo.
+    final admin = AdminScope.maybeDe(context);
+    final sinVer = admin != null && admin.dentro ? admin.sinVer : 0;
     return SizedBox(
       height: 72,
       child: Stack(
@@ -120,9 +151,9 @@ class _BarraPestanas extends StatelessWidget {
           ),
           Row(
             children: [
-              for (var i = 0; i < 2; i++) _pestana(context, i, pendientes),
+              for (var i = 0; i < 2; i++) _pestana(context, i, pendientes, sinVer),
               const SizedBox(width: 76),
-              for (var i = 2; i < 4; i++) _pestana(context, i, pendientes),
+              for (var i = 2; i < 4; i++) _pestana(context, i, pendientes, sinVer),
             ],
           ),
           Positioned(top: -16, child: _BotonReportar()),
@@ -131,7 +162,7 @@ class _BarraPestanas extends StatelessWidget {
     );
   }
 
-  Widget _pestana(BuildContext context, int i, int pendientes) {
+  Widget _pestana(BuildContext context, int i, int pendientes, int sinVer) {
     final (lleno, vacio, nombre) = _items[i];
     final activa = i == actual;
     final color = activa ? Zc.hoja : Zc.textoTenue;
@@ -147,9 +178,9 @@ class _BarraPestanas extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Badge(
-                isLabelVisible: i == 2 && pendientes > 0,
+                isLabelVisible: (i == 2 && pendientes > 0) || (i == 3 && sinVer > 0),
                 backgroundColor: Zc.sol,
-                label: Text('$pendientes'),
+                label: Text(i == 3 ? '$sinVer' : '$pendientes'),
                 child: AnimatedScale(
                   scale: activa ? 1.08 : 1,
                   duration: Zm.medio,

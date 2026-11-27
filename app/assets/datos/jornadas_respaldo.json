@@ -1,0 +1,89 @@
+{
+  "aviso": "Datos de ejemplo · Modo demostración · Se conectará al backend",
+  "jornadas": [
+    {
+      "id": "jornada-1",
+      "accion_id": "accion-a",
+      "titulo": "Jornada de siembra en el caño",
+      "tipo": "siembra",
+      "inicio": "2026-11-29T07:00:00-05:00",
+      "fin": "2026-11-29T11:00:00-05:00",
+      "punto_encuentro": "Ecoparque Ciénaga de Mallorquín, entrada principal",
+      "lat": 11.03217,
+      "lon": -74.85755,
+      "cupos": 40,
+      "inscritos": 23,
+      "que_llevar": [
+        "Agua potable",
+        "Gorra",
+        "Bloqueador solar",
+        "Botas que se puedan mojar",
+        "Guantes de trabajo"
+      ],
+      "descripcion": "Datos de ejemplo. Actividad demostrativa; confirmar convocatoria y condiciones con la organización."
+    },
+    {
+      "id": "jornada-2",
+      "accion_id": "accion-c",
+      "titulo": "Recorrido de vigías del Totumo",
+      "tipo": "recorrido_vigias",
+      "inicio": "2026-12-06T06:30:00-05:00",
+      "fin": "2026-12-06T10:00:00-05:00",
+      "punto_encuentro": "Muelle de pescadores del Totumo",
+      "lat": 10.73029,
+      "lon": -75.22261,
+      "cupos": 15,
+      "inscritos": 9,
+      "que_llevar": [
+        "Agua potable",
+        "Gorra",
+        "Bloqueador solar",
+        "Botas que se puedan mojar",
+        "Guantes de trabajo"
+      ],
+      "descripcion": "Datos de ejemplo. Actividad demostrativa; confirmar convocatoria y condiciones con la organización. Programación tentativa, sujeta a aprobación de la acción."
+    },
+    {
+      "id": "jornada-3",
+      "accion_id": "accion-b",
+      "titulo": "Limpieza del caño Balboa",
+      "tipo": "limpieza",
+      "inicio": "2026-12-07T08:00:00-05:00",
+      "fin": "2026-12-07T11:30:00-05:00",
+      "punto_encuentro": "Punto de encuentro del caño Balboa [por confirmar]",
+      "lat": 11.03878,
+      "lon": -74.91318,
+      "cupos": 30,
+      "inscritos": 30,
+      "que_llevar": [
+        "Agua potable",
+        "Gorra",
+        "Bloqueador solar",
+        "Botas que se puedan mojar",
+        "Guantes de trabajo"
+      ],
+      "descripcion": "Datos de ejemplo. Actividad demostrativa; confirmar convocatoria y condiciones con la organización."
+    },
+    {
+      "id": "jornada-4",
+      "accion_id": "accion-a",
+      "titulo": "Monitoreo de supervivencia a 3 meses",
+      "tipo": "monitoreo",
+      "inicio": "2026-12-13T07:30:00-05:00",
+      "fin": "2026-12-13T10:00:00-05:00",
+      "punto_encuentro": "Ecoparque Ciénaga de Mallorquín, entrada principal",
+      "lat": 11.03217,
+      "lon": -74.85755,
+      "cupos": 12,
+      "inscritos": 4,
+      "que_llevar": [
+        "Agua potable",
+        "Gorra",
+        "Bloqueador solar",
+        "Botas que se puedan mojar",
+        "Guantes de trabajo"
+      ],
+      "descripcion": "Datos de ejemplo. Actividad demostrativa; confirmar convocatoria y condiciones con la organización. Seguimiento de una cohorte de reposición de septiembre; los registros de agosto y noviembre corresponden a la siembra inicial."
+    }
+  ]
+}

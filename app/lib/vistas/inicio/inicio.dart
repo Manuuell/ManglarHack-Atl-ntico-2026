@@ -1,18 +1,37 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../datos/estado.dart';
+import '../../datos/experiencia/entrada_evento.dart' hide EntradaEvento;
+import '../../datos/resumen_reportes.dart';
+import '../../datos/roles.dart';
 import '../../datos/guardian.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/kit/accion_gesto.dart';
+import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/menu_mantenido.dart';
+import '../../nucleo/kit/tirar_actualizar.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
+import '../admin/panel_cra.dart';
+import '../admin/piezas_admin.dart';
 import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
+import '../experiencia/puerta_evento.dart';
+import '../experiencia/widgets_evento.dart' show EntradaEvento;
+import '../guardian/editar_perfil.dart';
+import '../roles/selector_rol.dart';
+import 'pronostico_compacto.dart';
+import 'que_hago_ya.dart';
+import 'secciones_rol.dart';
+import '../crecimiento/pantalla_mi_manglar.dart';
+import '../crecimiento/zanky_crece.dart';
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
 
@@ -28,9 +47,187 @@ class Inicio extends StatefulWidget {
 class _InicioState extends State<Inicio> {
   int _dato = -1;
 
+  /// Secciones que la persona ocultó con el menú (mantener presionado). Duran la sesión
+  /// y se devuelven con «Mostrar» al final de la lista.
+  final Set<SeccionInicio> _ocultas = {};
+
+  /// Las que se pueden abrir con el menú: las que tienen un campo de texto o ya tienen su
+  /// propio mantener (jornadas) quedan fuera para no pelear con ellos.
+  static const _sinMenu = {
+    SeccionInicio.panel,
+    SeccionInicio.reportar,
+    SeccionInicio.queHagoYa,
+    SeccionInicio.reporteRapido,
+    SeccionInicio.evento,
+    SeccionInicio.qrEvento,
+    SeccionInicio.asistentes,
+    SeccionInicio.jornadasCerca,
+    SeccionInicio.misJornadas,
+  };
+
+  static String _nombre(SeccionInicio s) => switch (s) {
+        SeccionInicio.estadoReportes => 'Tus reportes',
+        SeccionInicio.progreso => 'Tu progreso',
+        SeccionInicio.retoManglar => 'El reto del manglar',
+        SeccionInicio.rankingColegio => 'Ranking de tu colegio',
+        SeccionInicio.mision => 'La misión de la semana',
+        SeccionInicio.queVer => 'Qué ver en el manglar',
+        SeccionInicio.queNoHacer => 'Qué no hacer en el manglar',
+        SeccionInicio.clima => 'El clima en el manglar',
+        SeccionInicio.pronostico => 'El pronóstico del manglar',
+        SeccionInicio.sabiasQue => '¿Sabías qué?',
+        _ => 'Zanky',
+      };
+
+  Future<void> _compartirSeccion(BuildContext context, SeccionInicio s) async {
+    try {
+      await SharePlus.instance.share(ShareParams(
+        text: 'Mira «${_nombre(s)}» en Zanky: la app para cuidar el manglar de la ciénaga de Mallorquín.',
+        subject: 'Zanky',
+      ));
+    } catch (_) {
+      if (context.mounted) avisar(context, 'No pude abrir el menú de compartir.', tipo: TipoAviso.error);
+    }
+  }
+
+  /// Mantener presionada una tarjeta: reportar aquí, compartir u ocultarla (con «Deshacer»).
+  Widget _conMenu(BuildContext context, SeccionInicio s, Widget hijo) {
+    if (_sinMenu.contains(s)) return hijo;
+    return MenuMantenido(
+      etiqueta: _nombre(s),
+      acciones: [
+        AccionGesto(
+          etiqueta: 'Reportar aquí',
+          icono: Icons.add_a_photo_rounded,
+          alEjecutar: () => abrirReporte(context),
+        ),
+        AccionGesto(
+          etiqueta: 'Compartir',
+          icono: Icons.ios_share_rounded,
+          alEjecutar: () => _compartirSeccion(context, s),
+        ),
+        AccionGesto(
+          etiqueta: 'Ocultar sección',
+          icono: Icons.visibility_off_rounded,
+          alEjecutar: () {
+            setState(() => _ocultas.add(s));
+            avisar(context, '«${_nombre(s)}» oculta',
+                accion: AccionAviso('Deshacer', () {
+                  if (mounted) setState(() => _ocultas.remove(s));
+                }));
+          },
+        ),
+      ],
+      child: hijo,
+    );
+  }
+
   String _saludo() {
     final h = DateTime.now().hour;
     return h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
+  }
+
+  Widget _seccion(BuildContext context, SeccionInicio s, EstadoZanky estado, Progreso progreso,
+      ResumenReportes resumen) {
+    final perfil = estado.perfil;
+    switch (s) {
+      case SeccionInicio.panel:
+        return const BandejaPanel();
+      case SeccionInicio.queHagoYa:
+        final admin = AdminScope.maybeDe(context);
+        final enPanel = admin != null && admin.dentro;
+        return QueHagoYa(
+          accion: queHagoYa(ContextoYa(
+            rol: perfil?.rol ?? RolUsuario.ciudadano,
+            hora: DateTime.now().hour,
+            rolPanel: enPanel ? admin.rol : null,
+            sinVerPanel: enPanel ? admin.sinVer : 0,
+            porEnviar: estado.pendientes,
+            rechazados: estado.rechazados,
+            enLinea: estado.enLinea,
+            enviados: progreso.enviados,
+            tieneColegio: (perfil?.colegio.trim() ?? '').isNotEmpty,
+            eventoAbierto: entradaEvento.value != null,
+          )),
+          alTocar: (d) => _ir(context, d),
+        );
+      case SeccionInicio.reportar:
+        return const _TarjetaReportar();
+      case SeccionInicio.reporteRapido:
+        return const _Rapidos();
+      case SeccionInicio.estadoReportes:
+        return EstadoMisReportes(resumen: resumen);
+      case SeccionInicio.progreso:
+        // El crecimiento de Zanky es el corazón de la gamificación: abre «Mi manglar».
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: ZankyCreceCompacto(
+            puntos: progreso.puntos,
+            alAbrir: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PantallaMiManglar())),
+          ),
+        );
+      case SeccionInicio.retoManglar:
+        return const RetoManglar();
+      case SeccionInicio.rankingColegio:
+        return RankingColegio(
+          colegio: perfil?.colegio.trim() ?? '',
+          progreso: progreso,
+          servidorConectado: estado.servidor.configurado,
+        );
+      case SeccionInicio.mision:
+        return _Mision(mision: Mision.deLaSemana(DateTime.now()));
+      case SeccionInicio.queVer:
+        return const QueVer();
+      case SeccionInicio.queNoHacer:
+        return const QueNoHacer();
+      case SeccionInicio.jornadasCerca:
+        return const SeccionJornadas(vista: VistaJornadas.visitante);
+      case SeccionInicio.misJornadas:
+        return const SeccionJornadas(vista: VistaJornadas.organizador);
+      case SeccionInicio.qrEvento:
+        return const QrDelEvento();
+      case SeccionInicio.asistentes:
+        return const Asistentes();
+      case SeccionInicio.evento:
+        return const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: EntradaEvento());
+      case SeccionInicio.clima:
+        return _TarjetaClima(estado: estado);
+      case SeccionInicio.pronostico:
+        return const PronosticoCompacto();
+      case SeccionInicio.sabiasQue:
+        return _SabiasQue(hectareas: estado.manglar.areaTotalHa);
+    }
+  }
+
+  /// A dónde lleva la sugerencia de «¿Qué hago ya?».
+  Future<void> _ir(BuildContext context, DestinoYa d) async {
+    switch (d) {
+      case DestinoYa.reportar:
+        abrirReporte(context);
+      case DestinoYa.mapa:
+        Raiz.irA(context, 1);
+      case DestinoYa.misReportes:
+        Raiz.irA(context, 2);
+      case DestinoYa.guardian:
+        Raiz.irA(context, 3);
+      case DestinoYa.perfil:
+        mostrarEditarPerfil(context);
+      case DestinoYa.panel:
+        if (AdminScope.maybeDe(context) != null) abrirPanelCra(context);
+      case DestinoYa.evento:
+        final abierto = entradaEvento.value;
+        if (abierto != null) {
+          abrirEvento(context, abierto.codigo);
+          return;
+        }
+        final proximas = proximasJornadas(await cargaJornadasInicio(), DateTime.now());
+        if (!context.mounted) return;
+        if (proximas.isNotEmpty) {
+          abrirEvento(context, proximas.first.id);
+        } else {
+          avisar(context, 'No hay jornadas programadas. Escribe el código de un evento en «¿Estás en una jornada?».');
+        }
+    }
   }
 
   @override
@@ -39,10 +236,16 @@ class _InicioState extends State<Inicio> {
     final tt = Theme.of(context).textTheme;
     final nombre = estado.perfil?.nombre.trim().split(' ').first ?? '';
     final arriba = MediaQuery.paddingOf(context).top;
+    final perfil = estado.perfil;
+    final rol = perfil?.rol ?? RolUsuario.ciudadano;
+    final admin = AdminScope.maybeDe(context);
+    final rolPanel = (admin != null && admin.dentro) ? admin.rol : null;
+    final progreso = estado.progreso;
+    final resumen = ResumenReportes.de(estado.reportes);
+    final secciones = seccionesDeInicio(rol, rolPanel: rolPanel).where((s) => !_ocultas.contains(s)).toList();
     var i = 0;
-    return RefreshIndicator(
-      color: Zc.hoja,
-      onRefresh: () async {
+    return TirarActualizar(
+      alActualizar: () async {
         await Future.wait([estado.sincronizar(), estado.cargarClima()]);
       },
       child: ListView(
@@ -61,6 +264,7 @@ class _InicioState extends State<Inicio> {
                       Text(_saludo().toUpperCase(), style: tt.labelSmall?.copyWith(color: Zc.hoja)),
                       const SizedBox(height: 2),
                       Text(nombre.isEmpty ? 'Guardián del manglar' : nombre, style: tt.headlineMedium),
+                      if (perfil != null) _PildoraRol(rol: rol),
                     ],
                   ),
                 ),
@@ -84,18 +288,70 @@ class _InicioState extends State<Inicio> {
           ),
           const SizedBox(height: 14),
           const FranjaConexion(),
-          EntradaEscalonada(index: i++, child: const _TarjetaReportar()),
-          const SizedBox(height: 18),
-          EntradaEscalonada(index: i++, child: const _Rapidos()),
-          const SizedBox(height: 18),
-          EntradaEscalonada(index: i++, child: _Progreso(progreso: estado.progreso)),
-          const SizedBox(height: 14),
-          EntradaEscalonada(index: i++, child: _TarjetaClima(estado: estado)),
-          const SizedBox(height: 14),
-          EntradaEscalonada(index: i++, child: _Mision(mision: Mision.deLaSemana(DateTime.now()))),
-          const SizedBox(height: 22),
-          EntradaEscalonada(index: i++, child: _SabiasQue(hectareas: estado.manglar.areaTotalHa)),
+          for (final seccion in secciones) ...[
+            EntradaEscalonada(index: i++, child: _conMenu(context, seccion, _seccion(context, seccion, estado, progreso, resumen))),
+            const SizedBox(height: 16),
+          ],
+          if (_ocultas.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Presionable(
+                etiqueta: 'Mostrar ${_ocultas.length} ${_ocultas.length == 1 ? 'sección oculta' : 'secciones ocultas'}',
+                onTap: () => setState(_ocultas.clear),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: Zc.hojaClara, borderRadius: BorderRadius.circular(Zr.m)),
+                  child: Text(
+                    'Mostrar ${_ocultas.length} ${_ocultas.length == 1 ? 'sección oculta' : 'secciones ocultas'}',
+                    style: tt.labelLarge?.copyWith(color: Zc.hoja),
+                  ),
+                ),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+/// El rol de quien mira, en una píldora que lo cambia con un toque (también en Guardián).
+class _PildoraRol extends StatelessWidget {
+  const _PildoraRol({required this.rol});
+  final RolUsuario rol;
+
+  @override
+  Widget build(BuildContext context) {
+    return Presionable(
+      etiqueta: 'Tu rol: ${rol.nombre}. Toca para cambiarlo',
+      onTap: () => mostrarCambiarRol(context),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          widthFactor: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              color: rol.color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(rol.icono, size: 16, color: rol.color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  rol.nombre,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Zc.texto),
+                ),
+              ),
+              const SizedBox(width: 2),
+              const Icon(Icons.expand_more_rounded, size: 16, color: Zc.textoSuave),
+            ]),
+          ),
+        ),
       ),
     );
   }
@@ -221,67 +477,6 @@ class _Rapidos extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Progreso extends StatelessWidget {
-  const _Progreso({required this.progreso});
-  final Progreso progreso;
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final n = progreso.nivel;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: TarjetaZ(
-        onTap: () => Raiz.irA(context, 3),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 54,
-              height: 54,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(end: progreso.avanceNivel),
-                    duration: Zm.largo,
-                    curve: Zm.entrar,
-                    builder: (_, v, _) => CircularProgressIndicator(
-                      value: v,
-                      strokeWidth: 5,
-                      strokeCap: StrokeCap.round,
-                      color: Zc.hoja,
-                      backgroundColor: Zc.hojaClara,
-                    ),
-                  ),
-                  Text('${n.numero}', style: tt.titleLarge?.copyWith(color: Zc.hoja)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(n.nombre, style: tt.titleMedium),
-                  const SizedBox(height: 2),
-                  Text(
-                    progreso.enviados == 0
-                        ? 'Tu primer reporte validado te hace crecer.'
-                        : '${progreso.enviados} ${progreso.enviados == 1 ? 'reporte enviado' : 'reportes enviados'} · '
-                            '${progreso.validados} ${progreso.validados == 1 ? 'validado' : 'validados'}',
-                    style: tt.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Zc.textoTenue),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -492,7 +687,7 @@ class _SabiasQueState extends State<_SabiasQue> {
         'Necesita las dos. Un caño taponado le corta el agua dulce y lo enferma: también se reporta.'),
     (Icons.map_rounded, Zc.fango, 'Cuatro ciénagas',
         'En el Atlántico hay manglar en Mallorquín, Tubará, Juan de Acosta y Piojó: unas 775 ha según la CRA '
-            '(${widget.hectareas.round()} ha en la capa de INVEMAR que usa esta app).'),
+            '(${widget.hectareas.round()} ha en la capa de la CRA, cartografía 1:5.000, que usa esta app).'),
   ];
 
   @override

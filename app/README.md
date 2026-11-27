@@ -37,10 +37,10 @@ La clave `service_role` **nunca** va en la app.
 | `lib/datos/` | Modelo y contrato con el servidor (`reporte.dart` → `aServidor()`), zonas y punto en polígono, prioridad, cola sin señal, clima, guardián |
 | `lib/nucleo/` | Tema (colores del manglar), toque con resorte y vibración, piezas de movimiento medidas (`base/`) |
 | `lib/vistas/` | Pantallas. Plan y reglas en [`PLAN_PANTALLAS.md`](PLAN_PANTALLAS.md) |
-| `assets/datos/manglar_zonas.json` | Polígonos del manglar dentro de la app (sin internet). Se generan con `node tool/preparar_zonas.mjs` |
+| `assets/datos/manglar_zonas.json`, `prioridades_cra.json` | Polígonos del manglar y capa de prioridades de conservación dentro de la app (sin internet). Se generan con `node tool/preparar_capas_cra.mjs` |
 
 ## Datos
 
-Polígonos: Capa Nacional de Manglares de INVEMAR (2020, 1:25.000) filtrada al Atlántico, mientras llega el KMZ de
-la CRA. La asignación a las cuatro zonas y su prioridad de conservación son **provisionales**: se validan con los
-mentores ambientales.
+Polígonos: capa oficial de la CRA, manglar a escala 1:5.000 agrupado en las cuatro zonas de la CRA, y su capa de
+«Prioridades de conservación» (alta, media, baja) que la app usa para la prioridad de cada reporte. Cómo se prepara está
+en `tool/preparar_capas_cra.mjs`. La asignación de cada polígono a su zona se valida con los mentores ambientales.

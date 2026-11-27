@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Agua de la ciénaga: el color de marca (Zc.cienaga). Fondo de la pantalla de arranque. -->
+    <color name="zanky_arranque_fondo">#1FA2A6</color>
+    <!-- El teal del ícono oficial de Zanky: fondo del ícono adaptativo. -->
+    <color name="ic_launcher_background">#3BACAD</color>
+</resources>

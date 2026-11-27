@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Zanky para la pantalla de arranque de Android 12+: el sistema lo recorta en un círculo de 2/3 del
+     lienzo, así que se achica al 50 % para que no se corte. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/zanky_arranque"
+    android:inset="25%" />

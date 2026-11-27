@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zanky · Lecturas del manglar</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color: #ecf8f3; background: #082c31; }
+    body { max-width: 1100px; margin: auto; padding: 28px 18px; }
+    h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: 4px; }
+    p { line-height: 1.5; }
+    form { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0; }
+    input, button { padding: 12px; border-radius: 10px; font: inherit; }
+    input { flex: 1 1 230px; min-width: 0; border: 1px solid #8dbdb3; }
+    button { border: 0; background: #c4f26b; color: #102f25; font-weight: 700; cursor: pointer; }
+    #estado { font-weight: 700; }
+    #tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    article { background: #13434a; border: 1px solid #4d8584; border-radius: 18px; padding: 20px; }
+    article.alerta { border: 2px solid #ffd36d; }
+    .valor { display: block; font-size: 2rem; font-weight: 800; margin: 12px 0; }
+    .etiqueta { display: inline-block; background: #276369; padding: 5px 10px; border-radius: 20px; }
+    .alerta .etiqueta { background: #846022; }
+    small { color: #c0dcd8; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lecturas del manglar</h1>
+    <p>Una señal adicional para orientar a los vigías. Cada alerta requiere revisión humana.</p>
+  </header>
+  <form id="conexion">
+    <input id="url" type="url" placeholder="URL pública de Supabase (https://…)" aria-label="URL pública de Supabase">
+    <input id="clave" type="password" placeholder="Clave publicable o anon" aria-label="Clave publicable o anon">
+    <button type="submit">Ver lecturas en vivo</button>
+    <button type="button" id="demo">Ver demostración</button>
+  </form>
+  <p id="estado" role="status">DEMOSTRACIÓN · datos ficticios, sin conexión.</p>
+  <main id="tarjetas"></main>
+  <script>
+    const ejemplo = [
+      { nombre: 'Nivel de agua', zona_nombre: 'Ciénaga de Mallorquín', tipo: 'nivel_agua', valor: 1.72, unidad: 'm', umbral_alerta: 1.5, en_alerta: true, vigente: true },
+      { nombre: 'Salinidad', zona_nombre: 'Costa de Tubará', tipo: 'salinidad', valor: 0.83, unidad: 'ppt', umbral_alerta: 4, en_alerta: false, vigente: true },
+      { nombre: 'Temperatura', zona_nombre: 'Costa de Juan de Acosta', tipo: 'temperatura', valor: 29.7, unidad: '°C', umbral_alerta: 34, en_alerta: false, vigente: true },
+      { nombre: 'Turbidez', zona_nombre: 'Ciénaga del Totumo', tipo: 'turbidez', valor: 72, unidad: 'NTU', umbral_alerta: 100, en_alerta: false, vigente: true },
+    ];
+    const tarjetas = document.querySelector('#tarjetas');
+    function pintar(datos, muestra) {
+      tarjetas.replaceChildren();
+      for (const dato of datos) {
+        const tarjeta = document.createElement('article');
+        if (dato.en_alerta) tarjeta.className = 'alerta';
+        const titulo = document.createElement('h2');
+        titulo.textContent = dato.nombre;
+        const zona = document.createElement('p');
+        zona.textContent = dato.zona_nombre || 'Zona sin asignar';
+        const valor = document.createElement('span');
+        valor.className = 'valor';
+        valor.textContent = dato.valor == null ? 'Sin lectura' : `${dato.valor} ${dato.unidad}`;
+        const estado = document.createElement('span');
+        estado.className = 'etiqueta';
+        estado.textContent = dato.en_alerta ? 'Supera el umbral · revisar' : dato.vigente ? 'Lectura vigente' : 'Lectura antigua';
+        const nota = document.createElement('p');
+        const pequeno = document.createElement('small');
+        pequeno.textContent = muestra ? 'Dato ficticio para el pitch' : `Medido: ${dato.medido_en ? new Date(dato.medido_en).toLocaleString('es-CO') : 'sin fecha'}`;
+        nota.append(pequeno);
+        tarjeta.append(titulo, zona, valor, estado, nota);
+        tarjetas.append(tarjeta);
+      }
+      if (!datos.length) tarjetas.textContent = 'Todavía no hay sensores activos.';
+    }
+    document.querySelector('#demo').onclick = () => {
+      document.querySelector('#estado').textContent = 'DEMOSTRACIÓN · datos ficticios, sin conexión.';
+      pintar(ejemplo, true);
+    };
+    document.querySelector('#conexion').onsubmit = async (evento) => {
+      evento.preventDefault();
+      const url = document.querySelector('#url').value.replace(/\/$/, '');
+      const clave = document.querySelector('#clave').value;
+      if (!url.startsWith('https://') || !clave) return;
+      document.querySelector('#estado').textContent = 'Cargando lecturas…';
+      try {
+        const respuesta = await fetch(`${url}/rest/v1/rpc/ultimas_lecturas`, {
+          method: 'POST', headers: { apikey: clave, Authorization: `Bearer ${clave}`, 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+        if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
+        const datos = await respuesta.json();
+        if (!Array.isArray(datos)) throw new Error('Respuesta inesperada');
+        document.querySelector('#estado').textContent = `EN VIVO · actualizado ${new Date().toLocaleString('es-CO')}`;
+        pintar(datos, false);
+      } catch (error) {
+        document.querySelector('#estado').textContent = `No se pudieron cargar las lecturas: ${error.message}`;
+        tarjetas.replaceChildren();
+      }
+    };
+    pintar(ejemplo, true);
+  </script>
+</body>
+</html>

@@ -22,9 +22,12 @@ int indiceAlcanzado(Reporte r) {
 
 /// Una fila de «Mis reportes»: miniatura, qué es, dónde y cuándo, en qué va.
 class TarjetaReporte extends StatelessWidget {
-  const TarjetaReporte({super.key, required this.reporte, required this.alTocar});
+  const TarjetaReporte({super.key, required this.reporte, required this.alTocar, this.alMantener});
   final Reporte reporte;
   final VoidCallback alTocar;
+
+  /// Mantener pulsada (quitar del teléfono). Nulo: la tarjeta no lo ofrece.
+  final VoidCallback? alMantener;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +35,7 @@ class TarjetaReporte extends StatelessWidget {
     final r = reporte;
     return Presionable(
       onTap: alTocar,
+      onLongPress: alMantener,
       escala: 0.98,
       vibracion: Vibracion.ligera,
       etiqueta: '${r.tipo.nombre}, caso ${r.caso}, ${r.zonaNombre}. Abrir el detalle',

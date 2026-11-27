@@ -90,11 +90,16 @@ class HojaZ extends StatelessWidget {
         child: ConstrainedBox(
           // Nunca más de lo que cabe: una hoja a pantalla completa deja
           // de parecer una hoja y tapa el contexto de abajo.
-          constraints: BoxConstraints(
-            maxHeight:
-                MediaQuery.of(context).size.height * fraccionMaximaAlto,
+          // Con el teclado arriba, tampoco más de lo que queda libre sobre
+          // él (si no, la hoja se salía por arriba y el campo quedaba tapado).
+          constraints: BoxConstraints(maxHeight: _altoMaximo(context)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _Agarre(),
+              Flexible(child: SafeArea(top: false, child: contenido)),
+            ],
           ),
-          child: SafeArea(top: false, child: contenido),
         ),
       ),
     );
@@ -102,6 +107,35 @@ class HojaZ extends StatelessWidget {
 
   /// Fracción máxima de la pantalla que ocupa una hoja.
   static const double fraccionMaximaAlto = 0.88;
+
+  static double _altoMaximo(BuildContext context) {
+    final medida = MediaQuery.of(context);
+    final tope = medida.size.height * fraccionMaximaAlto;
+    // Lo que queda sobre el teclado, con un respiro arriba (barra de estado).
+    final libre = medida.size.height - medida.viewInsets.bottom - medida.padding.top - 12;
+    return libre < tope ? (libre < 160 ? 160 : libre) : tope;
+  }
+}
+
+/// El agarre de arriba: la pista de que la hoja se arrastra para cerrar.
+/// Decorativo (el lector de pantalla no lo ve; cerrar tiene su velo y su botón).
+class _Agarre extends StatelessWidget {
+  const _Agarre();
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Container(
+            width: 38,
+            height: 5,
+            decoration: BoxDecoration(
+              color: context.colors.border,
+              borderRadius: BorderRadius.circular(3),
+            ),
+          ),
+        ),
+      );
 }
 
 /// Abre una hoja con el cromo de [HojaZ] y completa con lo que devuelva

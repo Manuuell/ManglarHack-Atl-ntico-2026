@@ -54,6 +54,8 @@ class _PresionableState extends State<Presionable> with SingleTickerProviderStat
   late final AnimationController _hundido = AnimationController.unbounded(vsync: this);
   late Animation<double> _escala = _crearEscala();
   bool _abajo = false;
+  bool _encima = false;
+  bool _enfoque = false;
 
   bool get _activo => widget.onTap != null || widget.onLongPress != null;
   bool get _sinMovimiento => MediaQuery.maybeDisableAnimationsOf(context) ?? false;
@@ -126,15 +128,47 @@ class _PresionableState extends State<Presionable> with SingleTickerProviderStat
       onLongPressCancel: widget.onLongPress == null ? null : _soltar,
       child: ScaleTransition(scale: _escala, child: widget.child),
     );
+    // Web y escritorio: cursor de mano, realce sutil al pasar el ratón (1,015 de la vara),
+    // foco visible con teclado y Intro/Espacio para activar. En el teléfono no cambia nada.
+    final interactivo = !_activo
+        ? gesto
+        : FocusableActionDetector(
+            mouseCursor: SystemMouseCursors.click,
+            onShowHoverHighlight: (v) => setState(() => _encima = v),
+            onShowFocusHighlight: (v) => setState(() => _enfoque = v),
+            actions: {
+              ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (_) {
+                if (widget.onTap != null) {
+                  _tap();
+                } else {
+                  _mantener();
+                }
+                return null;
+              }),
+            },
+            child: AnimatedScale(
+              scale: _encima && !_abajo && !_sinMovimiento ? 1.015 : 1,
+              duration: Zm.corto,
+              curve: Zm.entrar,
+              child: DecoratedBox(
+                position: DecorationPosition.foreground,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(Zr.m),
+                  border: _enfoque ? Border.all(color: Zc.cienaga, width: 2.5) : null,
+                ),
+                child: gesto,
+              ),
+            ),
+          );
     final etiqueta = widget.etiqueta;
-    if (etiqueta == null) return gesto;
+    if (etiqueta == null) return interactivo;
     return Semantics(
       button: true,
       enabled: _activo,
       label: etiqueta,
       onTap: widget.onTap == null ? null : _tap,
       excludeSemantics: true,
-      child: gesto,
+      child: interactivo,
     );
   }
 }

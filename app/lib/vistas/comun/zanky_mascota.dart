@@ -3,88 +3,237 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 
+import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 
 /// Cómo se siente Zanky. Cambia la cara, las cejas y los brazos.
 enum Animo { feliz, curioso, preocupado, celebrando }
 
-/// Zanky: un mangle rojo chiquito que camina sobre sus raíces en zancos (como los
-/// zanqueros del Carnaval de Barranquilla), con su corona de hojas y la faja de colores.
+String _rutaArte(Animo a) => 'assets/zanky/zanky-${a.name}.webp';
+
+// «-sola»: recortada a su dibujo (a escala, el propágulo era una mancha en 64 px). Las de escala sirven para comparar.
+String _rutaEtapa(int etapa) => 'assets/zanky/etapas/etapa-${etapa.clamp(1, 5)}-sola.webp';
+
+/// Carga en memoria las 4 imágenes de Zanky (y las 5 etapas de crecimiento) para que el primer cambio de ánimo no parpadee.
+/// Se llama una vez desde la raíz de la app (con un contexto que ya tenga `MediaQuery`/bundle).
+/// Nunca lanza: si una imagen falla, Zanky se dibuja con el respaldo en código.
+Future<void> precargarZanky(BuildContext context) async {
+  await Future.wait([
+    for (final a in Animo.values)
+      precacheImage(
+        AssetImage(_rutaArte(a)),
+        context,
+        onError: (_, _) {},
+      ).catchError((_) {}),
+    for (var e = 1; e <= 5; e++)
+      precacheImage(
+        AssetImage(_rutaEtapa(e)),
+        context,
+        onError: (_, _) {},
+      ).catchError((_) {}),
+  ]);
+}
+
+/// La etapa de crecimiento de Zanky, de 1 (propágulo) a 5 (mangle adulto): imagen del arte oficial,
+/// todas con el mismo lienzo y la misma escala. Fuera de 1-5 se ajusta al extremo más cercano.
+/// Si la imagen no carga, no ocupa espacio visible (queda un hueco del tamaño pedido).
+class ZankyEtapa extends StatelessWidget {
+  const ZankyEtapa({super.key, required this.etapa, this.tamano = 72, this.etiqueta});
+
+  final int etapa;
+  final double tamano;
+
+  /// Lo que lee el lector de pantalla; null = «Zanky, etapa N de 5».
+  final String? etiqueta;
+
+  @override
+  Widget build(BuildContext context) {
+    final e = etapa.clamp(1, 5);
+    return Semantics(
+      image: true,
+      label: etiqueta ?? 'Zanky, etapa $e de 5',
+      excludeSemantics: true,
+      child: SizedBox(
+        width: tamano,
+        height: tamano,
+        child: Image.asset(
+          _rutaEtapa(e),
+          fit: BoxFit.contain,
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+      ),
+    );
+  }
+}
+
+/// Zanky: el mangle rojo con raíces en zancos y cintas de Carnaval, la mascota que guía al ciudadano.
 ///
-/// Todo está dibujado en código: se ve nítido a cualquier tamaño, pesa nada y se anima
-/// por partes (parpadeo, respiración, balanceo, hojas, mirada, salto al tocarlo).
+/// Muestra el arte oficial (render 3D de `marca/zanky/`, 4 ánimos con el mismo encuadre: los pies siempre
+/// en la misma línea, así que un cambio de ánimo no lo hace saltar). Se anima con transformaciones baratas
+/// sobre la imagen ya rasterizada: respiración, balanceo, salto al tocarlo con aplastamiento al caer y una
+/// leve inclinación hacia [mirar]. El dibujo en código ([_PintorZanky]) queda de respaldo: se ve mientras
+/// carga el primer cuadro o si la imagen falla.
 class ZankyMascota extends StatefulWidget {
-  const ZankyMascota({super.key, this.tamano = 160, this.animo = Animo.feliz, this.onTap, this.mirar});
+  const ZankyMascota({
+    super.key,
+    this.tamano = 160,
+    this.animo = Animo.feliz,
+    this.onTap,
+    this.mirar,
+  });
 
   final double tamano;
   final Animo animo;
   final VoidCallback? onTap;
 
-  /// Hacia dónde mira, de -1 a 1 en cada eje (null: mira al frente y a veces curiosea).
+  /// Hacia dónde mira, de -1 a 1 en cada eje (null: mira al frente y, en el respaldo, a veces curiosea).
   final Offset? mirar;
 
   @override
   State<ZankyMascota> createState() => _ZankyMascotaState();
 }
 
-class _ZankyMascotaState extends State<ZankyMascota> with TickerProviderStateMixin {
-  /// Reloj continuo para lo que respira (balanceo, hojas, agua). 6 s por vuelta.
-  late final AnimationController _vida = AnimationController(vsync: this, duration: const Duration(seconds: 6))
-    ..repeat();
+class _ZankyMascotaState extends State<ZankyMascota>
+    with TickerProviderStateMixin {
+  /// Reloj continuo para lo que respira (balanceo y, en el respaldo, hojas y agua). 6 s por vuelta.
+  late final AnimationController _vida = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 6),
+  );
 
-  /// Parpadeo: 140 ms, cada 2,5-5 s al azar (un ritmo fijo se nota robótico).
+  /// Parpadeo del respaldo: 140 ms, cada 2,5-5 s al azar (un ritmo fijo se nota robótico).
   late final AnimationController _parpado = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 140),
   );
 
-  /// Salto al tocarlo: resorte con algo de rebote, se siente vivo.
-  late final AnimationController _salto = AnimationController.unbounded(vsync: this);
+  /// Salto al tocarlo: resorte con rebote, medido en fracciones del tamaño (negativo = arriba).
+  late final AnimationController _salto = AnimationController.unbounded(
+    vsync: this,
+  );
+
+  /// Aplastamiento al caer: arranca en un porcentaje y el resorte lo devuelve a 0.
+  late final AnimationController _aplasta = AnimationController.unbounded(
+    vsync: this,
+  );
+
+  /// Fundido cruzado entre ánimos: 0 = se ve el anterior, 1 = solo el nuevo.
+  late final AnimationController _cambio = AnimationController(
+    vsync: this,
+    duration: AppMotion.normal,
+    value: 1,
+  );
+  late final Animation<double> _fundido = CurvedAnimation(
+    parent: _cambio,
+    curve: AppMotion.enter,
+  );
 
   final _azar = math.Random();
+  Animo? _anterior;
+  bool _quieto = false;
+  bool _respaldoVisible = false;
+  bool _enAire = false;
+
+  /// Mirada del respaldo (curiosear al azar) y la del dedo.
   Offset _mirada = Offset.zero;
-  Offset? _toque;
+  final ValueNotifier<Offset?> _toque = ValueNotifier(null);
+
+  /// Inclinación suavizada hacia [ZankyMascota.mirar] o el dedo.
+  Offset _inclina = Offset.zero;
 
   @override
   void initState() {
     super.initState();
+    _salto.addListener(_vigilarCaida);
+    _cambio.addStatusListener((e) {
+      if (e == AnimationStatus.completed && _anterior != null && mounted) {
+        setState(() => _anterior = null);
+      }
+    });
     _programarParpadeo();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _quieto = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (_quieto) {
+      _vida.stop();
+      _anterior = null;
+      _cambio.value = 1;
+    } else if (!_vida.isAnimating) {
+      _vida.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(ZankyMascota old) {
+    super.didUpdateWidget(old);
+    if (old.animo != widget.animo) {
+      if (_quieto) {
+        _anterior = null;
+      } else {
+        // El anterior se queda debajo, opaco; el nuevo aparece encima: sin hueco ni salto.
+        _anterior = old.animo;
+        _cambio.forward(from: 0);
+      }
+    }
+  }
+
   void _programarParpadeo() {
-    Future.delayed(Duration(milliseconds: 2500 + _azar.nextInt(2500)), () async {
-      if (!mounted) return;
-      await _parpado.forward();
-      if (!mounted) return;
-      await _parpado.reverse();
-      // A veces parpadea dos veces seguidas, como la gente.
-      if (mounted && _azar.nextDouble() < 0.18) {
+    Future.delayed(
+      Duration(milliseconds: 2500 + _azar.nextInt(2500)),
+      () async {
+        if (!mounted) return;
+        // Solo el respaldo parpadea: con el arte oficial no hay nada que mover.
+        if (!_respaldoVisible) {
+        _programarParpadeo();
+        return;
+      }
         await _parpado.forward();
-        if (mounted) await _parpado.reverse();
-      }
-      // Y de vez en cuando mira para un lado, curioso.
-      if (mounted && widget.mirar == null && _toque == null) {
-        setState(
-          () => _mirada = _azar.nextDouble() < 0.4
-              ? Offset(_azar.nextDouble() * 1.6 - 0.8, _azar.nextDouble() * 0.6 - 0.2)
-              : Offset.zero,
-        );
-      }
-      _programarParpadeo();
-    });
+        if (!mounted) return;
+        await _parpado.reverse();
+        // A veces parpadea dos veces seguidas, como la gente.
+        if (mounted && _azar.nextDouble() < 0.18) {
+          await _parpado.forward();
+          if (mounted) await _parpado.reverse();
+        }
+        // Y de vez en cuando mira para un lado, curioso.
+        if (mounted && widget.mirar == null && _toque.value == null) {
+          setState(
+            () => _mirada = _azar.nextDouble() < 0.4
+                ? Offset(
+                    _azar.nextDouble() * 1.6 - 0.8,
+                    _azar.nextDouble() * 0.6 - 0.2,
+                  )
+                : Offset.zero,
+          );
+        }
+        _programarParpadeo();
+      },
+    );
   }
 
   void _saltar() {
+    if (_quieto) return;
+    _enAire = true;
     _salto.value = 0;
-    _salto.animateWith(
-      SpringSimulation(
-        SpringDescription.withDampingRatio(mass: 1, stiffness: 260, ratio: 0.38),
-        0,
-        0,
-        -9, // impulso hacia arriba
-      ),
-    );
+    // Impulso hacia arriba con el resorte de «acuse de recibo»: sube ~9 % del tamaño y cae con un rebote leve.
+    _salto.animateWith(SpringSimulation(AppMotion.resorteRebote, 0, 0, -2.3));
+  }
+
+  /// Cuando vuelve al suelo, un aplastamiento corto que el resorte suelta.
+  void _vigilarCaida() {
+    if (_enAire && _salto.value >= 0) {
+      _enAire = false;
+      _aplasta.value = 0.07;
+      _aplasta.animateWith(
+        SpringSimulation(AppMotion.resorteRebote, 0.07, 0, 0),
+      );
+    }
   }
 
   @override
@@ -92,43 +241,131 @@ class _ZankyMascotaState extends State<ZankyMascota> with TickerProviderStateMix
     _vida.dispose();
     _parpado.dispose();
     _salto.dispose();
+    _aplasta.dispose();
+    _cambio.dispose();
+    _toque.dispose();
     super.dispose();
+  }
+
+  Widget _respaldo(double ancho, double alto) {
+    _respaldoVisible = true;
+    return AnimatedBuilder(
+      animation: Listenable.merge([_vida, _parpado, _salto, _toque]),
+      builder: (context, _) => CustomPaint(
+        size: Size(ancho, alto),
+        willChange: true,
+        painter: _PintorZanky(
+          t: _quieto ? 0 : _vida.value,
+          parpado: _parpado.value,
+          salto:
+              _salto.value *
+              6, // el respaldo usa las unidades de su lienzo de 240
+          animo: widget.animo,
+          mirada: _toque.value ?? widget.mirar ?? _mirada,
+        ),
+      ),
+    );
+  }
+
+  Widget _capa(Animo a, double ancho, double alto, {required bool encima}) {
+    return Image.asset(
+      _rutaArte(a),
+      key: ValueKey(a),
+      width: ancho,
+      height: alto,
+      fit: BoxFit.contain,
+      alignment: Alignment.bottomCenter,
+      filterQuality: FilterQuality.medium,
+      gaplessPlayback: true,
+      excludeFromSemantics: true,
+      // Mientras no llega el primer cuadro, el respaldo en código (si hay otra capa debajo, no hace falta).
+      frameBuilder: (context, hijo, frame, sincrono) {
+        if (frame != null || sincrono) {
+          if (!encima) _respaldoVisible = false;
+          return hijo;
+        }
+        return encima ? const SizedBox.shrink() : _respaldo(ancho, alto);
+      },
+      errorBuilder: (context, error, pila) => _respaldo(ancho, alto),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final quieto = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final ancho = widget.tamano, alto = widget.tamano * 1.2;
+    final anterior = _anterior;
+    final capas = RepaintBoundary(
+      child: SizedBox(
+        width: ancho,
+        height: alto,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (anterior != null) _capa(anterior, ancho, alto, encima: false),
+            FadeTransition(
+              key: ValueKey(widget.animo),
+              opacity: _fundido,
+              child: _capa(widget.animo, ancho, alto, encima: anterior != null),
+            ),
+          ],
+        ),
+      ),
+    );
     final dibujo = RepaintBoundary(
       child: SizedBox(
         width: ancho,
         height: alto,
         child: AnimatedBuilder(
-          animation: Listenable.merge([_vida, _parpado, _salto]),
-          builder: (context, _) => CustomPaint(
-            // Tamaño fijo pase lo que pase con el padre.
-            size: Size(ancho, alto),
-            willChange: true,
-            painter: _PintorZanky(
-              t: quieto ? 0 : _vida.value,
-              parpado: _parpado.value,
-              salto: _salto.value,
-              animo: widget.animo,
-              mirada: _toque ?? widget.mirar ?? _mirada,
-            ),
-          ),
+          animation: Listenable.merge([_vida, _salto, _aplasta, _toque]),
+          child: capas,
+          builder: (context, hijo) {
+            if (_quieto) return hijo!;
+            final w = 2 * math.pi * _vida.value;
+            final celebra = widget.animo == Animo.celebrando;
+            // Respira (más vivo si celebra) y se balancea, todo anclado a los pies.
+            final respira = math.sin(w * 2) * (celebra ? 0.03 : 0.015);
+            final balanceo =
+                math.sin(w) *
+                (celebra ? 0.045 : 0.026); // 1,5° (2,6° celebrando)
+            // Hacia dónde mira: se suaviza para que no dé tirones cuando el dedo cambia de sitio.
+            final meta = _toque.value ?? widget.mirar ?? Offset.zero;
+            _inclina = Offset.lerp(_inclina, meta, 0.18)!;
+            final aplasta = _aplasta.value.clamp(0.0, 0.12);
+            final estira = (-_salto.value).clamp(0.0, 0.2) * 0.3;
+            final sy = (1 + respira) * (1 - aplasta + estira);
+            final sx =
+                (1 - respira * 0.5) * (1 + aplasta * 0.55 - estira * 0.5);
+            final m = Matrix4.identity()
+              ..translateByDouble(
+                ancho / 2,
+                alto,
+                0,
+                1,
+              ) // los pies, en el suelo de la caja
+              ..translateByDouble(0, _salto.value * widget.tamano, 0, 1)
+              ..rotateZ(balanceo + _inclina.dx * 0.045)
+              ..scaleByDouble(sx, sy, 1, 1)
+              ..translateByDouble(-ancho / 2, -alto, 0, 1);
+            return Transform(transform: m, child: hijo);
+          },
         ),
       ),
     );
     return Semantics(
-      label: 'Zanky, el guardián del manglar',
+      label: 'Zanky, la mascota',
+      image: true,
       button: widget.onTap != null,
+      onTap: widget.onTap,
+      excludeSemantics:
+          true, // el dibujo interno no se lee: ya lo dice la etiqueta
       child: Listener(
         // La mirada sigue al dedo mientras toca.
-        onPointerDown: (e) => setState(() => _toque = _normalizar(e.localPosition, ancho, alto)),
-        onPointerMove: (e) => setState(() => _toque = _normalizar(e.localPosition, ancho, alto)),
-        onPointerUp: (_) => setState(() => _toque = null),
-        onPointerCancel: (_) => setState(() => _toque = null),
+        onPointerDown: (e) =>
+            _toque.value = _normalizar(e.localPosition, ancho, alto),
+        onPointerMove: (e) =>
+            _toque.value = _normalizar(e.localPosition, ancho, alto),
+        onPointerUp: (_) => _toque.value = null,
+        onPointerCancel: (_) => _toque.value = null,
         child: Presionable(
           escala: 0.94,
           vibracion: Vibracion.ligera,
@@ -142,10 +379,13 @@ class _ZankyMascotaState extends State<ZankyMascota> with TickerProviderStateMix
     );
   }
 
-  static Offset _normalizar(Offset p, double w, double h) =>
-      Offset(((p.dx / w) * 2 - 1).clamp(-1.0, 1.0), ((p.dy / h) * 2 - 1).clamp(-1.0, 1.0));
+  static Offset _normalizar(Offset p, double w, double h) => Offset(
+    ((p.dx / w) * 2 - 1).clamp(-1.0, 1.0),
+    ((p.dy / h) * 2 - 1).clamp(-1.0, 1.0),
+  );
 }
 
+/// RESPALDO: el dibujo en código de Zanky. Solo se usa si el arte oficial no carga.
 class _PintorZanky extends CustomPainter {
   _PintorZanky({
     required this.t,
@@ -161,11 +401,17 @@ class _PintorZanky extends CustomPainter {
   final Animo animo;
   final Offset mirada;
 
-  static const _tronco = Color(0xFF8B3A2B); // corteza del mangle rojo (paleta de handoff/08)
+  static const _tronco = Color(
+    0xFF8B3A2B,
+  ); // corteza del mangle rojo (paleta de handoff/08)
   static const _troncoOscuro = Color(0xFF632519);
   static const _raiz = Color(0xFF6D3B2A);
   // Cintas del Carnaval de Barranquilla enrolladas en las raíces: amarillo, rojo y verde.
-  static const _carnaval = [Color(0xFFF9C80E), Color(0xFFE63946), Color(0xFF2A9D8F)];
+  static const _carnaval = [
+    Color(0xFFF9C80E),
+    Color(0xFFE63946),
+    Color(0xFF2A9D8F),
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -206,8 +452,15 @@ class _PintorZanky extends CustomPainter {
     // Sombra que se achica cuando salta.
     final alto = (-dy).clamp(0.0, 40.0) / 40;
     canvas.drawOval(
-      Rect.fromCenter(center: const Offset(100, 226), width: 120 * (1 - alto * 0.35), height: 14 * (1 - alto * 0.3)),
-      Paint()..color = const Color(0xFF0B2E24).withValues(alpha: 0.16 * (1 - alto * 0.5)),
+      Rect.fromCenter(
+        center: const Offset(100, 226),
+        width: 120 * (1 - alto * 0.35),
+        height: 14 * (1 - alto * 0.3),
+      ),
+      Paint()
+        ..color = const Color(
+          0xFF0B2E24,
+        ).withValues(alpha: 0.16 * (1 - alto * 0.5)),
     );
     // Dos ondas en el agua, desfasadas.
     final onda = Paint()
@@ -219,7 +472,11 @@ class _PintorZanky extends CustomPainter {
       final fase = (t + i * 0.5) % 1;
       final r = 40 + fase * 40;
       canvas.drawArc(
-        Rect.fromCenter(center: const Offset(100, 226), width: r * 2, height: r * 0.34),
+        Rect.fromCenter(
+          center: const Offset(100, 226),
+          width: r * 2,
+          height: r * 0.34,
+        ),
         math.pi * 0.08,
         math.pi * 0.84,
         false,
@@ -263,7 +520,11 @@ class _PintorZanky extends CustomPainter {
         );
       }
       // Puntica que entra al fango.
-      canvas.drawCircle(Offset(x + mece, 222), 3.6, Paint()..color = _troncoOscuro);
+      canvas.drawCircle(
+        Offset(x + mece, 222),
+        3.6,
+        Paint()..color = _troncoOscuro,
+      );
     }
   }
 
@@ -307,7 +568,9 @@ class _PintorZanky extends CustomPainter {
       ..strokeWidth = 7
       ..strokeCap = StrokeCap.round;
     for (final lado in const [-1.0, 1.0]) {
-      final saluda = arriba ? math.sin(w * 6 + (lado > 0 ? 0 : math.pi)) * 0.25 : math.sin(w * 2) * 0.05;
+      final saluda = arriba
+          ? math.sin(w * 6 + (lado > 0 ? 0 : math.pi)) * 0.25
+          : math.sin(w * 2) * 0.05;
       canvas.save();
       canvas.translate(100 + lado * 40, 128);
       canvas.rotate(lado * (arriba ? -1.9 : -0.5) + saluda * lado);
@@ -328,7 +591,13 @@ class _PintorZanky extends CustomPainter {
   void _corona(Canvas canvas, double w) {
     // Cinco hojas en abanico + un propágulo que cuelga: así se reconoce el mangle rojo.
     const angulos = [-1.05, -0.52, 0.0, 0.52, 1.05];
-    const colores = [Color(0xFF2E7D32), Color(0xFF43A047), Color(0xFF4CAF50), Color(0xFF43A047), Color(0xFF2E7D32)];
+    const colores = [
+      Color(0xFF2E7D32),
+      Color(0xFF43A047),
+      Color(0xFF4CAF50),
+      Color(0xFF43A047),
+      Color(0xFF2E7D32),
+    ];
     for (var i = 0; i < angulos.length; i++) {
       final susurro = math.sin(w * 2 + i * 0.9) * 0.06;
       canvas.save();
@@ -345,7 +614,11 @@ class _PintorZanky extends CustomPainter {
       ..strokeWidth = 4.5
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(Offset(136, 82), Offset(146 + mece, 108), pr);
-    canvas.drawCircle(Offset(146 + mece, 109), 2.6, Paint()..color = const Color(0xFF4F6A2A));
+    canvas.drawCircle(
+      Offset(146 + mece, 109),
+      2.6,
+      Paint()..color = const Color(0xFF4F6A2A),
+    );
   }
 
   void _hoja(Canvas canvas, double largo, double ancho, Color color) {
@@ -370,9 +643,16 @@ class _PintorZanky extends CustomPainter {
     final feliz = animo == Animo.celebrando;
 
     // Mejillas.
-    final mejilla = Paint()..color = const Color(0xFFF2A33A).withValues(alpha: 0.42);
-    canvas.drawOval(Rect.fromCenter(center: const Offset(74, 132), width: 16, height: 9), mejilla);
-    canvas.drawOval(Rect.fromCenter(center: const Offset(126, 132), width: 16, height: 9), mejilla);
+    final mejilla = Paint()
+      ..color = const Color(0xFFF2A33A).withValues(alpha: 0.42);
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(74, 132), width: 16, height: 9),
+      mejilla,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(center: const Offset(126, 132), width: 16, height: 9),
+      mejilla,
+    );
 
     for (final x in const [82.0, 118.0]) {
       if (feliz) {
@@ -391,13 +671,25 @@ class _PintorZanky extends CustomPainter {
         continue;
       }
       final abierto = 1 - parpado;
-      final ojo = Rect.fromCenter(center: Offset(x, ojoY), width: 19, height: 23 * math.max(abierto, 0.08));
+      final ojo = Rect.fromCenter(
+        center: Offset(x, ojoY),
+        width: 19,
+        height: 23 * math.max(abierto, 0.08),
+      );
       canvas.drawOval(ojo, Paint()..color = Colors.white);
       if (abierto > 0.25) {
         canvas.save();
         canvas.clipPath(Path()..addOval(ojo));
-        canvas.drawCircle(Offset(x + mx, ojoY + my + 1), 6.4, Paint()..color = Zc.raiz);
-        canvas.drawCircle(Offset(x + mx + 2.2, ojoY + my - 1.8), 2.1, Paint()..color = Colors.white);
+        canvas.drawCircle(
+          Offset(x + mx, ojoY + my + 1),
+          6.4,
+          Paint()..color = Zc.raiz,
+        );
+        canvas.drawCircle(
+          Offset(x + mx + 2.2, ojoY + my - 1.8),
+          2.1,
+          Paint()..color = Colors.white,
+        );
         canvas.restore();
       } else {
         canvas.drawLine(
@@ -422,7 +714,11 @@ class _PintorZanky extends CustomPainter {
       _ => 0.0,
     };
     final sube = animo == Animo.curioso ? -3.0 : 0.0;
-    canvas.drawLine(Offset(74, 95 - inclinacion + sube), Offset(89, 95 + inclinacion * 0.3), ceja);
+    canvas.drawLine(
+      Offset(74, 95 - inclinacion + sube),
+      Offset(89, 95 + inclinacion * 0.3),
+      ceja,
+    );
     canvas.drawLine(
       Offset(111, 95 + inclinacion * 0.3 + (animo == Animo.curioso ? 0 : 0)),
       Offset(126, 95 - inclinacion),
@@ -454,7 +750,10 @@ class _PintorZanky extends CustomPainter {
           Paint()..color = const Color(0xFFE06B6B),
         );
       case Animo.curioso:
-        canvas.drawOval(Rect.fromCenter(center: const Offset(102, 139), width: 9, height: 10), boca);
+        canvas.drawOval(
+          Rect.fromCenter(center: const Offset(102, 139), width: 9, height: 10),
+          boca,
+        );
       case Animo.preocupado:
         canvas.drawPath(
           Path()
@@ -467,5 +766,9 @@ class _PintorZanky extends CustomPainter {
 
   @override
   bool shouldRepaint(_PintorZanky o) =>
-      o.t != t || o.parpado != parpado || o.salto != salto || o.animo != animo || o.mirada != mirada;
+      o.t != t ||
+      o.parpado != parpado ||
+      o.salto != salto ||
+      o.animo != animo ||
+      o.mirada != mirada;
 }
