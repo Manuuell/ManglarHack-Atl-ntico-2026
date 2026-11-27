@@ -12,6 +12,7 @@ import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
 import 'editar_perfil.dart';
 import 'insignias_guardian.dart';
+import '../experiencia/widgets_evento.dart' show ResumenParticipacion;
 import 'nivel_guardian.dart';
 import 'tarjeta_guardian.dart';
 
@@ -91,6 +92,7 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
       if (perfil != null) SeccionTarjeta(perfil: perfil, progreso: progreso) else const _SinPerfil(),
       SeccionNivel(progreso: progreso, sinReportes: estado.reportes.isEmpty),
       SeccionPuntos(servidorConectado: estado.servidor.configurado),
+      const ResumenParticipacion(),
       const _MisionSemana(),
       SeccionInsignias(progreso: progreso),
       _Colegios(

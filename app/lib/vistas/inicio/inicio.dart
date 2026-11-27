@@ -13,6 +13,7 @@ import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
+import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
 
@@ -89,6 +90,12 @@ class _InicioState extends State<Inicio> {
           EntradaEscalonada(index: i++, child: const _Rapidos()),
           const SizedBox(height: 18),
           EntradaEscalonada(index: i++, child: _Progreso(progreso: estado.progreso)),
+          const SizedBox(height: 14),
+          // Entrar a un evento por su código o enlace (el QR de una jornada abre lo mismo).
+          EntradaEscalonada(
+            index: i++,
+            child: const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: EntradaEvento()),
+          ),
           const SizedBox(height: 14),
           EntradaEscalonada(index: i++, child: _TarjetaClima(estado: estado)),
           const SizedBox(height: 14),
