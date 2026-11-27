@@ -5,7 +5,7 @@ import '../punto/punto_zanky.dart';
 import '../servidor.dart';
 
 bool puedeGestionarPuntos(String? rol) => const {
-  'admin', 'moderador_cra', 'investigador', 'organizador',
+  'admin', 'investigador', 'organizador',
 }.contains(rol);
 
 List<PuntoZanky> filtrarPuntos(List<PuntoZanky> puntos, int filtro) => puntos.where((p) =>

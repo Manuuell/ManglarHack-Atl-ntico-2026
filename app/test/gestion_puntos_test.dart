@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:zanky/datos/gestion/repositorio_puntos.dart';
 import 'package:zanky/datos/punto/punto_zanky.dart';
@@ -25,8 +26,8 @@ void main() {
     expect(filtrarPuntos(puntos, 2).single.codigo, 'dos');
   });
 
-  test('el rol de gestor se limita a cuatro perfiles', () {
-    for (final rol in ['admin', 'moderador_cra', 'investigador', 'organizador']) {
+  test('el rol de gestor se limita a tres perfiles', () {
+    for (final rol in ['admin', 'investigador', 'organizador']) {
       expect(puedeGestionarPuntos(rol), isTrue);
     }
     expect(puedeGestionarPuntos('vigia'), isFalse);
@@ -47,7 +48,7 @@ void main() {
     expect(puntosDemostracion.map((p) => p.codigo), containsAll(['demo-estacion', 'demo-foto']));
   });
 
-  for (final tamano in [const Size(360, 800), const Size(390, 844)]) {
+  for (final tamano in [const Size(360, 800), const Size(390, 844), const Size(768, 1024), const Size(1280, 800)]) {
     testWidgets('gestor cabe en ${tamano.width}x${tamano.height}', (tester) async {
       tester.view.physicalSize = tamano;
       tester.view.devicePixelRatio = 1;
@@ -79,4 +80,21 @@ void main() {
       expect(find.byType(QrImageView), findsOneWidget);
     });
   }
+
+  testWidgets('la entrada del gestor abre el gestor con un toque', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: EntradaGestor())));
+    expect(find.text('Puntos Zanky'), findsOneWidget);
+    await tester.tap(find.byType(EntradaGestor));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byType(GestorPuntos), findsOneWidget);
+    expect(find.text('Crear punto'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 6));
+  });
 }

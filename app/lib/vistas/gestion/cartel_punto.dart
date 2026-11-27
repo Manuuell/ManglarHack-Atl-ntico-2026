@@ -62,6 +62,11 @@ class _CartelPuntoState extends State<CartelPunto> {
       const SizedBox(height: 20),
       if (!widget.demostracion) BotonEstado(texto: 'Compartir enlace', icono: Icons.share_rounded,
         alPresionar: () async { await SharePlus.instance.share(ShareParams(text: enlacePunto(widget.punto.codigo))); }),
+      if (puedeDescargarQr) ...[
+        BotonEstado(texto: 'Descargar QR (PNG)', icono: Icons.download_rounded,
+          alPresionar: _imagen == null ? null : () async => descargarQr('zanky-${widget.punto.codigo}', _imagen!)),
+        const SizedBox(height: 10),
+      ],
       if (!widget.demostracion && puedeImprimirCartel) ...[
         const SizedBox(height: 10),
         BotonEstado(texto: 'Imprimir cartel A4', icono: Icons.print_rounded,

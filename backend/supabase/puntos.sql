@@ -63,11 +63,11 @@ grant insert (codigo,tipo,titulo,descripcion,zona,lat,lon,evento_id,sensor_id,ac
   on public.puntos_zanky to authenticated;
 drop policy if exists puntos_gestor_inserta on public.puntos_zanky;
 create policy puntos_gestor_inserta on public.puntos_zanky for insert to authenticated
-  with check (public.panel_rol_de(auth.uid()) in ('admin','moderador_cra','investigador','organizador'));
+  with check (public.panel_rol_de(auth.uid()) in ('admin','investigador','organizador'));
 drop policy if exists puntos_gestor_actualiza on public.puntos_zanky;
 create policy puntos_gestor_actualiza on public.puntos_zanky for update to authenticated
-  using (public.panel_rol_de(auth.uid()) in ('admin','moderador_cra','investigador','organizador'))
-  with check (public.panel_rol_de(auth.uid()) in ('admin','moderador_cra','investigador','organizador'));
+  using (public.panel_rol_de(auth.uid()) in ('admin','investigador','organizador'))
+  with check (public.panel_rol_de(auth.uid()) in ('admin','investigador','organizador'));
 -- Esta vista es la única salida pública con ubicación. Nunca incluye creador ni coordenadas completas.
 create or replace view public.puntos_publicos with (security_barrier = true) as
 select codigo, tipo, titulo, descripcion, zona, round(lat::numeric, 3)::double precision as lat,
@@ -107,7 +107,7 @@ end $$;
 create or replace function public.puntos_de(zona text default null)
 returns jsonb language plpgsql stable security definer set search_path = public, extensions, pg_temp as $$
 begin
-  if not coalesce(public.panel_rol_de(auth.uid()) in ('admin','moderador_cra','investigador','organizador'), false)
+  if not coalesce(public.panel_rol_de(auth.uid()) in ('admin','investigador','organizador'), false)
     then raise exception 'sin_permiso' using errcode = '42501'; end if;
   return (select coalesce(jsonb_agg(to_jsonb(p) order by p.creado_en desc), '[]'::jsonb)
     from public.puntos_zanky p where puntos_de.zona is null or p.zona = puntos_de.zona);
@@ -117,7 +117,7 @@ create or replace function public.guardar_punto(p jsonb)
 returns jsonb language plpgsql security definer set search_path = public, extensions, pg_temp as $$
 declare v_codigo text := lower(trim(p->>'codigo')); v public.puntos_zanky%rowtype;
 begin
-  if not coalesce(public.panel_rol_de(auth.uid()) in ('admin','moderador_cra','investigador','organizador'), false)
+  if not coalesce(public.panel_rol_de(auth.uid()) in ('admin','investigador','organizador'), false)
     then raise exception 'sin_permiso' using errcode = '42501'; end if;
   if v_codigo !~ '^[a-z0-9-]{3,40}$' then raise exception 'codigo_invalido' using errcode = '22023'; end if;
   insert into public.puntos_zanky(codigo,tipo,titulo,descripcion,zona,lat,lon,evento_id,sensor_id,activo,creado_por)
@@ -134,7 +134,7 @@ end $$;
 create or replace function public.resumen_punto(codigo text)
 returns jsonb language plpgsql stable security definer set search_path = public, extensions, pg_temp as $$
 begin
-  if not coalesce(public.panel_rol_de(auth.uid()) in ('admin','moderador_cra','investigador','organizador'), false)
+  if not coalesce(public.panel_rol_de(auth.uid()) in ('admin','investigador','organizador'), false)
     then raise exception 'sin_permiso' using errcode = '42501'; end if;
   return (select jsonb_build_object('codigo', p.codigo, 'total', count(v.cuando),
     'fotografias', (select count(*) from public.fotos_punto f where f.punto = p.codigo),

@@ -12,6 +12,7 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../admin/entrada_panel.dart';
+import '../gestion/entrada_gestor.dart';
 import '../admin/panel_cra.dart';
 import '../admin/piezas_admin.dart';
 import '../comun/comunes.dart';
@@ -138,7 +139,9 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
               colegio: perfil?.colegio.trim() ?? '',
               servidorConectado: estado.servidor.configurado,
             ),
-          SeccionGuardian.panel => const EntradaPanelCra(),
+          SeccionGuardian.panel => const Column(
+            children: [EntradaPanelCra(), SizedBox(height: 10), EntradaGestor()],
+          ),
         },
     ];
     return SafeArea(

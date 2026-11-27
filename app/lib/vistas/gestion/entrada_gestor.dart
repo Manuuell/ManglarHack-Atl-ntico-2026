@@ -7,19 +7,50 @@ import '../../nucleo/kit/boton_estado.dart';
 import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/segmentado.dart';
 import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/accion_gesto.dart';
+import '../../nucleo/kit/confirmar.dart';
+import '../../nucleo/kit/fila_deslizable.dart';
+import '../../nucleo/kit/menu_mantenido.dart';
+import '../../nucleo/presionable.dart';
+import '../../nucleo/tema.dart';
 import '../../datos/punto/punto_zanky.dart';
 import 'cartel_punto.dart';
 import 'editor_punto.dart';
 
-/// Entrada para incorporar en la sección del equipo. El servidor decide el rol real.
+/// La puerta al gestor, en la sección del equipo de Guardián. Misma fila que `EntradaPanelCra`
+/// (tomada de vistas/admin/entrada_panel.dart): un toque y entras. El servidor decide el rol real.
 class EntradaGestor extends StatelessWidget {
   const EntradaGestor({super.key});
   @override
-  Widget build(BuildContext context) => SizedBox(
-    height: 56,
-    child: FilledButton.icon(onPressed: () => abrirGestor(context),
-      icon: const Icon(Icons.qr_code_2_rounded), label: const Text('Gestionar puntos Zanky')),
-  );
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Presionable(
+        escala: 0.98,
+        etiqueta: 'Puntos Zanky. Crear códigos QR y grabar etiquetas NFC',
+        onTap: () => abrirGestor(context),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 64),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Zc.superficie,
+            borderRadius: BorderRadius.circular(Zr.m),
+            border: Border.all(color: Zc.linea),
+          ),
+          child: Row(children: [
+            const Icon(Icons.qr_code_2_rounded, color: Zc.hoja, size: 26),
+            const SizedBox(width: 14),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Puntos Zanky', style: tt.titleSmall),
+              Text('Crea un QR, imprime el cartel o graba una etiqueta NFC', style: tt.bodySmall),
+            ])),
+            const Icon(Icons.chevron_right_rounded, color: Zc.textoTenue),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> abrirGestor(BuildContext context, {RepositorioPuntos? repositorio}) async {
@@ -97,6 +128,27 @@ class _GestorPuntosState extends State<GestorPuntos> {
     if (guardado == true) await _actualizar();
   }
 
+  Future<void> _abrirCartel(PuntoZanky p) => Navigator.of(context).push(MaterialPageRoute<void>(
+    builder: (_) => CartelPunto(punto: p, demostracion: _repo?.demostracion ?? true)));
+
+  Future<void> _alternar(PuntoZanky p) async {
+    final repo = _repo;
+    if (repo == null) return;
+    final quitar = p.activo;
+    if (quitar) {
+      final si = await confirmarEnHoja(context, titulo: 'Desactivar punto',
+        texto: 'El QR y la etiqueta de "${p.titulo}" dejarán de registrar visitas hasta que lo actives otra vez.',
+        textoConfirmar: 'Desactivar', destructivo: true, seguroPrimero: true);
+      if (!si) return;
+    }
+    try {
+      await repo.guardar(PuntoZanky.deJson({...p.aJson(), 'activo': !p.activo}));
+      await _actualizar();
+    } catch (_) {
+      if (mounted) avisar(context, 'No se pudo cambiar el estado del punto.');
+    }
+  }
+
   Future<void> _resumen(PuntoZanky punto) async {
     try {
       final r = await _repo!.resumen(punto.codigo);
@@ -141,19 +193,39 @@ class _GestorPuntosState extends State<GestorPuntos> {
             : ListView.builder(itemCount: filtrados.length,
               itemBuilder: (context, i) {
                 final p = filtrados[i];
-                return Card(margin: const EdgeInsets.fromLTRB(16, 0, 16, 10), child: Padding(
-                  padding: const EdgeInsets.all(12), child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(p.titulo, style: Theme.of(context).textTheme.titleMedium),
-                    Text('${p.tipo.nombre} · ${p.zona} · ${p.activo ? 'Activo' : 'Inactivo'}'),
-                    Text(p.codigo),
-                    Wrap(spacing: 8, children: [
-                      TextButton(onPressed: () => _editar(p), child: const Text('Editar')),
-                      TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute<void>(
-                        builder: (_) => CartelPunto(punto: p, demostracion: repo.demostracion))), child: const Text('QR y NFC')),
-                      TextButton(onPressed: () => _resumen(p), child: const Text('Visitas')),
-                    ]),
-                  ])));
+                final editar = AccionGesto(etiqueta: 'Editar', icono: Icons.edit_rounded,
+                  alEjecutar: () => _editar(p));
+                final cartel = AccionGesto(etiqueta: 'QR y NFC', icono: Icons.qr_code_2_rounded,
+                  alEjecutar: () => _abrirCartel(p));
+                final visitas = AccionGesto(etiqueta: 'Visitas', icono: Icons.bar_chart_rounded,
+                  alEjecutar: () => _resumen(p));
+                final alternar = AccionGesto(
+                  etiqueta: p.activo ? 'Desactivar' : 'Activar',
+                  icono: p.activo ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                  destructiva: p.activo,
+                  alEjecutar: () => _alternar(p));
+                return Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 10), child: MenuMantenido(
+                  etiqueta: '${p.titulo}, ${p.tipo.nombre}',
+                  alTocar: () => _abrirCartel(p),
+                  acciones: [cartel, editar, visitas, alternar],
+                  child: FilaDeslizable(
+                    radio: BorderRadius.circular(Zr.l),
+                    accionesInicio: [cartel],
+                    accionesFin: [alternar],
+                    hijo: Card(margin: EdgeInsets.zero, child: Padding(
+                      padding: const EdgeInsets.all(12), child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(p.titulo, style: Theme.of(context).textTheme.titleMedium),
+                        Text('${p.tipo.nombre} · ${p.zona} · ${p.activo ? 'Activo' : 'Inactivo'}'),
+                        Text(p.codigo),
+                        Wrap(spacing: 8, children: [
+                          TextButton(onPressed: () => _editar(p), child: const Text('Editar')),
+                          TextButton(onPressed: () => _abrirCartel(p), child: const Text('QR y NFC')),
+                          TextButton(onPressed: () => _resumen(p), child: const Text('Visitas')),
+                        ]),
+                      ]))),
+                  ),
+                ));
               }))),
       ]));
   }

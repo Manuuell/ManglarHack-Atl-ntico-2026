@@ -15,6 +15,28 @@ external JSString _crearUrl(_Blob blob);
 external void _revocarUrl(JSString url);
 
 bool get puedeImprimirCartel => true;
+bool get puedeDescargarQr => true;
+
+@JS('document')
+external _Documento get _documento;
+
+extension type _Documento._(JSObject _) implements JSObject {
+  external _Ancla createElement(JSString etiqueta);
+}
+
+extension type _Ancla._(JSObject _) implements JSObject {
+  external set href(JSString valor);
+  external set download(JSString valor);
+  external void click();
+}
+
+/// Baja el QR como PNG: un enlace temporal con el atributo `download`.
+void descargarQr(String nombre, String imagenBase64) {
+  final ancla = _documento.createElement('a'.toJS);
+  ancla.href = 'data:image/png;base64,$imagenBase64'.toJS;
+  ancla.download = '$nombre.png'.toJS;
+  ancla.click();
+}
 
 String _escapar(String texto) => texto.replaceAll('&', '&amp;').replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
