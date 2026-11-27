@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../datos/admin/contenido_panel.dart';
 import '../../../datos/comunidad/comunidad.dart';
@@ -675,7 +677,17 @@ class _HojaJornadaState extends State<_HojaJornada> {
   late final _cupos = TextEditingController(text: widget.inicial?.cupos?.toString() ?? '');
   late bool _sinLimite = widget.inicial == null || widget.inicial!.cupos == null;
   late DateTime _fecha = widget.inicial?.fecha ?? _sabadoProximo();
+  late LatLng? _punto = widget.inicial?.tienePunto == true ? LatLng(widget.inicial!.lat!, widget.inicial!.lon!) : null;
   bool _intento = false;
+
+  /// Centro del mapa sin punto: la Ciénaga de Mallorquín, en la franja del manglar.
+  static const _centroManglar = LatLng(10.99, -74.86);
+
+  void _ponerPunto(LatLng p) {
+    vibrar(Vibracion.seleccion);
+    setState(() => _punto = p);
+    anunciar(context, 'Punto de encuentro marcado');
+  }
 
   static DateTime _sabadoProximo() {
     final h = DateTime.now();
@@ -736,6 +748,8 @@ class _HojaJornadaState extends State<_HojaJornada> {
       fotoUrl: _foto.text.trim(),
       cupos: _sinLimite ? null : int.parse(_cupos.text.trim()),
       cerrada: i?.cerrada ?? false,
+      lat: _punto?.latitude,
+      lon: _punto?.longitude,
     ));
   }
 
@@ -767,6 +781,65 @@ class _HojaJornadaState extends State<_HojaJornada> {
         onChanged: (_) => setState(() {}),
         decoration: InputDecoration(labelText: 'Lugar de encuentro', errorText: _intento ? _errLugar : null),
       ),
+      const SizedBox(height: 4),
+      Text(_punto == null ? 'Toca el mapa para poner el punto de encuentro (opcional).' : 'Punto marcado. Toca otro lugar para moverlo.',
+          style: tt.bodySmall?.copyWith(color: Cra.textoSuave)),
+      const SizedBox(height: 6),
+      Semantics(
+        label: _punto == null
+            ? 'Mapa del punto de encuentro, sin punto. Toca para marcarlo'
+            : 'Mapa del punto de encuentro, marcado en ${_punto!.latitude.toStringAsFixed(4)}, ${_punto!.longitude.toStringAsFixed(4)}',
+        child: ClipRRect(
+          key: const Key('mapa-punto-jornada'),
+          borderRadius: BorderRadius.circular(Zr.m),
+          child: SizedBox(
+            height: 180,
+            child: FlutterMap(
+              options: MapOptions(
+                backgroundColor: Cra.cienagaClara,
+                initialCenter: _punto ?? _centroManglar,
+                initialZoom: _punto == null ? 12 : 15,
+                // Sin arrastrar con un dedo: la hoja se desplaza; se acerca con dos dedos.
+                interactionOptions: const InteractionOptions(flags: InteractiveFlag.pinchZoom | InteractiveFlag.pinchMove),
+                onTap: (_, p) => _ponerPunto(p),
+              ),
+              children: [
+                TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'co.zanky.app'),
+                if (_punto != null)
+                  MarkerLayer(markers: [
+                    Marker(
+                      point: _punto!,
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.topCenter,
+                      child: TweenAnimationBuilder<double>(
+                        key: ValueKey(_punto),
+                        tween: Tween(begin: MediaQuery.disableAnimationsOf(context) ? 1 : 0.4, end: 1),
+                        duration: MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : Zm.medio,
+                        curve: Curves.easeOutBack,
+                        builder: (_, s, hijo) => Transform.scale(scale: s, alignment: Alignment.bottomCenter, child: hijo),
+                        child: const Icon(Icons.location_on_rounded, size: 40, color: Cra.dorado,
+                            shadows: [Shadow(color: Color(0x66000000), blurRadius: 6, offset: Offset(0, 2))]),
+                      ),
+                    ),
+                  ]),
+              ],
+            ),
+          ),
+        ),
+      ),
+      if (_punto != null)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: () {
+              vibrar(Vibracion.ligera);
+              setState(() => _punto = null);
+            },
+            icon: const Icon(Icons.location_off_rounded, size: 18),
+            label: const Text('Quitar el punto'),
+          ),
+        ),
       const SizedBox(height: 6),
       TextField(
         controller: _foto,

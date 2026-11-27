@@ -168,6 +168,34 @@ void main() {
       await cerrar(t);
     });
 
+    testWidgets('nueva jornada: tocar el mapa pone el pin y la jornada guarda el punto', (t) async {
+      final c = await montar(t);
+      await t.tap(find.text('Nueva jornada'));
+      for (var i = 0; i < 5; i++) {
+        await t.pump(const Duration(milliseconds: 150));
+      }
+      final campos = find.byType(TextField);
+      await t.enterText(campos.at(0), 'Limpieza del caño');
+      await t.enterText(campos.at(1), 'Muelle de Las Flores');
+      await t.pump();
+      final mapa = find.byKey(const Key('mapa-punto-jornada'));
+      await t.ensureVisible(mapa);
+      await t.pump(const Duration(milliseconds: 300));
+      await t.tapAt(t.getCenter(mapa));
+      await t.pump(const Duration(milliseconds: 400));
+      expect(find.text('Quitar el punto'), findsOneWidget);
+      await t.ensureVisible(find.text('Crear jornada'));
+      await t.pump(const Duration(milliseconds: 200));
+      await t.tap(find.text('Crear jornada'));
+      for (var i = 0; i < 6; i++) {
+        await t.pump(const Duration(milliseconds: 150));
+      }
+      final nueva = c.contenido.jornadas.firstWhere((x) => x.titulo == 'Limpieza del caño');
+      expect(nueva.tienePunto, isTrue);
+      expect(nueva.lat!, closeTo(10.99, 0.2));
+      await cerrar(t);
+    });
+
     testWidgets('deslizar a la derecha revela «Cerrar»', (t) async {
       await montar(t);
       await t.drag(find.text('Siembra en Bocana'), const Offset(160, 0));
