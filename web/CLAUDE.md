@@ -43,7 +43,7 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
 | `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
 | `/plataforma/jornadas` | Jornadas comunitarias: cartelera con tarjetas, invitación por enlace (`?jornada=`) con inscripción y consentimiento, WhatsApp, compartir, Google Calendar, `.ics`, QR y cartel imprimible (A4, con dos QR: inscripción e «Interactúa con Zanky»); botón y QR «Interactúa con Zanky» que abren la app en `/app/?evento=<id>` (`urlEventoZanky`, `PUBLIC_URL_APP`); crear jornada ligada a una acción |
-| `/app/` | Versión web de la app Flutter (experiencia del evento con Zanky). No la genera Astro: se publica aparte en el servidor y el despliegue de la web no la toca |
+| `/app/` | Versión web de la app Flutter (experiencia del evento con Zanky). No la genera Astro: se compila con `flutter build web --release --base-href /app/` y se publica con `web/scripts/publicar-app.sh`, que renombra `main.dart.js` y `flutter_bootstrap.js` con su huella (el servidor guarda los `.js` 30 días). El despliegue de la web excluye `/app/` y `/cra/` |
 | `/plataforma/monitoreo` | Monitoreo comunitario: reportes de Zanky (app/bot/web) y fotos georreferenciadas |
 | `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada, nota conceptual) |
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
