@@ -6,14 +6,15 @@ import { formatoFechaCRA, obtenerNoticiasCRA, type NoticiaCRA } from '../../lib/
 
 const SALA_DE_PRENSA = 'https://www.crautonoma.gov.co/prensa/noticias';
 
-export default function NoticiasCRA() {
+/** limite: cuántas noticias mostrar (la portada usa las 3 últimas). */
+export default function NoticiasCRA({ limite = 6 }: { limite?: number }) {
   const [noticias, setNoticias] = useState<NoticiaCRA[] | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
     let activo = true;
-    obtenerNoticiasCRA(6).then((lista) => { if (activo) setNoticias(lista); }).catch(() => { if (activo) setError(true); });
+    obtenerNoticiasCRA(limite).then((lista) => { if (activo) setNoticias(lista); }).catch(() => { if (activo) setError(true); });
     return () => { activo = false; };
-  }, []);
+  }, [limite]);
 
   return (
     <div aria-labelledby="titulo-noticias-cra">
@@ -30,7 +31,7 @@ export default function NoticiasCRA() {
 
       {!noticias && !error && (
         <ul aria-busy="true" aria-label="Cargando noticias de la C.R.A." className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2].map((i) => <li key={i} className="h-72 animate-pulse rounded-3xl bg-white/5 ring-1 ring-linea motion-reduce:animate-none" />)}
+          {Array.from({ length: Math.min(3, limite) }, (_, i) => i).map((i) => <li key={i} className="h-72 animate-pulse rounded-3xl bg-white/5 ring-1 ring-linea motion-reduce:animate-none" />)}
         </ul>
       )}
 

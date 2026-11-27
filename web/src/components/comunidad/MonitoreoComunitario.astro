@@ -4,7 +4,6 @@
 // página /plataforma/monitoreo (ahora redirige a /#monitoreo).
 import MapaMonitoreo from '../mapa/MapaMonitoreo';
 import ReporteMonitoreo from '../monitoreo/ReporteMonitoreo';
-import NoticiasCRA from './NoticiasCRA';
 import type { ReportePublico, ZonasManglar } from '../../types/manglar';
 import type { Accion, ReporteMonitoreo as Monitoreo } from '../../types/plataforma';
 import '../../styles/monitoreo-portada.css';
@@ -24,9 +23,6 @@ const { reportes, sectores, acciones, monitoreos } = Astro.props;
         <div slot="fallback" class="mon-cargando" style="height: 600px"><p>Cargando el mapa de reportes…</p></div>
       </MapaMonitoreo>
       <p class="mon-visores">Cada mapa tiene su propia página: <a href="/visores/reportes">reportes</a>, <a href="/visores/riesgo">puntos críticos y focos de calor</a>, <a href="/visores/agua">calidad del agua</a> y <a href="/workflow">estado del manglar</a>.</p>
-    </div>
-    <div class="mon" data-reveal="card">
-      <NoticiasCRA client:visible />
     </div>
   </div>
 </section>

@@ -13,15 +13,16 @@ import AlertasManglar from '../components/comunidad/AlertasManglar';
 import PanelCuenta from '../components/cuenta/PanelCuenta';
 import MonitoreoComunitario from '../components/comunidad/MonitoreoComunitario.astro';
 import GuardianesManglar from '../components/comunidad/GuardianesManglar.astro';
+import NoticiasPortada from '../components/comunidad/NoticiasPortada.astro';
 import MenuDesplegable from '../components/layout/MenuDesplegable.astro';
 import MenuMovil from '../components/layout/MenuMovil.astro';
 import { PLATAFORMA, VISORES } from '../lib/navegacion';
 
 const SECCIONES_PORTADA = [
   { id: 'mapa', href: '#mapa', texto: 'Mapa en vivo' },
+  { id: 'jornadas', href: '#jornadas', texto: 'Jornadas' },
   { id: 'alertas', href: '#alertas', texto: 'Alertas' },
   { id: 'reportar', href: '#reportar', texto: 'Reportar' },
-  { id: 'jornadas', href: '#jornadas', texto: 'Jornadas' },
   { id: 'monitoreo', href: '#monitoreo', texto: 'Monitoreo' },
 ];
 
@@ -62,6 +63,22 @@ const publicos = reportes.map(aReportePublico);
       </div>
     </section>
 
+    <section class="panel" data-tono="hondo" id="jornadas">
+      <div class="panel-dentro">
+        <div class="jornadas-cab" data-reveal>
+          <div>
+            <p class="kicker">Comunidad</p>
+            <h2>Súmate a la <span class="tono">próxima jornada</span>.</h2>
+          </div>
+          <div class="acciones">
+            <a class="boton boton-dorado" href="/plataforma/jornadas">Ver todas <span aria-hidden="true">→</span></a>
+            <a class="boton boton-claro" href="/plataforma/jornadas">Crear una jornada</a>
+          </div>
+        </div>
+        <JornadasEnVivo client:load jornadas={jornadas} />
+      </div>
+    </section>
+
     <section class="panel" data-tono="arena" id="alertas">
       <div class="panel-dentro">
         <AlertasManglar client:only="react">
@@ -89,23 +106,9 @@ const publicos = reportes.map(aReportePublico);
 
     <MonitoreoComunitario reportes={publicos} sectores={sectores} acciones={acciones} monitoreos={monitoreos} />
 
-    <section class="panel" data-tono="hondo" id="jornadas">
-      <div class="panel-dentro">
-        <div class="jornadas-cab" data-reveal>
-          <div>
-            <p class="kicker">Comunidad</p>
-            <h2>Súmate a la <span class="tono">próxima jornada</span>.</h2>
-          </div>
-          <div class="acciones">
-            <a class="boton boton-dorado" href="/plataforma/jornadas">Ver todas <span aria-hidden="true">→</span></a>
-            <a class="boton boton-claro" href="/plataforma/jornadas">Crear una jornada</a>
-          </div>
-        </div>
-        <JornadasEnVivo client:load jornadas={jornadas} />
-      </div>
-    </section>
-
     <GuardianesManglar colegios={colegios} />
+
+    <NoticiasPortada />
 
     <section class="cierre">
       <div class="cierre-dentro" data-reveal="scale">
