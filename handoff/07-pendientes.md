@@ -36,7 +36,7 @@ Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
 ## B. Backend común (`backend/`, Á)
 
 - [x] Esquema propuesto: PostGIS, RLS, roles en una sola función, auditoría, datos abiertos, realtime.
-- [ ] **Á** — Crear el proyecto Supabase (cuenta del equipo) y correr `schema.sql` → `zonas-1..3.sql` → `prioridades-1..6.sql` → `seed_demo.sql` (orden y pesos en `backend/supabase/README.md` §8).
+- [ ] **Á** — Crear el proyecto Supabase (cuenta del equipo) y correr `schema.sql` → `zonas-1..3.sql` → `prioridades-1..6.sql` → `seed_demo.sql` (orden y pesos en `backend/supabase/README.md` §1).
 - [ ] **Á** — Prueba de punta a punta contra la base real (los 6 riesgos de `backend/supabase/README.md`).
 - [ ] Límite por IP para reportes anónimos (función en el borde).
 - [ ] Quitar metadatos (EXIF/GPS) de las fotos en el servidor.
