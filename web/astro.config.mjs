@@ -8,6 +8,9 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   integrations: [react()],
 
+  // El monitoreo comunitario vive en la portada.
+  redirects: { '/plataforma/monitoreo': '/#monitoreo' },
+
   vite: {
     plugins: [tailwindcss()],
     server: { fs: { allow: ['..'] } }

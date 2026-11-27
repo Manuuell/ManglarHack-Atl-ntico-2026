@@ -1,0 +1,42 @@
+---
+// Monitoreo comunitario dentro de la portada: el mapa público de reportes con
+// filtros y datos abiertos, y el seguimiento de las siembras. Antes era la
+// página /plataforma/monitoreo (ahora redirige a /#monitoreo).
+import MapaMonitoreo from '../mapa/MapaMonitoreo';
+import ReporteMonitoreo from '../monitoreo/ReporteMonitoreo';
+import type { ReportePublico, ZonasManglar } from '../../types/manglar';
+import type { Accion, ReporteMonitoreo as Monitoreo } from '../../types/plataforma';
+import '../../styles/monitoreo-portada.css';
+
+interface Props { reportes: ReportePublico[]; sectores: ZonasManglar; acciones: Accion[]; monitoreos: Monitoreo[] }
+const { reportes, sectores, acciones, monitoreos } = Astro.props;
+---
+<section class="panel" data-tono="hondo" id="monitoreo" aria-labelledby="titulo-monitoreo">
+  <div class="panel-dentro">
+    <div class="mon-cab" data-reveal>
+      <p class="kicker">Monitoreo comunitario</p>
+      <h2 id="titulo-monitoreo">Explora los reportes y <span class="tono">descarga los datos</span>.</h2>
+      <p class="mon-sub">Filtra por tipo y prioridad, abre cada caso con su estado y descarga lo público en CSV, GeoJSON o KML. Sin fotos ni nombres de quien reporta, y con la ubicación difuminada.</p>
+    </div>
+    <div class="mon" data-reveal="card">
+      <MapaMonitoreo client:only="react" reportes={reportes} poligonos={sectores}>
+        <div slot="fallback" class="mon-cargando" style="height: 600px"><p>Cargando el mapa de reportes…</p></div>
+      </MapaMonitoreo>
+    </div>
+  </div>
+</section>
+
+<section class="panel" data-tono="abismo" id="siembras" aria-labelledby="titulo-siembras">
+  <div class="panel-dentro">
+    <div class="mon-cab" data-reveal>
+      <p class="kicker">Seguimiento de las siembras</p>
+      <h2 id="titulo-siembras">¿Sembraste mangle? <span class="tono">Cuenta cómo va.</span></h2>
+      <p class="mon-sub">Quien ejecuta una acción reporta a la C.R.A. cuántas plántulas siguen vivas, su altura y fotos ubicadas, en las fechas que se acuerden.</p>
+    </div>
+    <div class="mon" data-reveal="card">
+      <ReporteMonitoreo client:only="react" acciones={acciones} monitoreos={monitoreos}>
+        <div slot="fallback" class="mon-cargando" style="height: 520px"><p>Cargando el formulario de seguimiento…</p></div>
+      </ReporteMonitoreo>
+    </div>
+  </div>
+</section>

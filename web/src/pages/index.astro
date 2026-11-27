@@ -3,14 +3,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/portada.css';
 import { obtenerPoligonos, obtenerReportes } from '../lib/datos';
 import { aReportePublico } from '../lib/privacidad';
-import { obtenerJornadas } from '../lib/plataforma/datos';
+import { obtenerAcciones, obtenerJornadas, obtenerMonitoreos } from '../lib/plataforma/datos';
+import { obtenerColegios } from '../lib/datos';
 import MapaEnVivo from '../components/comunidad/MapaEnVivo';
 import ReportarProblema from '../components/comunidad/ReportarProblema';
 import JornadasEnVivo from '../components/comunidad/JornadasEnVivo';
 import AvisosEnVivo from '../components/comunidad/AvisosEnVivo';
+import MonitoreoComunitario from '../components/comunidad/MonitoreoComunitario.astro';
+import GuardianesManglar from '../components/comunidad/GuardianesManglar.astro';
 
 // Lo público pasa por aReportePublico: sin foto, sin quién reporta y con la ubicación difuminada.
-const [reportes, sectores, jornadas] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerJornadas()]);
+const [reportes, sectores, jornadas, acciones, monitoreos, colegios] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerJornadas(), obtenerAcciones(), obtenerMonitoreos(), obtenerColegios()]);
 const publicos = reportes.map(aReportePublico);
 ---
 <BaseLayout title="Zanky · Lo que pasa en el manglar del Atlántico, ahora" class="portada" sinPie>
@@ -24,7 +27,7 @@ const publicos = reportes.map(aReportePublico);
       <a href="#mapa">Mapa en vivo</a>
       <a href="#reportar">Reportar</a>
       <a href="#jornadas">Jornadas</a>
-      <a href="/plataforma/monitoreo">Monitoreo</a>
+      <a href="#monitoreo">Monitoreo</a>
     </nav>
     <a class="boton boton-tinta cab-entrar" href="#reportar">Reportar</a>
   </header>
@@ -63,6 +66,8 @@ const publicos = reportes.map(aReportePublico);
       </div>
     </section>
 
+    <MonitoreoComunitario reportes={publicos} sectores={sectores} acciones={acciones} monitoreos={monitoreos} />
+
     <section class="panel" data-tono="hondo" id="jornadas">
       <div class="panel-dentro">
         <div class="jornadas-cab" data-reveal>
@@ -78,6 +83,8 @@ const publicos = reportes.map(aReportePublico);
         <JornadasEnVivo client:load jornadas={jornadas} />
       </div>
     </section>
+
+    <GuardianesManglar colegios={colegios} />
 
     <section class="cierre">
       <div class="cierre-dentro" data-reveal="scale">
@@ -104,10 +111,10 @@ const publicos = reportes.map(aReportePublico);
           <a href="#mapa">Mapa en vivo</a>
           <a href="#reportar">Reportar un problema</a>
           <a href="#jornadas">Jornadas</a>
+          <a href="#monitoreo">Monitoreo y datos abiertos</a>
         </nav>
         <nav aria-label="Plataforma">
           <h3>Plataforma</h3>
-          <a href="/plataforma/monitoreo">Monitoreo y datos abiertos</a>
           <a href="/plataforma/jornadas">Todas las jornadas</a>
           <a href="/workflow">Workflow satelital</a>
           <a href="/plataforma/panel">Panel de la Corporación</a>

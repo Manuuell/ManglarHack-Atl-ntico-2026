@@ -37,7 +37,7 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 
 | Ruta | Qué es |
 |---|---|
-| `/` | Portada comunitaria en vivo (`src/styles/portada.css` + `src/scripts/portada.ts` + `src/components/comunidad/`): cabecera que pasa a cápsula al bajar; hero con el mapa satelital y la lista «Ahora en el manglar» (reportes de la comunidad y jornadas); «Reportar un problema» (tipo, ubicación en el mapa con la regla del área de reporte, foto, detalles, consentimiento); próximas jornadas con inscritos; avisos en tiempo real (otras pestañas incluidas, vía `lib/comunidad/reportesLocales.ts`). Sin texto del reto: solo lo que hace la comunidad |
+| `/` | Portada comunitaria en vivo (`src/styles/portada.css` + `src/scripts/portada.ts` + `src/components/comunidad/`): cabecera que pasa a cápsula al bajar; hero con el mapa satelital y la lista «Ahora en el manglar» (reportes de la comunidad y jornadas); «Reportar un problema» (tipo, ubicación en el mapa con la regla del área de reporte, foto, detalles, consentimiento); próximas jornadas con inscritos; avisos en tiempo real (otras pestañas incluidas, vía `lib/comunidad/reportesLocales.ts`); **monitoreo comunitario** (`#monitoreo`: mapa público con filtros y datos abiertos CSV/GeoJSON/KML), **seguimiento de siembras** (`#siembras`: plántulas vivas, altura y fotos ubicadas) y **guardianes del manglar** (`#guardianes`: ranking de colegios y pasaporte), en `components/comunidad/MonitoreoComunitario.astro` y `GuardianesManglar.astro` con `styles/monitoreo-portada.css`. Sin texto del reto: solo lo que hace la comunidad |
 | `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
 | `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
 | `/plataforma/registro` | Registro de actor |
@@ -45,7 +45,7 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
 | `/plataforma/jornadas` | Jornadas comunitarias: cartelera con tarjetas, invitación por enlace (`?jornada=`) con inscripción y consentimiento, WhatsApp, compartir, Google Calendar, `.ics`, QR y cartel imprimible (A4, con dos QR: inscripción e «Interactúa con Zanky»); botón y QR «Interactúa con Zanky» que abren la app en `/app/?evento=<id>` (`urlEventoZanky`, `PUBLIC_URL_APP`); crear jornada ligada a una acción |
 | `/app/` | Versión web de la app Flutter (experiencia del evento con Zanky). No la genera Astro: se compila con `flutter build web --release --base-href /app/` y se publica con `web/scripts/publicar-app.sh`, que renombra `main.dart.js` y `flutter_bootstrap.js` con su huella (el servidor guarda los `.js` 30 días). El despliegue de la web excluye `/app/` y `/cra/` |
-| `/plataforma/monitoreo` | Monitoreo comunitario: reportes de Zanky (app/bot/web) y fotos georreferenciadas |
+| `/plataforma/monitoreo` | Redirige a `/#monitoreo` (`redirects` en `astro.config.mjs`): el monitoreo comunitario vive en la portada. La pestaña de la plataforma, «Reportar con Zanky» y el pie apuntan allí |
 | `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada, nota conceptual) |
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
 

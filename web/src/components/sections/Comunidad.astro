@@ -5,8 +5,9 @@ import { cn } from '../../lib/utils';
 import Zanky from '../marca/Zanky.astro';
 import Card from '../ui/Card.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
-interface Props { colegios: Colegio[]; }
-const { colegios } = Astro.props;
+// incrustada: dentro de un panel de la portada, sin fondo, márgenes ni encabezado propios.
+interface Props { colegios: Colegio[]; incrustada?: boolean; }
+const { colegios, incrustada = false } = Astro.props;
 const ranking = [...colegios].sort((a, b) => b.puntos - a.puntos);
 const maximo = Math.max(1, ...ranking.map(colegio => colegio.puntos));
 const podio = ['bg-[#f4eedc] text-[#796323]', 'bg-[#edf0f2] text-[#596775]', 'bg-[#f2e8df] text-[#855d3e]'];
@@ -18,9 +19,9 @@ const pasos = [
 ];
 const sellos = [Waves, Leaf, Shell];
 ---
-<section id="comunidad" class="bg-superficie py-20 sm:py-24">
- <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-  <SectionHeading eyebrow="Sostenibilidad y comunidad" titulo="Guardianes del manglar" descripcion="Colegios, viajeros y comunidades que transforman pequeños gestos en un futuro para el manglar." />
+<section id={incrustada ? undefined : 'comunidad'} class={incrustada ? undefined : 'bg-superficie py-20 sm:py-24'}>
+ <div class={incrustada ? undefined : 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'}>
+  {!incrustada && <SectionHeading eyebrow="Sostenibilidad y comunidad" titulo="Guardianes del manglar" descripcion="Colegios, viajeros y comunidades que transforman pequeños gestos en un futuro para el manglar." />}
   <div class="grid items-start gap-10 lg:grid-cols-5">
    <div class="min-w-0 lg:col-span-3">
     <h3 class="mb-6 text-xl font-bold text-texto">Ranking de colegios del Atlántico <span class="rounded-full bg-white/10 px-3 py-1 text-xs text-cra-100">Datos de ejemplo</span></h3><p class="mb-5 text-sm text-suave">Los puntos salen de reportes verificados, no de la cantidad</p>

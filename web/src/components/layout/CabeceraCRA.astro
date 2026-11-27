@@ -20,7 +20,7 @@ const enlaces = [
        class:list={['inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors',
         activo === id ? 'bg-white/12 text-texto' : 'text-suave hover:bg-white/8 hover:text-texto']}>{texto}</a>
    ))}
-   <a href="/plataforma/monitoreo" class="ml-1 inline-flex min-h-11 items-center rounded-full bg-dorado-500 px-5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">Reportar con Zanky</a>
+   <a href="/#reportar" class="ml-1 inline-flex min-h-11 items-center rounded-full bg-dorado-500 px-5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">Reportar con Zanky</a>
   </nav>
   <details class="relative md:hidden">
    <summary class="inline-flex min-h-11 cursor-pointer list-none items-center rounded-full bg-white/10 px-4 text-sm font-semibold text-texto [&::-webkit-details-marker]:hidden">Menú</summary>
@@ -29,7 +29,7 @@ const enlaces = [
      <a href={href} aria-current={activo === id ? 'page' : undefined}
         class:list={['inline-flex min-h-11 items-center rounded-2xl px-4 text-sm font-semibold', activo === id ? 'bg-white/12 text-texto' : 'text-suave hover:bg-white/8']}>{texto}</a>
     ))}
-    <a href="/plataforma/monitoreo" class="inline-flex min-h-11 items-center justify-center rounded-2xl bg-dorado-500 px-4 text-sm font-bold text-cra-950">Reportar con Zanky</a>
+    <a href="/#reportar" class="inline-flex min-h-11 items-center justify-center rounded-2xl bg-dorado-500 px-4 text-sm font-bold text-cra-950">Reportar con Zanky</a>
    </nav>
   </details>
  </div>
