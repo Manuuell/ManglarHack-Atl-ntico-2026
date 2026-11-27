@@ -10,6 +10,7 @@ import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/kit/boton_estado.dart';
 import '../../nucleo/kit/confirmar.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/zanky_mascota.dart';
@@ -295,10 +296,11 @@ class _Cabecera extends StatelessWidget {
                 visible: onAtras != null,
                 onTap: onAtras,
               ),
+              const InsigniaCra(alto: 32),
               Expanded(
                 child: Column(
                   children: [
-                    Text('NUEVO REPORTE · PASO ${paso + 1} DE ${pasos.length}', style: tt.labelSmall),
+                    Text('NUEVO REPORTE · PASO ${paso + 1} DE ${pasos.length}', style: tt.seccion),
                     const SizedBox(height: 2),
                     AnimatedSwitcher(
                       duration: Zm.corto,

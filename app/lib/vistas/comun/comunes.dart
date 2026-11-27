@@ -34,7 +34,7 @@ class CabeceraZ extends StatelessWidget {
                 if (subtitulo != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: Text(subtitulo!.toUpperCase(), style: tt.labelSmall?.copyWith(color: Cra.azul)),
+                    child: Text(subtitulo!.toUpperCase(), style: tt.seccion.copyWith(color: Cra.azul)),
                   ),
                 Text(titulo, style: tt.headlineMedium),
               ],

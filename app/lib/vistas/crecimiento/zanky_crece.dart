@@ -8,6 +8,7 @@ import '../../datos/crecimiento/progreso_crecimiento.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/kit/anuncio.dart';
 import '../../nucleo/kit/haptica.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 
@@ -121,7 +122,7 @@ class _ZankyCreceState extends State<ZankyCrece> with SingleTickerProviderStateM
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('ETAPA ${avance.etapa.numero} DE 5', style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Zc.hoja)),
+        Text('ETAPA ${avance.etapa.numero} DE 5', style: Theme.of(context).textTheme.seccion.copyWith(color: Zc.hoja)),
         const SizedBox(height: 8),
         Text(avance.etapa.nombre, style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 6),

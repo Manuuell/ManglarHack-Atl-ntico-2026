@@ -8,6 +8,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../datos/zonas.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 
 /// Qué capa de la CRA muestra el mapa.
@@ -27,7 +28,7 @@ const notaFuentePrioridad = 'Capa oficial de la CRA, escala 1:5.000. Recortada a
 /// el rojo del 5, media = el naranja del 4, baja = el ámbar del 3): lo que ya significa «urgente»
 /// en el resto de la app. El nivel no depende solo del color: el borde engorda con la prioridad
 /// y la leyenda y la hoja lo dicen con palabras.
-Color colorPrioridadCra(PrioridadCRA p) => Zc.dePrioridad(p.puntos);
+Color colorPrioridadCra(PrioridadCRA p) => Cra.deMapa(p.puntos);
 
 Color _bordePrioridad(PrioridadCRA p) => Color.lerp(colorPrioridadCra(p), Zc.raiz, 0.35)!;
 

@@ -5,6 +5,7 @@ import '../../datos/pronostico/reglas.dart';
 import '../../datos/pronostico/servicio_pronostico.dart';
 import '../../datos/zonas.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../pronostico/detalle_pronostico.dart';
 import '../pronostico/tarjeta_pronostico.dart';
@@ -135,7 +136,7 @@ class _PronosticoCompactoState extends State<PronosticoCompacto> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PRONÓSTICO DEL MANGLAR', style: tt.labelSmall),
+                    Text('PRONÓSTICO DEL MANGLAR', style: tt.seccion),
                     Text(titulo, style: tt.titleSmall),
                     Text(detalle, style: tt.bodySmall),
                   ],

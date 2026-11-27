@@ -7,6 +7,7 @@ import '../../datos/guardian.dart';
 import '../../datos/roles.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/zanky_mascota.dart';
@@ -231,6 +232,8 @@ class _BienvenidaState extends State<Bienvenida> {
               },
             ),
           ),
+          // Marca de la Corporación, a la izquierda; «Saltar» vive a la derecha.
+          Positioned(left: 24, top: relleno.top + 8, child: const InsigniaCra(alto: 40)),
         ],
       ),
     );

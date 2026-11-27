@@ -6,6 +6,7 @@ import '../../datos/prioridad.dart';
 import '../../datos/zonas.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 import 'capa_prioridad.dart';
@@ -285,6 +286,17 @@ class _LeyendaMapaState extends State<LeyendaMapa> {
                       padding: EdgeInsets.symmetric(vertical: 6),
                       child: SizedBox(width: 168, child: Divider(height: 1, color: Zc.linea)),
                     ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text('CAPAS DE LA CRA', style: tt.seccion.copyWith(color: Cra.azul)),
+                    ),
+                    const _Capa(color: Cra.manglarProbable, texto: 'Manglar probable'),
+                    for (final p in PrioridadCRA.values)
+                      _Capa(color: colorPrioridadCra(p), texto: 'Zona de prioridad ${p.nombre.toLowerCase()}'),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 6),
+                      child: SizedBox(width: 168, child: Divider(height: 1, color: Zc.linea)),
+                    ),
                     _Clave(
                       muestra: DiscoPainter(color: Zc.dePrioridad(3), mio: true),
                       texto: 'Borde blanco grueso: tuyo',
@@ -325,6 +337,34 @@ class _LeyendaMapaState extends State<LeyendaMapa> {
       ),
     );
   }
+}
+
+/// Muestra de una capa de la CRA en la leyenda: cuadro con su color y su nombre.
+class _Capa extends StatelessWidget {
+  const _Capa({required this.color, required this.texto});
+  final Color color;
+  final String texto;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 22,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: color, width: 1.4),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(texto, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Zc.texto)),
+          ],
+        ),
+      );
 }
 
 class _Clave extends StatelessWidget {

@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 
 import 'tema.dart';
 
+/// FUENTE DE VERDAD de la identidad de la app. Decisión del 27-nov: la app sigue la paleta pedida por
+/// el equipo; la web (`web/src/styles/global.css`) usa valores cercanos que conviene alinear:
+///
+/// | Token          | App (aquí) | Web publicada   |
+/// |----------------|------------|-----------------|
+/// | fondo          | `#0A2A47`  | `#082B45`       |
+/// | fondo profundo | `#061E35`  | `#061F33`       |
+/// | superficie     | `#12395E`  | `#0D3A5C`       |
+/// | dorado         | `#E8B33D`  | `#EDB512`       |
+/// | tipografía     | Lato       | Inter / Figtree |
+///
+/// Las diferencias son de pocos puntos y no rompen el contraste. Si se unifican, se cambia SOLO aquí
+/// y en las variables `:root` de `global.css`.
+///
 /// Identidad de la Corporación (CRA): UN solo lugar. Para pasar toda la app a oscuro basta con
 /// usar [temaCra] en `main.dart` (y apuntar `Zc` a estos mismos valores).
 ///
@@ -78,15 +92,31 @@ abstract final class Cra {
   };
 
   static Color dePrioridad(int p) => prioridad[p.clamp(1, 5)]!;
+
+  /// Escala 1-5 de la capa de prioridad del MAPA con la paleta de capas de la CRA: del verde de
+  /// preservación al rojo de riesgo muy alto. Las zonas alta/media/baja de la capa oficial valen
+  /// 5/4/3 (`PrioridadCRA.puntos`): rojo, naranja y rosa pálido. El nivel no depende solo del color:
+  /// el borde engorda y la leyenda lo dice con palabras.
+  static const prioridadMapa = <int, Color>{
+    1: preservacion,
+    2: agua,
+    3: rehabilitacion,
+    4: recuperacion,
+    5: riesgoMuyAlto,
+  };
+
+  static Color deMapa(int p) => prioridadMapa[p.clamp(1, 5)]!;
 }
 
-/// Titular de sección: MAYÚSCULAS con tracking (el texto lo escribe la pantalla), en dorado o el color dado.
+/// Titular de sección: UN solo estilo (MAYÚSCULAS con tracking; el texto lo escribe la pantalla en
+/// mayúsculas). Se usa como `tt.seccion` y, si hace falta, `.copyWith(color: ...)`.
+extension EstiloSeccion on TextTheme {
+  TextStyle get seccion => labelSmall!.copyWith(letterSpacing: 1.6, fontWeight: FontWeight.w700);
+}
+
+/// Eyebrow dorado sobre fondo oscuro; sobre claro va en [Cra.azul] (el dorado no llega a 4,5:1).
 TextStyle estiloSeccion(BuildContext context, {Color color = Cra.dorado}) =>
-    Theme.of(context).textTheme.labelSmall!.copyWith(
-      color: color,
-      letterSpacing: 1.6,
-      fontWeight: FontWeight.w700,
-    );
+    Theme.of(context).textTheme.seccion.copyWith(color: color);
 
 /// Insignia de la CRA: el logo blanco sobre su azul. Va en la cabecera de cada pantalla grande.
 class InsigniaCra extends StatelessWidget {

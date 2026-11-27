@@ -9,6 +9,7 @@ import '../../nucleo/base/transicion_pestanas.dart';
 import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/celebracion.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../admin/entrada_panel.dart';
 import '../admin/panel_cra.dart';
@@ -210,7 +211,7 @@ class _SeccionRol extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('TU ROL', style: tt.labelSmall?.copyWith(color: rol.color)),
+                  Text('TU ROL', style: tt.seccion.copyWith(color: rol.color)),
                   Text(rol.nombre, style: tt.titleMedium),
                   Text(rol.lema, style: tt.bodySmall),
                 ],

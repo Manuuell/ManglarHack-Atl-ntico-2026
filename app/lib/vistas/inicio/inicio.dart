@@ -263,7 +263,7 @@ class _InicioState extends State<Inicio> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_saludo().toUpperCase(), style: tt.labelSmall?.copyWith(color: Cra.azul)),
+                      Text(_saludo().toUpperCase(), style: tt.seccion.copyWith(color: Cra.azul)),
                       const SizedBox(height: 2),
                       Text(nombre.isEmpty ? 'Guardián del manglar' : nombre, style: tt.headlineMedium),
                       if (perfil != null) _PildoraRol(rol: rol),
@@ -647,7 +647,7 @@ class _Mision extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('MISIÓN DE LA SEMANA', style: tt.labelSmall?.copyWith(color: const Color(0xFFB8741A))),
+                  Text('MISIÓN DE LA SEMANA', style: tt.seccion.copyWith(color: const Color(0xFFB8741A))),
                   const SizedBox(height: 2),
                   Text(mision.titulo, style: tt.titleMedium),
                   const SizedBox(height: 2),

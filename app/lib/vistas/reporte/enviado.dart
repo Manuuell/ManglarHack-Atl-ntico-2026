@@ -9,6 +9,7 @@ import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/celebracion.dart';
 import '../../nucleo/kit/haptica.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
@@ -148,7 +149,7 @@ class _ReporteEnviadoState extends State<ReporteEnviado> {
                     child: TarjetaZ(
                       child: Column(
                         children: [
-                          Text('NÚMERO DE CASO', style: tt.labelSmall),
+                          Text('NÚMERO DE CASO', style: tt.seccion),
                           const SizedBox(height: 4),
                           Text(r.caso,
                               style: tt.displaySmall?.copyWith(letterSpacing: 2, fontFeatures: const [

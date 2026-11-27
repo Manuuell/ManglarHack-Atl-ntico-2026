@@ -13,6 +13,7 @@ import '../../datos/zonas.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../../nucleo/base/transicion_pestanas.dart';
 import '../mis_reportes/detalle_reporte.dart';
@@ -165,8 +166,8 @@ class _PantallaMapaState extends State<PantallaMapa>
     _limitesTodo = _manglar.zonas.isEmpty
         ? _regionInicial
         : limitesDe(_manglar.zonas.expand((z) => z.cajas));
-    final relleno = Zc.hoja.withValues(alpha: 0.35);
-    final borde = Color.lerp(Zc.hoja, Zc.raiz, 0.5)!;
+    final relleno = Cra.manglarProbable.withValues(alpha: 0.35);
+    final borde = Color.lerp(Cra.manglarProbable, Zc.raiz, 0.35)!;
 
     // Los 144 polígonos (~21 000 vértices) se crean aquí, una sola vez. flutter_map los
     // simplifica según el zoom y deja de dibujar los que quedan fuera de la pantalla.
