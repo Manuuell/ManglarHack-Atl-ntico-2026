@@ -7,7 +7,8 @@ import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 
 /// Todo lo que la persona escribe o marca en la última página, en un solo lugar.
-/// La cédula vive aquí solo mientras se escribe: lo que se guarda es su huella.
+/// La cédula ya no se pide en la bienvenida (hoy no tiene ningún uso): es opcional en
+/// «Editar mi perfil». Los límites de cédula viven aquí para que ambas pantallas usen los mismos.
 class DatosPerfil extends ChangeNotifier {
   DatosPerfil({String nombre = '', String colegio = '', this.anonimo = false})
       : nombre = TextEditingController(text: nombre),
@@ -20,10 +21,8 @@ class DatosPerfil extends ChangeNotifier {
 
   final TextEditingController nombre;
   final TextEditingController colegio;
-  final TextEditingController cedula = TextEditingController();
   final FocusNode focoNombre = FocusNode();
   final FocusNode focoColegio = FocusNode();
-  final FocusNode focoCedula = FocusNode();
 
   bool anonimo;
   bool acepto = false;
@@ -51,8 +50,7 @@ class DatosPerfil extends ChangeNotifier {
 
   bool get valido =>
       validarNombre(nombre.text) == null &&
-      validarColegio(colegio.text) == null &&
-      validarCedula(cedula.text) == null;
+      validarColegio(colegio.text) == null;
 
   void alternarAnonimo() {
     anonimo = !anonimo;
@@ -71,8 +69,6 @@ class DatosPerfil extends ChangeNotifier {
       focoNombre.requestFocus();
     } else if (validarColegio(colegio.text) != null) {
       focoColegio.requestFocus();
-    } else if (validarCedula(cedula.text) != null) {
-      focoCedula.requestFocus();
     }
   }
 
@@ -85,15 +81,13 @@ class DatosPerfil extends ChangeNotifier {
   void dispose() {
     nombre.dispose();
     colegio.dispose();
-    cedula.dispose();
     focoNombre.dispose();
     focoColegio.dispose();
-    focoCedula.dispose();
     super.dispose();
   }
 }
 
-/// La última página: nombre, colegio, cédula, anonimato y aviso de privacidad.
+/// La última página: nombre, colegio, anonimato y aviso de privacidad.
 class PaginaPerfil extends StatelessWidget {
   const PaginaPerfil({super.key, required this.datos, required this.burbuja});
 
@@ -116,7 +110,7 @@ class PaginaPerfil extends StatelessWidget {
             Semantics(header: true, child: Text('¿Cómo te llamamos?', style: tema.headlineMedium)),
             const SizedBox(height: 8),
             Text(
-              'Nombre, colegio y cédula son opcionales. Sin ellos eres un «Guardián del manglar» igual de valioso.',
+              'Nombre y colegio son opcionales y se quedan en tu teléfono. Sin ellos eres un «Guardián del manglar» igual de valioso.',
               style: tema.bodyLarge?.copyWith(color: Zc.textoSuave),
             ),
             const SizedBox(height: 22),
@@ -143,29 +137,11 @@ class PaginaPerfil extends StatelessWidget {
               validar: DatosPerfil.validarColegio,
               forzar: datos.forzar,
             ),
-            const SizedBox(height: 16),
-            CampoZ(
-              etiqueta: 'Cédula',
-              icono: Icons.badge_rounded,
-              pista: 'Solo números',
-              controlador: datos.cedula,
-              foco: datos.focoCedula,
-              teclado: TextInputType.number,
-              accion: TextInputAction.done,
-              sensible: true,
-              formateadores: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(DatosPerfil.maxCedula),
-              ],
-              validar: DatosPerfil.validarCedula,
-              forzar: datos.forzar,
-              ayuda: 'Solo guardamos una huella cifrada para reconocerte en la app y en WhatsApp. Nunca tu número.',
-            ),
             const SizedBox(height: 22),
             InterruptorZ(
               titulo: 'Reportar en anónimo por defecto',
-              detalle: 'Tu nombre no aparece en el reporte. Un reporte anónimo pesa un poco menos en la confianza, '
-                  'pero protege tu identidad.',
+              detalle: 'No se envía tu identificador de guardián con el reporte. Un reporte anónimo pesa un poco menos '
+                  'en la confianza, pero protege tu identidad.',
               valor: datos.anonimo,
               alCambiar: datos.alternarAnonimo,
             ),
@@ -590,10 +566,17 @@ class _AvisoPrivacidad extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           const _Vineta(
+            icono: Icons.business_rounded,
+            titulo: 'Responsable. ',
+            texto: 'La entidad que opere Zanky. En el piloto, la Corporación Autónoma Regional del Atlántico (CRA).',
+          ),
+          const SizedBox(height: 12),
+          const _Vineta(
             icono: Icons.folder_open_rounded,
-            titulo: 'Qué guardamos. ',
-            texto: 'Tus reportes (foto, ubicación y hora) y, si quieres, tu nombre, colegio y la huella cifrada de tu '
-                'cédula. Nunca el número.',
+            titulo: 'Qué se envía. ',
+            texto: 'A la CRA llegan tus reportes (foto, ubicación exacta, hora y descripción) y, si no reportas en '
+                'anónimo, un identificador al azar de tu teléfono. Tu nombre, tu colegio y tu cédula (si la pones) '
+                'se quedan solo en este teléfono.',
           ),
           const SizedBox(height: 12),
           const _Vineta(
@@ -605,7 +588,9 @@ class _AvisoPrivacidad extends StatelessWidget {
           const _Vineta(
             icono: Icons.verified_user_rounded,
             titulo: 'Tus derechos. ',
-            texto: 'Puedes conocer, corregir o pedir que borremos tus datos cuando quieras.',
+            texto: 'Puedes borrar lo guardado en este teléfono cuando quieras: Guardián, Editar mi perfil, '
+                '«Borrar mis datos de este teléfono». Para conocer, corregir o pedir que se borre lo que ya llegó a '
+                'la CRA, escribe por los canales de atención de la CRA. Ley 1581 de 2012.',
           ),
         ],
       ),

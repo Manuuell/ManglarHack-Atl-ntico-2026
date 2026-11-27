@@ -30,6 +30,27 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
   bool _revisando = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _dejarSalEscrita());
+  }
+
+  /// Un perfil de la versión anterior no tenía sal: se creó al cargarlo y, hasta que se
+  /// guarde, el código público cambiaría en cada arranque. Se deja escrita una vez.
+  Future<void> _dejarSalEscrita() async {
+    if (!mounted) return;
+    final estado = Zanky.leer(context);
+    final p = estado.perfil;
+    if (p == null || !p.salPendiente) return;
+    try {
+      await estado.guardarPerfil(p);
+      p.salPendiente = false;
+    } catch (_) {
+      // Sin espacio: se reintenta la próxima vez que se abra esta pantalla.
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Solo se celebra con la pestaña a la vista: una celebración sobre otra pestaña
