@@ -9,6 +9,7 @@ import '../../nucleo/kit/fila_deslizable.dart';
 import '../../nucleo/kit/menu_mantenido.dart';
 import '../../nucleo/kit/tirar_actualizar.dart';
 import 'detalle_reporte.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/segmentado.dart';
 import '../../nucleo/presionable.dart';
@@ -31,6 +32,30 @@ class PantallaMisReportes extends StatefulWidget {
 
 class _PantallaMisReportesState extends State<PantallaMisReportes> {
   _Filtro _filtro = _Filtro.todos;
+  EstadoZanky? _estado;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final e = Zanky.leer(context);
+    if (!identical(e, _estado)) {
+      _estado?.novedades.removeListener(_novedad);
+      _estado = e..novedades.addListener(_novedad);
+    }
+  }
+
+  @override
+  void dispose() {
+    _estado?.novedades.removeListener(_novedad);
+    super.dispose();
+  }
+
+  /// Seguimiento como en WhatsApp: «llegó» y «ahora está…» se anuncian solos.
+  void _novedad() {
+    final texto = _estado?.novedades.value;
+    if (texto == null || !mounted) return;
+    avisar(context, texto, tipo: TipoAviso.exito);
+  }
 
   /// Cuántas filas entran escalonadas: lo que cabe en la primera pantalla. Las de más
   /// abajo aparecen al desplazar y no deben re-animarse cada vez que vuelven a la vista.

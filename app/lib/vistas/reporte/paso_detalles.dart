@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../datos/prioridad.dart';
+import '../../datos/reporte_canal.dart';
 import '../../datos/reporte.dart' show maxDescripcionServidor, recortarPuntosDeCodigo;
 import '../../datos/tipos.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import 'borrador.dart';
@@ -112,7 +114,31 @@ class _PasoDetallesState extends State<PasoDetalles> {
             onCambio: (v) => b.cambiar(() => b.anonimo = v),
           ),
           const SizedBox(height: 18),
+          // Lo que pasa ahora y es de lo más grave (fuego, tala): primero la vida, como en el bot.
+          AnimatedSize(
+            duration: Zm.medio,
+            curve: Zm.entrar,
+            alignment: Alignment.topCenter,
+            child: b.tipo != null && TextosCanal.pideEmergencia(b.tipo!, b.momento)
+                ? const Padding(padding: EdgeInsets.only(bottom: 14), child: AvisoEmergencia())
+                : const SizedBox(width: double.infinity),
+          ),
           if (b.prioridad != null) _TarjetaPrioridad(prioridad: b.prioridad!, solidez: b.solidez.valor),
+          if (b.tipo != null && b.ubicacion != null) ...[
+            const SizedBox(height: 14),
+            _Resumen(
+              filas: TextosCanal.resumen(
+                tipo: b.tipo!,
+                dentro: b.ubicacion!.dentro,
+                distanciaM: b.ubicacion!.distanciaM,
+                zona: b.ubicacion!.zona.nombre,
+                conFoto: b.foto != null,
+                descripcion: b.descripcion,
+                momento: b.momento,
+                magnitud: b.magnitud,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -296,6 +322,89 @@ class _Interruptor extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// «Revisa tu reporte»: el mismo resumen que el bot muestra antes de «Enviar», fila por
+/// fila. Cada valor se cruza con un fundido cuando la persona cambia una respuesta.
+class _Resumen extends StatelessWidget {
+  const _Resumen({required this.filas});
+  final List<(String, String)> filas;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Semantics(
+      container: true,
+      label: 'Revisa tu reporte',
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(Zr.l),
+          border: Border.all(color: Zc.linea),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('REVISA TU REPORTE', style: tt.seccion),
+            const SizedBox(height: 6),
+            for (final (i, (k, v)) in filas.indexed) ...[
+              if (i > 0) const Divider(height: 1, color: Zc.linea),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(width: 92, child: Text(k, style: tt.labelMedium?.copyWith(color: Zc.textoSuave))),
+                    Expanded(
+                      child: AnimatedSwitcher(
+                        duration: Zm.corto,
+                        layoutBuilder: (actual, previos) =>
+                            Stack(alignment: Alignment.topLeft, children: [...previos, ?actual]),
+                        child: Text(v, key: ValueKey(v), style: tt.bodyMedium?.copyWith(color: Zc.texto)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Recordatorio de la línea de emergencias (123), con el texto del bot.
+class AvisoEmergencia extends StatelessWidget {
+  const AvisoEmergencia({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Color.alphaBlend(Zc.dePrioridad(5).withValues(alpha: 0.08), Colors.white),
+          borderRadius: BorderRadius.circular(Zr.m),
+          border: Border.all(color: Zc.dePrioridad(5).withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.health_and_safety_rounded, color: Zc.dePrioridad(5), size: 22),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text('No te arriesgues. ${TextosCanal.emergencia}',
+                  style: tt.bodyMedium?.copyWith(color: Zc.texto)),
+            ),
+          ],
         ),
       ),
     );

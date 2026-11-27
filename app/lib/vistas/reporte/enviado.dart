@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../datos/estado.dart';
+import '../../datos/prioridad.dart';
 import '../../datos/reporte.dart';
+import '../../datos/reporte_canal.dart';
 import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/celebracion.dart';
 import '../../nucleo/kit/haptica.dart';
@@ -15,6 +17,7 @@ import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../raiz.dart';
+import 'paso_detalles.dart' show AvisoEmergencia;
 
 /// Qué decirle a la persona sobre dónde está su reporte. Separa los casos que antes se
 /// confundían: sin red, el servidor falló, el servidor lo rechazó, en cola con red y
@@ -176,6 +179,12 @@ class _ReporteEnviadoState extends State<ReporteEnviado> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  _PorQuePrioridad(r: r),
+                  if (TextosCanal.pideEmergencia(r.tipo, r.momento)) ...[
+                    const SizedBox(height: 12),
+                    const AvisoEmergencia(),
+                  ],
                   const SizedBox(height: 22),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -184,7 +193,13 @@ class _ReporteEnviadoState extends State<ReporteEnviado> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: BurbujaZanky(
-                          texto: r.anonimo
+                          texto: r.envio == Envio.enviado
+                              ? TextosCanal.enviado(r.caso)
+                              : r.envio == Envio.rechazado
+                                  ? TextosCanal.envioRechazado
+                                  : r.envio == Envio.error
+                                      ? TextosCanal.envioPendiente
+                                      : r.anonimo
                               ? '¡Gracias! Lo enviaste en anónimo: nadie sabrá que fuiste tú.'
                               : '¡Gracias, ${estado.perfil?.nombre.trim().split(' ').first.isNotEmpty == true ? estado.perfil!.nombre.trim().split(' ').first : 'guardián'}! Si la CRA lo verifica, sumas puntos.',
                         ),
@@ -208,6 +223,85 @@ class _ReporteEnviadoState extends State<ReporteEnviado> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// «¿Por qué prioridad X?»: los motivos que la sumaron, como en el paso de detalles. Se
+/// abre y cierra con un toque; la flecha gira y la lista crece con resorte suave.
+class _PorQuePrioridad extends StatefulWidget {
+  const _PorQuePrioridad({required this.r});
+  final Reporte r;
+
+  @override
+  State<_PorQuePrioridad> createState() => _PorQuePrioridadState();
+}
+
+class _PorQuePrioridadState extends State<_PorQuePrioridad> {
+  bool _abierto = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final r = widget.r;
+    final c = Zc.dePrioridad(r.prioridad);
+    final motivos = [
+      ...r.motivosPrioridad,
+      if (r.prioridadAjustada)
+        'La CRA la recalculó a ${Prioridad.nombres[r.prioridad]} con su zonificación y los reportes cercanos.',
+    ];
+    if (motivos.isEmpty) return const SizedBox.shrink();
+    return Presionable(
+      etiqueta: _abierto ? 'Ocultar por qué tiene esta prioridad' : 'Ver por qué tiene esta prioridad',
+      onTap: () => setState(() => _abierto = !_abierto),
+      child: TarjetaZ(
+        child: AnimatedSize(
+          duration: Zm.medio,
+          curve: Zm.entrar,
+          alignment: Alignment.topCenter,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('¿Por qué prioridad ${Prioridad.nombres[r.prioridad]}?',
+                        style: tt.titleSmall?.copyWith(color: Color.lerp(c, Zc.texto, 0.35))),
+                  ),
+                  AnimatedRotation(
+                    turns: _abierto ? 0.5 : 0,
+                    duration: Zm.medio,
+                    curve: Zm.entrar,
+                    child: const Icon(Icons.expand_more_rounded, color: Zc.textoSuave),
+                  ),
+                ],
+              ),
+              if (_abierto) ...[
+                const SizedBox(height: 6),
+                for (final m in motivos)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Container(
+                              width: 5, height: 5, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(m, style: tt.bodySmall?.copyWith(color: Zc.texto))),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                Text('${r.momento.nombre} · ${r.magnitud.nombre.toLowerCase()} · la CRA la confirma al revisar.',
+                    style: tt.bodySmall?.copyWith(fontSize: 11.5, color: Zc.textoTenue)),
+              ],
+            ],
+          ),
         ),
       ),
     );

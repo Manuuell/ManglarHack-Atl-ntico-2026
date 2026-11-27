@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../../datos/estado.dart';
 import '../../datos/fotos.dart';
 import '../../datos/reporte.dart';
+import '../../datos/reporte_canal.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/base/movimiento.dart';
@@ -70,6 +71,24 @@ class _FlujoReporteState extends State<FlujoReporte> {
     super.initState();
     final p = widget.punto;
     if (p != null) _b.marcarEnMapa(p);
+    // Como el bot: muchos reportes en una hora piden una pausa. Aquí no se bloquea (puede ser
+    // algo nuevo y urgente); Zanky lo pregunta una vez, al abrir.
+    if (demasiadosSeguidos(widget.estado.reportes)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _avisarDemasiados());
+    }
+  }
+
+  Future<void> _avisarDemasiados() async {
+    if (!mounted) return;
+    final seguir = await confirmarEnHoja(
+      context,
+      titulo: 'Varios reportes seguidos',
+      texto: TextosCanal.demasiados,
+      textoConfirmar: 'Es algo nuevo',
+      textoCancelar: 'Ahora no',
+      animo: Animo.curioso,
+    );
+    if (!seguir && mounted) Navigator.of(context).maybePop();
   }
 
   @override
@@ -84,15 +103,21 @@ class _FlujoReporteState extends State<FlujoReporte> {
         1 => switch (_b.ubicacion) {
             final u? when u.dentro => '¡Ajá! Eso queda dentro del manglar. Confírmame el punto.',
             final u? when u.enInfluencia => 'Queda muy cerquita del manglar: puede afectarlo. ¿Es ahí?',
+            final u? when ubicacionSospechosa(dentro: u.dentro, distanciaM: u.distanciaM) =>
+              TextosCanal.ubicacionLejana(u.distanciaM),
             _? => 'Ese punto queda lejos del manglar. Si lo afecta, repórtalo igual.',
             null when _b.gps == EstadoGps.sinPermiso || _b.gps == EstadoGps.apagado =>
               'Sin GPS también se puede: toca el mapa donde está pasando.',
-            null => '¿Dónde está pasando? Uso el GPS: funciona aunque no haya señal.',
+            null => '${TextosCanal.pedirUbicacion} El GPS funciona aunque no haya señal.',
           },
         2 => _b.foto == null
-            ? 'Una foto tomada ahí mismo vale oro: ayuda a la CRA a confiar en tu reporte.'
+            ? TextosCanal.pedirFoto
             : '¡Buena foto! Si quieres, toma otra más clara.',
-        _ => _b.tipo?.pregunta ?? 'Cuéntame un poco más.',
+        _ => switch (_b.tipo) {
+            final t? when TextosCanal.pideEmergencia(t, _b.momento) => '${t.pregunta} ${TextosCanal.emergencia}',
+            final t? => t.pregunta,
+            null => TextosCanal.pedirDescripcion,
+          },
       };
 
   Animo get _animo => switch (_paso) {
@@ -116,8 +141,22 @@ class _FlujoReporteState extends State<FlujoReporte> {
     _paginas.animateToPage(paso, duration: context.resolveDuration(Zm.medio), curve: Zm.entrar);
   }
 
-  void _siguiente() {
-    if (_paso < 3) _ir(_paso + 1);
+  Future<void> _siguiente() async {
+    if (_paso >= 3) return;
+    // Igual que el bot: a más de 3 km del manglar se pregunta si el punto es el correcto.
+    final u = _b.ubicacion;
+    if (_paso == 1 && u != null && ubicacionSospechosa(dentro: u.dentro, distanciaM: u.distanciaM)) {
+      final seguir = await confirmarEnHoja(
+        context,
+        titulo: '¿Seguro que es ahí?',
+        texto: TextosCanal.ubicacionLejana(u.distanciaM),
+        textoConfirmar: 'Sí, es ahí',
+        textoCancelar: 'Cambiarla',
+        animo: Animo.curioso,
+      );
+      if (!seguir || !mounted) return;
+    }
+    _ir(_paso + 1);
   }
 
   /// Último paso: guarda (y envía si hay señal). Lo corre el botón con su ciclo

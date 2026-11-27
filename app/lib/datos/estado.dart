@@ -12,6 +12,7 @@ import 'clima.dart';
 import 'fotos.dart';
 import 'guardian.dart';
 import 'reporte.dart';
+import 'reporte_canal.dart';
 import 'servidor.dart';
 import 'tipos.dart';
 import 'zonas.dart';
@@ -33,6 +34,11 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
   EstadoZanky({Servidor? servidor}) : servidor = servidor ?? Servidor();
 
   final Servidor servidor;
+
+  /// Última novedad de un reporte propio, con las frases del bot: un reporte en cola que
+  /// por fin llegó («Listo: tu reporte ZK-… ya llegó») o un cambio de estado («Novedad de
+  /// tu reporte…»). «Mis reportes» la muestra como aviso.
+  final novedades = ValueNotifier<String?>(null);
   static const _uuid = Uuid();
   static const claveReportes = 'reportes.v1';
   static const _clavePerfil = 'perfil.v1';
@@ -127,6 +133,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void dispose() {
     _desechado = true;
+    novedades.dispose();
     _red?.cancel();
     _reintento?.cancel();
     WidgetsBinding.instance.removeObserver(this);
@@ -444,6 +451,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
       _avisar();
       try {
         final idPublico = await servidor.enviar(r, await Fotos.leer(r.fotoRef));
+        if (r.capturadoSinSenal || r.intentos > 0) novedades.value = TextosCanal.enviadoTarde(r.caso);
         r
           ..envio = Envio.enviado
           ..enviadoEn = DateTime.now()
@@ -558,6 +566,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
       if (r.estado != e.estado) {
         r.estado = e.estado;
         r.historial.add(CambioEstado(e.estado, e.actualizado ?? DateTime.now(), e.nota));
+        novedades.value = TextosCanal.cambioDeEstado(r.caso, e.estado);
         este = true;
       }
       if (este) {
