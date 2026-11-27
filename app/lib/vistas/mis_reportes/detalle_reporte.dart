@@ -9,6 +9,7 @@ import '../../datos/prioridad.dart';
 import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
+import '../../nucleo/kit/cerrar_tirando.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/kit/aviso.dart';
@@ -70,7 +71,9 @@ class PantallaDetalleReporte extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(Zr.l)),
-              child: RepaintBoundary(child: MapaDetalle(reporte: r, zona: zona)),
+              child: RepaintBoundary(
+                child: MapaDetalle(reporte: r, zona: zona),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
@@ -90,24 +93,31 @@ class PantallaDetalleReporte extends StatelessWidget {
           ],
         ),
       ),
-      _Tarjeta(titulo: 'Los datos', child: _Datos(reporte: r)),
+      _Tarjeta(
+        titulo: 'Los datos',
+        child: _Datos(reporte: r),
+      ),
       _Acciones(reporte: r),
     ];
 
     return Scaffold(
       backgroundColor: Zc.arena,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _Cabecera(reporte: r)),
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(16, 18, 16, 28 + abajo),
-            sliver: SliverList.separated(
-              itemCount: secciones.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 14),
-              itemBuilder: (context, i) => EntradaEscalonada(index: i, child: secciones[i]),
+      // Tirar hacia abajo desde arriba y soltar cierra, igual que el lector de noticias.
+      body: CerrarTirando(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            SliverToBoxAdapter(child: _Cabecera(reporte: r)),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, 18, 16, 28 + abajo),
+              sliver: SliverList.separated(
+                itemCount: secciones.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 14),
+                itemBuilder: (context, i) => EntradaEscalonada(index: i, child: secciones[i]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -142,13 +152,15 @@ class _CabeceraState extends State<_Cabecera> {
   }
 
   void _verFoto(Uint8List bytes) {
-    Navigator.of(context).push<void>(PageRouteBuilder<void>(
-      opaque: true,
-      transitionDuration: context.resolveDuration(Zm.medio),
-      reverseTransitionDuration: context.resolveDuration(Zm.corto),
-      pageBuilder: (_, _, _) => _VisorFoto(bytes: bytes, caso: widget.reporte.caso),
-      transitionsBuilder: (_, a, _, hijo) => FadeTransition(opacity: a, child: hijo),
-    ));
+    Navigator.of(context).push<void>(
+      PageRouteBuilder<void>(
+        opaque: true,
+        transitionDuration: context.resolveDuration(Zm.medio),
+        reverseTransitionDuration: context.resolveDuration(Zm.corto),
+        pageBuilder: (_, _, _) => _VisorFoto(bytes: bytes, caso: widget.reporte.caso),
+        transitionsBuilder: (_, a, _, hijo) => FadeTransition(opacity: a, child: hijo),
+      ),
+    );
   }
 
   @override
@@ -173,9 +185,7 @@ class _CabeceraState extends State<_Cabecera> {
                 if (sinFoto)
                   _FondoTipo(tipo: r.tipo)
                 else
-                  Positioned.fill(
-                    child: FotoReporte(reporte: r, hero: true, cacheAncho: 1080),
-                  ),
+                  Positioned.fill(child: FotoReporte(reporte: r, hero: true, cacheAncho: 1080)),
                 // Sombra arriba: que los botones se lean sobre cualquier foto.
                 Positioned(
                   left: 0,
@@ -196,10 +206,7 @@ class _CabeceraState extends State<_Cabecera> {
                 ),
                 if (bytes != null)
                   Positioned.fill(
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.translucent,
-                      onTap: () => _verFoto(bytes),
-                    ),
+                    child: GestureDetector(behavior: HitTestBehavior.translucent, onTap: () => _verFoto(bytes)),
                   ),
                 Positioned(
                   top: arriba + 8,
@@ -235,20 +242,17 @@ class _FondoTipo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [tipo.color, Color.lerp(tipo.color, Zc.raiz, 0.55)!],
-          ),
-        ),
-        child: Center(
-          child: Opacity(
-            opacity: 0.35,
-            child: IconoAmenaza(tipo, tamano: 130, color: Zc.superficie),
-          ),
-        ),
-      );
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [tipo.color, Color.lerp(tipo.color, Zc.raiz, 0.55)!],
+      ),
+    ),
+    child: Center(
+      child: Opacity(opacity: 0.35, child: IconoAmenaza(tipo, tamano: 130, color: Zc.superficie)),
+    ),
+  );
 }
 
 class _BotonRedondo extends StatelessWidget {
@@ -259,20 +263,20 @@ class _BotonRedondo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Presionable(
-        onTap: onTap,
-        escala: 0.9,
-        etiqueta: etiqueta,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Zc.superficie.withValues(alpha: 0.92),
-            shape: BoxShape.circle,
-            boxShadow: const [BoxShadow(color: Color(0x290B2E24), blurRadius: 12, offset: Offset(0, 4))],
-          ),
-          child: Icon(icono, size: 19, color: Zc.texto),
-        ),
-      );
+    onTap: onTap,
+    escala: 0.9,
+    etiqueta: etiqueta,
+    child: Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Zc.superficie.withValues(alpha: 0.92),
+        shape: BoxShape.circle,
+        boxShadow: const [BoxShadow(color: Color(0x290B2E24), blurRadius: 12, offset: Offset(0, 4))],
+      ),
+      child: Icon(icono, size: 19, color: Zc.texto),
+    ),
+  );
 }
 
 /// La foto a pantalla completa: pellizco para acercar, doble toque para alternar.
@@ -397,10 +401,7 @@ class _Titulo extends StatelessWidget {
             spacing: 12,
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              ChipEstado(r),
-              PildoraPrioridad(r.prioridad),
-            ],
+            children: [ChipEstado(r), PildoraPrioridad(r.prioridad)],
           ),
         ],
       ),
@@ -476,10 +477,7 @@ class _AvisoDescartado extends StatelessWidget {
         .lastOrNull;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Zc.cienagaClara,
-        borderRadius: BorderRadius.circular(Zr.m),
-      ),
+      decoration: BoxDecoration(color: Zc.cienagaClara, borderRadius: BorderRadius.circular(Zr.m)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -496,10 +494,7 @@ class _AvisoDescartado extends StatelessWidget {
                   'Tu aviso sirvió igual. Si lo sigues viendo, vuelve a reportar con una foto más clara.',
                   style: tt.bodyMedium?.copyWith(color: Zc.texto),
                 ),
-                if (nota != null) ...[
-                  const SizedBox(height: 8),
-                  Text('Nota de la revisión: $nota', style: tt.bodySmall),
-                ],
+                if (nota != null) ...[const SizedBox(height: 8), Text('Nota de la revisión: $nota', style: tt.bodySmall)],
               ],
             ),
           ),
@@ -525,7 +520,9 @@ class _Tarjeta extends StatelessWidget {
       padding: EdgeInsets.fromLTRB(18, 16, 18, relleno ? 12 : 12),
       child: Row(
         children: [
-          Expanded(child: Semantics(header: true, child: Text(titulo, style: tt.titleMedium))),
+          Expanded(
+            child: Semantics(header: true, child: Text(titulo, style: tt.titleMedium)),
+          ),
           if (encabezado != null) ...[const SizedBox(width: 8), encabezado!],
         ],
       ),
@@ -541,10 +538,7 @@ class _Tarjeta extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           cabecera,
-          if (relleno)
-            Padding(padding: const EdgeInsets.fromLTRB(18, 0, 18, 18), child: child)
-          else
-            child,
+          if (relleno) Padding(padding: const EdgeInsets.fromLTRB(18, 0, 18, 18), child: child) else child,
         ],
       ),
     );
@@ -612,7 +606,11 @@ class _Motivos extends StatelessWidget {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(top: 7),
-                    child: Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(child: Text(m, style: tt.bodyLarge)),
@@ -624,10 +622,7 @@ class _Motivos extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(Zr.s)),
-            child: Text(
-              textoPrioridadRecalculada(reporte.prioridad, estimada),
-              style: tt.bodyMedium?.copyWith(color: Zc.texto),
-            ),
+            child: Text(textoPrioridadRecalculada(reporte.prioridad, estimada), style: tt.bodyMedium?.copyWith(color: Zc.texto)),
           ),
         ],
         const SizedBox(height: 4),
@@ -668,10 +663,7 @@ class _Solidez extends StatelessWidget {
             tween: Tween(begin: 0, end: v / 100),
             duration: context.resolveDuration(Zm.largo),
             curve: Zm.entrar,
-            builder: (context, t, _) => CustomPaint(
-              size: const Size(double.infinity, 10),
-              painter: _PintorBarra(t, color),
-            ),
+            builder: (context, t, _) => CustomPaint(size: const Size(double.infinity, 10), painter: _PintorBarra(t, color)),
           ),
         ),
         const SizedBox(height: 12),
@@ -722,10 +714,10 @@ class _Datos extends StatelessWidget {
         enviado
             ? (r.enviadoEn != null ? fechaLarga(r.enviadoEn!) : 'Ya llegó')
             : (r.envio == Envio.enviando
-                ? 'Enviándose ahora'
-                : r.envio == Envio.rechazado
-                    ? 'No: el servidor no lo aceptó'
-                    : 'Todavía no: sigue en tu teléfono'),
+                  ? 'Enviándose ahora'
+                  : r.envio == Envio.rechazado
+                  ? 'No: el servidor no lo aceptó'
+                  : 'Todavía no: sigue en tu teléfono'),
       ),
       if (r.capturadoSinSenal)
         (
@@ -737,10 +729,7 @@ class _Datos extends StatelessWidget {
       ('Ubicación', '${r.metodo.nombre}${p != null ? ' · precisión de unos ${p.round()} m' : ''}'),
       ('Cuándo pasó', r.momento.nombre),
       ('Tamaño', '${r.magnitud.nombre} · ${r.magnitud.ejemplo.toLowerCase()}'),
-      (
-        'Foto',
-        textoFotoDelReporte(r),
-      ),
+      ('Foto', textoFotoDelReporte(r)),
       ('Reporte anónimo', r.anonimo ? 'Sí: no lleva tu nombre' : 'No: va con tu perfil'),
     ];
     final descripcion = r.descripcion.trim();
@@ -755,7 +744,10 @@ class _Datos extends StatelessWidget {
               children: [
                 Expanded(flex: 4, child: Text(k, style: tt.bodySmall)),
                 const SizedBox(width: 8),
-                Expanded(flex: 6, child: Text(v, style: tt.bodyMedium?.copyWith(color: Zc.texto))),
+                Expanded(
+                  flex: 6,
+                  child: Text(v, style: tt.bodyMedium?.copyWith(color: Zc.texto)),
+                ),
               ],
             ),
           ),
