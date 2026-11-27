@@ -11,6 +11,7 @@ import type { Accion, FotoUbicada, ReporteMonitoreo as Monitoreo } from '../../t
 import { useAcciones, useMonitoreos, registrarMonitoreo } from '../../lib/plataforma/estado';
 import { SECTORES } from '../../lib/plataforma/catalogos';
 import { cn } from '../../lib/utils';
+import { LIMITES_MANGLAR } from '../../lib/areaReporte';
 
 interface Props { acciones: Accion[]; monitoreos: Monitoreo[] }
 
@@ -302,7 +303,7 @@ export default function ReporteMonitoreo({ acciones: accionesIniciales, monitore
         <div>
           <p className="rotulo text-dorado-300">{marcando ? 'Haga clic en el mapa para ubicar la foto' : 'Sitio de la acción y fotografías ubicadas'}</p>
           <div className={cn('relative z-0 mt-3 h-80 overflow-hidden border border-linea', marcando && 'cursor-crosshair ring-2 ring-dorado-300')}>
-            <MapContainer center={[10.95, -75.0]} zoom={10} scrollWheelZoom={false} className="h-full w-full" aria-label="Mapa de fotografías ubicadas">
+            <MapContainer maxBounds={LIMITES_MANGLAR} maxBoundsViscosity={1} minZoom={9} center={[10.95, -75.0]} zoom={10} scrollWheelZoom={false} className="h-full w-full" aria-label="Mapa de fotografías ubicadas">
               <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">colaboradores de OpenStreetMap</a>' />
               <Encuadre puntos={puntosMapa} />
               <AlHacerClic activo={marcando !== null} alMarcar={marcarEnMapa} />

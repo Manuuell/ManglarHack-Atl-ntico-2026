@@ -49,6 +49,17 @@ fondo azul institucional, tarjetas azul intermedio, acentos dorados, Lato, titul
 - Los 4 sectores (`web/src/data/poligonosManglar.json`) son envolventes aproximadas de la capa de manglar: Mallorquín, Balboa,
   Manatíes (Tubará – Juan de Acosta, correspondencia por confirmar con la CRA) y Totumo.
 
+## Área de reporte: solo el manglar y su entorno
+
+Se admiten denuncias **dentro de la cobertura de manglar de la CRA a 1:5.000 o a menos de 500 m de ella** (área de influencia,
+porque un vertimiento o un caño taponado afectan desde fuera). Lo de fuera —por ejemplo, el casco urbano de Barranquilla— no
+corresponde a la herramienta: no se publica y el panel lo marca para descartar. Los mapas no se salen de la zona del manglar.
+
+- Web: `web/src/lib/areaReporte.ts` (`enAreaDeReporte`, `evaluarUbicacion`, `RADIO_INFLUENCIA_M = 500`, `LIMITES_MANGLAR`).
+- **Backend, app y bot deben aplicar la misma regla** con `datos/cra/manglar_cra_escala_1-5000.geojson`: calcular
+  `dentro_poligono` y `distancia_m` contra esa cobertura y rechazar (o pedir confirmación) por encima de 500 m, con un mensaje
+  claro al ciudadano. Hoy `backend/supabase` calcula la distancia contra `zonas`: hay que acordarlo con Ángel.
+
 ## Reglas que no se negocian (de 05 y 06)
 
 - **Honestidad del dato:** toda cifra con fuente; lo inventado lleva «Datos de ejemplo»; manglar **probable, no confirmado**.

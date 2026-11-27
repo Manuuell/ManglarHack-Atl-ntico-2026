@@ -28,7 +28,8 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 4. **Honestidad del dato**: toda cifra lleva su fuente; los datos inventados se rotulan **«Datos de ejemplo»**; lo que no funciona aún se dice («pendiente del KMZ de la C.R.A.», «se conectará al backend»). Manglar **probable**, nunca «confirmado».
 5. **Privacidad**: lo público pasa por `aReportePublico` (sin foto, sin reportante, coordenadas difuminadas). Correos y teléfonos de actores nunca se muestran en vistas públicas.
 6. **Permisos y auditoría**: en esta demo los cambios de estado viven en el navegador (memoria o `localStorage`) y se rotulan «Modo demostración». En producción los decide el servidor (rol comprobado en un solo lugar + línea de auditoría).
-7. **Catálogos únicos**: etiquetas, colores, estados y transiciones salen de `src/lib/catalogos.ts` (reportes) y `src/lib/plataforma/catalogos.ts` (plataforma). Nunca reescribirlos en un componente.
+7. **Área de reporte**: solo se admiten denuncias dentro de la cobertura de manglar de la C.R.A. a 1:5.000 (`datos/cra/manglar_escala_1-5000.gdb.zip`) o a menos de 500 m de ella (área de influencia). Lo de fuera (por ejemplo, el casco urbano de Barranquilla) no se publica y el panel lo marca para descartar. La regla vive en `src/lib/areaReporte.ts` (`enAreaDeReporte`, `evaluarUbicacion`, `LIMITES_MANGLAR` para que los mapas no se salgan de la zona); el servidor la aplica al recibir.
+8. **Catálogos únicos**: etiquetas, colores, estados y transiciones salen de `src/lib/catalogos.ts` (reportes) y `src/lib/plataforma/catalogos.ts` (plataforma). Nunca reescribirlos en un componente.
 
 ## Rutas
 

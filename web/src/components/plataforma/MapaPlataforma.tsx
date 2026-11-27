@@ -14,6 +14,7 @@ import { obtenerCapaManglarCRA, obtenerCapaPrioridades } from '../../lib/datos';
 import { ACCIONES_PLAN, ESTADOS_ACCION, SECTORES, TIPOS_ACCION } from '../../lib/plataforma/catalogos';
 import { ESTADOS, PRIORIDADES, TIPOS, nivelPrioridad } from '../../lib/catalogos';
 import { cn } from '../../lib/utils';
+import { LIMITES_MANGLAR, enAreaDeReporte } from '../../lib/areaReporte';
 
 export interface PuntoMapa { lat: number; lon: number }
 interface Props {
@@ -124,7 +125,7 @@ export default function MapaPlataforma({ zonas, acciones = [], reportes = [], mo
   return (
     <div className="mapa-plataforma relative z-0">
       <div className="relative overflow-hidden border border-linea" style={{ height: alto }}>
-        <MapContainer center={[10.93, -75.02]} zoom={10} preferCanvas scrollWheelZoom={false} zoomControl className="h-full w-full" aria-label="Mapa del manglar y de las acciones">
+        <MapContainer maxBounds={LIMITES_MANGLAR} maxBoundsViscosity={1} minZoom={9} center={[10.93, -75.02]} zoom={10} preferCanvas scrollWheelZoom={false} zoomControl className="h-full w-full" aria-label="Mapa del manglar y de las acciones">
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">colaboradores de OpenStreetMap</a>' />
           <Encuadre zonas={zonas} />
           <Marcador activo={marcar} alMarcar={alMarcar} />
@@ -145,7 +146,7 @@ export default function MapaPlataforma({ zonas, acciones = [], reportes = [], mo
               </GeoJSON>
             ))}
           </Pane>
-          {ver.reportes && reportes.map((r) => (
+          {ver.reportes && reportes.filter(enAreaDeReporte).map((r) => (
             <CircleMarker key={r.id} center={[r.lat, r.lon]} radius={6} interactive={!marcar} pathOptions={{ color: '#ffffff', weight: 1.5, fillColor: PRIORIDADES[nivelPrioridad(r.prioridad)].color, fillOpacity: 0.95 }}>
               <Popup>
                 <strong>{TIPOS[r.tipo].etiquetaLarga}</strong><br />
@@ -193,7 +194,7 @@ export default function MapaPlataforma({ zonas, acciones = [], reportes = [], mo
           </div>
           <div>
             {conmutador('acciones', `Acciones (${acciones.length})`, 'border-cra-950 bg-dorado-500')}
-            {conmutador('reportes', `Reportes de Zanky (${reportes.length})`, 'rounded-full border-white bg-alta')}
+            {conmutador('reportes', `Reportes de Zanky (${reportes.filter(enAreaDeReporte).length})`, 'rounded-full border-white bg-alta')}
             <p className="mt-1 text-[11px] text-tenue">Fuentes: capa «Prioridades de conservación» entregada por la C.R.A. (KMZ) · cobertura de manglar de la C.R.A. a 1:5.000 (Maxar 2021–2022, verificada en campo) · reportes y acciones de ejemplo.</p>
           </div>
         </div>

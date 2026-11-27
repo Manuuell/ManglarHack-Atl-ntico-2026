@@ -5,6 +5,7 @@ import { GeoJSON, Pane, MapContainer, Marker, Polygon, Popup, TileLayer, Tooltip
 import type { NivelPrioridad, ReportePublico, CapaManglarCRA, TipoReporte, ZonasManglar } from '../../types/manglar';
 import { LISTA_PRIORIDADES, LISTA_PRIORIDADES_ZONA, LISTA_TIPOS, PRIORIDADES, PRIORIDADES_ZONA, TIPOS, formatearFecha, nivelPrioridad } from '../../lib/catalogos';
 import { useReportesPublicos } from '../../lib/reportesStore';
+import { LIMITES_MANGLAR, RADIO_INFLUENCIA_M, enAreaDeReporte } from '../../lib/areaReporte';
 import { cn } from '../../lib/utils';
 import BarraConfianza from '../ui/react/BarraConfianza';
 import ChipPrioridad from '../ui/react/ChipPrioridad';
@@ -67,7 +68,10 @@ function alternar<T,>(seleccion: T[], valor: T): T[] {
 }
 
 export default function MapaMonitoreo({ reportes, poligonos }: Props) {
-  const reportesVivos = useReportesPublicos(reportes);
+  const todosVivos = useReportesPublicos(reportes);
+  // Solo se publican denuncias dentro del manglar o de su área de influencia.
+  const reportesVivos = useMemo(() => todosVivos.filter(enAreaDeReporte), [todosVivos]);
+  const fueraDeArea = todosVivos.length - reportesVivos.length;
   const [tipos, setTipos] = useState<TipoReporte[]>([]);
   const [prioridades, setPrioridades] = useState<NivelPrioridad[]>([]);
   const [mostrarZonas, setMostrarZonas] = useState(true);
@@ -90,7 +94,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
       <div className="mb-3 rounded-sm bg-superficie/95 p-4 shadow-[var(--c-sombra-alta)] backdrop-blur ">
         <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-dorado-300">Datos de ejemplo</div>
         <div role="status" aria-live="polite" className="text-sm text-suave">
-          Mostrando {filtrados.length} de {reportesVivos.length} reportes
+          Mostrando {filtrados.length} de {reportesVivos.length} reportes{fueraDeArea > 0 ? ` · ${fueraDeArea} fuera del área de reporte no se publica${fueraDeArea === 1 ? "" : "n"}` : ""}
           {filtrados.length === 0 && <span className="mt-2 block text-texto">Ningún reporte coincide con los filtros</span>}
         </div>
         <fieldset className="mt-3">
@@ -121,7 +125,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
       </div>
 
       <div role="region" aria-label="Mapa de monitoreo de manglares del Atlántico" className="h-[520px] overflow-hidden rounded-sm shadow-[var(--c-sombra)] ring-1 ring-linea sm:h-[600px]">
-        <MapContainer center={[10.93, -74.99]} zoom={11} scrollWheelZoom={false} zoomControl={false} className="h-full w-full">
+        <MapContainer maxBounds={LIMITES_MANGLAR} maxBoundsViscosity={1} minZoom={9} center={[10.93, -74.99]} zoom={11} scrollWheelZoom={false} zoomControl={false} className="h-full w-full">
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">colaboradores de OpenStreetMap</a>' />
           <ZoomControl position="bottomright" zoomInTitle="Acercar" zoomOutTitle="Alejar" />
           <AjustarMapa poligonos={poligonos} />
@@ -186,7 +190,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
           <li key={prioridad} className="flex items-center gap-1.5 text-suave"><span aria-hidden="true" className={cn('size-2 rounded-full', PRIORIDADES[prioridad].punto)} />{PRIORIDADES[prioridad].etiqueta}</li>
         ))}</ul></div>
         <div className="flex flex-wrap gap-2" aria-label="Descargar datos públicos">{[{ etiqueta: 'CSV', descargar: exportarCSV }, { etiqueta: 'GeoJSON', descargar: exportarGeoJSON }, { etiqueta: 'KML', descargar: exportarKML }].map(({ etiqueta, descargar }) => <button key={etiqueta} disabled={!filtrados.length} onClick={() => descargar(filtrados)} className="min-h-11 rounded-xl px-3 ring-1 ring-linea disabled:opacity-40">Exportar {etiqueta}</button>)}</div>
-        <p>Vista filtrada · ubicaciones aproximadas · CC BY 4.0 · Datos de ejemplo</p>
+        <p>Solo denuncias dentro del manglar o a menos de {RADIO_INFLUENCIA_M} m · vista filtrada · ubicaciones aproximadas · CC BY 4.0 · Datos de ejemplo</p>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { CANALES, ESTADOS, TIPOS } from '../../lib/catalogos';
 import { CIFRAS, FUENTE_WORKFLOW } from '../../lib/workflow';
 import { cn } from '../../lib/utils';
 import MapaPlataforma from './MapaPlataforma';
+import { enAreaDeReporte } from '../../lib/areaReporte';
 
 interface Props { zonas: ZonasManglar; acciones: Accion[]; reportes: ReportePublico[]; jornadas: Jornada[] }
 
@@ -25,7 +26,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
   const acciones = useAcciones(accionesIniciales);
   const jornadas = useJornadas(jornadasIniciales);
   const enCurso = acciones.filter((a) => a.estado !== 'cerrada');
-  const recientes = [...reportes].sort((a, b) => b.capturado_en.localeCompare(a.capturado_en)).slice(0, 3);
+  const recientes = reportes.filter(enAreaDeReporte).sort((a, b) => b.capturado_en.localeCompare(a.capturado_en)).slice(0, 3);
   const ahora = new Date().toISOString();
   const proximas = [...jornadas].filter((j) => j.fin >= ahora).sort((a, b) => a.inicio.localeCompare(b.inicio)).slice(0, 2);
 

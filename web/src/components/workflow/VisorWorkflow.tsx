@@ -4,6 +4,7 @@ import { geoJSON, circleMarker } from 'leaflet';
 import type { FeatureCollection, Geometry } from 'geojson';
 import { GeoJSON, MapContainer, Pane, Popup, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import { obtenerCapaManglarCRA } from '../../lib/datos';
+import { LIMITES_MANGLAR } from '../../lib/areaReporte';
 import { FUENTE_WORKFLOW, PESTANAS_WORKFLOW, SECTORES_WORKFLOW } from '../../lib/workflow';
 import type { PropiedadesZona, ZonasManglar } from '../../types/manglar';
 import 'leaflet/dist/leaflet.css';
@@ -125,7 +126,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
 
   return <div ref={raiz} className="visor-workflow relative z-0 flex flex-col text-texto lg:flex-row">
     <section className="workflow-mapa relative isolate min-w-0 flex-1" aria-label="Visor cartográfico">
-      <MapContainer center={[10.95, -75.03]} zoom={10} zoomControl={false} scrollWheelZoom={false} className="h-full w-full">
+      <MapContainer maxBounds={LIMITES_MANGLAR} maxBoundsViscosity={1} minZoom={9} center={[10.95, -75.03]} zoom={10} zoomControl={false} scrollWheelZoom={false} className="h-full w-full">
         <Pane name="teselas-workflow" className="workflow-teselas" style={{ zIndex: 200 }}>
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© colaboradores de OpenStreetMap" eventHandlers={{ tileerror: () => setErrorTeselas(true) }} />
         </Pane>

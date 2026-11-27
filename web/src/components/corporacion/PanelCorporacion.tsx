@@ -12,6 +12,7 @@ import { reemplazarReportes, useHistorial, useReportes } from '../../lib/reporte
 import { CIFRAS, FUENTE_WORKFLOW } from '../../lib/workflow';
 import { cn } from '../../lib/utils';
 import PanelCRA from '../panel/PanelCRA';
+import { RADIO_INFLUENCIA_M, enAreaDeReporte } from '../../lib/areaReporte';
 
 interface Props {
   acciones: Accion[]; actores: Actor[]; cambiosAccion: CambioAccion[]; jornadas: Jornada[]; monitoreos: ReporteMonitoreo[];
@@ -58,6 +59,8 @@ export default function PanelCorporacion(props: Props) {
     for (const a of acciones.filter((x) => x.accion_plan === 'fuera_zonificacion' && x.estado !== 'cerrada')) lista.push(`${a.nombre}: el sitio queda fuera de la zonificación de prioridades de la Corporación.`);
     const altas = reportes.filter((r) => nivelPrioridad(r.prioridad) === 'alta' && (r.estado === 'recibido' || r.estado === 'en_verificacion'));
     if (altas.length) lista.push(`${altas.length} reporte${altas.length === 1 ? '' : 's'} ciudadano${altas.length === 1 ? '' : 's'} de prioridad alta sin verificar: ${altas.map((r) => `${TIPOS[r.tipo].etiqueta} en ${r.zona ?? 'zona sin sector'}`).join('; ')}.`);
+    const fuera = reportes.filter((r) => !enAreaDeReporte(r) && r.estado !== 'descartado');
+    if (fuera.length) lista.push(`${fuera.length} reporte${fuera.length === 1 ? '' : 's'} fuera del área de reporte (más de ${RADIO_INFLUENCIA_M} m del manglar): revisar y descartar si no afecta al manglar.`);
     const vigilancia = acciones.filter((x) => x.tipo === 'conservacion_vigilancia' && x.estado !== 'cerrada').length;
     lista.push(`${ha(CIFRAS.por_revisar_ha)} ha por revisar según el workflow; ${vigilancia} acción${vigilancia === 1 ? '' : 'es'} de vigilancia en campo en curso. (Fuente: ${FUENTE_WORKFLOW}.)`);
     return lista;
