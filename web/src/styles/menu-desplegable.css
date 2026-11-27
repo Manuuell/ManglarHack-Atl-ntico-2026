@@ -91,13 +91,20 @@
 }
 .menu-movil-hoja .menu-movil-accion:hover { background: var(--color-dorado-300); }
 
-/* En la portada el menú del teléfono solo se ve donde .cab-nav se oculta (≤ 960 px). */
+/* Portada: con siete entradas (secciones + «Visores» + «Plataforma»), .cab-nav ya no cabe
+   a 1100 px o menos y partía las entradas en dos líneas. Desde ahí manda el menú con ícono.
+   Las entradas nunca se parten. */
+.cab-nav > a, .cab-nav .desplegable-boton { white-space: nowrap; }
 /* Astro deja el <script> del componente entre el menú y «Reportar»: por eso «~» y no «+». */
 .cab .menu-movil--portada { display: none; }
-@media (max-width: 960px) {
+@media (max-width: 1100px) {
+  .cab .cab-nav { display: none; }
   .cab .menu-movil--portada { display: block; margin-left: auto; }
   .cab .menu-movil--portada ~ .cab-entrar { margin-left: 8px; }
 }
+/* .cab tiene transform, así que es el bloque contenedor de la hoja: cuelga justo bajo la
+   cabecera (sea alta sobre el hero o cápsula al bajar) y a la derecha, sin estirarse en tabletas. */
+.cab .menu-movil-hoja { top: calc(100% + 10px); left: auto; right: 12px; width: min(380px, calc(100% - 24px)); max-height: calc(100dvh - 120px); }
 
 /* Con un menú abierto, la cabecera sube por encima de la burbuja de Zanky (1900) y de los
    avisos (2000): su z-index crea el contexto de apilamiento que limita al panel y a la hoja. */
