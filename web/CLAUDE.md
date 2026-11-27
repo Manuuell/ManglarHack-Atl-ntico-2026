@@ -41,6 +41,7 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | `/plataforma/registro` | Registro de actor |
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
 | `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
+| `/plataforma/jornadas` | Jornadas comunitarias: cartelera con tarjetas, invitación por enlace (`?jornada=`) con inscripción y consentimiento, WhatsApp, compartir, Google Calendar, `.ics`, QR y cartel imprimible; crear jornada ligada a una acción |
 | `/plataforma/monitoreo` | Monitoreo comunitario: reportes de Zanky (app/bot/web) y fotos georreferenciadas |
 | `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada, nota conceptual) |
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |

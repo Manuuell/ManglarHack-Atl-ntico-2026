@@ -3,7 +3,7 @@ import BaseLayout from './BaseLayout.astro';
 import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
 interface Props {
  title: string;
- activa: 'inicio' | 'registro' | 'proponer' | 'seguimiento' | 'monitoreo' | 'proyectos' | 'panel';
+ activa: 'inicio' | 'registro' | 'proponer' | 'seguimiento' | 'jornadas' | 'monitoreo' | 'proyectos' | 'panel';
  ancho?: 'normal' | 'completo';
 }
 const { title, activa, ancho = 'normal' } = Astro.props;
@@ -11,7 +11,8 @@ const secciones = [
  { id: 'inicio', href: '/plataforma', texto: 'Inicio' },
  { id: 'registro', href: '/plataforma/registro', texto: 'Registro de actor' },
  { id: 'proponer', href: '/plataforma/proponer', texto: 'Proponer acción' },
- { id: 'seguimiento', href: '/plataforma/seguimiento', texto: 'Seguimiento y jornadas' },
+ { id: 'seguimiento', href: '/plataforma/seguimiento', texto: 'Seguimiento' },
+ { id: 'jornadas', href: '/plataforma/jornadas', texto: 'Jornadas comunitarias' },
  { id: 'monitoreo', href: '/plataforma/monitoreo', texto: 'Monitoreo comunitario' },
  { id: 'proyectos', href: '/plataforma/proyectos', texto: 'Proyectos' },
  { id: 'panel', href: '/plataforma/panel', texto: 'Panel de la Corporación' },
