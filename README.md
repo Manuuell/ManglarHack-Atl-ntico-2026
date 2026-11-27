@@ -62,7 +62,7 @@ Reportes de la comunidad y jornadas en un solo mapa, con la alerta del día arri
 
 ### App móvil (Flutter)
 
-De izquierda a derecha: bienvenida, inicio, nuevo reporte (paso 2: dónde), mapa del manglar y tarjeta de guardián.
+De izquierda a derecha: bienvenida, inicio con la alerta del día, nuevo reporte (paso 1: qué viste), mapa del manglar y tarjeta de guardián.
 
 ![Pantallas de la app](docs/capturas/app-pantallas.jpg)
 
@@ -117,7 +117,7 @@ Las **alertas del manglar** corren en el servidor del bot cada 10 minutos. Cruza
 | Carpeta | Qué es | Estado hoy (27-11-2026) |
 |---|---|---|
 | `web/` | Web comunitaria, visores, plataforma de la C.R.A., panel y administración (Astro + React) | Publicada en mimanglar.sentralabs.co, conectada al servidor común |
-| `app/` | App móvil Android (Flutter), también compilada para la web | Flujo completo de reporte con cola sin señal, mapa, mis reportes y guardián. Sin las claves del servidor corre en modo demostración y lo dice |
+| `app/` | App móvil Android (Flutter), también compilada para la web | Flujo completo de reporte con cola sin señal, mapa, alertas y avisos, jornadas, mis reportes, datos abiertos y guardián. Sin las claves del servidor corre en modo demostración y lo dice |
 | `bot/` | Zanky BOT: WhatsApp Cloud API, alertas, jornadas y datos abiertos. Ver [bot/README.md](bot/README.md) | En línea con número propio, guarda en el servidor común |
 | `backend/supabase/` | Esquema, reglas de zona, prioridad y confianza, permisos por rol, funciones | En uso por la web, la app y el bot. La clasificación de fotos con IA está escrita, pero todavía no se ha desplegado |
 | `hardware/esp32-sensor/` y `tools/` | Estación ESP32 (nivel de agua, salinidad, temperatura) e ingesta de lecturas | En desarrollo |

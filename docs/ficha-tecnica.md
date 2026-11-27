@@ -9,7 +9,7 @@ Revisada contra el código de `main` el 27-11-2026.
 
 | Componente | Tecnologías (versión) | Para qué |
 |---|---|---|
-| App móvil | Flutter 3.44 / Dart 3.12; `flutter_map` 8.3, `geolocator` 14, `image_picker` 1.2; también compilada para la web | Reportar sin señal (cola local), GPS o punto en el mapa, foto, prioridad, mapa, «mis reportes», tarjeta de guardián y modo evento por QR |
+| App móvil | Flutter 3.44 / Dart 3.12; `flutter_map` 8.3, `geolocator` 14, `image_picker` 1.2; también compilada para la web | Reportar sin señal (cola local), GPS o punto en el mapa, foto, prioridad, mapa, alertas y avisos, jornadas, «mis reportes», datos abiertos, tarjeta de guardián y modo evento por QR |
 | Web | Astro 7.4, React 19.3, Tailwind CSS 4.3, Leaflet 1.9 + react-leaflet 5, lucide-react | Portada comunitaria en vivo, reportar, alertas, jornadas, visores (riesgo, agua, workflow), plataforma de la C.R.A., panel y administración |
 | Zanky BOT | Node.js ≥ 20, TypeScript 5.7, Express 4.21; API oficial de WhatsApp Cloud (Meta) | Reportar por conversación (texto, ubicación, foto y notas de voz), número de caso, aviso de cambio de estado, jornadas, alertas, invitaciones y datos abiertos |
 | Servidor común | Supabase: Postgres + PostGIS, Auth, Storage (fotos en un depósito privado), RLS y funciones | En el servidor, nunca en el cliente: sector, área de influencia de 500 m, prioridad 1–5, confianza 0–100, corroboración, permisos por rol y auditoría |
