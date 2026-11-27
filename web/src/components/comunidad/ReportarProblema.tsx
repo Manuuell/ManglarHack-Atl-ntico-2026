@@ -1,6 +1,8 @@
 // Reportar un problema desde la portada: qué pasa, dónde (GPS o tocando el mapa), foto y detalles.
 // La ubicación se evalúa contra la cobertura de manglar de la C.R.A. (1:5.000) y su área de
-// influencia; lo de fuera no se admite. Al enviar, el reporte aparece en el mapa en vivo.
+// influencia; lo de fuera no se admite. Con el backend conectado, el reporte (y su foto) va al servidor
+// común con la RPC crear_reporte, que recalcula zona, prioridad y confianza; sin él, queda en este
+// navegador (modo demostración). En los dos casos aparece al instante en el mapa en vivo.
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -10,6 +12,7 @@ import { LISTA_TIPOS, TIPOS } from '../../lib/catalogos';
 import { LIMITES_MANGLAR, RADIO_INFLUENCIA_M, evaluarUbicacion } from '../../lib/areaReporte';
 import { obtenerCapaManglarCRA } from '../../lib/datos';
 import { agregarReporteLocal, numeroDeCaso } from '../../lib/comunidad/reportesLocales';
+import { backendActivo, crearReporte, estadoDeReportes, idDeEsteNavegador, prepararFoto, subirFoto } from '../../lib/backend/supabase';
 import { cn } from '../../lib/utils';
 
 interface Props { sectores: ZonasManglar }
@@ -51,7 +54,11 @@ export default function ReportarProblema({ sectores }: Props) {
   const [errorCapa, setErrorCapa] = useState(false);
   const [buscandoGps, setBuscandoGps] = useState(false);
   const [avisoGps, setAvisoGps] = useState('');
-  const [foto, setFoto] = useState<{ url: string; nombre: string } | null>(null);
+  const [foto, setFoto] = useState<{ url: string; nombre: string; archivo: File } | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const [idPublico, setIdPublico] = useState<string | null>(null);
+  // Un id por reporte, no por intento: si el envío falla y la persona reintenta, el servidor no lo duplica.
+  const idEnvio = useRef<string>(crypto.randomUUID());
   const [momento, setMomento] = useState<Momento>('ahora');
   const [magnitud, setMagnitud] = useState<Magnitud>('pequena');
   const [descripcion, setDescripcion] = useState('');
@@ -128,11 +135,12 @@ export default function ReportarProblema({ sectores }: Props) {
     if (!archivo) return;
     if (!archivo.type.startsWith('image/')) { setError('La evidencia debe ser una foto.'); return; }
     if (foto) URL.revokeObjectURL(foto.url);
-    setFoto({ url: URL.createObjectURL(archivo), nombre: archivo.name });
+    setFoto({ url: URL.createObjectURL(archivo), nombre: archivo.name, archivo });
   }
 
-  function enviar(e: FormEvent) {
+  async function enviar(e: FormEvent) {
     e.preventDefault();
+    if (enviando) return;
     setError('');
     if (!tipo) return setError('Elige qué está pasando.');
     if (!punto) return setError('Marca dónde está pasando: usa tu ubicación o toca el mapa.');
@@ -149,19 +157,56 @@ export default function ReportarProblema({ sectores }: Props) {
     confianza = Math.min(80, confianza);
     const ahora = new Date().toISOString();
     const reporte: Reporte = {
-      id: crypto.randomUUID(), canal: 'web', tipo, descripcion: descripcion.trim().slice(0, 1000),
+      id: idEnvio.current, canal: 'web', tipo, descripcion: descripcion.trim().slice(0, 1000),
       lat: punto.lat, lon: punto.lon, precision_m: punto.precision, capturado_en: ahora, recibido_en: ahora,
       zona: sector.nombre, municipio: sector.municipio, dentro_poligono: evaluacion.dentro_poligono, distancia_m: evaluacion.distancia_m,
       prioridad: Math.max(1, Math.min(5, p)) as Prioridad, confianza, estado: 'recibido',
       ia_tipo_detectado: null, ia_confianza: null, foto_url: null, foto_hash: null, reportante_id: null,
     };
-    agregarReporteLocal(reporte);
-    setEnviado(reporte);
+    if (!backendActivo) {
+      agregarReporteLocal(reporte);
+      setEnviado(reporte);
+      return;
+    }
+    setEnviando(true);
+    try {
+      let fotoUrl: string | null = null;
+      let fotoHash: string | null = null;
+      if (foto) {
+        const preparada = await prepararFoto(foto.archivo);
+        await subirFoto(reporte.id, preparada.jpeg);
+        fotoUrl = `evidencias/${reporte.id}.jpg`;
+        fotoHash = preparada.hash;
+      }
+      const creado = await crearReporte({
+        id: reporte.id, canal: 'web', tipo, descripcion: reporte.descripcion, lat: punto.lat, lon: punto.lon,
+        precision_m: punto.precision, metodo_ubicacion: punto.metodo, capturado_en: ahora, momento, magnitud,
+        zona: null, municipio: null, // el servidor los calcula con sus zonas
+        dentro_poligono: evaluacion.dentro_poligono, distancia_m: evaluacion.distancia_m, confianza,
+        foto_hash: fotoHash, foto_de_camara: false, foto_url: fotoUrl, anonimo: false,
+        reportante_id: idDeEsteNavegador(), sincronizado_tarde: false,
+      });
+      // La prioridad y la confianza que valen son las que calculó el servidor.
+      let final: Reporte = reporte;
+      try {
+        const [e] = await estadoDeReportes([reporte.id]);
+        if (e) final = { ...reporte, prioridad: e.prioridad, confianza: e.confianza, estado: e.estado };
+      } catch { /* el reporte ya quedó guardado; se ve con la prioridad estimada */ }
+      // En el mapa va con el id público y la ubicación aproximada, igual que lo publica el servidor.
+      agregarReporteLocal({ ...final, id: creado.id_publico, descripcion: '', lat: Number(punto.lat.toFixed(3)), lon: Number(punto.lon.toFixed(3)) });
+      setIdPublico(creado.id_publico);
+      setEnviado(final);
+    } catch (err) {
+      setError(`${(err as Error).message || 'No se pudo enviar el reporte.'} Tus datos siguen aquí: vuelve a tocar «Enviar reporte».`);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   function otro() {
     if (foto) URL.revokeObjectURL(foto.url);
-    setTipo(null); setPunto(null); setFoto(null); setMomento('ahora'); setMagnitud('pequena'); setDescripcion(''); setAcepta(false); setError(''); setEnviado(null);
+    idEnvio.current = crypto.randomUUID();
+    setTipo(null); setPunto(null); setFoto(null); setMomento('ahora'); setMagnitud('pequena'); setDescripcion(''); setAcepta(false); setError(''); setEnviado(null); setIdPublico(null);
   }
 
   if (enviado) {
@@ -172,10 +217,12 @@ export default function ReportarProblema({ sectores }: Props) {
         <h3>¡Gracias! Tu reporte <span>{numeroDeCaso(enviado.id)}</span> ya está en el mapa.</h3>
         <p>{TIPOS[enviado.tipo].etiquetaLarga} · {enviado.zona} · prioridad {enviado.prioridad}. La C.R.A. lo verifica antes de actuar.</p>
         <div className="acciones">
-          <a className="boton boton-dorado" href="#mapa" onClick={() => setTimeout(() => window.dispatchEvent(new CustomEvent('zanky:ver-reporte', { detail: enviado.id })), 500)}><MapPin className="size-4" aria-hidden="true" />Verlo en el mapa</a>
+          <a className="boton boton-dorado" href="#mapa" onClick={() => setTimeout(() => window.dispatchEvent(new CustomEvent('zanky:ver-reporte', { detail: idPublico ?? enviado.id })), 500)}><MapPin className="size-4" aria-hidden="true" />Verlo en el mapa</a>
           <button type="button" className="boton boton-claro" onClick={otro}>Reportar otro</button>
         </div>
-        <p className="nota">Modo demostración: se guarda en este navegador y aparece en el monitoreo y el panel. Con el backend llega a la C.R.A. en tiempo real.</p>
+        <p className="nota">{backendActivo
+          ? 'Llegó al servidor de la C.R.A., que lo revisa en su panel. Guarda tu número de caso para cualquier consulta. En el mapa público sale sin datos tuyos y con la ubicación aproximada.'
+          : 'Modo demostración: se guarda en este navegador y aparece en el monitoreo y el panel.'}</p>
       </div>
     );
   }
@@ -243,7 +290,9 @@ export default function ReportarProblema({ sectores }: Props) {
       </fieldset>
 
       {error && <p className="error" role="alert">{error}</p>}
-      <button type="submit" className="boton boton-dorado boton-grande enviar"><Check className="size-5" aria-hidden="true" />Enviar reporte</button>
+      <button type="submit" className="boton boton-dorado boton-grande enviar" disabled={enviando} aria-busy={enviando}>
+        {enviando ? <><LoaderCircle className="size-5 animate-spin" aria-hidden="true" />Enviando…</> : <><Check className="size-5" aria-hidden="true" />Enviar reporte</>}
+      </button>
     </form>
   );
 }

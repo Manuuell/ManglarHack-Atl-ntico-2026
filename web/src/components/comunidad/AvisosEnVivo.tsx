@@ -5,6 +5,8 @@ import { X } from 'lucide-react';
 import type { Jornada } from '../../types/plataforma';
 import { jornadas as almacenJornadas } from '../../lib/plataforma/estado';
 import { leerLocales, numeroDeCaso, suscribirLocales } from '../../lib/comunidad/reportesLocales';
+import { estadoDelServidor, obtenerPublicosActuales, suscribir as suscribirReportes } from '../../lib/reportesStore';
+import { backendActivo } from '../../lib/backend/supabase';
 import { TIPOS } from '../../lib/catalogos';
 
 interface Aviso { id: string; icono: string; texto: string; enlace?: { href: string; texto: string } }
@@ -20,13 +22,28 @@ export default function AvisosEnVivo({ jornadas }: { jornadas: Jornada[] }) {
   };
 
   useEffect(() => {
-    const quitarReportes = suscribirLocales(() => {
-      for (const r of leerLocales()) {
-        if (vistos.current.has(r.id)) continue;
-        vistos.current.add(r.id);
-        mostrar({ id: r.id, icono: '🚨', texto: `Nuevo reporte ${numeroDeCaso(r.id)}: ${TIPOS[r.tipo].etiquetaLarga} en ${r.zona ?? 'el Atlántico'}.`, enlace: { href: '#mapa', texto: 'Ver en el mapa' } });
+    // Con el servidor, los reportes nuevos de cualquier persona llegan en la lectura periódica; la primera
+    // lectura es la base (no se avisa lo que ya estaba). En demostración, los de este navegador y sus pestañas.
+    let base: Set<string> | null = null;
+    const revisarServidor = () => {
+      if (estadoDelServidor() !== 'listo') return;
+      const lista = obtenerPublicosActuales();
+      if (base === null) { base = new Set(lista.map((r) => r.id)); return; }
+      for (const r of [...lista].reverse()) {
+        if (base.has(r.id)) continue;
+        base.add(r.id);
+        mostrar({ id: r.id, icono: '🚨', texto: `Nuevo reporte: ${TIPOS[r.tipo].etiquetaLarga} en ${r.zona ?? r.municipio}.`, enlace: { href: '#mapa', texto: 'Ver en el mapa' } });
       }
-    });
+    };
+    const quitarReportes = backendActivo
+      ? (revisarServidor(), suscribirReportes(revisarServidor))
+      : suscribirLocales(() => {
+        for (const r of leerLocales()) {
+          if (vistos.current.has(r.id)) continue;
+          vistos.current.add(r.id);
+          mostrar({ id: r.id, icono: '🚨', texto: `Nuevo reporte ${numeroDeCaso(r.id)}: ${TIPOS[r.tipo].etiquetaLarga} en ${r.zona ?? 'el Atlántico'}.`, enlace: { href: '#mapa', texto: 'Ver en el mapa' } });
+        }
+      });
     almacenJornadas.inicializar(jornadas);
     for (const j of almacenJornadas.obtener()) inscritos.current.set(j.id, j.inscritos);
     const quitarJornadas = almacenJornadas.suscribir(() => {

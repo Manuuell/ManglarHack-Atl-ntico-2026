@@ -8,11 +8,11 @@ import { CalendarDays, MapPin, Radio } from 'lucide-react';
 import type { ReportePublico, ZonasManglar } from '../../types/manglar';
 import type { Jornada } from '../../types/plataforma';
 import { ESTADOS, PRIORIDADES, TIPOS, nivelPrioridad } from '../../lib/catalogos';
-import { useReportesPublicos } from '../../lib/reportesStore';
+import { estadoDelServidor, useReportesPublicos } from '../../lib/reportesStore';
+import { backendActivo } from '../../lib/backend/supabase';
 import { useJornadas } from '../../lib/plataforma/estado';
 import { LIMITES_MANGLAR, enAreaDeReporte } from '../../lib/areaReporte';
 import { obtenerCapaManglarCRA } from '../../lib/datos';
-import { numeroDeCaso } from '../../lib/comunidad/reportesLocales';
 import { cn } from '../../lib/utils';
 
 interface Props { reportes: ReportePublico[]; sectores: ZonasManglar; jornadas: Jornada[] }
@@ -82,7 +82,8 @@ export default function MapaEnVivo({ reportes: iniciales, sectores, jornadas: jo
     const m = mapa.current;
     const capa = capaPuntos.current;
     if (!m || !capa) return;
-    const primera = conocidos.current === null;
+    // La primera lista (o la primera lectura del servidor, si se empezó vacío) es la base: nada de eso es «nuevo».
+    const primera = conocidos.current === null || conocidos.current.size === 0;
     const recien = primera ? [] : visibles.filter((r) => !conocidos.current!.has(r.id));
     conocidos.current = new Set(visibles.map((r) => r.id));
     capa.clearLayers();
@@ -93,7 +94,7 @@ export default function MapaEnVivo({ reportes: iniciales, sectores, jornadas: jo
       const late = recien.some((x) => x.id === r.id) || (abierto && r.prioridad >= 4);
       const icono = L.divIcon({ className: cn('pin-reporte', late && 'ahora'), html: `<span style="--c:${color}"></span>`, iconSize: [16, 16] });
       const mk = L.marker([r.lat, r.lon], { icon: icono, keyboard: false })
-        .bindPopup(`<b>${numeroDeCaso(r.id)} · ${TIPOS[r.tipo].etiquetaLarga}</b><br>${r.zona ?? ''} · ${ESTADOS[r.estado].etiqueta}<br><small>Ubicación aproximada</small>`)
+        .bindPopup(`<b>${TIPOS[r.tipo].etiquetaLarga}</b><br>${r.zona ?? r.municipio} · ${ESTADOS[r.estado].etiqueta}<br><small>Ubicación aproximada</small>`)
         .addTo(capa);
       marcadores.current.set(r.id, mk);
     }
@@ -151,7 +152,10 @@ export default function MapaEnVivo({ reportes: iniciales, sectores, jornadas: jo
             ))}
           </div>
         )}
-        <p className="envivo-pie">Datos de ejemplo y lo que reportes desde este navegador.</p>
+        <p className="envivo-pie">{!backendActivo ? 'Datos de ejemplo y lo que reportes desde este navegador.'
+          : estadoDelServidor() === 'cargando' ? 'Conectando con el servidor…'
+          : estadoDelServidor() === 'error' ? 'No pudimos leer el servidor; lo seguimos intentando.'
+          : 'En vivo desde el servidor: reportes de la app, la web y WhatsApp (hoy incluye reportes de demostración). Ubicación aproximada.'}</p>
       </aside>
     </div>
   );

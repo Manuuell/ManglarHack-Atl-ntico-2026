@@ -163,7 +163,8 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
                   <div className="flex flex-wrap gap-2"><ChipPrioridad prioridad={reporte.prioridad} /></div>
                   <dl className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-xs [&_dt]:text-suave [&_dd]:min-w-0 [&_dd]:break-words">
                     <dt>Zona</dt><dd>{reporte.dentro_poligono ? reporte.zona : `Fuera de zona · a ${reporte.distancia_m ?? "—"} m`} · {reporte.municipio}</dd>
-                    <dt>Confianza IA</dt><dd><BarraConfianza valor={reporte.confianza} compacta /></dd>
+                    {/* La vista pública del servidor no publica la confianza: no se inventa. */}
+                    {reporte.origen !== 'servidor' && <><dt>Confianza IA</dt><dd><BarraConfianza valor={reporte.confianza} compacta /></dd></>}
                     <dt>Canal</dt><dd><ChipCanal canal={reporte.canal} /></dd>
                     <dt>Estado</dt><dd><ChipEstado estado={reporte.estado} /></dd>
                     <dt>Captura</dt><dd>{formatearFecha(reporte.capturado_en)}</dd>

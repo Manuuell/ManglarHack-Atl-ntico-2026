@@ -13,7 +13,11 @@ export interface Reporte {
  ia_confianza: number | null; foto_url: string | null; foto_hash: string | null; reportante_id: string | null;
 }
 export interface CambioEstado { id: string; reporte_id: string; estado: EstadoReporte; usuario_id: string; nota: string; fecha: string; }
-export type ReportePublico = Omit<Reporte, 'reportante_id' | 'foto_url' | 'foto_hash' | 'precision_m'> & { ubicacion_aproximada: true };
+export type ReportePublico = Omit<Reporte, 'reportante_id' | 'foto_url' | 'foto_hash' | 'precision_m'> & {
+ ubicacion_aproximada: true;
+ /** 'servidor': viene de la vista pública del backend, que no publica descripción ni confianza. */
+ origen?: 'servidor';
+};
 export interface PropiedadesZona {
  nombre_largo: string; area_invemar_ha: number; poligonos_invemar: number;
  id: string; nombre: string; municipio: string; prioridad: PrioridadZona; area_ha: number | null;
