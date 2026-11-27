@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../datos/guardian.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 import 'medalla.dart';
@@ -38,13 +39,10 @@ class SeccionTarjeta extends StatelessWidget {
     final texto = '$quien del Atlántico en Zanky. Nivel ${nivel.numero}: ${nivel.nombre}. $logro.\n'
         'Mi código de guardián: ${perfil.codigo}\n'
         'El manglar nos cuida a todos. Únete a Zanky y reporta tala, quema, relleno o basura cuando la veas.';
-    final mensajes = ScaffoldMessenger.maybeOf(context);
     try {
       await SharePlus.instance.share(ShareParams(text: texto, subject: 'Mi tarjeta de guardián del manglar'));
     } catch (_) {
-      mensajes?.showSnackBar(
-        const SnackBar(content: Text('No pude abrir el menú de compartir en este teléfono.')),
-      );
+      if (context.mounted) avisar(context, 'No pude abrir el menú de compartir en este teléfono.', tipo: TipoAviso.error);
     }
   }
 

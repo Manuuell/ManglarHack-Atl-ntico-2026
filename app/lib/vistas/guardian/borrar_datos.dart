@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../datos/estado.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/tema.dart';
 
 /// Borra TODO lo que Zanky guarda en este teléfono: perfil (con su sal y la huella de la
@@ -53,9 +54,7 @@ Future<bool> confirmarYBorrarDatos(BuildContext context) async {
     await BorradoDatos.borrarTodo();
   } catch (_) {
     if (context.mounted) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('No pude borrar todo; puede haber quedado algo. Vuelve a intentarlo.')),
-      );
+      avisar(context, 'No pude borrar todo; puede haber quedado algo. Vuelve a intentarlo.', tipo: TipoAviso.error);
     }
     return false;
   }

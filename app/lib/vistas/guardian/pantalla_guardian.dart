@@ -5,6 +5,8 @@ import '../../datos/estado.dart';
 import '../../datos/guardian.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/transicion_pestanas.dart';
+import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/celebracion.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
@@ -28,6 +30,7 @@ class PantallaGuardian extends StatefulWidget {
 
 class _PantallaGuardianState extends State<PantallaGuardian> {
   static const _claveCelebradas = 'guardian.celebradas.v1';
+  static const _claveNivel = 'guardian.nivel.v1';
   bool _revisando = false;
 
   @override
@@ -70,8 +73,21 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
       final prefs = await SharedPreferences.getInstance();
       final ya = (prefs.getStringList(_claveCelebradas) ?? const <String>[]).toSet();
       final nuevas = [for (final i in Insignia.todas) if (progreso.insignias.contains(i.id) && !ya.contains(i.id)) i];
-      if (nuevas.isEmpty) return;
-      await prefs.setStringList(_claveCelebradas, {...ya, for (final i in nuevas) i.id}.toList());
+      // Subida de nivel: se compara con el último nivel celebrado (nivel 1 de partida, sin fiesta).
+      final nivel = progreso.nivel;
+      final visto = prefs.getInt(_claveNivel) ?? 1;
+      final subio = nivel.numero > visto;
+      if (nivel.numero != visto) await prefs.setInt(_claveNivel, nivel.numero);
+      if (nuevas.isEmpty && !subio) return;
+      if (nuevas.isNotEmpty) {
+        await prefs.setStringList(_claveCelebradas, {...ya, for (final i in nuevas) i.id}.toList());
+      }
+      if (subio && mounted) {
+        // El ✓ con confeti y, a la vez, el aviso con el nombre del nivel; las insignias esperan su turno.
+        final fiesta = celebrar(context, etiqueta: 'Subiste al nivel ${nivel.numero}: ${nivel.nombre}', grande: true);
+        avisar(context, 'Nivel ${nivel.numero}: ${nivel.nombre}', tipo: TipoAviso.exito);
+        await fiesta;
+      }
       for (final i in nuevas) {
         if (!mounted) return;
         await mostrarCelebracion(context, i);

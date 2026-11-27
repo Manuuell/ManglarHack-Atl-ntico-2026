@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../datos/estado.dart';
 import '../../datos/guardian.dart';
 import '../../nucleo/base/hoja.dart';
+import '../../nucleo/kit/interruptor.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../bienvenida/formulario.dart' show DatosPerfil;
@@ -213,12 +214,10 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                IgnorePointer(
-                  child: Switch(
-                    value: _anonimo,
-                    onChanged: (_) {},
-                    activeTrackColor: Zc.hoja,
-                    activeThumbColor: Colors.white,
+                // El toque lo recibe la fila entera (arriba); el interruptor solo se mueve.
+                ExcludeSemantics(
+                  child: IgnorePointer(
+                    child: InterruptorIos(valor: _anonimo, alCambiar: (_) {}),
                   ),
                 ),
               ],
