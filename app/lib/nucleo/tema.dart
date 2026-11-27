@@ -3,20 +3,20 @@ import 'package:flutter/material.dart';
 
 import 'base/movimiento.dart';
 
-/// Colores de Zanqui: salen del propio manglar.
+/// Colores de Zanky: salen del propio manglar.
 ///
 /// - [raiz]: el verde casi negro de la sombra bajo el mangle rojo.
 /// - [hoja]: el verde de la hoja nueva, el color de la marca.
 /// - [cienaga]: el agua salobre de Mallorquín.
 /// - [arena] y [fango]: la playa y el lodo donde se asientan las raíces.
-/// - [sol]: el atardecer sobre la ciénaga; acento cálido de Zanqui.
+/// - [sol]: el atardecer sobre la ciénaga; acento cálido de Zanky.
 abstract final class Zc {
   static const raiz = Color(0xFF0B2E24);
   static const raizSuave = Color(0xFF184437);
   static const hoja = Color(0xFF2E9E6A);
   static const hojaClara = Color(0xFFDDF3E6);
-  static const cienaga = Color(0xFF1F7A8C);
-  static const cienagaClara = Color(0xFFDCEFF3);
+  static const cienaga = Color(0xFF1FA2A6); // agua: color principal de la identidad (handoff/08)
+  static const cienagaClara = Color(0xFFDDF2F2);
   static const arena = Color(0xFFF6F1E7);
   static const fango = Color(0xFF8A6A4B);
   static const sol = Color(0xFFF2A33A);
@@ -67,7 +67,7 @@ abstract final class Zr {
   static const xl = 34.0;
 }
 
-ThemeData temaZanqui() {
+ThemeData temaZanky() {
   const fuente = 'Inter';
   final base = ThemeData(
     useMaterial3: true,

@@ -34,7 +34,7 @@ class PantallaDetalleReporte extends StatelessWidget {
   Widget build(BuildContext context) {
     // El reporte es el mismo objeto que vive en el estado: al llegar un cambio de la
     // CRA (o terminar un envío) esta pantalla se redibuja sola.
-    final e = Zanqui.de(context);
+    final e = Zanky.de(context);
     final r = reporte;
     final tt = Theme.of(context).textTheme;
     final zona = e.manglar.zonas.where((z) => z.id == r.zonaId).firstOrNull;
@@ -671,7 +671,7 @@ class _Acciones extends StatelessWidget {
   String _texto() {
     final r = reporte;
     final estado = r.envio == Envio.enviado ? r.estado.nombre : 'Guardado en mi teléfono, aún sin enviar';
-    return 'Reporté un problema en el manglar con Zanqui.\n'
+    return 'Reporté un problema en el manglar con Zanky.\n'
         'Caso: ${r.caso}\n'
         'Qué: ${r.tipo.nombre}\n'
         'Zona: ${r.zonaNombre}\n'
@@ -681,7 +681,7 @@ class _Acciones extends StatelessWidget {
   Future<void> _compartir(BuildContext context) async {
     final mensajero = ScaffoldMessenger.of(context);
     try {
-      await SharePlus.instance.share(ShareParams(text: _texto(), subject: 'Caso ${reporte.caso} en Zanqui'));
+      await SharePlus.instance.share(ShareParams(text: _texto(), subject: 'Caso ${reporte.caso} en Zanky'));
     } catch (_) {
       mensajero.showSnackBar(const SnackBar(content: Text('No pude abrir el menú de compartir.')));
     }
@@ -689,7 +689,7 @@ class _Acciones extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final e = Zanqui.de(context);
+    final e = Zanky.de(context);
     final r = reporte;
     final conError = r.envio == Envio.error;
     return Column(
@@ -702,7 +702,7 @@ class _Acciones extends StatelessWidget {
             color: Zc.sol,
             colorTexto: Zc.raiz,
             cargando: e.sincronizando,
-            onTap: () => Zanqui.leer(context).sincronizar(),
+            onTap: () => Zanky.leer(context).sincronizar(),
           ),
           const SizedBox(height: 12),
         ],

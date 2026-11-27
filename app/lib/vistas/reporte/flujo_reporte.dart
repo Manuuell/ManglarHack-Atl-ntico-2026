@@ -5,7 +5,7 @@ import '../../datos/tipos.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import 'borrador.dart';
 import 'enviado.dart';
 import 'paso_detalles.dart';
@@ -16,7 +16,7 @@ import 'paso_ubicacion.dart';
 /// Abre el flujo de reporte a pantalla completa. [tipo] llega elegido desde el inicio
 /// (y entonces se empieza en «¿Dónde?»).
 Future<void> abrirReporte(BuildContext context, {TipoAmenaza? tipo}) {
-  final estado = Zanqui.leer(context);
+  final estado = Zanky.leer(context);
   return Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder<void>(
       fullscreenDialog: true,
@@ -35,7 +35,7 @@ Future<void> abrirReporte(BuildContext context, {TipoAmenaza? tipo}) {
 
 class FlujoReporte extends StatefulWidget {
   const FlujoReporte({super.key, required this.estado, this.tipo});
-  final EstadoZanqui estado;
+  final EstadoZanky estado;
   final TipoAmenaza? tipo;
 
   @override
@@ -157,9 +157,9 @@ class _FlujoReporteState extends State<FlujoReporte> {
                 padding: const EdgeInsets.fromLTRB(14, 8, 20, 4),
                 child: Row(
                   children: [
-                    ZanquiMascota(tamano: 62, animo: _animo),
+                    ZankyMascota(tamano: 62, animo: _animo),
                     const SizedBox(width: 12),
-                    Expanded(child: BurbujaZanqui(texto: _frase)),
+                    Expanded(child: BurbujaZanky(texto: _frase)),
                   ],
                 ),
               ),
@@ -339,12 +339,13 @@ class _DialogoDescartar extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Zr.l)),
-      child: Padding(
+      // Con letra muy grande en un teléfono chico no cabe: se desplaza en vez de cortarse.
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ZanquiMascota(tamano: 70, animo: Animo.preocupado),
+            const ZankyMascota(tamano: 70, animo: Animo.preocupado),
             const SizedBox(height: 10),
             Text('¿Descartar este reporte?', style: tt.titleLarge, textAlign: TextAlign.center),
             const SizedBox(height: 6),

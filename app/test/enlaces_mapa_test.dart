@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:zanqui/datos/enlaces_mapa.dart';
+import 'package:zanky/datos/enlaces_mapa.dart';
 
 void main() {
   void espera(String texto, double lat, double lon) {

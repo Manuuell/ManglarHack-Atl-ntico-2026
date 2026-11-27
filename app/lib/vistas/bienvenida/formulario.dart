@@ -111,7 +111,7 @@ class PaginaPerfil extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            BurbujaZanqui(texto: burbuja),
+            BurbujaZanky(texto: burbuja),
             const SizedBox(height: 20),
             Semantics(header: true, child: Text('¿Cómo te llamamos?', style: tema.headlineMedium)),
             const SizedBox(height: 8),

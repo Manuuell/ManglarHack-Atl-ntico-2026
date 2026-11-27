@@ -154,7 +154,7 @@ class _PasoUbicacionState extends State<PasoUbicacion> {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'co.zanqui.zanqui',
+                  userAgentPackageName: 'co.zanky.app',
                 ),
                 PolygonLayer(polygons: _poligonos),
                 if (p != null && b.precisionM != null)

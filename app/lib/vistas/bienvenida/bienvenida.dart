@@ -8,15 +8,15 @@ import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import 'fondo.dart';
 import 'formulario.dart';
 import 'puntos.dart';
 
-/// Primera pantalla de la app: tres páginas que cuentan para qué sirve Zanqui y una
+/// Primera pantalla de la app: tres páginas que cuentan para qué sirve Zanky y una
 /// cuarta que pide el nombre, el aviso de privacidad y el consentimiento (Ley 1581).
 ///
-/// Zanqui es UNO solo, fijo arriba: cambia de ánimo con la página y encoge al llegar al
+/// Zanky es UNO solo, fijo arriba: cambia de ánimo con la página y encoge al llegar al
 /// formulario (y se esconde con el teclado para que nada tape el campo activo). Los
 /// textos de cada página no se deslizan completos con el PageView: se desvanecen y
 /// avanzan más despacio que el dedo (paralaje), leyendo el valor continuo del
@@ -50,7 +50,7 @@ class _BienvenidaState extends State<Bienvenida> {
   static final _pasos = [
     const _Paso(
       'Tócame y te cuento algo del manglar.',
-      '¡Ajá! Soy Zanqui',
+      '¡Ajá! Soy Zanky',
       'Te ayudo a avisarle a la CRA cuando algo amenaza el manglar del Atlántico, en el momento en que pasa.',
       [
         _Eslabon(Icons.photo_camera_rounded, 'Foto', Zc.hoja),
@@ -95,7 +95,7 @@ class _BienvenidaState extends State<Bienvenida> {
   void initState() {
     super.initState();
     // Si ya había un perfil sin consentimiento, no se pierde lo que se escribió.
-    final previo = Zanqui.leer(context).perfil;
+    final previo = Zanky.leer(context).perfil;
     _datos = DatosPerfil(
       nombre: previo?.nombre ?? '',
       colegio: previo?.colegio ?? '',
@@ -133,9 +133,9 @@ class _BienvenidaState extends State<Bienvenida> {
     }
   }
 
-  void _tocarZanqui() {
+  void _tocarZanky() {
     setState(() {
-      _frase = DatosZanqui.todos[_siguienteDato % DatosZanqui.todos.length];
+      _frase = DatosZanky.todos[_siguienteDato % DatosZanky.todos.length];
       _siguienteDato++;
     });
   }
@@ -148,7 +148,7 @@ class _BienvenidaState extends State<Bienvenida> {
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();
-    final estado = Zanqui.leer(context);
+    final estado = Zanky.leer(context);
     final espera = context.resolveDuration(const Duration(milliseconds: 560));
     _datos.ponerErrorGuardar(null);
     setState(() {
@@ -157,7 +157,7 @@ class _BienvenidaState extends State<Bienvenida> {
     });
     vibrar(Vibracion.media);
     try {
-      // Zanqui celebra un instante (< 700 ms) antes de que la app cambie de pantalla.
+      // Zanky celebra un instante (< 700 ms) antes de que la app cambie de pantalla.
       if (espera > Duration.zero) await Future<void>.delayed(espera);
       final base = estado.perfil ?? estado.perfilNuevo();
       final cedula = DatosPerfil.soloDigitos(_datos.cedula.text);
@@ -230,11 +230,11 @@ class _BienvenidaState extends State<Bienvenida> {
     );
   }
 
-  /// «Saltar» y Zanqui. Los dos siguen al valor continuo del PageController: Zanqui
+  /// «Saltar» y Zanky. Los dos siguen al valor continuo del PageController: Zanky
   /// encoge hacia el formulario y «Saltar» se pliega, sin saltos.
   Widget _cabecera(double tamano, double kf) {
     final alto = tamano * 1.2;
-    final mascota = ZanquiMascota(tamano: tamano, animo: _animo, onTap: _tocarZanqui);
+    final mascota = ZankyMascota(tamano: tamano, animo: _animo, onTap: _tocarZanky);
     return AnimatedBuilder(
       animation: _ctrl,
       child: mascota,
@@ -318,7 +318,7 @@ class _BienvenidaState extends State<Bienvenida> {
       ],
     );
     // Desvanecido de 24 px en el borde superior: lo que se desplaza no se corta en seco
-    // bajo las raíces de Zanqui. Las páginas llevan 24 px de relleno arriba para que en
+    // bajo las raíces de Zanky. Las páginas llevan 24 px de relleno arriba para que en
     // reposo el contenido empiece justo donde termina el desvanecido.
     return ShaderMask(
       blendMode: BlendMode.dstIn,
@@ -431,7 +431,7 @@ class _PaginaIntro extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          BurbujaZanqui(texto: frase ?? paso.burbuja),
+          BurbujaZanky(texto: frase ?? paso.burbuja),
           const SizedBox(height: 22),
           Semantics(header: true, child: Text(paso.titulo, style: tema.headlineMedium)),
           const SizedBox(height: 10),
@@ -444,7 +444,7 @@ class _PaginaIntro extends StatelessWidget {
   }
 }
 
-/// Tres pasos con su flecha: lo que Zanqui hace, dibujado en vez de explicado.
+/// Tres pasos con su flecha: lo que Zanky hace, dibujado en vez de explicado.
 class _Cadena extends StatelessWidget {
   const _Cadena({required this.eslabones});
 

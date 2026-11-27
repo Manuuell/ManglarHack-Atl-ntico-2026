@@ -9,7 +9,7 @@ import '../../datos/guardian.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import 'medalla.dart';
 
 const _mesesCortos = [
@@ -35,9 +35,9 @@ class SeccionTarjeta extends StatelessWidget {
     final logro = v == 0
         ? 'Estoy empezando mi camino'
         : 'Llevo $v ${v == 1 ? 'reporte validado' : 'reportes validados'}';
-    final texto = '$quien del Atlántico en Zanqui. Nivel ${nivel.numero}: ${nivel.nombre}. $logro.\n'
+    final texto = '$quien del Atlántico en Zanky. Nivel ${nivel.numero}: ${nivel.nombre}. $logro.\n'
         'Mi código de guardián: ${perfil.codigo}\n'
-        'El manglar nos cuida a todos. Únete a Zanqui y reporta tala, quema, relleno o basura cuando la veas.';
+        'El manglar nos cuida a todos. Únete a Zanky y reporta tala, quema, relleno o basura cuando la veas.';
     final mensajes = ScaffoldMessenger.maybeOf(context);
     try {
       await SharePlus.instance.share(ShareParams(text: texto, subject: 'Mi tarjeta de guardián del manglar'));
@@ -276,7 +276,7 @@ class _Frente extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                RepaintBoundary(child: ZanquiMascota(tamano: ancho * 0.15, animo: Animo.feliz)),
+                RepaintBoundary(child: ZankyMascota(tamano: ancho * 0.15, animo: Animo.feliz)),
               ],
             ),
             const Spacer(),
@@ -351,7 +351,7 @@ class _Reverso extends StatelessWidget {
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
               // Solo el código público: nada de nombre, cédula ni id interno.
               child: QrImageView(
-                data: 'zanqui:guardian:${perfil.codigo}',
+                data: 'zanky:guardian:${perfil.codigo}',
                 padding: EdgeInsets.zero,
                 backgroundColor: Colors.white,
                 eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Zc.raiz),

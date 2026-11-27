@@ -86,7 +86,7 @@ class _BarraPestanas extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pendientes = Zanqui.de(context).pendientes;
+    final pendientes = Zanky.de(context).pendientes;
     return SizedBox(
       height: 72,
       child: Stack(

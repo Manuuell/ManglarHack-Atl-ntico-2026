@@ -63,7 +63,7 @@ class MapaDetalle extends StatelessWidget {
             children: [
               TileLayer(
                 urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'co.zanqui.zanqui',
+                userAgentPackageName: 'co.zanky.app',
               ),
               if (zona != null)
                 PolygonLayer(

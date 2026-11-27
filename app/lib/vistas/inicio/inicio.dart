@@ -10,7 +10,7 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
 
@@ -33,7 +33,7 @@ class _InicioState extends State<Inicio> {
 
   @override
   Widget build(BuildContext context) {
-    final estado = Zanqui.de(context);
+    final estado = Zanky.de(context);
     final tt = Theme.of(context).textTheme;
     final nombre = estado.perfil?.nombre.trim().split(' ').first ?? '';
     final arriba = MediaQuery.paddingOf(context).top;
@@ -46,7 +46,7 @@ class _InicioState extends State<Inicio> {
       child: ListView(
         padding: EdgeInsets.fromLTRB(0, arriba + 10, 0, 120),
         children: [
-          // Saludo + Zanqui que cuenta cosas al tocarlo.
+          // Saludo + Zanky que cuenta cosas al tocarlo.
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 14, 0),
             child: Row(
@@ -62,10 +62,10 @@ class _InicioState extends State<Inicio> {
                     ],
                   ),
                 ),
-                ZanquiMascota(
+                ZankyMascota(
                   tamano: 74,
                   animo: _dato < 0 ? Animo.feliz : Animo.curioso,
-                  onTap: () => setState(() => _dato = (_dato + 1) % DatosZanqui.todos.length),
+                  onTap: () => setState(() => _dato = (_dato + 1) % DatosZanky.todos.length),
                 ),
               ],
             ),
@@ -77,7 +77,7 @@ class _InicioState extends State<Inicio> {
                 ? const SizedBox(width: double.infinity)
                 : Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-                    child: BurbujaZanqui(texto: DatosZanqui.todos[_dato], colaIzquierda: false),
+                    child: BurbujaZanky(texto: DatosZanky.todos[_dato], colaIzquierda: false),
                   ),
           ),
           const SizedBox(height: 14),
@@ -142,7 +142,7 @@ class _TarjetaReportar extends StatelessWidget {
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
                         const Icon(Icons.add_a_photo_rounded, color: Colors.white, size: 18),
                         const SizedBox(width: 8),
-                        Text('Reportar ahora', style: tt.labelLarge?.copyWith(color: Colors.white)),
+                        Flexible(child: Text('Reportar ahora', style: tt.labelLarge?.copyWith(color: Colors.white))),
                       ]),
                     ),
                   ],
@@ -184,7 +184,8 @@ class _Rapidos extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 96,
+          // La altura crece con la letra: 42 de ícono + espacios fijos y una línea de texto.
+          height: 80 + 16 * (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 2.0),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -285,7 +286,7 @@ class _Progreso extends StatelessWidget {
 
 class _TarjetaClima extends StatelessWidget {
   const _TarjetaClima({required this.estado});
-  final EstadoZanqui estado;
+  final EstadoZanky estado;
 
   @override
   Widget build(BuildContext context) {
@@ -494,7 +495,7 @@ class _SabiasQueState extends State<_SabiasQue> {
   }
 }
 
-/// Cámara con dos anillos que salen despacio: invita a tocar sin repetir a Zanqui.
+/// Cámara con dos anillos que salen despacio: invita a tocar sin repetir a Zanky.
 class _CamaraViva extends StatefulWidget {
   const _CamaraViva();
   @override

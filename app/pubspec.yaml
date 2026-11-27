@@ -1,5 +1,5 @@
-name: zanqui
-description: "Zanqui: monitoreo ciudadano del manglar del Atlántico (Manglar Hack Atlántico 2026)."
+name: zanky
+description: "Zanky: monitoreo ciudadano del manglar del Atlántico (Manglar Hack Atlántico 2026)."
 publish_to: 'none'
 
 version: 0.1.0+1

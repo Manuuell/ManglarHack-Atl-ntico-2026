@@ -8,7 +8,7 @@ import '../../nucleo/base/transicion_pestanas.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
 
 const _cifras = [FontFeature.tabularFigures()];
@@ -19,7 +19,7 @@ class SeccionNivel extends StatelessWidget {
   const SeccionNivel({super.key, required this.progreso, required this.sinReportes});
   final Progreso progreso;
 
-  /// No hay ni un reporte en el teléfono: Zanqui anima a empezar.
+  /// No hay ni un reporte en el teléfono: Zanky anima a empezar.
   final bool sinReportes;
 
   @override
@@ -91,10 +91,10 @@ class _Arranque extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ZanquiMascota(tamano: 64, animo: Animo.celebrando, onTap: () => vibrar(Vibracion.ligera)),
+              ZankyMascota(tamano: 64, animo: Animo.celebrando, onTap: () => vibrar(Vibracion.ligera)),
               const SizedBox(width: 8),
               const Expanded(
-                child: BurbujaZanqui(
+                child: BurbujaZanky(
                   texto: 'Todo guardián empezó como un propágulo. Tu primer reporte validado te hace crecer.',
                 ),
               ),
@@ -180,17 +180,24 @@ class _AnilloNivel extends StatelessWidget {
                 builder: (context, v, _) => CustomPaint(size: const Size(_lado, _lado), painter: _AnilloPainter(v)),
               ),
             ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ContadorAnimado(
-                  valor: visible ? puntos.toDouble() : 0,
-                  formato: (v) => v.round().toString(),
-                  estilo: tt.displaySmall?.copyWith(fontSize: 32, fontFeatures: _cifras),
+            // Dentro del anillo no cabe más: con letra muy grande el texto se achica un poco.
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ContadorAnimado(
+                      valor: visible ? puntos.toDouble() : 0,
+                      formato: (v) => v.round().toString(),
+                      estilo: tt.displaySmall?.copyWith(fontSize: 32, fontFeatures: _cifras),
+                    ),
+                    Text('puntos', style: tt.bodySmall),
+                    Text('validados', style: tt.bodySmall?.copyWith(color: Zc.hoja)),
+                  ],
                 ),
-                Text('puntos', style: tt.bodySmall),
-                Text('validados', style: tt.bodySmall?.copyWith(color: Zc.hoja)),
-              ],
+              ),
             ),
           ],
         ),

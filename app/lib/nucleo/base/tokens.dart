@@ -4,7 +4,7 @@ import '../tema.dart';
 
 /// Tokens que usan las piezas de `nucleo/base` (hojas, esqueletos, entrada escalonada).
 /// Esas piezas vienen de una base de movimiento ya medida en teléfono; aquí se
-/// conectan a los colores de Zanqui sin reescribirlas.
+/// conectan a los colores de Zanky sin reescribirlas.
 abstract final class AppRadius {
   static const double sm = 10;
   static const double xl = Zr.m;

@@ -9,7 +9,7 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import '../raiz.dart';
 
 /// Confirmación. Dice la verdad sobre dónde está el reporte (en el teléfono, enviándose
@@ -53,7 +53,7 @@ class _ReporteEnviadoState extends State<ReporteEnviado> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final estado = Zanqui.de(context);
+    final estado = Zanky.de(context);
     final r = estado.reportes.where((x) => x.id == widget.reporteId).firstOrNull;
     if (r == null) return const Scaffold(backgroundColor: Zc.arena);
     final (titulo, detalle, color) = switch (r.envio) {
@@ -146,10 +146,10 @@ class _ReporteEnviadoState extends State<ReporteEnviado> with SingleTickerProvid
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const ZanquiMascota(tamano: 86, animo: Animo.celebrando),
+                      const ZankyMascota(tamano: 86, animo: Animo.celebrando),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: BurbujaZanqui(
+                        child: BurbujaZanky(
                           texto: r.anonimo
                               ? '¡Gracias! Lo enviaste en anónimo: nadie sabrá que fuiste tú.'
                               : '¡Gracias, ${estado.perfil?.nombre.trim().split(' ').first.isNotEmpty == true ? estado.perfil!.nombre.trim().split(' ').first : 'guardián'}! Si la CRA lo verifica, sumas puntos.',

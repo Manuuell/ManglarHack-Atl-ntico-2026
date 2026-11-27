@@ -9,7 +9,7 @@ import '../../nucleo/base/hoja.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import 'medalla.dart';
 
 /// Cuadrícula de insignias: a color las ganadas, en silueta gris las que faltan.
@@ -235,7 +235,7 @@ class _CelebracionState extends State<_Celebracion> with TickerProviderStateMixi
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    RepaintBoundary(child: ZanquiMascota(tamano: 84, animo: Animo.celebrando)),
+                    RepaintBoundary(child: ZankyMascota(tamano: 84, animo: Animo.celebrando)),
                     const SizedBox(height: 4),
                     Text('¡Nueva insignia!', style: tt.labelSmall?.copyWith(color: Zc.hoja, fontSize: 13)),
                     const SizedBox(height: 14),

@@ -1,4 +1,4 @@
-# Zanqui · app móvil (Flutter)
+# Zanky · app móvil (Flutter)
 
 App de ciencia ciudadana para reportar **en tiempo real y con ubicación** las amenazas al manglar del Atlántico.
 Funciona **sin internet**: el reporte se guarda en el teléfono y se envía solo cuando vuelve la señal.
@@ -13,7 +13,7 @@ Funciona **sin internet**: el reporte se guarda en el teléfono y se envía solo
 - **Solidez del reporte 0-100**: guía al ciudadano (la foto en el sitio y la ubicación precisa la suben). La alerta
   oficial siempre la decide una persona.
 - **Mis reportes** con su estado en la CRA y la línea de tiempo, **mapa** con las zonas y los reportes,
-  **Zanqui** como guía y **tarjeta del guardián** con niveles e insignias que solo suben con reportes validados.
+  **Zanky** como guía y **tarjeta del guardián** con niveles e insignias que solo suben con reportes validados.
 
 ## Cómo correrla
 
@@ -24,7 +24,7 @@ flutter test
 # Modo demostración (sin servidor: todo queda en el teléfono y la app lo dice):
 flutter run
 # Con el backend común (ver ../backend/supabase/README.md):
-flutter run --dart-define=ZANQUI_API=https://TU-PROYECTO.supabase.co --dart-define=ZANQUI_ANON=CLAVE_ANON
+flutter run --dart-define=ZANKY_API=https://TU-PROYECTO.supabase.co --dart-define=ZANKY_ANON=CLAVE_ANON
 ```
 
 La clave `anon` de Supabase es pública por diseño; lo que protege los datos son las reglas del servidor.

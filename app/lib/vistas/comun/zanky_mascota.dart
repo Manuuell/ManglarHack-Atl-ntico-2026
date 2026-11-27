@@ -6,16 +6,16 @@ import 'package:flutter/physics.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 
-/// Cómo se siente Zanqui. Cambia la cara, las cejas y los brazos.
+/// Cómo se siente Zanky. Cambia la cara, las cejas y los brazos.
 enum Animo { feliz, curioso, preocupado, celebrando }
 
-/// Zanqui: un mangle rojo chiquito que camina sobre sus raíces en zancos (como los
+/// Zanky: un mangle rojo chiquito que camina sobre sus raíces en zancos (como los
 /// zanqueros del Carnaval de Barranquilla), con su corona de hojas y la faja de colores.
 ///
 /// Todo está dibujado en código: se ve nítido a cualquier tamaño, pesa nada y se anima
 /// por partes (parpadeo, respiración, balanceo, hojas, mirada, salto al tocarlo).
-class ZanquiMascota extends StatefulWidget {
-  const ZanquiMascota({super.key, this.tamano = 160, this.animo = Animo.feliz, this.onTap, this.mirar});
+class ZankyMascota extends StatefulWidget {
+  const ZankyMascota({super.key, this.tamano = 160, this.animo = Animo.feliz, this.onTap, this.mirar});
 
   final double tamano;
   final Animo animo;
@@ -25,10 +25,10 @@ class ZanquiMascota extends StatefulWidget {
   final Offset? mirar;
 
   @override
-  State<ZanquiMascota> createState() => _ZanquiMascotaState();
+  State<ZankyMascota> createState() => _ZankyMascotaState();
 }
 
-class _ZanquiMascotaState extends State<ZanquiMascota> with TickerProviderStateMixin {
+class _ZankyMascotaState extends State<ZankyMascota> with TickerProviderStateMixin {
   /// Reloj continuo para lo que respira (balanceo, hojas, agua). 6 s por vuelta.
   late final AnimationController _vida = AnimationController(vsync: this, duration: const Duration(seconds: 6))
     ..repeat();
@@ -109,7 +109,7 @@ class _ZanquiMascotaState extends State<ZanquiMascota> with TickerProviderStateM
             // Tamaño fijo pase lo que pase con el padre.
             size: Size(ancho, alto),
             willChange: true,
-            painter: _PintorZanqui(
+            painter: _PintorZanky(
               t: quieto ? 0 : _vida.value,
               parpado: _parpado.value,
               salto: _salto.value,
@@ -121,7 +121,7 @@ class _ZanquiMascotaState extends State<ZanquiMascota> with TickerProviderStateM
       ),
     );
     return Semantics(
-      label: 'Zanqui, el guardián del manglar',
+      label: 'Zanky, el guardián del manglar',
       button: widget.onTap != null,
       child: Listener(
         // La mirada sigue al dedo mientras toca.
@@ -146,8 +146,8 @@ class _ZanquiMascotaState extends State<ZanquiMascota> with TickerProviderStateM
       Offset(((p.dx / w) * 2 - 1).clamp(-1.0, 1.0), ((p.dy / h) * 2 - 1).clamp(-1.0, 1.0));
 }
 
-class _PintorZanqui extends CustomPainter {
-  _PintorZanqui({
+class _PintorZanky extends CustomPainter {
+  _PintorZanky({
     required this.t,
     required this.parpado,
     required this.salto,
@@ -161,15 +161,16 @@ class _PintorZanqui extends CustomPainter {
   final Animo animo;
   final Offset mirada;
 
-  static const _tronco = Color(0xFF9A4E2F); // corteza rojiza del mangle rojo
-  static const _troncoOscuro = Color(0xFF6E3320);
-  static const _raiz = Color(0xFF7D3C24);
-  static const _carnaval = [Color(0xFFF2C230), Color(0xFFD13B3B), Color(0xFF2E9E6A), Color(0xFF2B6CB0)];
+  static const _tronco = Color(0xFF8B3A2B); // corteza del mangle rojo (paleta de handoff/08)
+  static const _troncoOscuro = Color(0xFF632519);
+  static const _raiz = Color(0xFF6D3B2A);
+  // Cintas del Carnaval de Barranquilla enrolladas en las raíces: amarillo, rojo y verde.
+  static const _carnaval = [Color(0xFFF9C80E), Color(0xFFE63946), Color(0xFF2A9D8F)];
 
   @override
   void paint(Canvas canvas, Size size) {
     // Lienzo de diseño 200 × 240, escalado para CABER en la caja (no solo por el ancho:
-    // si un padre lo estira, Zanqui no se sale de su espacio) y centrado en ella.
+    // si un padre lo estira, Zanky no se sale de su espacio) y centrado en ella.
     final s = math.min(size.width / 200, size.height / 240);
     canvas.translate((size.width - 200 * s) / 2, (size.height - 240 * s) / 2);
     canvas.scale(s);
@@ -196,7 +197,6 @@ class _PintorZanqui extends CustomPainter {
 
     _brazos(canvas, w);
     _cuerpo(canvas);
-    _faja(canvas);
     _corona(canvas, w);
     _cara(canvas, w);
     canvas.restore();
@@ -242,7 +242,26 @@ class _PintorZanqui extends CustomPainter {
       final path = Path()
         ..moveTo(salida, 170)
         ..cubicTo(salida + (x - 100) * 0.5, 176, x + mece, 192, x + mece, 222);
-      canvas.drawPath(path, p..strokeWidth = (i == 0 || i == 3) ? 7 : 8.5);
+      final grosor = (i == 0 || i == 3) ? 7.0 : 8.5;
+      canvas.drawPath(path, p..strokeWidth = grosor);
+      // Cintas: franjas cortas en diagonal que recorren el zanco, alternando colores.
+      final metrica = path.computeMetrics().first;
+      var k = i;
+      for (var d = metrica.length * 0.18; d < metrica.length * 0.86; d += 7.5) {
+        final t = metrica.getTangentForOffset(d)!;
+        final normal = Offset(-t.vector.dy, t.vector.dx);
+        final c = t.position;
+        final a = c + normal * (grosor * 0.55) + t.vector * 2.2;
+        final b = c - normal * (grosor * 0.55) - t.vector * 2.2;
+        canvas.drawLine(
+          a,
+          b,
+          Paint()
+            ..color = _carnaval[k++ % _carnaval.length]
+            ..strokeWidth = 2.4
+            ..strokeCap = StrokeCap.round,
+        );
+      }
       // Puntica que entra al fango.
       canvas.drawCircle(Offset(x + mece, 222), 3.6, Paint()..color = _troncoOscuro);
     }
@@ -280,16 +299,6 @@ class _PintorZanqui extends CustomPainter {
     canvas.drawLine(const Offset(136, 116), const Offset(134, 140), veta);
   }
 
-  void _faja(Canvas canvas) {
-    // La faja del zanquero: cuatro franjas del Carnaval.
-    canvas.save();
-    canvas.clipRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(56, 152, 88, 12), const Radius.circular(6)));
-    for (var i = 0; i < 4; i++) {
-      canvas.drawRect(Rect.fromLTWH(56 + i * 22.0, 152, 22, 12), Paint()..color = _carnaval[i]);
-    }
-    canvas.restore();
-  }
-
   void _brazos(Canvas canvas, double w) {
     final arriba = animo == Animo.celebrando;
     final p = Paint()
@@ -319,7 +328,7 @@ class _PintorZanqui extends CustomPainter {
   void _corona(Canvas canvas, double w) {
     // Cinco hojas en abanico + un propágulo que cuelga: así se reconoce el mangle rojo.
     const angulos = [-1.05, -0.52, 0.0, 0.52, 1.05];
-    const colores = [Color(0xFF248A5A), Color(0xFF2E9E6A), Color(0xFF3DB37C), Color(0xFF2E9E6A), Color(0xFF248A5A)];
+    const colores = [Color(0xFF2E7D32), Color(0xFF43A047), Color(0xFF4CAF50), Color(0xFF43A047), Color(0xFF2E7D32)];
     for (var i = 0; i < angulos.length; i++) {
       final susurro = math.sin(w * 2 + i * 0.9) * 0.06;
       canvas.save();
@@ -457,6 +466,6 @@ class _PintorZanqui extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PintorZanqui o) =>
+  bool shouldRepaint(_PintorZanky o) =>
       o.t != t || o.parpado != parpado || o.salto != salto || o.animo != animo || o.mirada != mirada;
 }

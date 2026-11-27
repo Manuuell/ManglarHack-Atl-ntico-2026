@@ -56,7 +56,7 @@ class PuntoMapa {
 }
 
 /// Los míos primero (con sus datos completos); los públicos que ya son míos no se repiten.
-List<PuntoMapa> construirPuntos(EstadoZanqui e) {
+List<PuntoMapa> construirPuntos(EstadoZanky e) {
   final propios = {for (final r in e.reportes) r.id};
   return [
     for (final r in e.reportes) PuntoMapa.mio(r),
@@ -66,7 +66,7 @@ List<PuntoMapa> construirPuntos(EstadoZanqui e) {
 }
 
 /// Firma barata de lo que dibuja el mapa: si no cambia, no se recalcula nada.
-int firmaPuntos(EstadoZanqui e) => Object.hash(
+int firmaPuntos(EstadoZanky e) => Object.hash(
       Object.hashAll([for (final r in e.reportes) Object.hash(r.id, r.envio, r.prioridad, r.estado)]),
       e.publicos.length,
       identityHashCode(e.publicos),

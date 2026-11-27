@@ -22,7 +22,7 @@ import 'modelo.dart';
 /// El mapa: responde de un vistazo «¿dónde pasa ahora y con qué prioridad?».
 ///
 /// Zonas de manglar (polígonos de la CRA, creados una sola vez), mis reportes y los
-/// públicos, coloreados por prioridad. Lo propio de Zanqui se dibuja sin red: si las
+/// públicos, coloreados por prioridad. Lo propio de Zanky se dibuja sin red: si las
 /// teselas de OpenStreetMap no cargan, el mapa base queda en color arena y las zonas y los
 /// reportes se ven igual.
 class PantallaMapa extends StatefulWidget {
@@ -125,7 +125,7 @@ class _PantallaMapaState extends State<PantallaMapa>
     super.didChangeDependencies();
     if (!_preparado) {
       _preparado = true;
-      _prepararCapas(Zanqui.leer(context));
+      _prepararCapas(Zanky.leer(context));
     }
     // «Reducir movimiento»: el anillo queda quieto.
     if (context.animationsDisabled && _latido.isAnimating) _latido.stop();
@@ -147,7 +147,7 @@ class _PantallaMapaState extends State<PantallaMapa>
 
   // ------------------------------------------------------------------ capas
 
-  void _prepararCapas(EstadoZanqui e) {
+  void _prepararCapas(EstadoZanky e) {
     _manglar = e.manglar;
     _limitesTodo = _manglar.zonas.isEmpty
         ? _regionInicial
@@ -187,7 +187,7 @@ class _PantallaMapaState extends State<PantallaMapa>
 
     _capaTeselas = TileLayer(
       urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      userAgentPackageName: 'co.zanqui.zanqui',
+      userAgentPackageName: 'co.zanky.app',
       maxNativeZoom: 19,
       // Una tesela que falló se vuelve a pedir cuando se la mira de nuevo.
       evictErrorTileStrategy: EvictErrorTileStrategy.notVisibleRespectMargin,
@@ -196,6 +196,11 @@ class _PantallaMapaState extends State<PantallaMapa>
 
     final arriba = MediaQuery.viewPaddingOf(context).top;
     _opciones = MapOptions(
+      // Cámara de partida DENTRO de la restricción: con un MapController propio,
+      // flutter_map (en depuración) comprueba esa cámara antes de aplicar el ajuste
+      // a los límites, y el (0, 0) por defecto cae fuera de la costa.
+      initialCenter: _limitesTodo.center,
+      initialZoom: 10,
       initialCameraFit: CameraFit.bounds(
         bounds: _limitesTodo,
         padding: EdgeInsets.fromLTRB(44, arriba + 110, 44, 200),
@@ -274,7 +279,7 @@ class _PantallaMapaState extends State<PantallaMapa>
 
   // ------------------------------------------------------------------ datos
 
-  void _actualizarDatos(EstadoZanqui e) {
+  void _actualizarDatos(EstadoZanky e) {
     // Al volver la señal, la nota del mapa base se limpia: si sigue fallando, reaparece.
     if (e.enLinea && !_enLineaAntes) {
       _erroresTesela = 0;
@@ -531,7 +536,7 @@ class _PantallaMapaState extends State<PantallaMapa>
       if (permiso == LocationPermission.deniedForever) {
         _mostrarAviso(
           const _Aviso(
-            'La ubicación está bloqueada para Zanqui. Puedes activarla en los ajustes del teléfono.',
+            'La ubicación está bloqueada para Zanky. Puedes activarla en los ajustes del teléfono.',
             Icons.location_off_rounded,
             accion: 'Abrir ajustes',
             alAccion: Geolocator.openAppSettings,
@@ -585,7 +590,7 @@ class _PantallaMapaState extends State<PantallaMapa>
 
   @override
   Widget build(BuildContext context) {
-    final estado = Zanqui.de(context);
+    final estado = Zanky.de(context);
     _actualizarDatos(estado);
 
     // Solo al pasar de escondida a visible (nunca mientras está escondida).
@@ -810,8 +815,11 @@ class _PantallaMapaState extends State<PantallaMapa>
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  const Flexible(child: LeyendaMapa()),
-                  const Spacer(),
+                  // Expanded + Align: la leyenda toma el ancho que sobra junto al botón
+                  // (con Flexible y Spacer solo le tocaba la mitad y se desbordaba).
+                  const Expanded(
+                    child: Align(alignment: Alignment.bottomLeft, child: LeyendaMapa()),
+                  ),
                   BotonRedondo(
                     icono: Icons.my_location_rounded,
                     etiqueta: 'Mi ubicación',
@@ -833,7 +841,7 @@ class _PantallaMapaState extends State<PantallaMapa>
     );
   }
 
-  static String _textoPendientes(EstadoZanqui e) {
+  static String _textoPendientes(EstadoZanky e) {
     final n = e.pendientes;
     final reportes = n == 1 ? 'tu reporte' : 'tus $n reportes';
     if (!e.servidor.configurado) {

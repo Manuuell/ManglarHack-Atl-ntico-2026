@@ -10,15 +10,15 @@ import 'tipos.dart';
 /// Conexión con el backend común (Supabase: Postgres + PostGIS + Storage).
 ///
 /// Se configura al compilar, nunca en el código:
-///   flutter run --dart-define=ZANQUI_API=https://xxxx.supabase.co --dart-define=ZANQUI_ANON=CLAVE_ANON
+///   flutter run --dart-define=ZANKY_API=https://xxxx.supabase.co --dart-define=ZANKY_ANON=CLAVE_ANON
 /// La clave «anon» es pública por diseño; lo que protege los datos son las reglas
 /// del servidor (ver backend/supabase/schema.sql). La service_role NUNCA va en la app.
 ///
 /// Sin configuración, la app funciona igual y guarda todo en el teléfono, y lo dice.
 class Servidor {
   Servidor({String? base, String? anon, http.Client? cliente})
-      : base = base ?? const String.fromEnvironment('ZANQUI_API'),
-        anon = anon ?? const String.fromEnvironment('ZANQUI_ANON'),
+      : base = base ?? const String.fromEnvironment('ZANKY_API'),
+        anon = anon ?? const String.fromEnvironment('ZANKY_ANON'),
         _http = cliente ?? http.Client();
 
   final String base;

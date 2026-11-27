@@ -6,7 +6,7 @@ import '../../datos/prioridad.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import 'marcadores.dart';
 
 /// Superficie de vidrio, igual que la barra de pestañas: se ve el mapa detrás.
@@ -349,7 +349,7 @@ class _Clave extends StatelessWidget {
       );
 }
 
-/// Estado vacío honesto: nada inventado, con Zanqui y la siguiente acción.
+/// Estado vacío honesto: nada inventado, con Zanky y la siguiente acción.
 class TarjetaVaciaMapa extends StatelessWidget {
   const TarjetaVaciaMapa({
     super.key,
@@ -372,7 +372,7 @@ class TarjetaVaciaMapa extends StatelessWidget {
       relleno: const EdgeInsets.fromLTRB(12, 10, 14, 10),
       child: Row(
         children: [
-          const ZanquiMascota(tamano: 64, animo: Animo.curioso),
+          const ZankyMascota(tamano: 64, animo: Animo.curioso),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
