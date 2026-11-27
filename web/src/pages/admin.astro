@@ -1,0 +1,14 @@
+---
+// Panel de administración: solo para cuentas con rol de administrador (lo comprueba el servidor de Zanky).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
+import PanelAdmin from '../components/admin/PanelAdmin';
+---
+<BaseLayout title="Panel de administración · Zanky y la C.R.A." description="Información del bot de WhatsApp, jornadas e invitaciones por WhatsApp para la administración de la plataforma del manglar.">
+  <CabeceraCRA rotulo="PANEL DE ADMINISTRACIÓN" />
+  <main id="contenido" class="mx-auto w-full max-w-7xl px-4 pt-10 pb-20 sm:px-6 lg:px-8">
+    <PanelAdmin client:only="react">
+      <div slot="fallback" class="grid min-h-[50vh] place-items-center text-tenue" role="status">Cargando el panel…</div>
+    </PanelAdmin>
+  </main>
+</BaseLayout>
