@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../datos/comunidad/comunidad.dart';
+import '../../datos/comunidad/feed.dart' show puntoPedidoMapa;
 import '../../datos/estado.dart';
 import '../../datos/servidor.dart' show ReportePublico;
 import '../../datos/zonas.dart';
@@ -124,6 +125,19 @@ class _PantallaMapaState extends State<PantallaMapa>
     });
   }
 
+  /// «Ver en el mapa» desde el feed de Comunidad: vuela al punto (reintenta si el mapa aún no está listo).
+  Future<void> _alPedirPunto([int intento = 0]) async {
+    final p = puntoPedidoMapa.value;
+    if (p == null || !mounted) return;
+    final ok = await _volar(p, 16);
+    if (ok) {
+      puntoPedidoMapa.value = null;
+    } else if (intento < 6 && mounted) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      return _alPedirPunto(intento + 1);
+    }
+  }
+
   // Datos del mapa.
   int _firma = 0;
   int _versionPuntos = 0;
@@ -147,6 +161,8 @@ class _PantallaMapaState extends State<PantallaMapa>
   void initState() {
     super.initState();
     _cargarComunidad();
+    puntoPedidoMapa.addListener(_alPedirPunto);
+    if (puntoPedidoMapa.value != null) _alPedirPunto();
     // Cada minuto se revisa qué reportes dejan de ser «recientes».
     _relojMinuto = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() => _tic++);
@@ -166,6 +182,7 @@ class _PantallaMapaState extends State<PantallaMapa>
 
   @override
   void dispose() {
+    puntoPedidoMapa.removeListener(_alPedirPunto);
     _relojBase?.cancel();
     _relojAviso?.cancel();
     _relojMinuto?.cancel();

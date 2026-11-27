@@ -14,7 +14,7 @@ import 'piezas_comunidad.dart';
 Future<void> abrirNoticia(BuildContext context, NoticiaManglar n) =>
     abrirConBorde<void>(context, (_) => LectorNoticia(noticia: n), settings: const RouteSettings(name: 'noticia'));
 
-/// Lector de una noticia de la C.R.A.: foto, fuente, fecha y el texto en párrafos (sin HTML).
+/// Lector de una noticia de la CRA: foto, fuente, fecha y el texto en párrafos (sin HTML).
 class LectorNoticia extends StatelessWidget {
   const LectorNoticia({super.key, required this.noticia});
   final NoticiaManglar noticia;

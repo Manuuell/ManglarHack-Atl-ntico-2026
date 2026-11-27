@@ -19,8 +19,8 @@ import '../../nucleo/kit/tirar_actualizar.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
-import '../mapa/marcadores.dart' show tintaSobre;
-import '../raiz.dart';
+import '../../datos/comunidad/feed.dart';
+import 'feed_y_eventos.dart';
 import 'piezas_comunidad.dart';
 
 /// Abre «Comunidad» (desde la tarjeta de Inicio).
@@ -66,11 +66,15 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
   List<ColegioEnRanking>? _ranking;
   List<ColegioWeb>? _colegiosWeb;
   bool _rankingFallo = false;
+  List<ReporteFeed> _simulados = const [];
+  List<Jornada> _respaldo = const [];
 
   @override
   void initState() {
     super.initState();
     _cargarLocal();
+    cargaSimulados().then((v) => mounted ? setState(() => _simulados = v) : null);
+    cargaJornadasRespaldo().then((v) => mounted ? setState(() => _respaldo = v) : null);
     WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
   }
 
@@ -164,13 +168,25 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
                 const SizedBox(height: 26),
                 entra(SeccionNoticias(lote: _noticias)),
                 const SizedBox(height: 26),
-                entra(_SeccionReportes(lote: _reportes, supabase: estado.publicos)),
+                entra(SeccionFeed(
+                  feed: _reportes == null
+                      ? null
+                      : unirFeed(abiertos: _reportes!.datos, supabase: estado.publicos, simulados: _simulados),
+                  origen: _reportes?.origen,
+                  cuando: _reportes?.cuando,
+                )),
                 const SizedBox(height: 26),
-                entra(_SeccionJornadas(jornadas: _jornadas, fuente: _fuente, alCambiar: _cargar)),
+                entra(SeccionEventos(
+                  eventos: _jornadas == null ? null : completarCartelera(_jornadas!, _respaldo),
+                  alInscribirse: (j) async {
+                    final ok = await abrirInscripcion(context, j, _fuente);
+                    if (ok == true) await _cargar();
+                  },
+                )),
                 const SizedBox(height: 26),
                 entra(_SeccionGuardianes(ranking: _ranking, web: _colegiosWeb, fallo: _rankingFallo)),
                 const SizedBox(height: 26),
-                entra(_DatosAbiertos(base: _fuente.base, cantidad: _reportes?.origen == OrigenDato.nada ? null : _reportes?.datos.length)),
+                entra(_DatosAbiertos(base: _fuente.base)),
               ],
             ),
           ),
@@ -196,7 +212,7 @@ class _SeccionAlertas extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
         child: Text(
           'Cada 10 minutos se cruzan las estaciones del IDEAM, el pronóstico y las mareas de DIMAR, '
-          'los focos de calor de la C.R.A. y lo que reporta la comunidad.',
+          'los focos de calor de la CRA y lo que reporta la comunidad.',
           style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.4),
         ),
       ),
@@ -257,177 +273,6 @@ class _SeccionAlertas extends StatelessWidget {
 }
 
 // ------------------------------------------------------------------ reportes
-
-class _SeccionReportes extends StatelessWidget {
-  const _SeccionReportes({required this.lote, required this.supabase});
-  final Lote<List<ReporteComunidad>>? lote;
-  final List<ReportePublico> supabase;
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final l = lote;
-    final canal = {for (final r in l?.datos ?? const <ReporteComunidad>[]) r.publico.id: r.canal};
-    final todos = sumarSinDuplicar([for (final r in l?.datos ?? const <ReporteComunidad>[]) r.publico], supabase)
-      ..sort((a, b) => b.capturadoEn.compareTo(a.capturadoEn));
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      TituloSeccion(
-        antetitulo: 'Mapa en vivo',
-        titulo: 'Reportes de',
-        tono: 'la comunidad.',
-        accion: 'Ver mapa',
-        alAccion: () {
-          Navigator.of(context).popUntil((r) => r.isFirst);
-          Raiz.irA(context, 1);
-        },
-      ),
-      if (l == null)
-        const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.fila())
-      else ...[
-        NotaOrigen(origen: l.origen, cuando: l.cuando),
-        if (todos.isEmpty)
-          const EstadoVacio(
-            titulo: 'Aún no hay reportes públicos',
-            texto: 'Cuando alguien reporte por la app, la web o WhatsApp, aparecerá aquí.',
-            tamanoZanky: 90,
-            relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
-          )
-        else
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(color: Zc.superficie, borderRadius: BorderRadius.circular(Zr.m)),
-            child: Column(children: [
-              for (final (k, r) in todos.take(8).indexed) ...[
-                if (k > 0) const Divider(height: 1, indent: 60, color: Zc.linea),
-                Semantics(
-                  label: '${r.tipo.nombre}, ${r.estado.nombre}, ${haceCuanto(r.capturadoEn)}',
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    child: Row(children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(color: r.tipo.color.withValues(alpha: 0.16), shape: BoxShape.circle),
-                        child: Icon(r.tipo.icono, size: 18, color: r.tipo.color),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(r.tipo.nombre, style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w700)),
-                          Text(
-                            '${r.estado.nombre} · ${haceCuanto(r.capturadoEn)}'
-                            '${canal[r.id] == 'whatsapp' ? ' · por WhatsApp' : ''}',
-                            style: tt.labelMedium?.copyWith(color: Zc.textoSuave),
-                          ),
-                        ]),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: Zc.dePrioridad(r.prioridad), borderRadius: BorderRadius.circular(99)),
-                        child: Text('P${r.prioridad}', style: tt.labelSmall?.copyWith(color: tintaSobre(Zc.dePrioridad(r.prioridad)))),
-                      ),
-                    ]),
-                  ),
-                ),
-              ],
-            ]),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: Text('La ubicación sale redondeada (~100 m) y sin nombre, para proteger a quien denuncia.',
-              style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
-        ),
-      ],
-    ]);
-  }
-}
-
-// ------------------------------------------------------------------ jornadas
-
-class _SeccionJornadas extends StatelessWidget {
-  const _SeccionJornadas({required this.jornadas, required this.fuente, required this.alCambiar});
-  final List<Jornada>? jornadas;
-  final FuenteComunidad fuente;
-  final Future<void> Function() alCambiar;
-
-  @override
-  Widget build(BuildContext context) {
-    final ahora = DateTime.now();
-    final proximas = [
-      for (final j in jornadas ?? const <Jornada>[])
-        if (j.fin.isAfter(ahora) && !j.cancelada) j,
-    ]..sort((a, b) => a.inicio.compareTo(b.inicio));
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      const TituloSeccion(antetitulo: 'Cartelera', titulo: 'Jornadas', tono: 'para sumarte.'),
-      if (jornadas == null)
-        const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.tarjeta())
-      else if (proximas.isEmpty)
-        const EstadoVacio(
-          titulo: 'No hay jornadas programadas',
-          texto: 'Cuando la C.R.A. o un organizador publique una, aparecerá aquí.',
-          tamanoZanky: 90,
-          relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
-        )
-      else
-        for (final j in proximas.take(4))
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-            child: _TarjetaJornada(j: j, fuente: fuente, alCambiar: alCambiar),
-          ),
-    ]);
-  }
-}
-
-class _TarjetaJornada extends StatelessWidget {
-  const _TarjetaJornada({required this.j, required this.fuente, required this.alCambiar});
-  final Jornada j;
-  final FuenteComunidad fuente;
-  final Future<void> Function() alCambiar;
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final libres = j.cuposLibres;
-    return TarjetaZ(
-      padding: const EdgeInsets.all(16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text(j.tipoLegible.toUpperCase(), style: tt.seccion.copyWith(color: Zc.cienaga)),
-          const Spacer(),
-          if (j.ejemplo) Text('Ejemplo', style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
-        ]),
-        const SizedBox(height: 4),
-        Text(j.titulo, style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 6),
-        Text('${cuandoTexto(j.inicio.toLocal())} · ${j.puntoEncuentro}', style: tt.bodySmall?.copyWith(color: Zc.textoSuave)),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(99),
-          child: LinearProgressIndicator(
-            value: j.cupos == 0 ? 0 : j.inscritos / j.cupos,
-            minHeight: 6,
-            backgroundColor: Zc.linea,
-            color: Zc.hoja,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text('${j.inscritos} de ${j.cupos} cupos · ${libres == 0 ? 'sin cupos' : '$libres libres'}',
-            style: tt.labelMedium?.copyWith(color: Zc.textoSuave)),
-        const SizedBox(height: 12),
-        BotonZ(
-          texto: libres == 0 ? 'Sin cupos' : 'Inscribirme',
-          icono: Icons.how_to_reg_rounded,
-          onTap: libres == 0
-              ? null
-              : () async {
-                  final ok = await abrirInscripcion(context, j, fuente);
-                  if (ok == true) await alCambiar();
-                },
-        ),
-      ]),
-    );
-  }
-}
 
 /// Hoja de inscripción: nombre, celular opcional, consentimiento obligatorio y confirmación.
 Future<bool?> abrirInscripcion(BuildContext context, Jornada j, FuenteComunidad fuente) {
@@ -572,7 +417,7 @@ class _SeccionGuardianes extends StatelessWidget {
       else if (filas.isEmpty)
         const EstadoVacio(
           titulo: 'Pronto conocerás a los colegios guardianes',
-          texto: 'Cuando la C.R.A. valide reportes de un colegio, sube aquí.',
+          texto: 'Cuando la CRA valide reportes de un colegio, sube aquí.',
           tamanoZanky: 90,
           relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
         )
@@ -627,7 +472,7 @@ class SeccionNoticias extends StatelessWidget {
     return LayoutBuilder(builder: (context, caja) {
       final ancho = caja.maxWidth;
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        const TituloSeccion(antetitulo: 'Desde la C.R.A.', titulo: 'La C.R.A.', tono: 'en el manglar'),
+        const TituloSeccion(antetitulo: 'Desde la CRA', titulo: 'La CRA', tono: 'en el manglar'),
         if (l == null)
           const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.cabecera())
         else ...[
@@ -635,7 +480,7 @@ class SeccionNoticias extends StatelessWidget {
           if (l.datos.isEmpty)
             const EstadoVacio(
               titulo: 'Sin noticias por ahora',
-              texto: 'Tira hacia abajo para buscar las más recientes de la C.R.A.',
+              texto: 'Tira hacia abajo para buscar las más recientes de la CRA',
               tamanoZanky: 90,
               relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
             )
@@ -667,11 +512,9 @@ class SeccionNoticias extends StatelessWidget {
 // ------------------------------------------------------------------ datos abiertos
 
 class _DatosAbiertos extends StatelessWidget {
-  const _DatosAbiertos({required this.base, this.cantidad});
+  const _DatosAbiertos({required this.base});
   final String base;
 
-  /// Cuántos reportes abiertos hay ahora (null: todavía no se sabe).
-  final int? cantidad;
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
@@ -685,17 +528,6 @@ class _DatosAbiertos extends StatelessWidget {
           const SizedBox(height: 4),
           Text('Los reportes de la comunidad, libres (CC BY 4.0)',
               style: tt.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
-          if (cantidad != null) ...[
-            const SizedBox(height: 8),
-            Semantics(
-              label: '$cantidad reportes abiertos',
-              excludeSemantics: true,
-              child: Text.rich(TextSpan(children: [
-                TextSpan(text: '$cantidad', style: tt.headlineSmall?.copyWith(color: Cra.dorado, fontWeight: FontWeight.w900)),
-                TextSpan(text: cantidad == 1 ? '  reporte abierto' : '  reportes abiertos', style: tt.bodyMedium?.copyWith(color: Colors.white)),
-              ])),
-            ),
-          ],
           const SizedBox(height: 4),
           Text('Sin nombres, fotos ni descripciones; coordenadas a ~110 m. Toca un formato para copiar su enlace.',
               style: tt.bodySmall?.copyWith(color: Cra.textoSuave)),

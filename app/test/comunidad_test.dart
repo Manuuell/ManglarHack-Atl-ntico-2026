@@ -7,13 +7,15 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zanky/datos/comunidad/comunidad.dart';
+import 'package:zanky/datos/comunidad/feed.dart' show cargaJornadasRespaldo;
+import 'package:zanky/datos/experiencia/jornada.dart';
 import 'package:zanky/datos/tipos.dart';
 import 'package:zanky/nucleo/tema.dart';
 import 'package:zanky/vistas/comunidad/comunidad_inicio.dart';
 import 'package:zanky/vistas/comunidad/piezas_comunidad.dart';
 
 /// Respuestas REALES guardadas el 27-nov-2026 (GET de solo lectura):
-/// `zanqui.sentralabs.co/alertas`, `/datos-abiertos/reportes.geojson` y el wp-json de la C.R.A.
+/// `zanqui.sentralabs.co/alertas`, `/datos-abiertos/reportes.geojson` y el wp-json de la CRA
 String fixture(String nombre) => File('test/fixtures/comunidad/$nombre').readAsStringSync();
 
 http.Response utf(String cuerpo, [int estado = 200]) =>
@@ -91,6 +93,24 @@ void main() {
   });
 
   group('reportes de la comunidad (datos abiertos)', () {
+    test('los de prueba del bot y los descartados no salen', () {
+      expect(esReporteDePrueba(descripcion: 'PRUEBA — descartar'), isTrue);
+      expect(esReporteDePrueba(descripcion: '  prueba del bot'), isTrue);
+      expect(esReporteDePrueba(codigo: 'ZK-0A6B'), isTrue);
+      expect(esReporteDePrueba(estado: EstadoReporte.descartado), isTrue);
+      expect(esReporteDePrueba(codigo: 'ZK-16D1', descripcion: 'Basura en la orilla', estado: EstadoReporte.recibido), isFalse);
+      final geo = jsonEncode({
+        'features': [
+          for (final (c, d) in [('ZK-1', 'PRUEBA — descartar'), ('ZK-2', 'Tala cerca del caño'), ('ZK-0A6B', '')])
+            {
+              'geometry': {'coordinates': [-74.86, 11.02]},
+              'properties': {'codigo': c, 'fecha': '2026-11-27T10:00:00Z', 'tipo': 'Tala', 'estado': 'Recibido', 'descripcion': d},
+            },
+        ],
+      });
+      expect(reportesDeGeoJson(geo).map((r) => r.publico.id), ['ZK-2']);
+    });
+
     test('lee el GeoJSON real con su canal', () {
       final r = reportesDeGeoJson(fixture('reportes.geojson'));
       expect(r, isNotEmpty);
@@ -108,8 +128,8 @@ void main() {
     });
   });
 
-  group('noticias de la C.R.A.', () {
-    test('lee la respuesta real: título limpio, fecha, párrafos y solo enlaces de la C.R.A.', () {
+  group('noticias de la CRA', () {
+    test('lee la respuesta real: título limpio, fecha, párrafos y solo enlaces de la CRA', () {
       final n = noticiasDeTexto(fixture('noticias.json'));
       expect(n, hasLength(2));
       expect(n.first.fecha.isAfter(n.last.fecha) || n.first.fecha == n.last.fecha, isTrue);
@@ -119,7 +139,7 @@ void main() {
         expect(x.parrafos, isNotEmpty);
         expect(x.enlace, startsWith('https://www.crautonoma.gov.co/'));
         if (x.imagen != null) expect(x.imagen, startsWith('https://www.crautonoma.gov.co/'));
-        expect(x.fuente, contains('C.R.A.'));
+        expect(x.fuente, contains('CRA'));
       }
     });
 
@@ -198,6 +218,8 @@ void main() {
   });
 
   group('vistas', () {
+    setUp(() => cargaJornadasRespaldo = () async => const []);
+    final sinJornadas = FuenteJornadas(cliente: sinRed);
     Widget app(Widget hijo, {double ancho = 390}) => MaterialApp(
           theme: temaZanky(),
           home: MediaQuery(
@@ -208,26 +230,29 @@ void main() {
 
     testWidgets('Inicio muestra la alerta oficial más alta, su recomendación y las cifras oficiales', (t) async {
       await t.pumpWidget(app(ComunidadInicio(
+        jornadas: sinJornadas,
         fuente: FuenteComunidad(cliente: clienteReal()),
         respaldo: const Text('RESPALDO'),
       )));
       await t.pumpAndSettle();
-      expect(find.text('ALERTAS OFICIALES'), findsOneWidget);
+      expect(find.text('ALERTAS DEL MANGLAR'), findsOneWidget);
       expect(find.text('Alerta naranja'), findsWidgets);
       expect(find.textContaining('Qué hacer:'), findsOneWidget);
       expect(find.textContaining('lugares más'), findsOneWidget);
       expect(find.text('Viento ahora'), findsNothing); // va con el ícono delante
       expect(find.textContaining('Viento ahora'), findsOneWidget);
       expect(find.text('RESPALDO'), findsNothing, reason: 'con alertas oficiales no se muestran las reglas locales');
-      expect(find.text('DESDE LA C.R.A.'), findsOneWidget);
+      expect(find.text('DESDE LA CRA'), findsOneWidget);
     });
 
     testWidgets('sin red y sin copia: solo entonces el respaldo local, rotulado', (t) async {
-      await t.pumpWidget(app(ComunidadInicio(fuente: FuenteComunidad(cliente: sinRed), respaldo: const Text('RESPALDO'))));
-      await t.pumpAndSettle();
+      await t.pumpWidget(app(ComunidadInicio(jornadas: sinJornadas, fuente: FuenteComunidad(cliente: sinRed), respaldo: const Text('RESPALDO'))));
+      for (var i = 0; i < 12; i++) {
+        await t.pump(const Duration(milliseconds: 250));
+      }
       expect(find.text('RESPALDO'), findsOneWidget);
       expect(find.textContaining('No son alertas oficiales'), findsOneWidget);
-      expect(find.text('ALERTAS OFICIALES'), findsNothing);
+      expect(find.text('ALERTAS DEL MANGLAR'), findsNothing);
     });
 
     testWidgets('la tarjeta de alerta cabe a 360 px sin desbordes', (t) async {

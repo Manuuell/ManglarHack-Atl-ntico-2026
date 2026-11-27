@@ -14,7 +14,7 @@ import '../tipos.dart';
 /// |---|---|---|
 /// | Alertas del manglar | `GET zanqui.sentralabs.co/alertas` | `components/comunidad/AlertasManglar.tsx` |
 /// | Reportes de la comunidad (WhatsApp y web) | `GET zanqui.sentralabs.co/datos-abiertos/reportes.geojson` | servidor `reportes/datosAbiertos.ts` |
-/// | Noticias del manglar | WordPress de la C.R.A. (`/wp-json/wp/v2/posts`, búsquedas «manglar» y «Mallorquín») | `lib/craApi.ts` |
+/// | Noticias del manglar | WordPress de la CRA (`/wp-json/wp/v2/posts`, búsquedas «manglar» y «Mallorquín») | `lib/craApi.ts` |
 /// | Inscripción a jornadas | `POST zanqui.sentralabs.co/api/jornadas/:id/inscripciones` | `lib/plataforma/jornadasApi.ts` |
 ///
 /// Las jornadas salen de `FuenteJornadas` (`experiencia/jornada.dart`) y el ranking de colegios de
@@ -93,7 +93,7 @@ const iconoAlerta = {
   'foco_calor': '🛰️',
   'amenaza_ciudadana': '📣',
 };
-const nombreFuente = {'ideam': 'IDEAM', 'dimar': 'DIMAR', 'mareas': 'DIMAR · CIOH', 'cra': 'C.R.A.', 'comunidad': 'Comunidad'};
+const nombreFuente = {'ideam': 'IDEAM', 'dimar': 'DIMAR', 'mareas': 'DIMAR · CIOH', 'cra': 'CRA', 'comunidad': 'Comunidad'};
 
 class AlertaManglar {
   const AlertaManglar({
@@ -294,7 +294,7 @@ List<ReporteComunidad> reportesDeGeoJson(String texto) {
     final codigo = p['codigo'];
     if (fecha == null || codigo is! String) continue;
     final estado = estadoDeNombre('${p['estado'] ?? ''}');
-    if (estado == EstadoReporte.descartado) continue;
+    if (esReporteDePrueba(codigo: codigo, descripcion: '${p['descripcion'] ?? p['nota'] ?? ''}', estado: estado)) continue;
     salida.add(ReporteComunidad(
       ReportePublico(
         id: codigo,
@@ -310,6 +310,20 @@ List<ReporteComunidad> reportesDeGeoJson(String texto) {
   }
   salida.sort((a, b) => b.publico.capturadoEn.compareTo(a.publico.capturadoEn));
   return salida;
+}
+
+/// Reportes de prueba del bot (descripción «PRUEBA — descartar»…) y los descartados o rechazados:
+/// no salen en el feed, en el mapa ni en las cifras.
+///
+/// La vista pública `reportes_publicos` no trae la descripción, así que los de prueba que ya se
+/// conocen van por código en [codigosDePrueba] hasta que la vista los excluya.
+const codigosDePrueba = {'ZK-0A6B'};
+
+bool esReporteDePrueba({String? codigo, String? descripcion, EstadoReporte? estado}) {
+  if (estado == EstadoReporte.descartado) return true;
+  if (codigo != null && codigosDePrueba.contains(codigo.toUpperCase())) return true;
+  final d = (descripcion ?? '').trimLeft().toUpperCase();
+  return d.startsWith('PRUEBA') || d.startsWith('RECHAZ');
 }
 
 /// Suma dos listas de reportes sin repetir ninguno por id (el primero que llega se queda).
@@ -338,7 +352,7 @@ class NoticiaManglar {
   final String titulo, resumen, enlace;
   final List<String> parrafos;
   final String? imagen;
-  String get fuente => 'C.R.A. · Prensa';
+  String get fuente => 'CRA · Prensa';
 }
 
 const _entidades = {
@@ -391,7 +405,7 @@ List<NoticiaManglar> noticiasDeTexto(String texto, {int cantidad = 8}) {
       titulo: textoPlano('${(p['title'] as Map?)?['rendered'] ?? ''}'),
       resumen: textoPlano('${(p['excerpt'] as Map?)?['rendered'] ?? ''}'),
       parrafos: parrafosDe('${(p['content'] as Map?)?['rendered'] ?? ''}'),
-      // Solo enlaces e imágenes del propio sitio de la C.R.A.
+      // Solo enlaces e imágenes del propio sitio de la CRA
       enlace: enlace.startsWith('https://www.crautonoma.gov.co/') ? enlace : 'https://www.crautonoma.gov.co/prensa/noticias',
       imagen: img != null && img.startsWith('https://www.crautonoma.gov.co/') ? img : null,
     );

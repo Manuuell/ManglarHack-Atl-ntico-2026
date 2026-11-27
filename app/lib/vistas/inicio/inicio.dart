@@ -190,7 +190,8 @@ class _InicioState extends State<Inicio> {
       case SeccionInicio.evento:
         return const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: EntradaEvento());
       case SeccionInicio.clima:
-        return _TarjetaClima(estado: estado);
+        // El tiempo sale una vez: las cifras de /alertas; Open-Meteo solo sin red.
+        return SoloSinCifrasDelServidor(child: _TarjetaClima(estado: estado));
       case SeccionInicio.pronostico:
         // Alertas oficiales del servidor (las de la web); el pronóstico local queda de respaldo sin red.
         return const ComunidadInicio();

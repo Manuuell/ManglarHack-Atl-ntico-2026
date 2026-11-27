@@ -189,8 +189,9 @@ Future<void> abrirHojaAlerta(BuildContext context, AlertaManglar a, {int extra =
           TarjetaAlerta(alerta: a, extra: extra),
           const SizedBox(height: 12),
           Text(
-              'Fuentes: ${a.fuentesTexto}'
-              '${generado == null ? '' : ' · servidor de Zanky, ${cuandoTexto(generado)}'}',
+              'Respaldo: ${a.fuentesTexto}'
+              '${generado == null ? '' : ', cruzado por Zanky ${cuandoTexto(generado)}'}. '
+              'No reemplaza los avisos oficiales de la CRA ni de la Gestión del Riesgo.',
               textAlign: TextAlign.center,
               style: Theme.of(c).textTheme.labelMedium?.copyWith(color: Zc.textoSuave)),
           const SizedBox(height: 14),

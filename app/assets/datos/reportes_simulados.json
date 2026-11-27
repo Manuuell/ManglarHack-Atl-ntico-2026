@@ -1,0 +1,280 @@
+{
+ "aviso": "DATOS SIMULADOS para la demostración: no son reportes reales y no se suman a las cifras.",
+ "reportes": [
+  {
+   "id": "SIM-01",
+   "tipo": "cano_taponado",
+   "zona": "mallorquin",
+   "estado": "verificado",
+   "prioridad": 3,
+   "canal": "app",
+   "hace_min": 115,
+   "lat": 11.0397,
+   "lon": -74.8742
+  },
+  {
+   "id": "SIM-02",
+   "tipo": "tala",
+   "zona": "mallorquin",
+   "estado": "cerrado",
+   "prioridad": 1,
+   "canal": "app",
+   "hace_min": 212,
+   "lat": 11.0193,
+   "lon": -74.8971
+  },
+  {
+   "id": "SIM-03",
+   "tipo": "fauna",
+   "zona": "mallorquin",
+   "estado": "en_verificacion",
+   "prioridad": 4,
+   "canal": "whatsapp",
+   "hace_min": 309,
+   "lat": 11.0359,
+   "lon": -74.8618
+  },
+  {
+   "id": "SIM-04",
+   "tipo": "quema",
+   "zona": "mallorquin",
+   "estado": "en_atencion",
+   "prioridad": 1,
+   "canal": "app",
+   "hace_min": 406,
+   "lat": 11.039,
+   "lon": -74.882
+  },
+  {
+   "id": "SIM-05",
+   "tipo": "basuras",
+   "zona": "mallorquin",
+   "estado": "recibido",
+   "prioridad": 4,
+   "canal": "app",
+   "hace_min": 503,
+   "lat": 11.0192,
+   "lon": -74.8954
+  },
+  {
+   "id": "SIM-06",
+   "tipo": "relleno",
+   "zona": "mallorquin",
+   "estado": "alerta_oficial",
+   "prioridad": 2,
+   "canal": "whatsapp",
+   "hace_min": 600,
+   "lat": 11.0365,
+   "lon": -74.8719
+  },
+  {
+   "id": "SIM-07",
+   "tipo": "otro",
+   "zona": "mallorquin",
+   "estado": "recibido",
+   "prioridad": 3,
+   "canal": "app",
+   "hace_min": 697,
+   "lat": 11.0373,
+   "lon": -74.872
+  },
+  {
+   "id": "SIM-08",
+   "tipo": "vertimiento",
+   "zona": "mallorquin",
+   "estado": "verificado",
+   "prioridad": 2,
+   "canal": "app",
+   "hace_min": 794,
+   "lat": 11.0406,
+   "lon": -74.8744
+  },
+  {
+   "id": "SIM-09",
+   "tipo": "basuras",
+   "zona": "piojo",
+   "estado": "cerrado",
+   "prioridad": 4,
+   "canal": "whatsapp",
+   "hace_min": 891,
+   "lat": 10.7105,
+   "lon": -75.2333
+  },
+  {
+   "id": "SIM-10",
+   "tipo": "cano_taponado",
+   "zona": "piojo",
+   "estado": "en_verificacion",
+   "prioridad": 2,
+   "canal": "app",
+   "hace_min": 988,
+   "lat": 10.7071,
+   "lon": -75.2155
+  },
+  {
+   "id": "SIM-11",
+   "tipo": "tala",
+   "zona": "piojo",
+   "estado": "en_atencion",
+   "prioridad": 1,
+   "canal": "app",
+   "hace_min": 1085,
+   "lat": 10.7116,
+   "lon": -75.2139
+  },
+  {
+   "id": "SIM-12",
+   "tipo": "fauna",
+   "zona": "piojo",
+   "estado": "recibido",
+   "prioridad": 4,
+   "canal": "whatsapp",
+   "hace_min": 1182,
+   "lat": 10.7082,
+   "lon": -75.2169
+  },
+  {
+   "id": "SIM-13",
+   "tipo": "quema",
+   "zona": "piojo",
+   "estado": "alerta_oficial",
+   "prioridad": 1,
+   "canal": "app",
+   "hace_min": 1279,
+   "lat": 10.7258,
+   "lon": -75.212
+  },
+  {
+   "id": "SIM-14",
+   "tipo": "basuras",
+   "zona": "piojo",
+   "estado": "recibido",
+   "prioridad": 3,
+   "canal": "app",
+   "hace_min": 1376,
+   "lat": 10.721,
+   "lon": -75.2149
+  },
+  {
+   "id": "SIM-15",
+   "tipo": "relleno",
+   "zona": "tubara",
+   "estado": "verificado",
+   "prioridad": 2,
+   "canal": "whatsapp",
+   "hace_min": 1473,
+   "lat": 10.9747,
+   "lon": -74.9929
+  },
+  {
+   "id": "SIM-16",
+   "tipo": "otro",
+   "zona": "tubara",
+   "estado": "cerrado",
+   "prioridad": 3,
+   "canal": "app",
+   "hace_min": 1570,
+   "lat": 10.9154,
+   "lon": -75.034
+  },
+  {
+   "id": "SIM-17",
+   "tipo": "vertimiento",
+   "zona": "tubara",
+   "estado": "en_verificacion",
+   "prioridad": 2,
+   "canal": "app",
+   "hace_min": 1667,
+   "lat": 10.9762,
+   "lon": -74.9967
+  },
+  {
+   "id": "SIM-18",
+   "tipo": "basuras",
+   "zona": "tubara",
+   "estado": "en_atencion",
+   "prioridad": 3,
+   "canal": "whatsapp",
+   "hace_min": 1764,
+   "lat": 10.9766,
+   "lon": -74.9997
+  },
+  {
+   "id": "SIM-19",
+   "tipo": "cano_taponado",
+   "zona": "tubara",
+   "estado": "recibido",
+   "prioridad": 2,
+   "canal": "app",
+   "hace_min": 1861,
+   "lat": 10.9767,
+   "lon": -75.0006
+  },
+  {
+   "id": "SIM-20",
+   "tipo": "tala",
+   "zona": "tubara",
+   "estado": "alerta_oficial",
+   "prioridad": 1,
+   "canal": "app",
+   "hace_min": 1958,
+   "lat": 10.9772,
+   "lon": -74.9912
+  },
+  {
+   "id": "SIM-21",
+   "tipo": "fauna",
+   "zona": "juan_de_acosta",
+   "estado": "recibido",
+   "prioridad": 4,
+   "canal": "whatsapp",
+   "hace_min": 2055,
+   "lat": 10.8635,
+   "lon": -75.11
+  },
+  {
+   "id": "SIM-22",
+   "tipo": "quema",
+   "zona": "juan_de_acosta",
+   "estado": "verificado",
+   "prioridad": 1,
+   "canal": "app",
+   "hace_min": 2152,
+   "lat": 10.8615,
+   "lon": -75.1234
+  },
+  {
+   "id": "SIM-23",
+   "tipo": "basuras",
+   "zona": "juan_de_acosta",
+   "estado": "cerrado",
+   "prioridad": 3,
+   "canal": "app",
+   "hace_min": 2249,
+   "lat": 10.8639,
+   "lon": -75.1106
+  },
+  {
+   "id": "SIM-24",
+   "tipo": "relleno",
+   "zona": "juan_de_acosta",
+   "estado": "en_verificacion",
+   "prioridad": 2,
+   "canal": "whatsapp",
+   "hace_min": 2346,
+   "lat": 10.859,
+   "lon": -75.1227
+  },
+  {
+   "id": "SIM-25",
+   "tipo": "otro",
+   "zona": "juan_de_acosta",
+   "estado": "en_atencion",
+   "prioridad": 3,
+   "canal": "app",
+   "hace_min": 2443,
+   "lat": 10.86,
+   "lon": -75.1221
+  }
+ ]
+}
