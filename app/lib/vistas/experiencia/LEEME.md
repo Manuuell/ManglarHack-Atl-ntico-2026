@@ -17,7 +17,7 @@ asistencia, hablar con Zanky, hacer el reto del manglar y saltar a reportar, map
 
 Datos (`lib/datos/experiencia/`):
 - `entrada_evento.dart`: lectura del enlace, `entradaEvento`, `enlaceEvento`.
-- `jornada.dart`: `Jornada`, `EventoZanky`, `FuenteJornadas` (red 6 s, luego caché, luego `assets/datos/jornadas_respaldo.json`),
+- `jornada.dart`: `Jornada`, `EventoZanky`, `FuenteJornadas` (caché → `/api/jornadas/:id` 3 s → `/api/jornadas` → `/datos/jornadas.json` → `assets/datos/jornadas_respaldo.json` → genérico; `imagen_url`, `ejemplo`, `estado` y `aviso`),
   fechas en español con hora de Colombia.
 - `participacion.dart`: `AlmacenParticipacion` (asistencia 40 puntos; reto 10 por acierto y solo suma si mejora el mejor
   resultado). Se guarda solo en el teléfono (shared_preferences), aparte de los puntos de los reportes.

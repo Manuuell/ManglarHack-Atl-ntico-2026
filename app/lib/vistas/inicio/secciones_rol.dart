@@ -30,7 +30,7 @@ Future<List<Jornada>> Function() cargaJornadasInicio = () =>
 /// Las jornadas que todavía no terminaron, la más cercana en el tiempo primero.
 List<Jornada> proximasJornadas(Iterable<Jornada> todas, DateTime ahora) => [
   for (final j in todas)
-    if (j.fin.isAfter(ahora)) j,
+    if (j.fin.isAfter(ahora) && !j.cancelada) j,
 ]..sort((a, b) => a.inicio.compareTo(b.inicio));
 
 class _Titulo extends StatelessWidget {

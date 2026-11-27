@@ -129,6 +129,10 @@ class _PantallaEventoState extends State<PantallaEvento> {
           child: BurbujaZanky(texto: saludo, colaIzquierda: false),
         ),
         const SizedBox(height: 18),
+        if (e.aviso.isNotEmpty) ...[
+          EntradaEscalonada(index: i++, child: _AvisoEvento(e.aviso)),
+          const SizedBox(height: 12),
+        ],
         EntradaEscalonada(
           index: i++,
           child: j == null ? _TarjetaGenerica(e) : _TarjetaJornada(j),
@@ -158,7 +162,7 @@ class _PantallaEventoState extends State<PantallaEvento> {
             textoHecho: 'Asistencia registrada',
             icono: Icons.how_to_reg_rounded,
             fase: asistio ? FaseBoton.hecho : FaseBoton.reposo,
-            onTap: asistio ? null : () => _registrar(e),
+            onTap: asistio || (j?.cancelada ?? false) ? null : () => _registrar(e),
           ),
         ),
         const SizedBox(height: 10),
@@ -252,11 +256,17 @@ class _TarjetaJornada extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (j.imagen != null) ...[
+            FotoJornada(url: j.imagen!, descripcion: 'Foto de la jornada «${j.titulo}»'),
+            const SizedBox(height: 12),
+          ],
           Wrap(
             spacing: 8,
             runSpacing: 6,
             children: [
               Pildora(j.tipoLegible, icono: Icons.eco_rounded),
+              if (j.cancelada)
+                Pildora('Cancelada', color: Zc.prioridad[4]!, icono: Icons.event_busy_rounded),
               if (j.esEjemplo)
                 Pildora(
                   'Datos de ejemplo',
@@ -332,6 +342,13 @@ class _TarjetaJornada extends StatelessWidget {
               children: [for (final q in j.queLlevar) _Etiqueta(q)],
             ),
           ],
+          if (j.cancelada) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Esta jornada fue cancelada. Revisa la convocatoria con la organización.',
+              style: tt.bodySmall,
+            ),
+          ],
           if (j.esEjemplo) ...[
             const SizedBox(height: 12),
             Text(
@@ -343,6 +360,90 @@ class _TarjetaJornada extends StatelessWidget {
       ),
     );
   }
+}
+
+class _AvisoEvento extends StatelessWidget {
+  const _AvisoEvento(this.texto);
+  final String texto;
+  @override
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Zc.sol.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(Zr.l),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.campaign_rounded, size: 20, color: Zc.texto),
+          const SizedBox(width: 10),
+          Expanded(child: Text(texto, style: Theme.of(context).textTheme.bodyMedium)),
+        ],
+      ),
+    ),
+  );
+}
+
+/// La foto de la jornada: esqueleto mientras baja, aparece con un fundido y, si falla, un recuadro discreto.
+/// El caché de imágenes de Flutter guarda lo ya bajado mientras la app siga abierta.
+class FotoJornada extends StatelessWidget {
+  const FotoJornada({super.key, required this.url, required this.descripcion});
+  final Uri url;
+  final String descripcion;
+
+  @override
+  Widget build(BuildContext context) {
+    final quieto = sinMovimiento(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(Zr.m),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: Image.network(
+          url.toString(),
+          fit: BoxFit.cover,
+          semanticLabel: descripcion,
+          webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+          frameBuilder: (_, hijo, frame, sincrona) {
+            if (sincrona) return hijo;
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                const _EsqueletoFoto(),
+                AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: quieto ? Duration.zero : Zm.medio,
+                  child: hijo,
+                ),
+              ],
+            );
+          },
+          errorBuilder: (_, _, _) => Container(
+            key: const ValueKey('foto-error'),
+            color: Zc.arena,
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.image_not_supported_rounded, size: 20, color: Zc.texto),
+                const SizedBox(width: 8),
+                Text('Sin foto por ahora', style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EsqueletoFoto extends StatelessWidget {
+  const _EsqueletoFoto();
+  @override
+  Widget build(BuildContext context) =>
+      Container(key: const ValueKey('foto-esqueleto'), color: Zc.linea.withValues(alpha: 0.5));
 }
 
 class _Etiqueta extends StatelessWidget {

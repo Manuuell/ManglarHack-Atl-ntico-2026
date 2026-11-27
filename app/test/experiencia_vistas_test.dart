@@ -25,12 +25,27 @@ import 'package:zanky/vistas/experiencia/widgets_evento.dart' as w;
 const _tamanos = <(String, Size)>[('360x800', Size(360, 800)), ('390x844', Size(390, 844))];
 const _letras = [1.0, 1.3, 2.0];
 
+/// Una jornada cancelada, con foto y con aviso del servidor.
+class _FuenteCancelada extends FuenteJornadas {
+  _FuenteCancelada();
+  @override
+  Future<EventoZanky> eventoLocal(String codigo) => evento(codigo);
+
+  @override
+  Future<EventoZanky> evento(String codigo) async {
+    final m = (jsonDecode(File('test/fixtures/api_jornada_siembra.json').readAsStringSync()) as Map)
+      ..['estado'] = 'cancelada';
+    final j = Jornada.fromJson(m);
+    return EventoZanky(codigo: codigo, titulo: j.titulo, jornada: j, aviso: 'Cambio de fecha: pregunta a la organización.');
+  }
+}
+
 /// Lee las jornadas del respaldo sin red ni canales de plataforma.
 class _FuenteFija extends FuenteJornadas {
   _FuenteFija();
   @override
   Future<List<Jornada>> cargar() async {
-    final j = jsonDecode(File('assets/datos/jornadas_respaldo.json').readAsStringSync()) as Map<String, dynamic>;
+    final j = jsonDecode(File('test/fixtures/jornadas_ejemplo.json').readAsStringSync()) as Map<String, dynamic>;
     return [for (final f in j['jornadas'] as List) Jornada.fromJson(f as Map)];
   }
 
@@ -167,6 +182,16 @@ void main() {
     expect(find.text('Guantes de trabajo'), findsOneWidget);
     expect(find.text('Datos de ejemplo'), findsOneWidget);
     expect(find.textContaining('Bienvenido a «Jornada de siembra en el caño»'), findsOneWidget);
+    await _cerrar(t);
+  });
+
+  testWidgets('jornada cancelada con foto: aviso, rótulo, foto con error elegante y sin registrar asistencia', (t) async {
+    await _montar(t, PantallaEvento(codigo: 'x', fuente: _FuenteCancelada(), almacen: AlmacenParticipacion()));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('Cancelada'), findsOneWidget);
+    expect(find.textContaining('Cambio de fecha'), findsOneWidget);
+    expect(find.byType(FotoJornada), findsOneWidget);
+    expect(find.text('Sin foto por ahora'), findsOneWidget); // en pruebas la red falla: error elegante, sin excepción
     await _cerrar(t);
   });
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,15 +53,17 @@ void main() {
   });
 
   group('jornadas', () {
-    test('el asset de respaldo se lee y marca datos de ejemplo', () async {
+    test('el asset de respaldo trae las 4 jornadas reales, sin ejemplo y con foto', () async {
       final lista = await FuenteJornadas(cliente: MockClient((_) async => throw Exception('sin red'))).cargar();
       expect(lista.length, 4);
-      expect(lista.first.esEjemplo, isTrue);
-      expect(lista[2].llena, isTrue);
-      expect(lista.first.tipoLegible, 'Siembra');
-      expect(fechaLarga(lista.first.inicio), 'domingo 29 de noviembre');
-      expect(horaCorta(lista.first.inicio), '7:00 a. m.');
-      expect(horaCorta(lista.first.fin), '11:00 a. m.');
+      expect(lista.any((j) => j.esEjemplo || j.cancelada), isFalse);
+      expect(lista.every((j) => j.imagen != null), isTrue);
+      expect(lista.map((j) => j.id), contains('siembra-de-mangle-rojo-en-el-estuario-de-3cd559'));
+      final s = lista.firstWhere((j) => j.tipo == 'siembra');
+      expect(s.tipoLegible, 'Siembra');
+      expect(fechaLarga(s.inicio), 'domingo 6 de diciembre');
+      expect(horaCorta(s.inicio), '7:00 a. m.');
+      expect(horaCorta(s.fin), '10:30 a. m.');
     });
 
     test('la red manda, queda en caché y la caché sirve sin red', () async {
@@ -101,7 +104,7 @@ void main() {
       expect(e.titulo, 'Evento con Zanky');
       expect(e.codigo, 'no-existe');
       final conJson = FuenteJornadas(cliente: MockClient((_) async => http.Response('{no es json', 200)));
-      expect((await conJson.evento('jornada-1')).generico, isFalse); // cae al respaldo
+      expect((await conJson.evento('siembra-de-mangle-rojo-en-el-estuario-de-3cd559')).generico, isFalse); // cae al respaldo
     });
 
     test('una fila rota no tumba las demás', () async {
@@ -128,6 +131,87 @@ void main() {
       expect(l.map((j) => j.id), ['buena']);
       expect(l.single.tipoLegible, 'Otro tipo');
       expect(l.single.llena, isFalse);
+    });
+  });
+
+  group('jornadas desde la API', () {
+    const idReal = 'siembra-de-mangle-rojo-en-el-estuario-de-3cd559';
+    final listaJson = File('test/fixtures/api_jornadas.json').readAsStringSync();
+    final unaJson = File('test/fixtures/api_jornada_siembra.json').readAsStringSync();
+    http.Response ok(String t) => http.Response.bytes(utf8.encode(t), 200);
+
+    MockClient servidor({bool cae = false, String? aviso, List<Uri>? vistas}) => MockClient((r) async {
+          vistas?.add(r.url);
+          if (cae) throw Exception('sin red');
+          final p = r.url.path;
+          if (p == '/api/jornadas/$idReal') return ok(unaJson);
+          if (p == '/api/jornadas') {
+            if (aviso == null) return ok(listaJson);
+            final m = jsonDecode(listaJson) as Map;
+            return ok(jsonEncode({...m, 'aviso': aviso}));
+          }
+          if (p.startsWith('/api/jornadas/')) return http.Response('{"error":"no_existe"}', 404);
+          return http.Response('no', 404);
+        });
+
+    test('un id real presente en la API abre su jornada, con foto', () async {
+      final vistas = <Uri>[];
+      final e = await FuenteJornadas(cliente: servidor(vistas: vistas)).evento(idReal);
+      expect(e.generico, isFalse);
+      expect(e.jornada!.titulo, startsWith('Siembra de mangle rojo'));
+      expect(e.jornada!.imagen.toString(), contains('upload.wikimedia.org'));
+      expect(e.jornada!.esEjemplo, isFalse);
+      expect(vistas.map((u) => u.path), contains('/api/jornadas/$idReal'));
+    });
+
+    test('la API cae pero hay caché: sale de la caché y sigue siendo real', () async {
+      await FuenteJornadas(cliente: servidor()).evento(idReal); // llena la caché
+      final f = FuenteJornadas(cliente: servidor(cae: true));
+      expect((await f.eventoLocal(idReal)).generico, isFalse);
+      final e = await f.evento(idReal);
+      expect(e.generico, isFalse);
+      expect(e.jornada!.id, idReal);
+      expect((await f.cargar()).length, 4);
+    });
+
+    test('sin red y sin caché cae al respaldo empaquetado', () async {
+      SharedPreferences.setMockInitialValues({});
+      final f = FuenteJornadas(cliente: servidor(cae: true));
+      final e = await f.evento(idReal);
+      expect(e.generico, isFalse);
+      expect(e.jornada!.imagen, isNotNull);
+    });
+
+    test('un id desconocido da el evento genérico', () async {
+      final e = await FuenteJornadas(cliente: servidor()).evento('id-que-no-existe');
+      expect(e.generico, isTrue);
+      expect(e.codigo, 'id-que-no-existe');
+      expect((await FuenteJornadas(cliente: servidor(cae: true)).evento('otro-raro')).generico, isTrue);
+    });
+
+    test('si la API de una jornada falla se usa la lista, y el aviso viaja', () async {
+      final f = FuenteJornadas(cliente: MockClient((r) async {
+        if (r.url.path == '/api/jornadas') {
+          final m = jsonDecode(listaJson) as Map;
+          return ok(jsonEncode({...m, 'aviso': 'Lluvia: llevar capa.'}));
+        }
+        return http.Response('x', 500);
+      }));
+      final e = await f.evento(idReal);
+      expect(e.generico, isFalse);
+      expect(e.aviso, 'Lluvia: llevar capa.');
+    });
+
+    test('ejemplo y canceladas se reconocen', () {
+      Map<String, dynamic> base() => {
+            ...(jsonDecode(unaJson) as Map).cast<String, dynamic>(),
+          };
+      final ej = Jornada.fromJson({...base(), 'ejemplo': true});
+      expect(ej.esEjemplo, isTrue);
+      final ca = Jornada.fromJson({...base(), 'estado': 'cancelada'});
+      expect(ca.cancelada, isTrue);
+      expect(Jornada.fromJson(base()).cancelada, isFalse);
+      expect(Jornada.fromJson({...base(), 'imagen_url': 'javascript:alert(1)'}).imagen, isNull);
     });
   });
 
@@ -214,7 +298,9 @@ void main() {
     });
 
     test('sobre el evento responde con los datos de la jornada', () async {
-      final e = await FuenteJornadas(cliente: MockClient((_) async => throw Exception('x'))).evento('jornada-1');
+      final ej = jsonDecode(File('test/fixtures/jornadas_ejemplo.json').readAsStringSync()) as Map;
+      final j = Jornada.fromJson((ej['jornadas'] as List).first as Map);
+      final e = EventoZanky(codigo: j.id, titulo: j.titulo, jornada: j);
       final r = responderSinConexion('¿Cuándo es la jornada?', evento: e);
       expect(r.texto, contains('domingo 29 de noviembre'));
       expect(r.texto, contains('Datos de ejemplo'));
@@ -259,15 +345,15 @@ void main() {
     });
 
     test('el asset del reto no sufre al cargar (sanidad de rootBundle)', () async {
-      expect(await rootBundle.loadString('assets/datos/jornadas_respaldo.json'), contains('jornada-1'));
+      expect(await rootBundle.loadString('assets/datos/jornadas_respaldo.json'), contains('siembra-de-mangle-rojo-en-el-estuario-de-3cd559'));
     });
   });
 
   test('el evento sale de lo local aunque la red nunca responda (no se queda en blanco esperando)', () async {
     final colgada = MockClient((_) => Completer<http.Response>().future);   // red que nunca contesta
     final fuente = FuenteJornadas(cliente: colgada);
-    final e = await fuente.eventoLocal('jornada-1').timeout(const Duration(seconds: 2));
-    expect(e.jornada, isNotNull, reason: 'el respaldo trae la jornada-1');
+    final e = await fuente.eventoLocal('siembra-de-mangle-rojo-en-el-estuario-de-3cd559').timeout(const Duration(seconds: 2));
+    expect(e.jornada, isNotNull, reason: 'el respaldo trae la siembra real');
     expect(e.titulo, isNot(EventoZanky.tituloGenerico));
   });
 }
