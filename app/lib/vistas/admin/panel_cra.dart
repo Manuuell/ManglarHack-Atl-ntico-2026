@@ -17,6 +17,8 @@ import 'piezas_admin.dart';
 import '../../datos/permisos/permisos_rol.dart';
 import '../../datos/permisos/repositorio_permisos.dart';
 import 'resumen_admin.dart';
+import 'contenido/seccion_contenido_admin.dart';
+import '../../datos/admin/contenido_panel.dart';
 
 /// Abre el panel de la CRA como una pantalla aparte (no es una pestaña: los ciudadanos
 /// no tienen por qué verlo). Le pasa el controlador a la ruta, que no hereda de la raíz.
@@ -31,7 +33,7 @@ Future<void> abrirPanelCra(BuildContext context) {
   );
 }
 
-enum _Vista { bandeja, resumen, sensores }
+enum _Vista { bandeja, resumen, sensores, contenido }
 
 /// El panel: acceso → bandeja y resumen. Una sola pantalla con cabecera propia.
 class PanelCra extends StatefulWidget {
@@ -49,6 +51,9 @@ class _PanelCraState extends State<PanelCra> {
   ControladorPermisos? _permisos;
   String? _clavePermisos;
 
+  /// Contenido editable (portada, jornadas, noticias, puntos, umbrales). Se crea con la sesión.
+  ControladorContenidoPanel? _contenido;
+
   void _sincronizarPermisos() {
     final c = _c;
     if (c == null) return;
@@ -57,6 +62,8 @@ class _PanelCraState extends State<PanelCra> {
     _clavePermisos = clave;
     _permisos?.dispose();
     _permisos = null;
+    _contenido?.dispose();
+    _contenido = null;
     if (clave == null) return;
     final p = ControladorPermisos(
       fuente: c.demostracion ? null : FuenteSupabase(c.servidor, c.tokenParaContenido),
@@ -64,6 +71,10 @@ class _PanelCraState extends State<PanelCra> {
     );
     _permisos = p;
     p.cargar();
+    _contenido = ControladorContenidoPanel(
+      fuente: c.demostracion ? null : FuenteContenidoSupabase(c.servidor, c.tokenParaContenido),
+      puede: (permiso) => _permisos?.puede(permiso) ?? false,
+    );
   }
 
   @override
@@ -81,6 +92,7 @@ class _PanelCraState extends State<PanelCra> {
   void dispose() {
     _c?.removeListener(_alCambiar);
     _permisos?.dispose();
+    _contenido?.dispose();
     super.dispose();
   }
 
@@ -121,6 +133,7 @@ class _PanelCraState extends State<PanelCra> {
                         ? _Dentro(
                             key: const ValueKey('dentro'),
                             controlador: c,
+                            contenido: _contenido,
                             vista: _vista,
                             alCambiarVista: (v) => setState(() => _vista = v),
                           )
@@ -234,14 +247,19 @@ class _Cabecera extends StatelessWidget {
 }
 
 class _Dentro extends StatelessWidget {
-  const _Dentro({super.key, required this.controlador, required this.vista, required this.alCambiarVista});
+  const _Dentro({super.key, required this.controlador, required this.vista, required this.alCambiarVista, this.contenido});
   final ControladorAdmin controlador;
+  final ControladorContenidoPanel? contenido;
   final _Vista vista;
   final ValueChanged<_Vista> alCambiarVista;
 
   @override
   Widget build(BuildContext context) {
     final c = controlador;
+    // «Contenido» aparece con cualquiera de sus permisos (cada sección pide el suyo).
+    final cont = contenido;
+    PermisosScope.de(context); // se reconstruye si cambia la matriz
+    final conContenido = cont != null && SeccionContenido.values.any(cont.puedeEditar);
     return Column(
       children: [
         const SizedBox(height: 4),
@@ -251,9 +269,10 @@ class _Dentro extends StatelessWidget {
             _Vista.bandeja,
             _Vista.resumen,
             if (RolPanel.puede(c.rol, Gestion.sensores)) _Vista.sensores,
+            if (conContenido) _Vista.contenido,
           ],
           actual: vista,
-          nombre: (v) => switch (v) { _Vista.bandeja => 'Bandeja', _Vista.resumen => 'Resumen', _Vista.sensores => 'Sensores' },
+          nombre: (v) => switch (v) { _Vista.bandeja => 'Bandeja', _Vista.resumen => 'Resumen', _Vista.sensores => 'Sensores', _Vista.contenido => 'Contenido' },
           cuenta: (v) => v == _Vista.bandeja ? c.conteos[FiltroBandeja.pendientes] : null,
           alCambiar: alCambiarVista,
         ),
@@ -264,6 +283,7 @@ class _Dentro extends StatelessWidget {
             _Vista.resumen => ResumenAdmin(controlador: c),
             _Vista.sensores =>
               RolPanel.puede(c.rol, Gestion.sensores) ? const SeccionSensoresAdmin() : BandejaAdmin(controlador: c),
+            _Vista.contenido => conContenido ? SeccionContenidoAdmin(controlador: cont) : BandejaAdmin(controlador: c),
           },
         ),
       ],

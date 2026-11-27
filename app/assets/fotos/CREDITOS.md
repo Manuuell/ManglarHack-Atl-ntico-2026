@@ -3,7 +3,9 @@
 Fotos reales de manglares del Caribe colombiano, con licencia libre, descargadas de Wikimedia Commons
 el 27-nov-2026. Se recortaron al lado mayor de 1400 px (o menos si el original es más chico) y se
 comprimieron a WebP; no se cambió su contenido. Van dentro de la app para que la bienvenida funcione
-sin señal. La pantalla muestra un pie corto con lugar, autor y licencia en cada página.
+sin señal. La pantalla muestra un pie corto con lugar, autor y licencia en cada página. Las mismas
+fotos se usan en la cabecera de la pantalla del punto QR/NFC (con el mismo pie de crédito) y en la
+tarjeta «Próximo evento» cuando la jornada no trae foto.
 
 Las licencias CC BY-SA piden atribución y que las obras derivadas (estas copias recortadas) se
 compartan con la misma licencia: estas cuatro copias quedan bajo la licencia de su original.

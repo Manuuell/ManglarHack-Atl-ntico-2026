@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../datos/estado.dart';
 import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
+import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
@@ -161,12 +162,17 @@ class LineaTiempo extends StatelessWidget {
     final pasos = _pasos(context);
     return Column(
       children: [
+        // Los pasos entran escalonados (recibido → en revisión → atendido); con «reducir
+        // movimiento» llegan quietos.
         for (var i = 0; i < pasos.length; i++)
-          _FilaPaso(
-            paso: pasos[i],
-            primero: i == 0,
-            ultimo: i == pasos.length - 1,
-            siguienteLlegado: i + 1 < pasos.length && pasos[i + 1].fase != _Fase.futuro,
+          EntradaEscalonada(
+            index: i,
+            child: _FilaPaso(
+              paso: pasos[i],
+              primero: i == 0,
+              ultimo: i == pasos.length - 1,
+              siguienteLlegado: i + 1 < pasos.length && pasos[i + 1].fase != _Fase.futuro,
+            ),
           ),
       ],
     );

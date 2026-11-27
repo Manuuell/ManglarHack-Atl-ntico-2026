@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -8,6 +9,8 @@ import '../../datos/estado.dart';
 import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/kit/accion_gesto.dart';
+import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/presionable.dart';
 import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/interruptor.dart';
 import '../../nucleo/kit/menu_mantenido.dart';
@@ -41,7 +44,11 @@ enum PestanaVisor { riesgo, focos, agua, cifras }
 const _etiquetas = ['Riesgos', 'Focos', 'Agua', 'Cifras'];
 
 /// Abre «Visores del manglar» con la ruta de borde del kit (deslizar desde el borde vuelve).
-Future<void> abrirVisores(BuildContext context, {ServicioVisores? servicio, PestanaVisor pestana = PestanaVisor.riesgo}) {
+Future<void> abrirVisores(
+  BuildContext context, {
+  ServicioVisores? servicio,
+  PestanaVisor pestana = PestanaVisor.riesgo,
+}) {
   return Navigator.of(context).push(
     RutaBorde<void>(
       sinMovimiento: MediaQuery.disableAnimationsOf(context),
@@ -51,7 +58,7 @@ Future<void> abrirVisores(BuildContext context, {ServicioVisores? servicio, Pest
   );
 }
 
-/// Lo que la C.R.A. publica del manglar, dentro de la app y sin señal: puntos críticos de riesgo,
+/// Lo que la CRA publica del manglar, dentro de la app y sin señal: puntos críticos de riesgo,
 /// focos de calor por satélite, calidad del agua por ciénaga y el manglar en cifras.
 class PantallaVisores extends StatefulWidget {
   const PantallaVisores({super.key, this.servicio, this.inicial = PestanaVisor.riesgo});
@@ -136,7 +143,12 @@ class _PantallaVisoresState extends State<PantallaVisores> {
       ),
       PestanaVisor.focos => _visor(_focos, (r) => _Focos(focos: r.datos!, ahora: ahora, ancha: ancha)),
       PestanaVisor.agua => _visor(_agua, (r) => _Agua(muestras: r.datos!, ancha: ancha)),
-      PestanaVisor.cifras => _Cifras(workflow: _workflow, estadisticas: _estadisticas, ahora: ahora, alReintentar: _actualizar),
+      PestanaVisor.cifras => _Cifras(
+        workflow: _workflow,
+        estadisticas: _estadisticas,
+        ahora: ahora,
+        alReintentar: _actualizar,
+      ),
     };
     final resultado = switch (PestanaVisor.values[_pestana]) {
       PestanaVisor.riesgo => _riesgo,
@@ -145,9 +157,9 @@ class _PantallaVisoresState extends State<PantallaVisores> {
       PestanaVisor.cifras => null,
     };
     final fuente = switch (PestanaVisor.values[_pestana]) {
-      PestanaVisor.riesgo => 'API de gestión del riesgo de la C.R.A. (visor de puntos críticos)',
-      PestanaVisor.focos => 'API de la C.R.A., focos de calor detectados por satélite',
-      PestanaVisor.agua => 'Monitoreos de calidad de agua de la C.R.A. (ICA del IDEAM)',
+      PestanaVisor.riesgo => 'API de gestión del riesgo de la CRA (visor de puntos críticos)',
+      PestanaVisor.focos => 'API de la CRA, focos de calor detectados por satélite',
+      PestanaVisor.agua => 'Monitoreos de calidad de agua de la CRA (ICA del IDEAM)',
       PestanaVisor.cifras => '',
     };
     return Scaffold(
@@ -186,7 +198,11 @@ class _PantallaVisoresState extends State<PantallaVisores> {
               padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
-                child: SegmentadoZ(valor: _pestana, etiquetas: _etiquetas, alCambiar: (i) => setState(() => _pestana = i)),
+                child: SegmentadoZ(
+                  valor: _pestana,
+                  etiquetas: _etiquetas,
+                  alCambiar: (i) => setState(() => _pestana = i),
+                ),
               ),
             ),
             Expanded(
@@ -211,13 +227,21 @@ class _PantallaVisoresState extends State<PantallaVisores> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               if (resultado != null && resultado.origen != OrigenVisor.sinDatos) ...[
-                                OrigenVisorBanda(origen: resultado.origen, leido: resultado.leido, fuente: fuente, ahora: ahora),
+                                OrigenVisorBanda(
+                                  origen: resultado.origen,
+                                  leido: resultado.leido,
+                                  fuente: fuente,
+                                  ahora: ahora,
+                                ),
                                 const SizedBox(height: 12),
                               ],
                               AnimatedSwitcher(
                                 duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
                                 switchInCurve: Zm.entrar,
-                                child: KeyedSubtree(key: ValueKey('cuerpo-$_pestana-${resultado?.origen}'), child: cuerpo),
+                                child: KeyedSubtree(
+                                  key: ValueKey('cuerpo-$_pestana-${resultado?.origen}'),
+                                  child: cuerpo,
+                                ),
                               ),
                             ],
                           ),
@@ -236,12 +260,15 @@ class _PantallaVisoresState extends State<PantallaVisores> {
 
   Widget _visor<T>(ResultadoVisor<T>? r, Widget Function(ResultadoVisor<T> r) contenido) {
     if (r == null) {
-      return const Column(key: ValueKey('cargando'), children: [Esqueleto.tarjeta(), SizedBox(height: 12), Esqueleto.lista(3)]);
+      return const Column(
+        key: ValueKey('cargando'),
+        children: [Esqueleto.tarjeta(), SizedBox(height: 12), Esqueleto.lista(3)],
+      );
     }
     if (r.origen == OrigenVisor.sinDatos || r.datos == null) {
       return EstadoVacio(
         key: const ValueKey('error'),
-        titulo: 'La C.R.A. no respondió',
+        titulo: 'La CRA no respondió',
         texto: 'Prueba de nuevo en un momento. Cuando haya señal guardo una copia para verla también sin internet.',
         animo: Animo.preocupado,
         textoAccion: 'Intentar de nuevo',
@@ -309,7 +336,9 @@ class _Riesgo extends StatelessWidget {
                   children: [
                     Text('Solo la franja del manglar', style: tt.titleSmall),
                     Text(
-                      soloFranja ? '${base.length} puntos en la costa del manglar' : '${base.length} puntos en todo el Atlántico',
+                      soloFranja
+                          ? '${base.length} puntos en la costa del manglar'
+                          : '${base.length} puntos en todo el Atlántico',
                       style: tt.bodySmall,
                     ),
                   ],
@@ -338,7 +367,7 @@ class _Riesgo extends StatelessWidget {
         const SizedBox(height: 12),
         MapaVisor(
           alto: ancha ? 320 : 230,
-          descripcion: 'Mapa de ${visibles.length} puntos críticos de riesgo de la C.R.A.',
+          descripcion: 'Mapa de ${visibles.length} puntos críticos de riesgo de la CRA',
           puntos: [
             for (final p in visibles)
               PuntoMapa(
@@ -398,7 +427,11 @@ class _FilaPunto extends StatelessWidget {
       etiqueta: '${punto.tipo.nombre} en ${punto.municipio}',
       vistaPrevia: (_) => _VistaPreviaPunto(punto: punto, distanciaM: distanciaM),
       acciones: [
-        AccionGesto(etiqueta: 'Ver ficha', icono: Icons.info_outline_rounded, alEjecutar: () => abrirFichaPunto(context, punto)),
+        AccionGesto(
+          etiqueta: 'Ver ficha',
+          icono: Icons.info_outline_rounded,
+          alEjecutar: () => abrirFichaPunto(context, punto),
+        ),
       ],
       child: Semantics(
         button: true,
@@ -428,7 +461,8 @@ class _FilaPunto extends StatelessWidget {
                   ],
                 ),
               ),
-              if (punto.confirmado) const Icon(Icons.verified_rounded, size: 18, color: Zc.hoja, semanticLabel: 'Confirmado'),
+              if (punto.confirmado)
+                const Icon(Icons.verified_rounded, size: 18, color: Zc.hoja, semanticLabel: 'Confirmado'),
               const Icon(Icons.chevron_right_rounded, color: Zc.textoTenue),
             ],
           ),
@@ -438,7 +472,7 @@ class _FilaPunto extends StatelessWidget {
   }
 }
 
-/// Lo que se ve al mantener presionado un punto: tipo, lugar, fecha y lo que registró la C.R.A.
+/// Lo que se ve al mantener presionado un punto: tipo, lugar, fecha y lo que registró la CRA
 class _VistaPreviaPunto extends StatelessWidget {
   const _VistaPreviaPunto({required this.punto, required this.distanciaM});
   final PuntoCritico punto;
@@ -466,7 +500,10 @@ class _VistaPreviaPunto extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          Text('${punto.municipio} · ${textoDistancia(distanciaM)} · ${fechaCorta(punto.registradoEn)}', style: tt.bodySmall),
+          Text(
+            '${punto.municipio} · ${textoDistancia(distanciaM)} · ${fechaCorta(punto.registradoEn)}',
+            style: tt.bodySmall,
+          ),
           const SizedBox(height: 8),
           Text(
             punto.descripcion.isEmpty ? punto.tipo.explicacion : punto.descripcion,
@@ -509,7 +546,7 @@ Future<void> abrirFichaPunto(BuildContext context, PuntoCritico p) => mostrarHoj
         Text(p.tipo.explicacion, style: tt.bodyMedium),
         const SizedBox(height: 14),
         if (p.descripcion.isNotEmpty) ...[
-          Text('LO QUE REGISTRÓ LA C.R.A.', style: tt.labelSmall),
+          Text('LO QUE REGISTRÓ LA CRA', style: tt.labelSmall),
           const SizedBox(height: 4),
           Text(p.descripcion, style: tt.bodyMedium),
           const SizedBox(height: 14),
@@ -521,7 +558,7 @@ Future<void> abrirFichaPunto(BuildContext context, PuntoCritico p) => mostrarHoj
         _Dato('Franja del manglar', p.enFranja ? 'Dentro' : 'Fuera'),
         _Dato('Coordenadas', '${p.lat.toStringAsFixed(5)}, ${p.lon.toStringAsFixed(5)}'),
         const SizedBox(height: 10),
-        Text('Fuente: visor de puntos críticos de la C.R.A.', style: tt.bodySmall),
+        Text('Fuente: visor de puntos críticos de la CRA', style: tt.bodySmall),
       ],
     );
   },
@@ -665,7 +702,7 @@ class _Focos extends StatelessWidget {
           )
         else ...[
           Text(
-            'Focos de calor (${focos.length}), del más reciente al más viejo. Detectados por satélite y agrupados por la C.R.A. '
+            'Focos de calor (${focos.length}), del más reciente al más viejo. Detectados por satélite y agrupados por la CRA '
             'Un foco de calor no siempre es un incendio.',
             style: tt.labelMedium?.copyWith(color: Zc.textoSuave),
           ),
@@ -674,35 +711,7 @@ class _Focos extends StatelessWidget {
             ancha: ancha,
             hijos: [
               for (final f in focos.take(30))
-                TarjetaVisor(
-                  relleno: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.local_fire_department_rounded,
-                        color: cerca.contains(f) ? Zc.dePrioridad(5) : const Color(0xFFEA580C),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${f.focos} ${f.focos == 1 ? 'foco' : 'focos'} · ${f.municipio.isEmpty ? 'Atlántico' : f.municipio}',
-                              style: tt.titleSmall,
-                            ),
-                            Text(
-                              '${fechaCorta(f.hasta)} · confianza ${f.confianzaTexto}${f.satelites.isEmpty ? '' : ' · ${f.satelites}'}',
-                              style: tt.bodySmall,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _FilaFoco(foco: f, cerca: cerca.contains(f), distanciaM: distanciaAlManglar(context, f.lat, f.lon)),
             ],
           ),
         ],
@@ -769,7 +778,7 @@ class _Agua extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           'Ciénagas y cuerpos de agua (${cienagas.length}). Índice de calidad del agua (ICA) del IDEAM, de 0 (muy mala) a 1 (buena): '
-          'promedio de los puntos de muestreo de la C.R.A., de la peor a la mejor. El árbol marca las rodeadas de manglar.',
+          'promedio de los puntos de muestreo de la CRA, de la peor a la mejor. El árbol marca las rodeadas de manglar.',
           style: tt.labelMedium?.copyWith(color: Zc.textoSuave),
         ),
         const SizedBox(height: 8),
@@ -804,65 +813,87 @@ class _TarjetaCienaga extends StatelessWidget {
       'coli': cienaga.coliformes,
       'temp': cienaga.temperatura,
     };
-    return TarjetaVisor(
-      key: ValueKey('cienaga-${cienaga.cuerpoId}'),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Semantics(
-            container: true,
-            label:
-                '${cienaga.nombre}. Calidad ${cat?.etiqueta ?? 'sin dato'}'
-                '${cienaga.ica == null ? '' : ', ICA ${decimal(cienaga.ica!, 2)}'}. Última medición ${fechaCorta(cienaga.ultimaFecha)}.',
-            child: ExcludeSemantics(
-              child: Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                    child: Text(
-                      cienaga.ica == null ? '—' : decimal(cienaga.ica!, 2),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
+    return MenuMantenido(
+      alTocar: () => abrirFichaCienaga(context, cienaga),
+      etiqueta: 'Ciénaga ${cienaga.nombre}',
+      vistaPrevia: (_) => _VistaPreviaCienaga(cienaga: cienaga),
+      acciones: [
+        AccionGesto(
+          etiqueta: 'Ver ficha',
+          icono: Icons.info_outline_rounded,
+          alEjecutar: () => abrirFichaCienaga(context, cienaga),
+        ),
+        AccionGesto(
+          etiqueta: 'Copiar resumen',
+          icono: Icons.copy_rounded,
+          alEjecutar: () => _copiar(context, textoCienaga(cienaga), 'Resumen copiado'),
+        ),
+      ],
+      child: TarjetaVisor(
+        key: ValueKey('cienaga-${cienaga.cuerpoId}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Semantics(
+              container: true,
+              label:
+                  '${cienaga.nombre}. Calidad ${cat?.etiqueta ?? 'sin dato'}'
+                  '${cienaga.ica == null ? '' : ', ICA ${decimal(cienaga.ica!, 2)}'}. Última medición ${fechaCorta(cienaga.ultimaFecha)}.',
+              child: ExcludeSemantics(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 52,
+                      height: 52,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                      child: Text(
+                        cienaga.ica == null ? '—' : decimal(cienaga.ica!, 2),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(cienaga.nombre, style: tt.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-                            ),
-                            if (cienaga.conManglar) ...[
-                              const SizedBox(width: 6),
-                              const Icon(Icons.forest_rounded, size: 16, color: Zc.hoja),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  cienaga.nombre,
+                                  style: tt.titleSmall,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (cienaga.conManglar) ...[
+                                const SizedBox(width: 6),
+                                const Icon(Icons.forest_rounded, size: 16, color: Zc.hoja),
+                              ],
                             ],
-                          ],
-                        ),
-                        Text(
-                          '${cat?.etiqueta ?? 'Sin dato'} · medido el ${fechaCorta(cienaga.ultimaFecha)}',
-                          style: tt.bodySmall?.copyWith(color: Zc.texto),
-                        ),
-                        if (cat != null) Text(cat.explicacion, style: tt.bodySmall),
-                      ],
+                          ),
+                          Text(
+                            '${cat?.etiqueta ?? 'Sin dato'} · medido el ${fechaCorta(cienaga.ultimaFecha)}',
+                            style: tt.bodySmall?.copyWith(color: Zc.texto),
+                          ),
+                          if (cat != null) Text(cat.explicacion, style: tt.bodySmall),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          for (final e in valores.entries) _FilaIndicador(indicador: indicadoresAgua[e.key]!, valor: e.value),
-          const SizedBox(height: 4),
-          Text(
-            '${cienaga.muestras.length} ${cienaga.muestras.length == 1 ? 'estación' : 'estaciones'} de muestreo',
-            style: tt.labelSmall,
-          ),
-        ],
+            const SizedBox(height: 10),
+            for (final e in valores.entries) _FilaIndicador(indicador: indicadoresAgua[e.key]!, valor: e.value),
+            const SizedBox(height: 4),
+            Text(
+              '${cienaga.muestras.length} ${cienaga.muestras.length == 1 ? 'estación' : 'estaciones'} de muestreo',
+              style: tt.labelSmall,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -950,7 +981,7 @@ class _Cifras extends StatelessWidget {
         else if (w.datos == null)
           TarjetaVisor(
             child: Text(
-              'No pude leer el workflow de la C.R.A. y no hay copia guardada. Tira hacia abajo para intentar de nuevo.',
+              'No pude leer el workflow de la CRA y no hay copia guardada. Tira hacia abajo para intentar de nuevo.',
               style: tt.bodyMedium,
             ),
           )
@@ -1140,7 +1171,7 @@ class _CifrasReportes extends StatelessWidget {
       children: [
         _Rejilla2([
           _Cifra(valor: e.total.toDouble(), formato: n, etiqueta: 'reportes recibidos'),
-          _Cifra(valor: e.validados.toDouble(), formato: n, etiqueta: 'validados por la C.R.A.', color: Zc.hoja),
+          _Cifra(valor: e.validados.toDouble(), formato: n, etiqueta: 'validados por la CRA', color: Zc.hoja),
           _Cifra(valor: e.pendientes.toDouble(), formato: n, etiqueta: 'en revisión', color: Zc.fango),
           if (e.pctDentroManglar != null)
             _Cifra(valor: e.pctDentroManglar!, formato: (v) => '${v.round()} %', etiqueta: 'dentro del manglar')
@@ -1195,3 +1226,288 @@ class _CifrasReportes extends StatelessWidget {
     );
   }
 }
+
+// ───────────────────────── Vista previa de focos y ciénagas ─────────────────────────
+
+Future<void> _copiar(BuildContext context, String texto, String hecho) async {
+  await Clipboard.setData(ClipboardData(text: texto));
+  vibrar(Vibracion.ligera);
+  if (context.mounted) avisar(context, hecho, tipo: TipoAviso.exito);
+}
+
+String _lugarFoco(FocoCalor f) => f.municipio.isEmpty ? 'Atlántico' : f.municipio;
+
+String _fechasFoco(FocoCalor f) {
+  final d = f.desde;
+  final h = f.hasta;
+  if (d == null || h == null || fechaCorta(d) == fechaCorta(h)) return fechaCorta(h ?? d);
+  return 'del ${fechaCorta(d)} al ${fechaCorta(h)}';
+}
+
+/// Texto para copiar un foco: lo que publica la CRA, sin nada inventado.
+String textoFoco(FocoCalor f) =>
+    'Foco de calor en ${_lugarFoco(f)} (${f.focos} ${f.focos == 1 ? 'detección' : 'detecciones'}), ${_fechasFoco(f)}. '
+    'Confianza ${f.confianzaTexto}. Coordenadas ${f.lat.toStringAsFixed(5)}, ${f.lon.toStringAsFixed(5)}. '
+    'Fuente: visor de focos de calor de la CRA';
+
+/// Texto para copiar el resumen de una ciénaga.
+String textoCienaga(CienagaAgua c) {
+  final cat = categoriaIca(c.ica);
+  return 'Ciénaga ${c.nombre}: calidad del agua ${cat?.etiqueta.toLowerCase() ?? 'sin dato'}'
+      '${c.ica == null ? '' : ' (ICA ${decimal(c.ica!, 2)})'}, medida el ${fechaCorta(c.ultimaFecha)} '
+      'en ${c.muestras.length} ${c.muestras.length == 1 ? 'estación' : 'estaciones'}. Fuente: CRA';
+}
+
+class _FilaFoco extends StatelessWidget {
+  const _FilaFoco({required this.foco, required this.cerca, required this.distanciaM});
+  final FocoCalor foco;
+  final bool cerca;
+  final double distanciaM;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final f = foco;
+    final color = cerca ? Zc.dePrioridad(5) : const Color(0xFFEA580C);
+    return MenuMantenido(
+      key: ValueKey('foco-${f.id}'),
+      alTocar: () => abrirFichaFoco(context, f, distanciaM),
+      etiqueta: 'Foco de calor en ${_lugarFoco(f)}',
+      vistaPrevia: (_) => _VistaPreviaFoco(foco: f, color: color, distanciaM: distanciaM),
+      acciones: [
+        AccionGesto(
+          etiqueta: 'Ver ficha',
+          icono: Icons.info_outline_rounded,
+          alEjecutar: () => abrirFichaFoco(context, f, distanciaM),
+        ),
+        AccionGesto(
+          etiqueta: 'Copiar datos',
+          icono: Icons.copy_rounded,
+          alEjecutar: () => _copiar(context, textoFoco(f), 'Datos del foco copiados'),
+        ),
+      ],
+      child: Semantics(
+        button: true,
+        excludeSemantics: true,
+        label:
+            '${f.focos} ${f.focos == 1 ? 'foco' : 'focos'} en ${_lugarFoco(f)}, ${_fechasFoco(f)}, '
+            '${textoDistancia(distanciaM)}. Ver ficha.',
+        child: TarjetaVisor(
+          relleno: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+          child: Row(
+            children: [
+              Icon(Icons.local_fire_department_rounded, color: color),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${f.focos} ${f.focos == 1 ? 'foco' : 'focos'} · ${_lugarFoco(f)}', style: tt.titleSmall),
+                    Text(
+                      '${fechaCorta(f.hasta)} · confianza ${f.confianzaTexto}${f.satelites.isEmpty ? '' : ' · ${f.satelites}'}',
+                      style: tt.bodySmall,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Zc.textoTenue),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Lo que se ve al mantener presionado un foco: lugar, fechas, distancia y confianza.
+class _VistaPreviaFoco extends StatelessWidget {
+  const _VistaPreviaFoco({required this.foco, required this.color, required this.distanciaM});
+  final FocoCalor foco;
+  final Color color;
+  final double distanciaM;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final f = foco;
+    return TarjetaVisor(
+      borde: color,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.local_fire_department_rounded, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('${f.focos} ${f.focos == 1 ? 'foco' : 'focos'} en ${_lugarFoco(f)}', style: tt.titleMedium),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text('${_fechasFoco(f)} · ${textoDistancia(distanciaM)}', style: tt.bodySmall),
+          const SizedBox(height: 10),
+          _Dato('Confianza', f.confianzaTexto),
+          if (f.satelites.isNotEmpty) _Dato('Satélites', f.satelites),
+          const SizedBox(height: 6),
+          Text('Un foco de calor no siempre es un incendio. Si ves humo, repórtalo con foto.', style: tt.bodySmall),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ficha de un foco de calor: mapa del polígono, fechas, confianza y satélites.
+Future<void> abrirFichaFoco(BuildContext context, FocoCalor f, double distanciaM) => mostrarHojaZ<void>(
+  context,
+  nombre: 'ficha-foco',
+  contenido: (c) {
+    final tt = Theme.of(c).textTheme;
+    return Column(
+      key: const ValueKey('ficha-foco'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.local_fire_department_rounded, color: Color(0xFFEA580C)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Semantics(header: true, child: Text('Foco de calor en ${_lugarFoco(f)}', style: tt.titleLarge)),
+            ),
+            const SelloCra(),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (f.anillo.length >= 3)
+          MapaVisor(
+            alto: 170,
+            descripcion: 'Mapa del foco de calor en ${_lugarFoco(f)}.',
+            poligonos: [
+              Polygon(
+                points: [for (final (a, o) in f.anillo) LatLng(a, o)],
+                color: const Color(0x55F97316),
+                borderColor: const Color(0xFFEA580C),
+                borderStrokeWidth: 1.5,
+              ),
+            ],
+            puntos: [
+              PuntoMapa(
+                clave: 'ficha-foco-${f.id}',
+                lat: f.lat,
+                lon: f.lon,
+                color: const Color(0xFFEA580C),
+                icono: Icons.local_fire_department_rounded,
+                etiqueta: 'Foco de calor',
+              ),
+            ],
+          ),
+        const SizedBox(height: 12),
+        _Dato('Detecciones', '${f.focos}'),
+        _Dato('Fechas', _fechasFoco(f)),
+        _Dato('Confianza', f.confianzaTexto),
+        if (f.satelites.isNotEmpty) _Dato('Satélites', f.satelites),
+        _Dato('Distancia', textoDistancia(distanciaM)),
+        _Dato('Coordenadas', '${f.lat.toStringAsFixed(5)}, ${f.lon.toStringAsFixed(5)}'),
+        const SizedBox(height: 10),
+        Text('Fuente: visor de focos de calor de la CRA (detección por satélite).', style: tt.bodySmall),
+      ],
+    );
+  },
+);
+
+/// Lo que se ve al mantener presionada una ciénaga: el ICA y qué significa.
+class _VistaPreviaCienaga extends StatelessWidget {
+  const _VistaPreviaCienaga({required this.cienaga});
+  final CienagaAgua cienaga;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final cat = categoriaIca(cienaga.ica);
+    final color = cat?.color ?? colorSinDato;
+    return TarjetaVisor(
+      borde: color,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                child: Text(
+                  cienaga.ica == null ? '—' : decimal(cienaga.ica!, 2),
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(cienaga.nombre, style: tt.titleMedium, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text('${cat?.etiqueta ?? 'Sin dato'} · ${fechaCorta(cienaga.ultimaFecha)}', style: tt.bodySmall),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (cat != null) ...[const SizedBox(height: 8), Text(cat.explicacion, style: tt.bodyMedium)],
+        ],
+      ),
+    );
+  }
+}
+
+/// Ficha de una ciénaga: indicadores y cada estación con su fecha.
+Future<void> abrirFichaCienaga(BuildContext context, CienagaAgua c) => mostrarHojaZ<void>(
+  context,
+  nombre: 'ficha-cienaga',
+  contenido: (ctx) {
+    final tt = Theme.of(ctx).textTheme;
+    final cat = categoriaIca(c.ica);
+    final valores = <String, double?>{'od': c.oxigeno, 'ph': c.ph, 'coli': c.coliformes, 'temp': c.temperatura};
+    return Column(
+      key: const ValueKey('ficha-cienaga'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.water_drop_rounded, color: cat?.color ?? colorSinDato),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Semantics(header: true, child: Text(c.nombre, style: tt.titleLarge)),
+            ),
+            const SelloCra(),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${cat?.etiqueta ?? 'Sin dato'}${c.ica == null ? '' : ' · ICA ${decimal(c.ica!, 2)}'}'
+          '${c.conManglar ? ' · rodeada de manglar' : ''}',
+          style: tt.bodyMedium,
+        ),
+        const SizedBox(height: 12),
+        for (final e in valores.entries) _FilaIndicador(indicador: indicadoresAgua[e.key]!, valor: e.value),
+        const SizedBox(height: 12),
+        Text('ESTACIONES DE MUESTREO', style: tt.labelSmall),
+        const SizedBox(height: 4),
+        for (final m in c.muestras)
+          _Dato(
+            m.codigo.isEmpty ? 'Estación ${m.id}' : m.codigo,
+            m.muestreadoEn == null ? 'Sin medición' : 'Medida el ${fechaCorta(m.muestreadoEn)}',
+          ),
+        const SizedBox(height: 10),
+        Text('Fuente: puntos de muestreo de calidad del agua de la CRA (ICA del IDEAM).', style: tt.bodySmall),
+      ],
+    );
+  },
+);

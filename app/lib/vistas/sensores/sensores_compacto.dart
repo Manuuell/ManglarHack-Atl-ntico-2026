@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../datos/comunidad/comunidad.dart' show NivelAlerta;
 import '../../datos/sensores/lecturas_sensor.dart';
 import '../../datos/sensores/servicio_sensores.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
+import '../comunidad/alertas_diseno.dart';
 import 'pantalla_sensores.dart';
 
 /// Los sensores en una fila para Inicio (misma forma que `PronosticoCompacto`): la alerta si la
@@ -60,7 +62,9 @@ class _SensoresCompactoState extends State<SensoresCompacto> {
           (u, t) => u == null || t.isAfter(u) ? t : u,
         );
     final hayAlerta = alertas.isNotEmpty;
-    final color = hayAlerta ? Zc.dePrioridad(5) : Zc.cienaga;
+    // Con alerta, el sistema de niveles de las alertas (naranja: un umbral superado; sello «Sensores»).
+    const nivel = EstiloNivel.naranja;
+    final color = hayAlerta ? nivel.color : Zc.cienaga;
     final titulo = r == null
         ? 'Leyendo las estaciones…'
         : hayAlerta
@@ -89,23 +93,31 @@ class _SensoresCompactoState extends State<SensoresCompacto> {
           decoration: BoxDecoration(
             color: Zc.superficie,
             borderRadius: BorderRadius.circular(Zr.l),
-            border: Border.all(color: hayAlerta ? color : Zc.linea, width: hayAlerta ? 1.5 : 1),
+            border: Border.all(color: hayAlerta ? color.withValues(alpha: 0.5) : Zc.linea, width: hayAlerta ? 1.5 : 1),
+            boxShadow: hayAlerta ? [BoxShadow(color: color.withValues(alpha: 0.14), blurRadius: 18, offset: const Offset(0, 6))] : null,
           ),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
-                child: Icon(hayAlerta ? Icons.warning_rounded : Icons.sensors_rounded, color: color),
-              ),
+              if (hayAlerta)
+                const InsigniaAlerta(tipo: 'sensor', nivel: NivelAlerta.naranja, tamano: 44)
+              else
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.12), shape: BoxShape.circle),
+                  child: const Icon(Icons.sensors_rounded, color: Zc.cienaga),
+                ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('SENSORES DEL MANGLAR', style: tt.labelSmall),
-                    Text(titulo, style: tt.titleSmall?.copyWith(color: hayAlerta ? color : null)),
+                    if (hayAlerta)
+                      Text('ALERTA NARANJA · SENSORES',
+                          style: tt.labelSmall?.copyWith(color: nivel.tinta, fontWeight: FontWeight.w900))
+                    else
+                      Text('SENSORES DEL MANGLAR', style: tt.labelSmall),
+                    Text(titulo, style: tt.titleSmall?.copyWith(color: hayAlerta ? Zc.texto : null, fontWeight: hayAlerta ? FontWeight.w800 : null)),
                     Text(detalle, style: tt.bodySmall),
                   ],
                 ),

@@ -10,6 +10,7 @@ import '../biodiversidad/pantalla_biodiversidad.dart';
 import 'capa_prioridad.dart';
 import '../avisos_zona/pantalla_avisos_zona.dart';
 import 'modelo.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 String _hectareas(double ha) => '${ha.toStringAsFixed(1).replaceAll('.', ',')} ha';
 
@@ -377,8 +378,7 @@ Future<void> abrirHojaFiltro(
                   for (final t in TipoAmenaza.values)
                     _Opcion(
                       texto: t.corto,
-                      icono: t.icono,
-                      colorIcono: t.color,
+                      tipo: t,
                       elegido: filtro.tipos.contains(t),
                       onTap: () => poner(filtro.alternarTipo(t)),
                     ),
@@ -413,15 +413,13 @@ class _Opcion extends StatelessWidget {
     required this.texto,
     required this.elegido,
     required this.onTap,
-    this.icono,
-    this.colorIcono = Zc.hoja,
+    this.tipo,
   });
 
   final String texto;
   final bool elegido;
   final VoidCallback onTap;
-  final IconData? icono;
-  final Color colorIcono;
+  final TipoAmenaza? tipo;
 
   @override
   Widget build(BuildContext context) {
@@ -439,8 +437,8 @@ class _Opcion extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icono != null) ...[
-              Icon(icono, size: 18, color: elegido ? Colors.white : colorIcono),
+            if (tipo != null) ...[
+              IconoAmenaza(tipo!, tamano: 21, color: elegido ? Colors.white : null),
               const SizedBox(width: 7),
             ],
             Text(

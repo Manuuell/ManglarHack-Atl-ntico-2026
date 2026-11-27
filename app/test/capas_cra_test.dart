@@ -37,7 +37,7 @@ void main() {
       expect(manglar.areaTotalHa, closeTo(649.66, 0.01));
       expect(manglar.zonas.map((z) => z.poligonos.length), [145, 390, 80, 271]);
       expect(manglar.provisional, isFalse);
-      expect(manglar.fuente, contains('C.R.A.'));
+      expect(manglar.fuente, contains('CRA'));
       expect(manglar.fechaDatos, isNotEmpty);
     });
 

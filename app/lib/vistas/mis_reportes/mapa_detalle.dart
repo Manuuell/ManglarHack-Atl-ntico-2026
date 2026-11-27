@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import '../../datos/reporte.dart';
 import '../../datos/zonas.dart';
 import '../../nucleo/tema.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Mapa chico del reporte: el punto, el círculo de precisión del GPS y el polígono
 /// de la zona de manglar. Solo se mueve con pellizco: un dedo sigue desplazando la
@@ -103,7 +104,7 @@ class MapaDetalle extends StatelessWidget {
                         border: Border.all(color: Zc.superficie, width: 3),
                         boxShadow: const [BoxShadow(color: Color(0x330B2E24), blurRadius: 8, offset: Offset(0, 3))],
                       ),
-                      child: Icon(tipo.icono, size: 18, color: Zc.superficie),
+                      child: Center(child: IconoAmenaza(tipo, tamano: 21, color: Zc.superficie)),
                     ),
                   ),
                 ],

@@ -28,17 +28,21 @@ import '../comun/zanky_mascota.dart';
 import '../contenido/bloques_contenido.dart';
 import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
+import '../admin/contenido/franja_portada.dart';
 import '../guardian/editar_perfil.dart';
 import '../configuracion/pantalla_configuracion.dart';
 import '../comunidad/comunidad_inicio.dart';
+import '../comunidad/feed_y_eventos.dart' show recargaComunidadInicio;
 import '../sensores/sensores_compacto.dart';
 import '../visores/visores_compacto.dart';
 import 'que_hago_ya.dart';
 import 'secciones_rol.dart';
 import '../crecimiento/pantalla_mi_manglar.dart';
 import '../crecimiento/zanky_crece.dart';
+import '../avisos/bandeja_avisos.dart';
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Inicio: lo urgente arriba (reportar), lo que motiva en medio (tu progreso, la
 /// misión) y lo que enseña abajo (el tiempo de hoy y «¿Sabías que…?»).
@@ -68,6 +72,8 @@ class _InicioState extends State<Inicio> {
     SeccionInicio.asistentes,
     SeccionInicio.jornadasCerca,
     SeccionInicio.misJornadas,
+    // Alertas, próximo evento y noticias traen su propio mantener (vista previa y acciones).
+    SeccionInicio.pronostico,
   };
 
   static String _nombre(SeccionInicio s) => switch (s) {
@@ -277,6 +283,7 @@ class _InicioState extends State<Inicio> {
     var i = 0;
     return TirarActualizar(
       alActualizar: () async {
+        recargaComunidadInicio.value++;
         await Future.wait([estado.sincronizar(), estado.cargarClima()]);
       },
       child: ListView(
@@ -299,6 +306,8 @@ class _InicioState extends State<Inicio> {
                     ],
                   ),
                 ),
+                const CampanaAvisos(),
+                const SizedBox(width: 8),
                 const BotonConfiguracion(),
                 const SizedBox(width: 4),
                 ZankyMascota(
@@ -321,6 +330,7 @@ class _InicioState extends State<Inicio> {
           ),
           const SizedBox(height: 14),
           const FranjaConexion(),
+          const FranjaPortada(),
           for (final seccion in secciones) ...[
             EntradaEscalonada(index: i++, child: _conMenu(context, seccion, _seccion(context, seccion, estado, progreso, resumen))),
             const SizedBox(height: 16),
@@ -446,28 +456,7 @@ class _Rapidos extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, i) {
               final t = _tipos[i];
-              return Presionable(
-                escala: 0.94,
-                etiqueta: 'Reportar ${t.nombre}',
-                onTap: () => abrirReporte(context, tipo: t),
-                child: Container(
-                  width: 86,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(Zr.m),
-                    border: Border.all(color: Zc.linea.withValues(alpha: 0.7)),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconoTipo(t, tamano: 42),
-                      const SizedBox(height: 7),
-                      Text(t.corto, maxLines: 1, style: tt.labelMedium),
-                    ],
-                  ),
-                ),
-              );
+              return FichaAmenaza(tipo: t, alTocar: () => abrirReporte(context, tipo: t));
             },
           ),
         ),

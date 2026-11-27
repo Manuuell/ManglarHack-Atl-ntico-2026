@@ -13,7 +13,7 @@
 
   <title>Zanky · Guardianes del manglar</title>
   <meta name="description" content="Escanea, mira qué le pasa al manglar del Atlántico y repórtalo desde tu teléfono. Sin instalar nada. Zanky: guardianes del manglar.">
-  <meta name="theme-color" content="#1FA2A6">
+  <meta name="theme-color" content="#0A2A47">
   <meta name="color-scheme" content="light">
   <meta name="application-name" content="Zanky">
 
@@ -43,39 +43,69 @@
   <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
   <link rel="manifest" href="manifest.json">
 
+  <!-- La primera foto de la bienvenida se pide junto al motor: cuando Flutter la necesita ya está en la caché
+       del navegador (misma URL y mismo modo que usa Flutter para sus recursos, por eso as="fetch" y crossorigin). -->
+  <script>
+    // Solo en la portada (bienvenida): quien llega a un punto o a un evento no ve esta foto primero.
+    if (!/[?&#](punto|evento|jornada)=|evento\//.test(location.href)) {
+      var pre = document.createElement('link');
+      pre.rel = 'preload'; pre.as = 'fetch'; pre.crossOrigin = 'anonymous';
+      pre.href = 'assets/assets/fotos/manglar-raices-cartagena.webp';
+      document.head.appendChild(pre);
+    }
+  </script>
+  <link rel="preload" href="zanky-arranque.webp" as="image" fetchpriority="high">
+
   <style>
-    html, body { margin: 0; height: 100%; background: #1FA2A6; }
-    /* Pantalla de carga: se ve al instante, mientras baja el motor de Flutter. */
+    html, body { margin: 0; height: 100%; background: #0A2A47; }
+    /* Pantalla de carga con identidad CRA: azul profundo, la foto del manglar (una miniatura de 356 bytes
+       dentro de esta página, difuminada: se ve en el primer cuadro sin pedir nada a la red) y Zanky. */
     #zk-carga {
       position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 22px; color: #fff; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: radial-gradient(120% 90% at 20% 0%, #4cc3c6 0%, #1FA2A6 45%, #12787C 100%);
+      justify-content: center; gap: 18px; color: #fff; overflow: hidden;
+      font-family: Lato, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #0A2A47;
       transition: opacity .45s cubic-bezier(.2,.9,.25,1), visibility .45s;
     }
+    #zk-carga::before {
+      content: ""; position: absolute; inset: -40px; z-index: -2;
+      background: url("data:image/webp;base64,UklGRlwBAABXRUJQVlA4IFABAABQBwCdASooABkAPtFaoU2oJSKiKqoBABoJYwC2+4EGi+9phPMeDMthQrFG/+lQAkDX37Z/MesLcF/gEBswqpib26xAAP5749T41qAswusuNmCCYD/E5ecOlYpT61xqSavsXw1cr34D2QLMj9eT5a75yfWDNY/TezxDR95XCNXGZnBPRmgDs/xLliNEvqctmaBcIaE0E+5mFwB3SXYjb+XpbGgXMeHEBqW+XO4ZxXm18uAU9SBlh+WiDK+jmofU57Za8ghBd5gYTSKy8gg4ArDC2wm0WKcThEXdG5kTUGAEWaYfzSBiOgXq0KDI+PcFRGIFftTpitoXrNZUg+EVXciIGHJmMW/68DJKsCDKKP/BbaptFES0nm/Nrh1hdYGQUBpqBuv61btbJUF7+YkiouDWwDpYHnGhMSY527UvKRtGXo5HadJ4Lrk7ykDb5f2aAAA=") center / cover no-repeat;
+      filter: blur(18px) saturate(1.1);
+    }
+    #zk-carga::after {
+      content: ""; position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(180deg, rgba(10,42,71,.55) 0%, rgba(6,30,53,.86) 62%, #061E35 100%);
+    }
     #zk-carga.zk-fuera { opacity: 0; visibility: hidden; }
-    #zk-carga .zk-mascota { width: 156px; height: 156px; display: block; transform-origin: 50% 100%;
+    #zk-carga .zk-mascota { width: 148px; height: 148px; display: block; transform-origin: 50% 100%;
       animation: zk-respira 3.2s ease-in-out infinite; will-change: transform; }
-    #zk-carga .zk-sombra { width: 84px; height: 12px; border-radius: 50%; background: rgba(0,40,44,.28); margin-top: -10px;
+    #zk-carga .zk-sombra { width: 80px; height: 12px; border-radius: 50%; background: rgba(0,0,0,.32); margin-top: -12px;
       animation: zk-sombra 3.2s ease-in-out infinite; }
-    #zk-carga .zk-texto { font-size: 17px; font-weight: 600; letter-spacing: -.1px; }
-    #zk-carga .zk-puntos span { animation: zk-punto 1.2s infinite both; }
-    #zk-carga .zk-puntos span:nth-child(2) { animation-delay: .15s; }
-    #zk-carga .zk-puntos span:nth-child(3) { animation-delay: .3s; }
+    #zk-carga .zk-marca { font-size: 13px; font-weight: 700; letter-spacing: 2.4px; text-transform: uppercase; color: #E8B33D; }
+    #zk-carga .zk-texto { font-size: 18px; font-weight: 700; letter-spacing: -.1px; text-align: center; max-width: 300px; }
+    #zk-carga .zk-barra { width: 148px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.18); overflow: hidden; }
+    #zk-carga .zk-barra i { display: block; height: 100%; width: 40%; border-radius: 4px; background: #E8B33D;
+      animation: zk-barra 1.4s cubic-bezier(.45,0,.25,1) infinite; }
+    #zk-carga .zk-pie { position: absolute; bottom: max(18px, env(safe-area-inset-bottom)); font-size: 12px;
+      color: rgba(255,255,255,.72); text-align: center; padding: 0 16px; }
     @keyframes zk-respira { 0%,100% { transform: scaleY(1) rotate(-1.2deg); } 50% { transform: scaleY(1.025) rotate(1.2deg); } }
     @keyframes zk-sombra { 0%,100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(.94); opacity: .85; } }
-    @keyframes zk-punto { 0%,80%,100% { opacity: .25; } 40% { opacity: 1; } }
+    @keyframes zk-barra { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
     @media (prefers-reduced-motion: reduce) {
-      #zk-carga .zk-mascota, #zk-carga .zk-sombra, #zk-carga .zk-puntos span { animation: none; }
+      #zk-carga .zk-mascota, #zk-carga .zk-sombra, #zk-carga .zk-barra i { animation: none; }
       #zk-carga { transition: none; }
     }
   </style>
 </head>
 <body>
   <div id="zk-carga" role="status" aria-live="polite">
+    <div class="zk-marca">Zanky · CRA Atlántico</div>
     <!-- Zanky feliz (arte oficial, WebP de 256 px): respira anclado a los pies -->
-    <img class="zk-mascota" src="zanky-arranque.webp" width="156" height="156" alt="" decoding="async" fetchpriority="high">
+    <img class="zk-mascota" src="zanky-arranque.webp" width="148" height="148" alt="" decoding="async" fetchpriority="high">
     <div class="zk-sombra"></div>
-    <div class="zk-texto">Cargando el manglar<span class="zk-puntos"><span>.</span><span>.</span><span>.</span></span></div>
+    <div class="zk-texto" id="zk-carga-texto">Zanky te está abriendo el manglar</div>
+    <div class="zk-barra" aria-hidden="true"><i></i></div>
+    <div class="zk-pie">Guardianes del manglar del Atlántico</div>
     <noscript><div class="zk-texto" style="max-width:280px;text-align:center">Zanky necesita JavaScript para funcionar. Actívalo en tu navegador y vuelve a abrir esta página.</div></noscript>
   </div>
 
@@ -92,8 +122,16 @@
         setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 600);
       }
       // El evento se lanza en el documento y no burbujea: se escucha en captura desde la ventana.
-      window.addEventListener('flutter-first-frame', quitar, true);
-      document.addEventListener('flutter-first-frame', quitar, true);
+      // El primer cuadro de Flutter es la espera mientras lee el teléfono (unos cientos de ms) y la foto
+      // de la bienvenida se decodifica justo después: se espera un poco para fundir directo a la foto.
+      function alPrimerCuadro() { setTimeout(quitar, 650); }
+      window.addEventListener('flutter-first-frame', alPrimerCuadro, true);
+      document.addEventListener('flutter-first-frame', alPrimerCuadro, true);
+      // Si tarda, Zanky lo dice (señal floja en la jornada) en vez de quedarse mudo.
+      setTimeout(function () {
+        var t = document.getElementById('zk-carga-texto');
+        if (t && !quitada) t.textContent = navigator.onLine ? 'La señal está floja, ya casi llego…' : 'Sin señal: abriendo la copia guardada…';
+      }, 6000);
       // Red de seguridad: si algo falla, no dejar el fundido tapando para siempre.
       setTimeout(quitar, 25000);
     })();

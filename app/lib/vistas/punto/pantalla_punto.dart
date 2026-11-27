@@ -8,6 +8,8 @@ import '../../nucleo/kit/boton_estado.dart';
 import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/tema.dart';
+import '../../nucleo/identidad.dart';
+import '../bienvenida/fotos.dart';
 import '../comun/zanky_mascota.dart';
 import '../../datos/experiencia/jornada.dart';
 import '../experiencia/puerta_evento.dart';
@@ -116,36 +118,52 @@ class _PantallaPuntoState extends State<PantallaPunto> {
   @override
   Widget build(BuildContext context) {
     final p = _punto;
+    final foto = fotoDelPunto(p);
+    final tt = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: Zc.arena,
-      appBar: AppBar(title: const Text('Punto Zanky')),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: const Text('Punto Zanky'),
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       body: _cargando
-          ? const Center(child: CircularProgressIndicator())
+          ? Column(children: [_CabeceraPunto(foto: foto, cargando: true), const Spacer()])
           : p == null
-              ? EstadoVacio(titulo: 'Punto no disponible', texto: _error ?? '',
-                  textoAccion: 'Reintentar', alAccion: () { setState(() => _cargando = true); _cargar(); })
-              : ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 36), children: [
-                  Center(child: ZankyMascota(tamano: 120, animo: Animo.curioso)),
-                  const SizedBox(height: 12),
-                  if (!_servicio.servidor.configurado)
-                    Semantics(label: 'Demostración sin servidor',
-                      child: Text('DEMOSTRACIÓN · esta visita no se publicará.')),
-                  Semantics(header: true, child: Text(p.titulo, style: Theme.of(context).textTheme.headlineSmall)),
-                  const SizedBox(height: 8),
-                  Text(p.tipo.nombre),
-                  if (p.zona.isNotEmpty) Text(p.zona),
-                  if (_pendiente) Semantics(liveRegion: true,
-                    child: Padding(padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text('Visita guardada en este teléfono. Se enviará cuando vuelva la señal.'))),
-                  if (_fotoPendiente) Semantics(liveRegion: true,
-                    child: Padding(padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text('La foto quedó pendiente de vinculación. Se reintentará cuando llegue el reporte al servidor.'))),
-                  const SizedBox(height: 16),
-                  if (p.descripcion.isNotEmpty) Text(p.descripcion),
-                  const SizedBox(height: 22),
-                  ..._contenido(p),
-                  ProximoEvento(fuente: _jornadas, actual: p.eventoId),
-                  const SigueConZanky(),
+              ? Column(children: [
+                  _CabeceraPunto(foto: foto),
+                  Expanded(child: EstadoVacio(titulo: 'Punto no disponible', texto: _error ?? '',
+                    textoAccion: 'Reintentar', alAccion: () { setState(() => _cargando = true); _cargar(); })),
+                ])
+              : ListView(padding: EdgeInsets.zero, children: [
+                  _CabeceraPunto(foto: foto, punto: p),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      if (!_servicio.servidor.configurado)
+                        Semantics(label: 'Demostración sin servidor',
+                          child: const _Nota(icono: Icons.science_outlined,
+                            texto: 'DEMOSTRACIÓN · esta visita no se publicará.')),
+                      if (_pendiente) Semantics(liveRegion: true,
+                        child: const _Nota(icono: Icons.cloud_off_rounded,
+                          texto: 'Visita guardada en este teléfono. Se enviará cuando vuelva la señal.')),
+                      if (_fotoPendiente) Semantics(liveRegion: true,
+                        child: const _Nota(icono: Icons.link_off_rounded,
+                          texto: 'La foto quedó pendiente de vinculación. Se reintentará cuando llegue el reporte al servidor.')),
+                      if (p.descripcion.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(p.descripcion, style: tt.bodyLarge),
+                      ],
+                      const SizedBox(height: 18),
+                      ..._contenido(p),
+                      ProximoEvento(fuente: _jornadas, actual: p.eventoId),
+                      const SigueConZanky(),
+                    ]),
+                  ),
                 ]),
     );
   }
@@ -208,3 +226,149 @@ class _SiluetaEncuadre extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+
+/// La foto del punto: el lugar del manglar más parecido entre las fotos con licencia que van en la app
+/// (créditos en `assets/fotos/CREDITOS.md`). Funciona sin señal.
+FotoManglar fotoDelPunto(PuntoZanky? p) {
+  if (p == null) return FotoManglar.raices;
+  final zona = p.zona.toLowerCase();
+  if (p.tipo == TipoPunto.fotoFija) return FotoManglar.sendero;
+  if (zona.contains('mallorqu')) {
+    return p.tipo == TipoPunto.asistenciaEvento ? FotoManglar.sendero : FotoManglar.garza;
+  }
+  if (p.tipo == TipoPunto.sensor) return FotoManglar.cano;
+  return FotoManglar.raices;
+}
+
+/// Cabecera con identidad CRA: foto del manglar, velo azul para leer, sello dorado y Zanky asomado.
+class _CabeceraPunto extends StatelessWidget {
+  const _CabeceraPunto({required this.foto, this.punto, this.cargando = false});
+  final FotoManglar foto;
+  final PuntoZanky? punto;
+  final bool cargando;
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final tt = Theme.of(context).textTheme;
+    final arriba = mq.padding.top + kToolbarHeight;
+    final p = punto;
+    final caja = Size(mq.size.width, 300);
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(minHeight: 250 + mq.padding.top),
+      color: Cra.azul,
+      child: Stack(children: [
+        Positioned.fill(
+          child: Image(
+            image: foto.proveedor(caja, mq.devicePixelRatio),
+            fit: BoxFit.cover,
+            alignment: foto.foco,
+            excludeFromSemantics: true,
+            frameBuilder: (context, hijo, cuadro, sincrono) => AnimatedOpacity(
+              opacity: sincrono || cuadro != null ? 1 : 0,
+              duration: Zm.medio,
+              curve: Zm.entrar,
+              child: hijo,
+            ),
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          ),
+        ),
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0, 0.35, 1],
+                colors: [Color(0x99061E35), Color(0x44061E35), Color(0xF2061E35)],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, arriba + 4, 20, 16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: Cra.dorado, borderRadius: BorderRadius.circular(99)),
+              child: Text('PUNTO ZANKY · CRA ATLÁNTICO',
+                style: tt.labelSmall?.copyWith(color: Cra.hero, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+            ),
+            const SizedBox(height: 48),
+            if (cargando)
+              Semantics(
+                label: 'Cargando el punto',
+                child: const SizedBox(width: 26, height: 26,
+                  child: CircularProgressIndicator(strokeWidth: 3, color: Cra.dorado)),
+              )
+            else if (p != null) ...[
+              Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Expanded(
+                  child: Semantics(header: true,
+                    child: Text(p.titulo,
+                      style: tt.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800))),
+                ),
+                const SizedBox(width: 8),
+                const ZankyMascota(tamano: 72, animo: Animo.curioso),
+              ]),
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, runSpacing: 6, children: [
+                _Chip(icono: _iconoTipo(p.tipo), texto: p.tipo.nombre),
+                if (p.zona.isNotEmpty) _Chip(icono: Icons.place_rounded, texto: p.zona),
+              ]),
+            ],
+            const SizedBox(height: 10),
+            Text(foto.credito, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: tt.labelSmall?.copyWith(color: Cra.textoSuave, fontSize: 10)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  static IconData _iconoTipo(TipoPunto t) => switch (t) {
+    TipoPunto.asistenciaEvento => Icons.how_to_reg_rounded,
+    TipoPunto.estacionEducativa => Icons.school_rounded,
+    TipoPunto.fotoFija => Icons.photo_camera_rounded,
+    TipoPunto.sensor => Icons.sensors_rounded,
+  };
+}
+
+class _Chip extends StatelessWidget {
+  const _Chip({required this.icono, required this.texto});
+  final IconData icono;
+  final String texto;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: Cra.hero.withValues(alpha: 0.72),
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icono, size: 15, color: Cra.dorado),
+          const SizedBox(width: 6),
+          Flexible(child: Text(texto, maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Colors.white))),
+        ]),
+      );
+}
+
+class _Nota extends StatelessWidget {
+  const _Nota({required this.icono, required this.texto});
+  final IconData icono;
+  final String texto;
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: Zc.solClaro, borderRadius: BorderRadius.circular(Zr.m)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icono, size: 18, color: Zc.fango),
+          const SizedBox(width: 10),
+          Expanded(child: Text(texto, style: Theme.of(context).textTheme.bodyMedium)),
+        ]),
+      );
+}

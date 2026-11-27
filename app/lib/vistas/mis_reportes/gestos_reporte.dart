@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../datos/comunidad/feed.dart' show puntoPedidoMapa;
 import '../../datos/estado.dart';
 import '../../datos/reporte.dart';
 import '../../nucleo/kit/accion_gesto.dart';
 import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/confirmar.dart';
+import '../../nucleo/identidad.dart';
+import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
+import '../raiz.dart';
 import 'detalle_reporte.dart';
 import 'foto_reporte.dart';
 import 'tarjeta_reporte.dart';
@@ -29,6 +34,20 @@ Future<void> compartirReporte(BuildContext context, Reporte r) async {
   } catch (_) {
     if (context.mounted) avisar(context, 'No pude abrir el menú de compartir.', tipo: TipoAviso.error);
   }
+}
+
+/// Lleva al mapa y lo centra en el punto del reporte (el mapa escucha [puntoPedidoMapa]).
+void verReporteEnMapa(BuildContext context, Reporte r) {
+  puntoPedidoMapa.value = r.punto;
+  Navigator.of(context).popUntil((ruta) => ruta.isFirst);
+  Raiz.irA(context, 1);
+}
+
+/// Copia un código de caso con háptica y aviso.
+Future<void> copiarCodigoReporte(BuildContext context, String codigo) async {
+  await Clipboard.setData(ClipboardData(text: codigo));
+  vibrar(Vibracion.ligera);
+  if (context.mounted) avisar(context, 'Código $codigo copiado', tipo: TipoAviso.exito);
 }
 
 /// Quitar del teléfono: confirma en hoja y deja «Deshacer». [raiz] es un contexto
@@ -64,6 +83,21 @@ class AccionesReporte {
         etiqueta: 'Ver detalle',
         icono: Icons.open_in_new_rounded,
         alEjecutar: () => abrirDetalleReporte(context, reporte),
+      );
+
+  /// Lleva al mapa principal y lo centra en el punto del reporte.
+  AccionGesto get mapa => AccionGesto(
+        etiqueta: 'Ver en el mapa',
+        icono: Icons.map_rounded,
+        color: Cra.azul,
+        alEjecutar: () => verReporteEnMapa(context, reporte),
+      );
+
+  /// Copia el número de caso (ZK-…) para dictarlo por teléfono o pegarlo en WhatsApp.
+  AccionGesto get copiar => AccionGesto(
+        etiqueta: 'Copiar código ${reporte.caso}',
+        icono: Icons.copy_rounded,
+        alEjecutar: () => copiarCodigoReporte(context, reporte.caso),
       );
 
   AccionGesto get quitar => AccionGesto(

@@ -43,6 +43,9 @@ Base de datos con PostGIS, reglas de seguridad, funciones del panel y almacenami
    | 13 | `estadisticas_parche_1.sql` | ~10 KB | Restringe la publicación y los permisos. Si el paso 12 ya está cargado, ejecuta solo este. |
    | 14 | `seed_sensores_demo.sql` | — | Opcional, solo sensores de demostración. |
 
+   **Panel CRA** (después de la tabla): `admin_app.sql` → `puntos.sql` → `permisos_rol.sql` → `contenido_editable.sql`
+   (portada, jornadas, noticias, puntos QR y umbrales editables desde el panel, con historial). Todos idempotentes.
+
    `ia.sql` (IA en la validación) va aparte, cuando se despliegue la función (ver «IA en la validación»).
    Las partes de `zonas-N` y `prioridades-N` se pueden repetir sin duplicar nada (zonas: *upsert*; prioridades: la parte 1 vacía y
    las otras vuelven a llenar). Si repites prioridades, corre **todas** las partes, empezando por la 1. Si una parte se cae a la mitad,

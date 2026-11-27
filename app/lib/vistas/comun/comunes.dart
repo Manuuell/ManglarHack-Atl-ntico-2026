@@ -6,6 +6,7 @@ import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Piezas pequeñas que comparten todas las pantallas. Si una pantalla necesita una
 /// variante, se agrega aquí (no se copia): así todo se ve igual.
@@ -134,18 +135,19 @@ class ChipEstado extends StatelessWidget {
   static IconData iconoDe(EstadoReporte e) => _iconoEstado(e);
 }
 
-/// Ícono del tipo de amenaza en su círculo de color.
+/// Ícono del tipo de amenaza (dibujo propio del kit) en su círculo de color.
 class IconoTipo extends StatelessWidget {
-  const IconoTipo(this.tipo, {super.key, this.tamano = 44});
+  const IconoTipo(this.tipo, {super.key, this.tamano = 44, this.animado = false});
   final TipoAmenaza tipo;
   final double tamano;
+  final bool animado;
 
   @override
   Widget build(BuildContext context) => Container(
         width: tamano,
         height: tamano,
         decoration: BoxDecoration(color: tipo.color.withValues(alpha: 0.13), shape: BoxShape.circle),
-        child: Icon(tipo.icono, color: tipo.color, size: tamano * 0.52),
+        child: Center(child: IconoAmenaza(tipo, tamano: tamano * 0.66, animado: animado)),
       );
 }
 

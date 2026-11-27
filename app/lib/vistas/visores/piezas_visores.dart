@@ -275,7 +275,7 @@ class TarjetaVisor extends StatelessWidget {
   );
 }
 
-/// Sello «Datos oficiales C.R.A.» (coidentidad: azul y dorado de la Corporación).
+/// Sello «Datos oficiales CRA» (coidentidad: azul y dorado de la Corporación).
 class SelloCra extends StatelessWidget {
   const SelloCra({super.key});
 
@@ -284,7 +284,7 @@ class SelloCra extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
     decoration: BoxDecoration(color: Cra.azul, borderRadius: BorderRadius.circular(999)),
     child: const Text(
-      'C.R.A.',
+      'CRA',
       style: TextStyle(color: Cra.dorado, fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 0.6),
     ),
   );

@@ -12,6 +12,7 @@ bool _llamar(String f) {
 
 bool appInstalada() => _llamar('zankyInstalada');
 bool puedeInstalarApp() => _llamar('zankyPuedeInstalar');
+bool esIos() => _llamar('zankyEsIos');
 
 Future<bool> instalarApp() async {
   try {

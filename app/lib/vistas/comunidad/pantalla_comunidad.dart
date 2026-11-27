@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../datos/avisos/centro_avisos.dart';
 import '../../datos/comunidad/comunidad.dart';
+import '../../datos/comunidad/marcas_comunidad.dart';
 import '../../datos/crecimiento/ranking_colegios.dart';
 import '../../datos/estado.dart';
 import '../../datos/experiencia/jornada.dart';
@@ -13,6 +15,7 @@ import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/boton_estado.dart';
 import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/ruta_borde.dart';
 import '../../nucleo/kit/tirar_actualizar.dart';
@@ -20,8 +23,12 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 import '../../datos/comunidad/feed.dart';
+import 'datos_abiertos.dart';
+import 'alertas_diseno.dart';
+import 'carrusel_noticias.dart';
 import 'feed_y_eventos.dart';
 import 'piezas_comunidad.dart';
+import '../../datos/admin/contenido_publico.dart';
 
 /// Abre «Comunidad» (desde la tarjeta de Inicio).
 Future<void> abrirComunidad(BuildContext context) =>
@@ -90,7 +97,7 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
     await Future.wait([
       _fuente.alertas().then((v) => mounted ? setState(() => _alertas = v) : null),
       _fuente.reportes().then((v) => mounted ? setState(() => _reportes = v) : null),
-      _fuente.noticias().then((v) => mounted ? setState(() => _noticias = v) : null),
+      _fuente.noticias().then(ajustarLoteNoticias).then((v) => mounted ? setState(() => _noticias = v) : null),
       _fuenteJornadas.cargar().then((v) => mounted ? setState(() => _jornadas = v) : null).catchError((_) => null),
       _cargarRanking(servidor),
     ]);
@@ -177,8 +184,12 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
                 )),
                 const SizedBox(height: 26),
                 entra(SeccionEventos(
-                  eventos: _jornadas == null ? null : completarCartelera(_jornadas!, _respaldo),
+                  eventos: _jornadas == null ? null : completarCartelera([..._jornadas!, ...jornadasDelPanel()], _respaldo),
                   alInscribirse: (j) async {
+                    if (esJornadaDelPanel(j)) {
+                      avisar(context, 'Sin inscripción en línea: llega al punto de encuentro (${j.puntoEncuentro}).');
+                      return;
+                    }
                     final ok = await abrirInscripcion(context, j, _fuente);
                     if (ok == true) await _cargar();
                   },
@@ -186,7 +197,7 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
                 const SizedBox(height: 26),
                 entra(_SeccionGuardianes(ranking: _ranking, web: _colegiosWeb, fallo: _rankingFallo)),
                 const SizedBox(height: 26),
-                entra(_DatosAbiertos(base: _fuente.base)),
+                entra(DatosAbiertos(base: _fuente.base)),
               ],
             ),
           ),
@@ -243,7 +254,7 @@ class _SeccionAlertas extends StatelessWidget {
             tamanoZanky: 96,
             relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
           )
-        else if (l.datos.alertas.isEmpty)
+        else if (gruposPublicados(l.datos).isEmpty)
           const EstadoVacio(
             titulo: 'Todo en calma',
             texto: 'No hay mar de leva, aguaceros, vientos fuertes ni riesgo de incendio a la vista.',
@@ -252,18 +263,14 @@ class _SeccionAlertas extends StatelessWidget {
             relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
           )
         else
-          for (final (a, extra) in l.datos.porLugar)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-              child: TarjetaAlerta(alerta: a, extra: extra),
-            ),
+          ListaAlertas(grupos: gruposPublicados(l.datos), generado: l.datos.generado, simulacro: l.datos.simulacro),
         if (l.datos.generado != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
             child: Text(
               'Actualizado ${haceCuanto(l.datos.generado!)} · '
               '${l.datos.fuentes.map((f) => '${f.ok ? '●' : '○'} ${f.nombre}').join(' · ')}\n'
-              '${l.datos.nota} Si hay peligro para las personas, llama al 123.',
+              '${sinPuntosCra(l.datos.nota)} Si hay peligro para las personas, llama al 123.',
               style: tt.labelSmall?.copyWith(color: Zc.textoSuave, height: 1.4),
             ),
           ),
@@ -292,7 +299,7 @@ class _Inscripcion extends StatefulWidget {
 class _InscripcionState extends State<_Inscripcion> {
   late final _nombre = TextEditingController(text: widget.nombre);
   final _cel = TextEditingController();
-  bool _datos = false, _whatsapp = false, _enviando = false;
+  bool _datos = false, _whatsapp = false;
   String _error = '';
 
   @override
@@ -302,26 +309,32 @@ class _InscripcionState extends State<_Inscripcion> {
     super.dispose();
   }
 
+  /// Lo llama el botón con estado: cargando → ✓ (y entonces [_listo] cierra) o error con sacudida.
   Future<void> _enviar() async {
-    if (_nombre.text.trim().length < 2) return setState(() => _error = 'Escribe tu nombre.');
-    if (!_datos) return setState(() => _error = 'Para inscribirte, acepta el tratamiento de tus datos (Ley 1581).');
-    setState(() {
-      _enviando = true;
-      _error = '';
-    });
+    String? falta;
+    if (_nombre.text.trim().length < 2) falta = 'Escribe tu nombre.';
+    if (falta == null && !_datos) falta = 'Para inscribirte, acepta el tratamiento de tus datos (Ley 1581).';
+    if (falta != null) {
+      setState(() => _error = falta!);
+      throw StateError(falta);
+    }
+    setState(() => _error = '');
     final r = await widget.fuente.inscribirse(widget.j.id,
         nombre: _nombre.text, telefono: _cel.text, aceptaDatos: _datos, aceptaWhatsapp: _whatsapp && _cel.text.trim().isNotEmpty);
     if (!mounted) return;
-    if (r.ok) {
-      vibrar(Vibracion.media);
-      Navigator.of(context).pop(true);
-      avisar(context, '¡Listo! Quedaste en la lista. Te esperamos.', tipo: TipoAviso.exito);
-    } else {
-      setState(() {
-        _enviando = false;
-        _error = r.mensaje;
-      });
+    if (!r.ok) {
+      setState(() => _error = r.mensaje);
+      throw StateError(r.mensaje);
     }
+    jornadasInscritas.poner(widget.j.id, true);
+    // Desde aquí se recuerda la jornada: la víspera y 2 h antes.
+    CentroAvisos.compartido.recordarJornada(widget.j).ignore();
+  }
+
+  void _listo() {
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
+    avisar(context, '¡Listo! Quedaste en la lista. Te esperamos.', tipo: TipoAviso.exito);
   }
 
   @override
@@ -372,7 +385,15 @@ class _InscripcionState extends State<_Inscripcion> {
               ),
       ),
       const SizedBox(height: 14),
-      BotonZ(texto: 'Confirmar asistencia', icono: Icons.check_rounded, cargando: _enviando, onTap: _enviando ? null : _enviar),
+      BotonEstado(
+        texto: 'Confirmar asistencia',
+        icono: Icons.check_rounded,
+        textoCargando: 'Inscribiendo',
+        textoHecho: 'Inscrito',
+        textoError: 'Revisa los datos',
+        alPresionar: _enviar,
+        alHecho: _listo,
+      ),
     ]);
   }
 }
@@ -461,7 +482,7 @@ class _SeccionGuardianes extends StatelessWidget {
 
 // ------------------------------------------------------------------ noticias
 
-/// Noticias del manglar: una destacada y el resto en un carrusel (también lo usa Inicio).
+/// Noticias del manglar en un carrusel de borde a borde ([CarruselNoticias]).
 class SeccionNoticias extends StatelessWidget {
   const SeccionNoticias({super.key, required this.lote});
   final Lote<List<NoticiaManglar>>? lote;
@@ -469,12 +490,10 @@ class SeccionNoticias extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = lote;
-    return LayoutBuilder(builder: (context, caja) {
-      final ancho = caja.maxWidth;
-      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const TituloSeccion(antetitulo: 'Desde la CRA', titulo: 'La CRA', tono: 'en el manglar'),
         if (l == null)
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.cabecera())
+          const EsqueletoCarrusel()
         else ...[
           NotaOrigen(origen: l.origen, cuando: l.cuando),
           if (l.datos.isEmpty)
@@ -484,76 +503,13 @@ class SeccionNoticias extends StatelessWidget {
               tamanoZanky: 90,
               relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
             )
-          else ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TarjetaNoticia(noticia: l.datos.first, destacada: true),
-            ),
-            if (l.datos.length > 1) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 236,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: l.datos.length - 1,
-                  separatorBuilder: (_, _) => const SizedBox(width: 12),
-                  itemBuilder: (_, k) => TarjetaNoticia(noticia: l.datos[k + 1], ancho: ancho < 600 ? 230 : 260),
-                ),
-              ),
-            ],
-          ],
+          else
+            CarruselNoticias(noticias: l.datos),
         ],
       ]);
-    });
   }
 }
 
 // ------------------------------------------------------------------ datos abiertos
 
-class _DatosAbiertos extends StatelessWidget {
-  const _DatosAbiertos({required this.base});
-  final String base;
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Cra.azul, borderRadius: BorderRadius.circular(Zr.m)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('DATOS ABIERTOS', style: tt.seccion.copyWith(color: Cra.dorado)),
-          const SizedBox(height: 4),
-          Text('Los reportes de la comunidad, libres (CC BY 4.0)',
-              style: tt.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text('Sin nombres, fotos ni descripciones; coordenadas a ~110 m. Toca un formato para copiar su enlace.',
-              style: tt.bodySmall?.copyWith(color: Cra.textoSuave)),
-          const SizedBox(height: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final f in ['geojson', 'csv', 'kml'])
-              Presionable(
-                etiqueta: 'Copiar enlace ${f.toUpperCase()}',
-                onTap: () async {
-                  await Clipboard.setData(ClipboardData(text: '$base/datos-abiertos/reportes.$f'));
-                  if (context.mounted) avisar(context, 'Enlace ${f.toUpperCase()} copiado');
-                },
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Cra.borde),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(f.toUpperCase(), style: tt.labelLarge?.copyWith(color: Colors.white)),
-                ),
-              ),
-          ]),
-        ]),
-      ),
-    );
-  }
-}
+// La tarjeta vive en datos_abiertos.dart (descargar y copiar enlace).

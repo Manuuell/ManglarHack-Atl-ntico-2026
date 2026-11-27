@@ -6,10 +6,13 @@ import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../inicio/pronostico_compacto.dart';
+import 'carrusel_noticias.dart';
 import 'pantalla_comunidad.dart';
 import '../../datos/experiencia/jornada.dart';
+import 'alertas_diseno.dart';
 import 'feed_y_eventos.dart';
 import 'piezas_comunidad.dart';
+import '../../datos/admin/contenido_publico.dart';
 
 /// En Inicio: la alerta oficial del servidor (`/alertas`, la misma de la portada web) con las cifras
 /// oficiales de «Ahora», la entrada a «Comunidad» y la noticia destacada de la CRA
@@ -36,13 +39,20 @@ class _ComunidadInicioState extends State<ComunidadInicio> {
   @override
   void initState() {
     super.initState();
+    recargaComunidadInicio.addListener(_cargar);
     _cargar();
+  }
+
+  @override
+  void dispose() {
+    recargaComunidadInicio.removeListener(_cargar);
+    super.dispose();
   }
 
   Future<void> _cargar() async {
     await Future.wait([
       _f.alertas().then((v) => mounted ? setState(() => _alertas = v) : null),
-      _f.noticias().then((v) => mounted ? setState(() => _noticias = v) : null),
+      _f.noticias().then(ajustarLoteNoticias).then((v) => mounted ? setState(() => _noticias = v) : null),
     ]);
   }
 
@@ -75,19 +85,11 @@ class _ComunidadInicioState extends State<ComunidadInicio> {
       ]);
     }
     final d = l.datos;
-    final grupos = d.porLugar;
-    return Column(key: ValueKey('oficial-${grupos.length}'), crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    return Column(key: ValueKey('oficial-${d.alertas.length}'), crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       NotaOrigen(origen: l.origen, cuando: l.cuando),
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: TarjetaAlertaInicio(
-          grupos: grupos,
-          generado: d.generado,
-          simulacro: d.simulacro,
-          alTocar: grupos.isEmpty
-              ? () => abrirComunidad(context)
-              : () => abrirHojaAlerta(context, grupos.first.$1, extra: grupos.first.$2, generado: d.generado),
-        ),
+        child: TarjetaAlertaInicio(resultado: d, alVerTodas: () => abrirComunidad(context)),
       ),
       if (d.ahora.isNotEmpty) ...[
         const SizedBox(height: 10),
@@ -148,112 +150,40 @@ class _ComunidadInicioState extends State<ComunidadInicio> {
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
         child: Text('DESDE LA CRA', style: tt.seccion.copyWith(color: Cra.azul)),
       ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: AnimatedSwitcher(
-          duration: Zm.corto,
-          child: _noticias == null
-              ? const Esqueleto.cabecera(key: ValueKey('esq'))
-              : noticia == null
-                  ? Text('Sin noticias guardadas todavía. Con señal aparecen las de la CRA',
-                      key: const ValueKey('vacio'), style: tt.bodyMedium?.copyWith(color: Zc.textoSuave))
-                  : TarjetaNoticia(key: ValueKey(noticia.id), noticia: noticia, destacada: true),
-        ),
+      // Carrusel de borde a borde (carrusel_noticias.dart); el esqueleto tiene su mismo alto.
+      AnimatedSwitcher(
+        duration: Zm.corto,
+        child: _noticias == null
+            ? const EsqueletoCarrusel(key: ValueKey('esq'))
+            : noticia == null
+                ? Padding(
+                    key: const ValueKey('vacio'),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text('Sin noticias guardadas todavía. Con señal aparecen las de la CRA',
+                        style: tt.bodyMedium?.copyWith(color: Zc.textoSuave)),
+                  )
+                : CarruselNoticias(key: const ValueKey('carrusel'), noticias: _noticias!.datos),
       ),
     ]);
   }
 }
 
-/// La alerta oficial más alta en Inicio: franja del color del nivel, título, lugar, recomendación y
-/// fuente con hora. Al tocar abre la hoja de detalle.
+/// Las alertas en Inicio: la pila de tarjetas de `alertas_diseno.dart` (la más grave arriba, contador,
+/// gestos). Las mismas alertas que publica la web y que cuenta Comunidad ([gruposPublicados]).
 class TarjetaAlertaInicio extends StatelessWidget {
-  const TarjetaAlertaInicio({super.key, required this.grupos, required this.alTocar, this.generado, this.simulacro = false});
-  final List<(AlertaManglar, int)> grupos;
-  final VoidCallback alTocar;
-  final DateTime? generado;
-  final bool simulacro;
+  const TarjetaAlertaInicio({super.key, required this.resultado, this.alVerTodas, this.ocultas});
+  final ResultadoAlertas resultado;
+  final VoidCallback? alVerTodas;
+  final AlertasOcultas? ocultas;
 
   @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final calma = grupos.isEmpty;
-    final a = calma ? null : grupos.first.$1;
-    final color = a == null ? Zc.hoja : colorNivel(a.nivel);
-    final pie = [
-      if (a != null) a.fuentesTexto else 'IDEAM + DIMAR + CRA + Comunidad',
-      if (generado != null) 'actualizado ${haceCuanto(generado!)}',
-    ].join(' · ');
-    return Presionable(
-      escala: 0.98,
-      etiqueta: calma
-          ? 'Sin alertas en el manglar ahora. Abrir Comunidad'
-          : '${a!.nivel.texto} en ${a.lugar}: ${a.titulo}. ${a.recomendacion}. Ver detalle',
-      onTap: alTocar,
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: Zc.superficie,
-          borderRadius: BorderRadius.circular(Zr.l),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
-          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.16), blurRadius: 18, offset: const Offset(0, 6))],
-        ),
-        child: IntrinsicHeight(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Container(width: 6, color: color),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(children: [
-                    Flexible(
-                      child: Text(simulacro ? 'SIMULACRO · NO ES REAL' : 'ALERTAS DEL MANGLAR',
-                          style: tt.seccion.copyWith(color: simulacro ? Cra.riesgoMuyAlto : Cra.azul)),
-                    ),
-                    const SizedBox(width: 8),
-                    if (a != null) EtiquetaNivel(a.nivel),
-                  ]),
-                  const SizedBox(height: 6),
-                  Text(
-                    calma ? '✅ Sin alertas en el manglar ahora' : '${a!.icono} ${a.titulo}',
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800),
-                  ),
-                  if (a != null && a.lugar.isNotEmpty)
-                    Text(
-                      grupos.length > 1
-                          ? '${a.lugar} · y ${grupos.length - 1} ${grupos.length == 2 ? 'lugar' : 'lugares'} más'
-                          : a.lugar,
-                      style: tt.labelMedium?.copyWith(color: Zc.textoSuave),
-                    ),
-                  const SizedBox(height: 6),
-                  Text(
-                    calma
-                        ? 'No hay mar de leva, aguaceros, vientos fuertes ni riesgo de incendio a la vista.'
-                        : 'Qué hacer: ${a!.recomendacion}',
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.bodyMedium?.copyWith(color: Zc.texto, height: 1.35),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    const Icon(Icons.verified_rounded, size: 14, color: Zc.textoTenue),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(pie,
-                          maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
-                    ),
-                    Text(calma ? 'Comunidad' : 'Ver detalle', style: tt.labelMedium?.copyWith(color: Zc.hoja)),
-                    const Icon(Icons.chevron_right_rounded, color: Zc.hoja, size: 18),
-                  ]),
-                ]),
-              ),
-            ),
-          ]),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => PilaAlertas(
+        grupos: gruposPublicados(resultado),
+        generado: resultado.generado,
+        simulacro: resultado.simulacro,
+        alVerTodas: alVerTodas,
+        ocultas: ocultas,
+      );
 }
 
 /// Muestra [child] (la tarjeta del tiempo con Open-Meteo) solo si `/alertas` no trae las cifras de

@@ -3,4 +3,6 @@
 {{flutter_build_config}}
 
 // El service worker de Zanky se registra desde pwa.js.
-_flutter.loader.load();
+// El motor (CanvasKit) se sirve desde la misma carpeta y no desde el CDN de Google: así queda en la copia
+// local del service worker y la app abre sin señal en la jornada.
+_flutter.loader.load({ config: { canvasKitBaseUrl: 'canvaskit/' } });

@@ -9,11 +9,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zanky/datos/cra/modelos_cra.dart';
 import 'package:zanky/datos/cra/servicio_visores.dart';
 import 'package:zanky/datos/servidor.dart';
+import 'package:zanky/nucleo/kit/menu_mantenido.dart';
 import 'package:zanky/nucleo/tema.dart';
 import 'package:zanky/vistas/visores/pantalla_visores.dart';
 import 'package:zanky/vistas/visores/visores_compacto.dart';
 
-/// Pruebas de los visores con las respuestas REALES de la API de la C.R.A. guardadas el 27-nov
+/// Pruebas de los visores con las respuestas REALES de la API de la CRA guardadas el 27-nov
 /// (`test/fixtures/cra/`). Ninguna prueba sale a la red.
 
 String fx(String n) => File('test/fixtures/cra/$n').readAsStringSync();
@@ -75,7 +76,7 @@ void main() {
     pedidos = 0;
   });
 
-  group('Datos de la C.R.A. (respuestas reales)', () {
+  group('Datos de la CRA (respuestas reales)', () {
     test('puntos críticos: todo el Atlántico o solo la franja, con el color oficial', () {
       final tipos = interpretarTipos(fj('tipos_evento.json'));
       final zonas = interpretarZonas(fj('zonas_evento.json'));
@@ -230,7 +231,7 @@ void main() {
     await montar(t, PantallaVisores(servicio: servicio(caido: true)), const Size(390, 844));
     expect(find.textContaining('Sin señal: copia de las'), findsOneWidget);
     await irA(t, 'Agua');
-    expect(find.text('La C.R.A. no respondió'), findsOneWidget);
+    expect(find.text('La CRA no respondió'), findsOneWidget);
     expect(find.text('Intentar de nuevo'), findsOneWidget);
     // La mascota del estado vacío parpadea con un temporizador: se desmonta antes de cerrar.
     await t.pumpWidget(const SizedBox());
@@ -249,5 +250,61 @@ void main() {
     }
     expect(find.text('Visores del manglar'), findsOneWidget);
     expect(find.byKey(const ValueKey('aviso-focos')), findsOneWidget);
+  });
+
+  Finder porClave(String prefijo) => find.byWidgetPredicate((w) {
+        final k = w.key;
+        return k is ValueKey<String> && k.value.startsWith(prefijo);
+      });
+
+  Future<void> abrirPrimero(WidgetTester t, String prefijo) async {
+    final fila = porClave(prefijo).first;
+    await t.ensureVisible(fila);
+    await t.pump(const Duration(milliseconds: 300));
+    await t.tap(fila);
+    for (var i = 0; i < 5; i++) {
+      await t.pump(const Duration(milliseconds: 200));
+    }
+  }
+
+  testWidgets('focos: cada fila tiene menú con vista previa y tocar abre su ficha', (t) async {
+    await montar(t, PantallaVisores(servicio: servicio()), const Size(390, 844));
+    await irA(t, 'Focos');
+    final filas = find.byWidgetPredicate(
+        (w) => w is MenuMantenido && w.key is ValueKey<String> && (w.key! as ValueKey<String>).value.startsWith('foco-'));
+    expect(filas, findsWidgets);
+    expect(t.widget<MenuMantenido>(filas.first).vistaPrevia, isNotNull);
+    await t.ensureVisible(filas.first);
+    await t.pump(const Duration(milliseconds: 300));
+    await t.tap(filas.first);
+    for (var i = 0; i < 5; i++) {
+      await t.pump(const Duration(milliseconds: 200));
+    }
+    expect(find.byKey(const ValueKey('ficha-foco')), findsOneWidget);
+    expect(find.text('Confianza'), findsWidgets);
+  });
+
+  testWidgets('ciénagas: mantener tiene vista previa y tocar abre la ficha con sus estaciones', (t) async {
+    await montar(t, PantallaVisores(servicio: servicio()), const Size(390, 844));
+    await irA(t, 'Agua');
+    final tarjeta = porClave('cienaga-').first;
+    final menu = find.ancestor(of: tarjeta, matching: find.byType(MenuMantenido));
+    expect(menu, findsOneWidget);
+    expect(t.widget<MenuMantenido>(menu).vistaPrevia, isNotNull);
+    await abrirPrimero(t, 'cienaga-');
+    expect(find.byKey(const ValueKey('ficha-cienaga')), findsOneWidget);
+    expect(find.text('ESTACIONES DE MUESTREO'), findsOneWidget);
+  });
+
+  test('textos para copiar: sin puntos en CRA y con la fuente', () {
+    final f = FocoCalor(
+      id: 1, municipio: 'Tubará', desde: DateTime(2026, 11, 20), hasta: DateTime(2026, 11, 21), focos: 2,
+      satelites: 'VIIRS', confianza: 'high', anillo: const [], lat: 10.9, lon: -74.9,
+    );
+    final t = textoFoco(f);
+    expect(t, contains('Tubará'));
+    expect(t, contains('Confianza alta'));
+    expect(t, contains('Fuente: visor de focos de calor de la CRA'));
+    expect(t, isNot(contains('C.R.A.')));
   });
 }

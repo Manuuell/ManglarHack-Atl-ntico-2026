@@ -4,11 +4,12 @@ import '../../datos/comunidad/comunidad.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../nucleo/base/hoja.dart';
-import '../../nucleo/kit/accion_gesto.dart';
 import '../../nucleo/kit/menu_mantenido.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
+import 'alertas_diseno.dart';
+import 'carrusel_noticias.dart';
 import 'lector_noticia.dart';
 
 /// Colores de los niveles de alerta, con los tonos de la paleta CRA (amarilla = dorado CRA).
@@ -97,85 +98,19 @@ class TarjetaAlerta extends StatelessWidget {
   final int extra;
   final bool compacta;
 
+  /// El diseño vive en `alertas_diseno.dart` (niveles, ícono por amenaza, sello de fuente).
   @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final a = alerta;
-    final cuando = a.desde == a.hasta ? cuandoTexto(a.desde) : '${cuandoTexto(a.desde)} → ${cuandoTexto(a.hasta)}';
-    return Semantics(
-      container: true,
-      label: '${a.nivel.texto}: ${a.titulo}',
-      child: Container(
-        decoration: BoxDecoration(
-          color: Zc.superficie,
-          borderRadius: BorderRadius.circular(Zr.m),
-          border: Border(left: BorderSide(color: colorNivel(a.nivel), width: 4)),
-          boxShadow: const [BoxShadow(color: Color(0x140B2E24), blurRadius: 18, offset: Offset(0, 6))],
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              EtiquetaNivel(a.nivel),
-              const Spacer(),
-              Text(a.medido ? 'Medido' : 'Pronóstico', style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
-            ]),
-            const SizedBox(height: 10),
-            Text('${a.icono} ${a.titulo}', style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
-            if (extra > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text('y $extra ${extra == 1 ? 'aviso más' : 'avisos más'} en este lugar',
-                    style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
-              ),
-            if (!compacta) ...[
-              const SizedBox(height: 6),
-              Text(a.detalle, style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.4)),
-              const SizedBox(height: 8),
-              Text.rich(
-                TextSpan(children: [
-                  const TextSpan(text: 'Qué hacer: ', style: TextStyle(fontWeight: FontWeight.w800)),
-                  TextSpan(text: a.recomendacion),
-                ]),
-                style: tt.bodyMedium?.copyWith(color: Zc.texto, height: 1.4),
-              ),
-            ],
-            const SizedBox(height: 10),
-            Wrap(spacing: 14, runSpacing: 6, children: [
-              _Dato(icono: Icons.place_rounded, texto: a.lugar),
-              _Dato(icono: Icons.schedule_rounded, texto: cuando),
-              _Dato(icono: Icons.verified_rounded, texto: a.fuentesTexto),
-            ]),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Dato extends StatelessWidget {
-  const _Dato({required this.icono, required this.texto});
-  final IconData icono;
-  final String texto;
-  @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icono, size: 15, color: Zc.textoTenue),
-        const SizedBox(width: 4),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 260),
-          child: Text(texto,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Zc.textoSuave)),
-        ),
-      ]);
+  Widget build(BuildContext context) => Semantics(
+        container: true,
+        label: '${alerta.nivel.texto}: ${alerta.titulo}',
+        child: TarjetaAlertaZ(alerta: alerta, extra: extra, expandida: !compacta),
+      );
 }
 
 /// El mismo mensaje que arma `compartir()` en AlertasManglar.tsx.
 String textoCompartirAlerta(AlertaManglar a) =>
-    '${a.nivel == NivelAlerta.roja ? '🔴' : a.nivel == NivelAlerta.naranja ? '🟠' : '🟡'} ${a.titulo}\n'
-    '${a.detalle}\n👉 ${a.recomendacion}\n\nMás en https://mimanglar.sentralabs.co/#alertas';
+    '${a.nivel == NivelAlerta.roja ? '🔴' : a.nivel == NivelAlerta.naranja ? '🟠' : '🟡'} ${sinPuntosCra(a.titulo)}\n'
+    '${sinPuntosCra(a.detalle)}\n👉 ${sinPuntosCra(a.recomendacion)}\n\nMás en https://mimanglar.sentralabs.co/#alertas';
 
 /// Hoja con el detalle de una alerta (desde el mapa o Inicio).
 /// [generado]: la hora en que el servidor cruzó las fuentes.
@@ -189,7 +124,7 @@ Future<void> abrirHojaAlerta(BuildContext context, AlertaManglar a, {int extra =
           TarjetaAlerta(alerta: a, extra: extra),
           const SizedBox(height: 12),
           Text(
-              'Respaldo: ${a.fuentesTexto}'
+              'Respaldo: ${sinPuntosCra(a.fuentesTexto)}'
               '${generado == null ? '' : ', cruzado por Zanky ${cuandoTexto(generado)}'}. '
               'No reemplaza los avisos oficiales de la CRA ni de la Gestión del Riesgo.',
               textAlign: TextAlign.center,
@@ -210,60 +145,25 @@ Future<void> abrirHojaAlerta(BuildContext context, AlertaManglar a, {int extra =
       ),
     );
 
-/// Marcador de alerta en el mapa: el ícono de la web sobre un círculo del color del nivel.
+/// Marcador de alerta en el mapa: anillo que respira según el nivel, ícono de la amenaza y conteo
+/// (el diseño, en `alertas_diseno.dart`).
 class MarcadorAlerta extends StatelessWidget {
-  const MarcadorAlerta({super.key, required this.alerta, required this.alTocar});
+  const MarcadorAlerta({super.key, required this.alerta, required this.alTocar, this.conteo = 1});
   final AlertaManglar alerta;
   final VoidCallback alTocar;
+  final int conteo;
   @override
-  Widget build(BuildContext context) {
-    final c = colorNivel(alerta.nivel);
-    return Presionable(
-      etiqueta: '${alerta.nivel.texto}: ${alerta.titulo}',
-      onTap: alTocar,
-      child: Center(
-        child: Container(
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: c, width: 3),
-            boxShadow: [BoxShadow(color: c.withValues(alpha: 0.45), blurRadius: 12)],
-          ),
-          child: Text(alerta.icono, style: const TextStyle(fontSize: 18, height: 1)),
-        ),
-      ),
-    );
-  }
-}
-
-/// La vista previa al mantener presionada una noticia: foto, fecha y el comienzo del texto.
-class _VistaPreviaNoticia extends StatelessWidget {
-  const _VistaPreviaNoticia({required this.noticia});
-  final NoticiaManglar noticia;
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final n = noticia;
-    return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(Zr.m),
-        child: AspectRatio(aspectRatio: 16 / 9, child: FotoNoticia(url: n.imagen)),
-      ),
-      const SizedBox(height: 12),
-      Text('${n.fuente.toUpperCase()} · ${fechaCorta(n.fecha)}', style: tt.seccion.copyWith(color: Cra.azul, fontSize: 10.5)),
-      const SizedBox(height: 6),
-      Text(n.titulo, style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800, height: 1.25)),
-      const SizedBox(height: 8),
-      Text(n.parrafos.take(2).join('\n\n'),
-          maxLines: 7, overflow: TextOverflow.ellipsis, style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.45)),
-    ]);
-  }
+  Widget build(BuildContext context) => Presionable(
+        etiqueta: '${alerta.nivel.texto}: ${alerta.titulo}${conteo > 1 ? ' y ${conteo - 1} avisos más' : ''}',
+        onTap: alTocar,
+        child: MarcadorAlertaZ(alerta: alerta, conteo: conteo),
+      );
 }
 
 /// Tarjeta de noticia: foto, fuente, fecha y título; se lee dentro de la app.
+/// Tocar: leer. Mantener: vista previa con Leer, Guardar, Compartir y Ocultar. En la destacada,
+/// deslizar a la derecha guarda y a la izquierda oculta (con «Deshacer»); en el carrusel no se
+/// desliza para no pelear con el desplazamiento horizontal.
 class TarjetaNoticia extends StatelessWidget {
   const TarjetaNoticia({super.key, required this.noticia, this.destacada = false, this.ancho});
   final NoticiaManglar noticia;
@@ -282,15 +182,8 @@ class TarjetaNoticia extends StatelessWidget {
         etiqueta: 'Leer: ${n.titulo}. Mantén presionado para ver la vista previa',
         radio: BorderRadius.circular(Zr.m),
         alTocar: () => abrirNoticia(context, n),
-        vistaPrevia: (_) => _VistaPreviaNoticia(noticia: n),
-        acciones: [
-          AccionGesto(etiqueta: 'Leer aquí', icono: Icons.menu_book_rounded, alEjecutar: () => abrirNoticia(context, n)),
-          AccionGesto(
-            etiqueta: 'Compartir',
-            icono: Icons.ios_share_rounded,
-            alEjecutar: () => SharePlus.instance.share(ShareParams(text: '${n.titulo}\n${n.enlace}', subject: n.titulo)),
-          ),
-        ],
+        vistaPrevia: (_) => VistaPreviaNoticia(noticia: n),
+        acciones: accionesNoticia(context, n),
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
@@ -304,24 +197,24 @@ class TarjetaNoticia extends StatelessWidget {
             children: [
               AspectRatio(
                 aspectRatio: destacada ? 16 / 9 : 16 / 10,
-                child: Hero(tag: 'noticia-${n.id}', child: FotoNoticia(url: n.imagen)),
+                child: Hero(tag: 'noticia-${n.id}', child: FotoNoticia(url: n.imagen, semilla: n.titulo)),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${n.fuente.toUpperCase()} · ${fechaCorta(n.fecha)}',
+                    Text('${sinPuntosCra(n.fuente).toUpperCase()} · ${fechaCorta(n.fecha)}',
                         style: tt.seccion.copyWith(color: Cra.azul, fontSize: 10.5)),
                     const SizedBox(height: 6),
-                    Text(n.titulo,
-                        maxLines: destacada ? 3 : 3,
+                    Text(sinPuntosCra(n.titulo),
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: (destacada ? tt.titleLarge : tt.titleSmall)
                             ?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800, height: 1.25)),
                     if (destacada && n.resumen.isNotEmpty) ...[
                       const SizedBox(height: 6),
-                      Text(n.resumen,
+                      Text(sinPuntosCra(n.resumen),
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.4)),
@@ -337,32 +230,88 @@ class TarjetaNoticia extends StatelessWidget {
   }
 }
 
-/// Foto de la noticia con fundido al llegar; sin foto o sin señal, un fondo de la marca.
+/// La foto local (en `assets/fotos/`) que mejor va con un evento o una noticia, por palabras del
+/// tipo, el título o el lugar; si ninguna coincide, una fija por el texto (no cambia entre cuadros).
+String fotoLocalPara(String texto) {
+  final t = texto.toLowerCase();
+  bool hay(List<String> l) => l.any(t.contains);
+  if (hay(['aves', 'garza', 'pájar', 'pajar', 'fauna', 'avistamiento'])) return 'assets/fotos/garza-mallorquin.webp';
+  if (hay(['caño', 'cano', 'agua', 'basura', 'recolec', 'limpieza', 'residuo', 'bocas'])) {
+    return 'assets/fotos/cano-san-bernardo.webp';
+  }
+  if (hay(['sendero', 'recorrido', 'caminata', 'visita', 'mallorqu'])) return 'assets/fotos/sendero-mallorquin.webp';
+  if (hay(['siembra', 'sembr', 'mangle', 'raíz', 'raiz', 'vivero', 'restaura'])) {
+    return 'assets/fotos/manglar-raices-cartagena.webp';
+  }
+  const todas = [
+    'assets/fotos/manglar-raices-cartagena.webp',
+    'assets/fotos/sendero-mallorquin.webp',
+    'assets/fotos/garza-mallorquin.webp',
+    'assets/fotos/cano-san-bernardo.webp',
+  ];
+  var h = 0;
+  for (final c in t.codeUnits) {
+    h = (h * 31 + c) & 0x7fffffff;
+  }
+  return todas[h % todas.length];
+}
+
+/// La CRA se escribe «CRA» en toda la app, aunque el texto venga del servidor con puntos.
+String sinPuntosCra(String s) => s.replaceAll('C.R.A.', 'CRA').replaceAll('C.R.A', 'CRA');
+
+/// Foto de la noticia o del evento. Debajo siempre hay una foto local del manglar elegida por
+/// [semilla] (tipo, título, lugar) con un degradado de la marca y el rótulo «Foto de referencia»;
+/// la real se funde encima cuando llega. Sin foto, sin señal o si el servidor no deja leerla
+/// (CORS en la web), queda la local: nunca un rectángulo vacío.
 class FotoNoticia extends StatelessWidget {
-  const FotoNoticia({super.key, required this.url});
+  const FotoNoticia({super.key, required this.url, this.semilla});
   final String? url;
+  final String? semilla;
   @override
   Widget build(BuildContext context) {
-    const fondo = DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Cra.azul, Cra.superficie], begin: Alignment.topLeft, end: Alignment.bottomRight),
+    final local = Stack(fit: StackFit.expand, children: [
+      Image.asset(
+        fotoLocalPara(semilla ?? url ?? ''),
+        fit: BoxFit.cover,
+        cacheWidth: 1200,
+        errorBuilder: (_, _, _) => const ColoredBox(color: Cra.azul),
       ),
-      child: Center(child: Icon(Icons.newspaper_rounded, color: Cra.textoSuave, size: 34)),
-    );
-    if (url == null) return fondo;
-    return Image.network(
-      url!,
-      fit: BoxFit.cover,
-      frameBuilder: (_, hijo, cuadro, sincronico) => sincronico
-          ? hijo
-          : AnimatedOpacity(
-              opacity: cuadro == null ? 0 : 1,
-              duration: Zm.corto,
-              curve: Zm.entrar,
-              child: hijo,
-            ),
-      errorBuilder: (_, _, _) => fondo,
-    );
+      const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0x000A2A47), Color(0x8C0A2A47)],
+            stops: [0.45, 1],
+          ),
+        ),
+      ),
+      Positioned(
+        right: 8,
+        bottom: 6,
+        child: ExcludeSemantics(
+          child: Text('Foto de referencia',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Colors.white70, fontSize: 10)),
+        ),
+      ),
+    ]);
+    if (url == null || url!.isEmpty) return local;
+    return Stack(fit: StackFit.expand, children: [
+      local,
+      Image.network(
+        url!,
+        fit: BoxFit.cover,
+        frameBuilder: (_, hijo, cuadro, sincronico) => sincronico
+            ? hijo
+            : AnimatedOpacity(
+                opacity: cuadro == null ? 0 : 1,
+                duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
+                curve: Zm.entrar,
+                child: hijo,
+              ),
+        errorBuilder: (_, _, _) => const SizedBox.shrink(),
+      ),
+    ]);
   }
 }
 

@@ -174,18 +174,18 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
         reporte: fila,
         alTocar: () => abrirDetalleReporte(context, fila),
       );
-      // Deslizar: derecha compartir, izquierda quitar. Mantener o clic derecho: menú con vista previa.
+      // Deslizar: derecha compartir, izquierda ver en el mapa y quitar. Mantener o clic derecho: menú con vista previa.
       w = Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: RepaintBoundary(
           child: MenuMantenido(
             etiqueta: '${fila.tipo.nombre}, caso ${fila.caso}',
             vistaPrevia: (_) => VistaPreviaReporte(reporte: fila),
-            acciones: [acc.abrir, acc.compartir, if (quitable) acc.quitar],
+            acciones: [acc.abrir, acc.mapa, acc.compartir, acc.copiar, if (quitable) acc.quitar],
             child: FilaDeslizable(
               radio: BorderRadius.circular(Zr.l),
               accionesInicio: [acc.compartir],
-              accionesFin: [if (quitable) acc.quitar],
+              accionesFin: [acc.mapa, if (quitable) acc.quitar],
               hijo: tarjeta,
             ),
           ),

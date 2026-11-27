@@ -38,7 +38,7 @@ class DatosRiesgo {
   final List<PuntoCritico> puntos;
 }
 
-/// Lee los visores de la C.R.A. (su API pública), la RPC `estadisticas` de Supabase y el resumen
+/// Lee los visores de la CRA (su API pública), la RPC `estadisticas` de Supabase y el resumen
 /// del workflow, con una copia por visor en el teléfono para cuando no hay señal. Mismo patrón que
 /// `ServicioSensores`: primero la copia, luego la red; si la red falla, queda la copia con su hora.
 class ServicioVisores {
