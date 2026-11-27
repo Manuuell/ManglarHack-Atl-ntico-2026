@@ -92,33 +92,70 @@ const toleranciaGrados = 2.7e-5;
 
 /// Decodifica `prioridades_cra.json`. Función de nivel superior para `compute`.
 DatosPrioridad decodificarPrioridades(String texto) {
-  final j = jsonDecode(texto) as Map<String, dynamic>;
-  final unidad = (j['unidad'] as num).toDouble();
-  String? vacioANulo(Object? t) => (t is String && t.isNotEmpty) ? t : null;
-  final planes = <PlanCRA>[
-    for (final a in j['atributos'] as List)
-      PlanCRA(
-        prioridad: PrioridadCRA.desdeTexto(a['p'] as String) ?? PrioridadCRA.baja,
-        accion: a['a'] as String,
-        escenario: a['e'] as String,
-        figura: a['f'] as String? ?? '',
-        areaProtegida: vacioANulo(a['z']),
-        unidad: vacioANulo(a['u']),
-      ),
-  ];
-  final polis = j['poligonos'] as List;
-  final indices = <int>[];
-  final cajas = <Float64List>[];
-  final anillos = <List<Float64List>>[];
-  final hectareas = <double>[];
-  var antes = 0, despues = 0;
-  for (final p in polis) {
-    final crudos = [for (final r in p[1] as List) _decodificar(r as List, unidad)];
-    if (crudos.isEmpty || crudos.first.length < 6) continue;
+  final c = _ConstructorDatos(jsonDecode(texto) as Map<String, dynamic>);
+  for (var i = 0; i < c.total; i++) {
+    c.agregar(i);
+  }
+  return c.terminar();
+}
+
+/// Igual que [decodificarPrioridades] pero cediendo el hilo cada [tramoMs] ms: en la web no hay
+/// isolates y `compute` correría entero en el hilo de la interfaz (decodificar + simplificar
+/// 9.000 polígonos de golpe congela el mapa).
+Future<DatosPrioridad> decodificarPrioridadesPorTramos(String texto, {int tramoMs = 6}) async {
+  final c = _ConstructorDatos(jsonDecode(texto) as Map<String, dynamic>);
+  final reloj = Stopwatch()..start();
+  for (var i = 0; i < c.total; i++) {
+    c.agregar(i);
+    if (reloj.elapsedMilliseconds >= tramoMs) {
+      await Future<void>.delayed(Duration.zero);
+      reloj
+        ..reset()
+        ..start();
+    }
+  }
+  return c.terminar();
+}
+
+/// Arma [DatosPrioridad] polígono a polígono, para poder hacerlo de golpe o por tramos.
+class _ConstructorDatos {
+  _ConstructorDatos(this._j)
+      : _unidad = (_j['unidad'] as num).toDouble(),
+        _polis = _j['poligonos'] as List {
+    String? vacioANulo(Object? t) => (t is String && t.isNotEmpty) ? t : null;
+    _planes = [
+      for (final a in _j['atributos'] as List)
+        PlanCRA(
+          prioridad: PrioridadCRA.desdeTexto(a['p'] as String) ?? PrioridadCRA.baja,
+          accion: a['a'] as String,
+          escenario: a['e'] as String,
+          figura: a['f'] as String? ?? '',
+          areaProtegida: vacioANulo(a['z']),
+          unidad: vacioANulo(a['u']),
+        ),
+    ];
+  }
+
+  final Map<String, dynamic> _j;
+  final double _unidad;
+  final List _polis;
+  late final List<PlanCRA> _planes;
+  final _indices = <int>[];
+  final _cajas = <Float64List>[];
+  final _anillos = <List<Float64List>>[];
+  final _has = <double>[];
+  var _antes = 0, _despues = 0;
+
+  int get total => _polis.length;
+
+  void agregar(int n) {
+    final p = _polis[n];
+    final crudos = [for (final r in p[1] as List) _decodificar(r as List, _unidad)];
+    if (crudos.isEmpty || crudos.first.length < 6) return;
     final ha = _hectareas(crudos);
     final simples = <Float64List>[];
     for (var i = 0; i < crudos.length; i++) {
-      antes += crudos[i].length ~/ 2;
+      _antes += crudos[i].length ~/ 2;
       final s = _simplificarAnillo(crudos[i], toleranciaGrados);
       // Un hueco que se queda sin forma se descarta; el exterior conserva su forma original.
       if (s.length >= 6) {
@@ -128,7 +165,7 @@ DatosPrioridad decodificarPrioridades(String texto) {
       }
     }
     for (final s in simples) {
-      despues += s.length ~/ 2;
+      _despues += s.length ~/ 2;
     }
     final e = simples.first;
     var a = 1e9, b = 1e9, c = -1e9, d = -1e9;
@@ -138,12 +175,14 @@ DatosPrioridad decodificarPrioridades(String texto) {
       b = math.min(b, e[k + 1]);
       d = math.max(d, e[k + 1]);
     }
-    indices.add((p[0] as num).toInt());
-    cajas.add(Float64List.fromList([a, b, c, d]));
-    anillos.add(simples);
-    hectareas.add(ha);
+    _indices.add((p[0] as num).toInt());
+    _cajas.add(Float64List.fromList([a, b, c, d]));
+    _anillos.add(simples);
+    _has.add(ha);
   }
-  return DatosPrioridad._(j['fuente'] as String? ?? '', planes, indices, cajas, anillos, hectareas, antes, despues);
+
+  DatosPrioridad terminar() => DatosPrioridad._(
+      _j['fuente'] as String? ?? '', _planes, _indices, _cajas, _anillos, _has, _antes, _despues);
 }
 
 /// Capa de prioridades lista para el mapa: los `Polygon` se crean UNA vez (aquí) y el mismo
@@ -172,6 +211,11 @@ class CapaPrioridadMapa {
     final texto = await rootBundle.loadString('assets/datos/prioridades_cra.json', cache: false);
     // Un cuadro para que se pinte «Cargando…» antes del trabajo pesado (en la web no hay hilos).
     await Future<void>.delayed(const Duration(milliseconds: 16));
+    if (kIsWeb) {
+      // Sin isolates: por tramos, cediendo el hilo, para que el mapa siga respondiendo.
+      final datos = await decodificarPrioridadesPorTramos(texto);
+      return desdeDatosPorTramos(datos);
+    }
     final datos = await compute(decodificarPrioridades, texto);
     return desdeDatos(datos);
   }
@@ -181,26 +225,55 @@ class CapaPrioridadMapa {
 
   static CapaPrioridadMapa desdeDatos(DatosPrioridad d) {
     final reloj = Stopwatch()..start();
-    final polis = <PoligonoPrioridad>[
-      for (var i = 0; i < d.indices.length; i++)
-        PoligonoPrioridad._(d.planes[d.indices[i]], d.cajas[i], d.anillos[i], d.hectareas[i]),
-    ];
-    // Estable: dentro de un mismo nivel se conserva el orden del archivo.
+    final polis = _poligonosDe(d);
+    final ordenados = _ordenar(polis);
+    final poligonos = <Polygon>[for (final p in ordenados) _poligonoMapa(p)];
+    return _armar(d, ordenados, poligonos, reloj);
+  }
+
+  /// Igual que [desdeDatos] pero cediendo el hilo cada [tramoMs] ms (para la web).
+  static Future<CapaPrioridadMapa> desdeDatosPorTramos(DatosPrioridad d, {int tramoMs = 6}) async {
+    final reloj = Stopwatch()..start();
+    final polis = _poligonosDe(d);
+    final ordenados = _ordenar(polis);
+    final poligonos = <Polygon>[];
+    final tramo = Stopwatch()..start();
+    for (final p in ordenados) {
+      poligonos.add(_poligonoMapa(p));
+      if (tramo.elapsedMilliseconds >= tramoMs) {
+        await Future<void>.delayed(Duration.zero);
+        tramo
+          ..reset()
+          ..start();
+      }
+    }
+    return _armar(d, ordenados, poligonos, reloj);
+  }
+
+  static List<PoligonoPrioridad> _poligonosDe(DatosPrioridad d) => [
+        for (var i = 0; i < d.indices.length; i++)
+          PoligonoPrioridad._(d.planes[d.indices[i]], d.cajas[i], d.anillos[i], d.hectareas[i]),
+      ];
+
+  /// Estable: dentro de un mismo nivel se conserva el orden del archivo.
+  static List<PoligonoPrioridad> _ordenar(List<PoligonoPrioridad> polis) {
     final orden = [for (var i = 0; i < polis.length; i++) i]..sort((a, b) {
         final c = polis[b].prioridad.index.compareTo(polis[a].prioridad.index);
         return c != 0 ? c : a.compareTo(b);
       });
-    final ordenados = [for (final i in orden) polis[i]];
-    final poligonos = <Polygon>[
-      for (final p in ordenados)
-        Polygon(
-          points: _aLatLng(p.anillos.first),
-          holePointsList: p.anillos.length > 1 ? [for (var h = 1; h < p.anillos.length; h++) _aLatLng(p.anillos[h])] : null,
-          color: colorPrioridadCra(p.prioridad).withValues(alpha: _relleno(p.prioridad)),
-          borderColor: _bordePrioridad(p.prioridad),
-          borderStrokeWidth: _grosorBorde(p.prioridad),
-        ),
-    ];
+    return [for (final i in orden) polis[i]];
+  }
+
+  static Polygon _poligonoMapa(PoligonoPrioridad p) => Polygon(
+        points: _aLatLng(p.anillos.first),
+        holePointsList: p.anillos.length > 1 ? [for (var h = 1; h < p.anillos.length; h++) _aLatLng(p.anillos[h])] : null,
+        color: colorPrioridadCra(p.prioridad).withValues(alpha: _relleno(p.prioridad)),
+        borderColor: _bordePrioridad(p.prioridad),
+        borderStrokeWidth: _grosorBorde(p.prioridad),
+      );
+
+  static CapaPrioridadMapa _armar(
+      DatosPrioridad d, List<PoligonoPrioridad> ordenados, List<Polygon> poligonos, Stopwatch reloj) {
     final capa = PolygonLayer(
       polygons: poligonos,
       polygonCulling: true,
@@ -210,6 +283,7 @@ class CapaPrioridadMapa {
     reloj.stop();
     return CapaPrioridadMapa._(d, ordenados, capa, reloj.elapsed);
   }
+
 
   /// El polígono de mayor prioridad que contiene [p] (si hay varios, el más pequeño); null si
   /// ninguno. Primero descarta por caja; solo los que pasan se prueban con punto-en-polígono.
