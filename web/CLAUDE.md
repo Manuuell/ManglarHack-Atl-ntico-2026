@@ -98,6 +98,14 @@ La capa de manglar de INVEMAR 2020 se importa con `?url` desde `../datos/` (por 
 
 775 ha de manglar probable en 2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Balboa 197, Manatíes (Tubará – Juan de Acosta) 148, Totumo 742 · pérdida −34,7 ha entre 2016 y 2025 · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
 
+## Cuentas de la comunidad (iniciar sesión y crear cuenta)
+
+- Botón de perfil en las dos cabeceras (`.cab` de la portada y `CabeceraCRA`): `components/cuenta/PanelCuenta.tsx` (`client:load`) con `styles/cuenta.css`. Abre un `<dialog>` modal (capa superior, por encima de la burbuja de Zanky y los avisos) para iniciar sesión, crear cuenta, recuperar la contraseña y, con sesión, el perfil (nombre, sector, cambiar contraseña, cerrar sesión).
+- **Reportar nunca exige cuenta.** Los enlaces con `data-cuenta-reportar` («Reportar» de la cabecera, del hero y del cierre; «Reportar con Zanky») abren el panel si no hay sesión, con «Seguir sin cuenta», que no vuelve a preguntar en esa visita (`sessionStorage`).
+- `src/lib/cuenta.ts`: Supabase Auth por REST con la clave pública de `web/.env` (`signup`, `token`, `logout`, `recover`, `user`). La sesión vive en `localStorage` (`zanky-web:v1:sesion`) y se renueva sola. Nombre, sector y fecha del consentimiento (Ley 1581) van en `user_metadata`: no hay tablas nuevas. `sesionActual()` da el id de la cuenta para ligar reportes (pendiente en `ReportarProblema`).
+- Los enlaces del correo (confirmar o recuperar) vuelven con `#access_token=…`: `tomarSesionDelEnlace()` los toma y limpia la barra.
+- **Servidor:** `mailer_autoconfirm` está apagado (hay que confirmar el correo), y con el SMTP por defecto de Supabase ese correo solo llega a miembros del equipo del proyecto. Para abrir el registro al público: apagar «Confirm email» o configurar un SMTP, y agregar `https://mimanglar.sentralabs.co/` a las URL de redirección de Auth.
+
 ## Datos de la C.R.A. en vivo (`/cra/`)
 
 La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se actualiza sola cuando cambian. Ese sitio no deja que otro dominio lea sus datos desde el navegador, así que se copian al nuestro:

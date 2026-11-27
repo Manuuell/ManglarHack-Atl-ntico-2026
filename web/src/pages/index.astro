@@ -9,6 +9,7 @@ import MapaEnVivo from '../components/comunidad/MapaEnVivo';
 import ReportarProblema from '../components/comunidad/ReportarProblema';
 import JornadasEnVivo from '../components/comunidad/JornadasEnVivo';
 import AvisosEnVivo from '../components/comunidad/AvisosEnVivo';
+import PanelCuenta from '../components/cuenta/PanelCuenta';
 import MonitoreoComunitario from '../components/comunidad/MonitoreoComunitario.astro';
 import GuardianesManglar from '../components/comunidad/GuardianesManglar.astro';
 
@@ -27,7 +28,8 @@ const publicos = reportes.map(aReportePublico);
       <a href="#jornadas">Jornadas</a>
       <a href="#monitoreo">Monitoreo</a>
     </nav>
-    <a class="boton boton-tinta cab-entrar" href="#reportar">Reportar</a>
+    <a class="boton boton-tinta cab-entrar" href="#reportar" data-cuenta-reportar>Reportar</a>
+    <PanelCuenta client:load contexto="portada" />
   </header>
 
   <main>
@@ -36,7 +38,7 @@ const publicos = reportes.map(aReportePublico);
         <h1>Lo que pasa en el manglar, <span class="resalte">ahora</span>.</h1>
         <p class="hero-sub">Reportes de la comunidad y jornadas del Atlántico en un solo mapa, en tiempo real.</p>
         <div class="hero-acciones">
-          <a class="boton boton-tinta" href="#reportar">Reportar un problema <span aria-hidden="true">→</span></a>
+          <a class="boton boton-tinta" href="#reportar" data-cuenta-reportar>Reportar un problema <span aria-hidden="true">→</span></a>
           <a class="boton boton-claro" href="#jornadas">Ver jornadas</a>
         </div>
       </div>
@@ -89,7 +91,7 @@ const publicos = reportes.map(aReportePublico);
         <h2>El manglar se cuida entre todos.</h2>
         <p>Reporta lo que ves y súmate a las jornadas de tu comunidad.</p>
         <div class="acciones">
-          <a class="boton boton-tinta boton-grande" href="#reportar">Reportar un problema <span aria-hidden="true">→</span></a>
+          <a class="boton boton-tinta boton-grande" href="#reportar" data-cuenta-reportar>Reportar un problema <span aria-hidden="true">→</span></a>
           <a class="boton boton-claro boton-grande" href="/plataforma">Entrar a la plataforma</a>
         </div>
         <img class="cierre-zanky" src="/marca/zanky/zanky-celebrando-512.webp" alt="" loading="lazy" />
