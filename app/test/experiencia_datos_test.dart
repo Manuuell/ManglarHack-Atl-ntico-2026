@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -260,5 +261,13 @@ void main() {
     test('el asset del reto no sufre al cargar (sanidad de rootBundle)', () async {
       expect(await rootBundle.loadString('assets/datos/jornadas_respaldo.json'), contains('jornada-1'));
     });
+  });
+
+  test('el evento sale de lo local aunque la red nunca responda (no se queda en blanco esperando)', () async {
+    final colgada = MockClient((_) => Completer<http.Response>().future);   // red que nunca contesta
+    final fuente = FuenteJornadas(cliente: colgada);
+    final e = await fuente.eventoLocal('jornada-1').timeout(const Duration(seconds: 2));
+    expect(e.jornada, isNotNull, reason: 'el respaldo trae la jornada-1');
+    expect(e.titulo, isNot(EventoZanky.tituloGenerico));
   });
 }

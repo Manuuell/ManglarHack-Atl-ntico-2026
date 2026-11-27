@@ -25,13 +25,22 @@ class PantallaEvento extends StatefulWidget {
 
 class _PantallaEventoState extends State<PantallaEvento> {
   late final AlmacenParticipacion _almacen = widget.almacen ?? AlmacenParticipacion.instancia;
-  late final Future<EventoZanky> _evento = (widget.fuente ?? FuenteJornadas()).evento(widget.codigo);
+  late final FuenteJornadas _fuente = widget.fuente ?? FuenteJornadas();
+  // Primero lo que hay en el teléfono (caché o respaldo, al instante) y luego la red: con mala señal en el manglar
+  // la pantalla ya no se queda en blanco hasta 6 s esperando.
+  EventoZanky? _e;
   Animo _animo = Animo.feliz;
 
   @override
   void initState() {
     super.initState();
     _almacen.cargar();
+    _fuente.eventoLocal(widget.codigo).then((e) {
+      if (mounted && _e == null) setState(() => _e = e);
+    });
+    _fuente.evento(widget.codigo).then((e) {
+      if (mounted) setState(() => _e = e);
+    });
   }
 
   Future<void> _registrar(EventoZanky e) async {
@@ -48,10 +57,9 @@ class _PantallaEventoState extends State<PantallaEvento> {
           children: [
             const BarraEvento(titulo: 'Modo evento'),
             Expanded(
-              child: FutureBuilder<EventoZanky>(
-                future: _evento,
-                builder: (context, snap) {
-                  final e = snap.data;
+              child: Builder(
+                builder: (context) {
+                  final e = _e;
                   return AnimatedSwitcher(
                     duration: sinMovimiento(context) ? Duration.zero : Zm.medio,
                     switchInCurve: Zm.entrar,

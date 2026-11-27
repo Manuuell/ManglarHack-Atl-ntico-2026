@@ -111,6 +111,22 @@ class FuenteJornadas {
   static const _claveCache = 'jornadas.cache.v1';
   static const assetRespaldo = 'assets/datos/jornadas_respaldo.json';
 
+  /// Sin red: caché → asset de respaldo. Es inmediato; sirve para pintar ya mientras llega la red. No lanza.
+  Future<List<Jornada>> cargarLocal() async {
+    try {
+      final cache = (await SharedPreferences.getInstance()).getString(_claveCache);
+      if (cache != null) {
+        final lista = _leer(cache);
+        if (lista.isNotEmpty) return lista;
+      }
+    } catch (_) {}
+    try {
+      return _leer(await rootBundle.loadString(assetRespaldo));
+    } catch (_) {
+      return const [];
+    }
+  }
+
   /// Red (6 s) → caché → asset de respaldo. No lanza.
   Future<List<Jornada>> cargar() async {
     final c = _cliente ?? http.Client();
@@ -162,9 +178,14 @@ class FuenteJornadas {
     }
   }
 
-  Future<EventoZanky> evento(String codigo) async {
+  /// El evento con lo que ya está en el teléfono (sin esperar la red).
+  Future<EventoZanky> eventoLocal(String codigo) => _buscar(codigo, cargarLocal());
+
+  Future<EventoZanky> evento(String codigo) => _buscar(codigo, cargar());
+
+  Future<EventoZanky> _buscar(String codigo, Future<List<Jornada>> lista) async {
     try {
-      for (final j in await cargar()) {
+      for (final j in await lista) {
         if (j.id == codigo) return EventoZanky(codigo: codigo, titulo: j.titulo, jornada: j);
       }
     } catch (_) {}
