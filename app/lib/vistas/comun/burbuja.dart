@@ -10,18 +10,22 @@ class BurbujaZanky extends StatelessWidget {
     required this.texto,
     this.colaIzquierda = true,
     this.oscura = false,
+    this.colaArriba = false,
   });
 
   final String texto;
   final bool colaIzquierda;
   final bool oscura;
 
+  /// Cola en el centro de arriba, para cuando Zanky está encima de la burbuja (pantalla del evento).
+  final bool colaArriba;
+
   @override
   Widget build(BuildContext context) {
     final fondo = oscura ? Zc.raizSuave : Colors.white;
     final tinta = oscura ? Colors.white : Zc.texto;
     return CustomPaint(
-      painter: _Cola(fondo, colaIzquierda),
+      painter: _Cola(fondo, colaIzquierda, arriba: colaArriba),
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 13, 16, 14),
         decoration: BoxDecoration(
@@ -60,12 +64,23 @@ class BurbujaZanky extends StatelessWidget {
 }
 
 class _Cola extends CustomPainter {
-  _Cola(this.color, this.izquierda);
+  _Cola(this.color, this.izquierda, {this.arriba = false});
   final Color color;
   final bool izquierda;
+  final bool arriba;
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (arriba) {
+      final cx = size.width / 2;
+      final pico = Path()
+        ..moveTo(cx - 12, 2)
+        ..quadraticBezierTo(cx - 3, -1, cx, -11)
+        ..quadraticBezierTo(cx + 3, -1, cx + 12, 2)
+        ..close();
+      canvas.drawPath(pico, Paint()..color = color);
+      return;
+    }
     final x = izquierda ? 0.0 : size.width;
     final d = izquierda ? -1.0 : 1.0;
     final y = size.height * 0.62;
@@ -78,7 +93,7 @@ class _Cola extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_Cola o) => o.color != color || o.izquierda != izquierda;
+  bool shouldRepaint(_Cola o) => o.color != color || o.izquierda != izquierda || o.arriba != arriba;
 }
 
 /// Lo que Zanky cuenta cuando lo tocas: concientizar sin sermonear.

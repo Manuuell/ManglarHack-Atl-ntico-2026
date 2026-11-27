@@ -128,14 +128,13 @@ class _RetoZankyState extends State<RetoZanky> {
       children: [
         Row(
           children: [
-            Flexible(
+            // Pregunta a la izquierda y aciertos pegados a la derecha (con Flexible + Expanded quedaba un hueco
+            // y los aciertos flotaban en el centro).
+            Expanded(
               child: Text('Pregunta ${_i + 1} de ${_preguntas.length}', style: tt.labelMedium?.copyWith(color: Zc.hoja)),
             ),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text('$_aciertos ${_aciertos == 1 ? 'acierto' : 'aciertos'}',
-                  textAlign: TextAlign.end, style: tt.labelMedium),
-            ),
+            Text('$_aciertos ${_aciertos == 1 ? 'acierto' : 'aciertos'}', style: tt.labelMedium),
           ],
         ),
         const SizedBox(height: 8),

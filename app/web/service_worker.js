@@ -18,6 +18,7 @@ const recursos = [
   'icons/Icon-192.png', 'icons/Icon-512.png',
   'icons/Icon-maskable-192.png', 'icons/Icon-maskable-512.png', 'icons/apple-touch-icon.png',
   'assets/AssetManifest.bin', 'assets/FontManifest.json',
+  'fuentes/roboto/v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2',
   'assets/assets/datos/jornadas_respaldo.json', 'assets/assets/datos/manglar_zonas.json',
   'assets/assets/datos/prioridades_cra.json',
   'assets/packages/flutter_map/lib/assets/flutter_map_logo.png',

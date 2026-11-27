@@ -115,7 +115,8 @@ class _TarjetaJornada extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(j.titulo, maxLines: 2, overflow: TextOverflow.ellipsis, style: tt.titleSmall),
                   const SizedBox(height: 4),
-                  _Linea(Icons.event_rounded, '${fechaLarga(j.inicio)} · ${horaCorta(j.inicio)}'),
+                  // Sin el día de la semana: a 360-390 px «domingo 6 de diciembre · 7:00 a. m.» se cortaba en la hora.
+                  _Linea(Icons.event_rounded, '${_sinDiaSemana(fechaLarga(j.inicio))} · ${horaCorta(j.inicio)}'),
                   _Linea(Icons.place_rounded, j.puntoEncuentro),
                 ],
               ),
@@ -129,6 +130,12 @@ class _TarjetaJornada extends StatelessWidget {
       ),
     );
   }
+}
+
+/// «domingo 6 de diciembre» → «6 de diciembre».
+String _sinDiaSemana(String fecha) {
+  final i = fecha.indexOf(' ');
+  return i < 0 ? fecha : fecha.substring(i + 1);
 }
 
 class _Linea extends StatelessWidget {

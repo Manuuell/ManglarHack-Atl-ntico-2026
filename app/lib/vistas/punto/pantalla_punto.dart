@@ -30,6 +30,9 @@ class _PantallaPuntoState extends State<PantallaPunto> {
   PuntoZanky? _punto;
   final _jornadas = FuenteJornadas();
   bool _cargando = true;
+  // La barra va transparente sobre la foto; al bajar se vuelve azul CRA para que «Punto Zanky» no se monte
+  // encima del título del punto.
+  bool _barraSolida = false;
   bool _pendiente = false;
   bool _fotoPendiente = false;
   bool _visitaSinFicha = false;
@@ -125,7 +128,7 @@ class _PantallaPuntoState extends State<PantallaPunto> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Punto Zanky'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: _barraSolida ? Cra.azul : Colors.transparent,
         foregroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
@@ -139,7 +142,13 @@ class _PantallaPuntoState extends State<PantallaPunto> {
                   Expanded(child: EstadoVacio(titulo: 'Punto no disponible', texto: _error ?? '',
                     textoAccion: 'Reintentar', alAccion: () { setState(() => _cargando = true); _cargar(); })),
                 ])
-              : ListView(padding: EdgeInsets.zero, children: [
+              : NotificationListener<ScrollUpdateNotification>(
+                  onNotification: (n) {
+                    final solida = n.metrics.pixels > 150;
+                    if (solida != _barraSolida) setState(() => _barraSolida = solida);
+                    return false;
+                  },
+                  child: ListView(padding: EdgeInsets.zero, children: [
                   _CabeceraPunto(foto: foto, punto: p),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 36),
@@ -165,6 +174,7 @@ class _PantallaPuntoState extends State<PantallaPunto> {
                     ]),
                   ),
                 ]),
+                ),
     );
   }
 

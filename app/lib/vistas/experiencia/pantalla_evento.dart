@@ -126,10 +126,11 @@ class _PantallaEventoState extends State<PantallaEvento> {
             child: ZankyMascota(tamano: 150, animo: _animo, onTap: () {}),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
         EntradaEscalonada(
           index: i++,
-          child: BurbujaZanky(texto: saludo, colaIzquierda: false),
+          // Zanky está encima, centrado: la cola apunta hacia él (antes salía por la derecha, hacia nada).
+          child: BurbujaZanky(texto: saludo, colaArriba: true),
         ),
         const SizedBox(height: 18),
         if (e.aviso.isNotEmpty) ...[
