@@ -185,6 +185,25 @@ void main() {
       await _cerrar(t);
     });
 
+    for (final (tn, tam) in _tamanos) {
+      testWidgets('Ciudadano: mantener una tarjeta ofrece reportar, compartir y ocultar; ocultar se deshace · $tn', (t) async {
+        await _montar(t, _estado(RolUsuario.ciudadano), const Inicio(), tam, 1.0);
+        await _ver(t, 'Estado de mis reportes');
+        await t.longPress(find.text('Estado de mis reportes'));
+        await _avanzar(t);
+        expect(find.byKey(const Key('menu-Reportar aquí')), findsOneWidget);
+        expect(find.byKey(const Key('menu-Compartir')), findsOneWidget);
+        await t.tap(find.byKey(const Key('menu-Ocultar sección')));
+        await _avanzar(t, veces: 8);
+        expect(find.text('Estado de mis reportes'), findsNothing);
+        expect(find.text('«Tus reportes» oculta'), findsOneWidget);
+        await t.tap(find.text('Deshacer'));
+        await _avanzar(t, veces: 8);
+        expect(find.text('Estado de mis reportes'), findsOneWidget);
+        await _cerrar(t);
+      });
+    }
+
     _tamanosYLetras('Ciudadano sin reportes: estado vacío con Zanky', (t, tam, letra, errores) async {
       await _montar(t, _estado(RolUsuario.ciudadano, conReportes: false), const Inicio(), tam, letra);
       await _ver(t, 'Aún no has reportado');

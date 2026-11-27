@@ -194,6 +194,16 @@ void main() {
     });
   });
 
+  testWidgets('«Reportar aquí» desde el mapa: el flujo llega con el punto ya marcado', (tester) async {
+    final e = EstadoZanky()..manglar = _manglar;
+    final z = _manglar.zonas.first;
+    final punto = LatLng(z.centro.latitude, z.centro.longitude);
+    await _montar(tester, e, FlujoReporte(estado: e, tipo: TipoAmenaza.quema, punto: punto));
+    // Sin tocar el mapa: el punto prellenado ya se puede usar.
+    expect(find.text('Usar este punto'), findsOneWidget);
+    await _cerrar(tester);
+  });
+
   testWidgets('si el guardado falla, avisa con amabilidad y deja reintentar', (tester) async {
     final e = _EstadoQueFalla()..manglar = _manglar;
     // Se prueba el flujo real: el borrador propio del flujo recibe el punto con un toque.

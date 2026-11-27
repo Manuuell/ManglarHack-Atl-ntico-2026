@@ -51,7 +51,8 @@ class _Rebote extends MaterialScrollBehavior {
   const _Rebote();
 
   @override
-  ScrollPhysics getScrollPhysics(BuildContext context) => const BouncingScrollPhysics();
+  ScrollPhysics getScrollPhysics(BuildContext context) =>
+      const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
 
   @override
   Set<PointerDeviceKind> get dragDevices => {
@@ -77,20 +78,33 @@ class _TirarActualizarState extends State<TirarActualizar> {
     super.dispose();
   }
 
+  bool _sostenido = false;
+
   bool _alScroll(ScrollNotification n) {
     if (n.depth != 0 || n.metrics.axis != Axis.vertical || _actualizando) return false;
-    if (n is ScrollEndNotification) {
+    // Soltar = la primera notificación sin dedo (el rebote ya es el resorte de vuelta, y para
+    // entonces el sobredesplazamiento baja): se decide con lo que se había tirado.
+    final conDedo = switch (n) {
+      ScrollStartNotification(:final dragDetails) => dragDetails != null,
+      ScrollUpdateNotification(:final dragDetails) => dragDetails != null,
+      OverscrollNotification(:final dragDetails) => dragDetails != null,
+      _ => false,
+    };
+    if (_sostenido && !conDedo) {
+      _sostenido = false;
       _soltar();
-    } else {
-      final sobra = n.metrics.pixels < 0 ? -n.metrics.pixels : 0.0;
-      final v = (sobra * widget.resistencia * 2).clamp(0.0, widget.tope).toDouble();
-      _tirado.value = v;
-      if (v >= widget.umbral && !_pasoUmbral) {
-        _pasoUmbral = true;
-        vibrar(Vibracion.ligera);
-      } else if (v < widget.umbral * 0.8) {
-        _pasoUmbral = false;
-      }
+      return false;
+    }
+    if (n is ScrollEndNotification) return false;
+    if (conDedo) _sostenido = true;
+    final sobra = n.metrics.pixels < 0 ? -n.metrics.pixels : 0.0;
+    final v = (sobra * widget.resistencia * 2).clamp(0.0, widget.tope).toDouble();
+    _tirado.value = v;
+    if (v >= widget.umbral && !_pasoUmbral) {
+      _pasoUmbral = true;
+      vibrar(Vibracion.ligera);
+    } else if (v < widget.umbral * 0.8) {
+      _pasoUmbral = false;
     }
     return false;
   }

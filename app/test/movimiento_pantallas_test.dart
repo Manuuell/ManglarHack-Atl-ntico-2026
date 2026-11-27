@@ -260,6 +260,32 @@ void main() {
     });
   }
 
+  for (final reducir in [false, true]) {
+    testWidgets('Mis reportes: deslizar a la derecha revela Compartir y mantener abre el menú con vista previa (reducir=$reducir)',
+        (t) async {
+      final e = EstadoZanky()..manglar = _manglar;
+      e.reportes.add(reporteDePrueba(idDePrueba(25), envio: Envio.enCola));
+      e.reportes.add(reporteDePrueba(idDePrueba(26), envio: Envio.enviado));
+      await _montar(t, e, const PantallaMisReportes(), reducir: reducir);
+      await t.drag(find.byType(TarjetaReporte).first, const Offset(220, 0));
+      await _avanzar(t, 10);
+      expect(find.byKey(const Key('accion-Compartir')), findsOneWidget);
+      await t.tap(find.byKey(const Key('accion-Compartir')).hitTestable(), warnIfMissed: false);
+      await _avanzar(t, 10);
+      await t.longPress(find.byType(TarjetaReporte).first);
+      await _avanzar(t, 10);
+      expect(find.byKey(const Key('peek')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Ver detalle')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Compartir')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Quitar del teléfono')), findsOneWidget);
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await _avanzar(t, 10);
+      expect(find.byKey(const Key('peek')), findsNothing);
+      await _cerrar(t);
+      e.dispose();
+    });
+  }
+
   testWidgets('un reporte ya enviado a la CRA no se desliza ni se quita', (t) async {
     final e = EstadoZanky()..manglar = _manglar;
     e.reportes.add(reporteDePrueba(idDePrueba(24), envio: Envio.enviado));

@@ -360,7 +360,7 @@ Future<void> abrirDetalleAdmin(BuildContext context, String id) {
 
 /// ¿Hay teclado de verdad? Web y escritorio (en el teléfono no se muestran atajos).
 bool _hayTeclado(BuildContext context) {
-  if (kIsWeb) return true;
+  if (kIsWeb || MediaQuery.sizeOf(context).width >= 700) return true;
   return switch (defaultTargetPlatform) {
     TargetPlatform.android || TargetPlatform.iOS || TargetPlatform.fuchsia => false,
     _ => true,

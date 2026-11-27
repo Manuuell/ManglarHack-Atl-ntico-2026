@@ -187,7 +187,8 @@ class _FilaDeslizableState extends State<FilaDeslizable> with SingleTickerProvid
   }
 
   Widget _pista(double x) {
-    if (x == 0) return const SizedBox.shrink();
+    // Con el resorte casi quieto ya no hay nada que enseñar.
+    if (x.abs() < 1) return const SizedBox.shrink();
     final alInicio = x > 0;
     final lista = alInicio ? widget.accionesInicio : widget.accionesFin;
     return Align(
