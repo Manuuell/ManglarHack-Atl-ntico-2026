@@ -3,11 +3,11 @@ import type { HTMLAttributes } from 'astro/types';
 import { cn } from '../../lib/utils';
 type Props = (HTMLAttributes<'a'> | HTMLAttributes<'button'>) & { href?: string; variant?: 'primary' | 'secondary' | 'ghost'; size?: 'md' | 'lg' };
 const { href, variant = 'primary', size = 'md', class: clase, ...rest } = Astro.props;
-const estilos = cn('inline-flex min-h-11 items-center justify-center gap-2 rounded-sm text-xs font-black uppercase tracking-[0.08em] transition-colors disabled:cursor-not-allowed disabled:opacity-50', {
- primary: 'bg-dorado-500 text-cra-950 hover:bg-dorado-300',
- secondary: 'border border-white/60 text-texto hover:border-dorado-300 hover:text-dorado-300',
+const estilos = cn('inline-flex min-h-11 items-center justify-center gap-2 rounded-full text-sm font-bold transition-[background-color,color,transform] duration-200 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50', {
+ primary: 'bg-dorado-500 text-cra-950 shadow-[0_10px_30px_-14px_rgb(237_181_18/0.7)] hover:bg-dorado-300',
+ secondary: 'border border-white/25 bg-white/5 text-texto hover:border-dorado-300 hover:text-dorado-300',
  ghost: 'text-texto hover:bg-white/10 hover:text-dorado-300',
-}[variant], size === 'lg' ? 'px-6 py-4' : 'px-5 py-3', clase);
+}[variant], size === 'lg' ? 'px-7 py-4 text-base' : 'px-5 py-3', clase);
 ---
 {href ? <a href={href} class={estilos} {...(rest as HTMLAttributes<'a'>)}><slot /></a> : <button type="button" class={estilos} {...(rest as HTMLAttributes<'button'>)}><slot /></button>}
 

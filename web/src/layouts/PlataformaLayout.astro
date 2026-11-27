@@ -1,5 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
 interface Props {
  title: string;
  activa: 'inicio' | 'registro' | 'proponer' | 'seguimiento' | 'monitoreo' | 'proyectos' | 'panel';
@@ -7,36 +8,35 @@ interface Props {
 }
 const { title, activa, ancho = 'normal' } = Astro.props;
 const secciones = [
- { id: 'inicio', href: '/plataforma', texto: 'INICIO' },
- { id: 'registro', href: '/plataforma/registro', texto: 'REGISTRO DE ACTOR' },
- { id: 'proponer', href: '/plataforma/proponer', texto: 'PROPONER ACCIÓN' },
- { id: 'seguimiento', href: '/plataforma/seguimiento', texto: 'SEGUIMIENTO' },
- { id: 'monitoreo', href: '/plataforma/monitoreo', texto: 'MONITOREO COMUNITARIO' },
- { id: 'proyectos', href: '/plataforma/proyectos', texto: 'PROYECTOS' },
- { id: 'panel', href: '/plataforma/panel', texto: 'PANEL DE LA CORPORACIÓN' },
+ { id: 'inicio', href: '/plataforma', texto: 'Inicio' },
+ { id: 'registro', href: '/plataforma/registro', texto: 'Registro de actor' },
+ { id: 'proponer', href: '/plataforma/proponer', texto: 'Proponer acción' },
+ { id: 'seguimiento', href: '/plataforma/seguimiento', texto: 'Seguimiento y jornadas' },
+ { id: 'monitoreo', href: '/plataforma/monitoreo', texto: 'Monitoreo comunitario' },
+ { id: 'proyectos', href: '/plataforma/proyectos', texto: 'Proyectos' },
+ { id: 'panel', href: '/plataforma/panel', texto: 'Panel de la Corporación' },
 ];
 ---
 <BaseLayout title={title}>
- <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
- <header class="bg-fondo">
-  <div class="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
-   <nav aria-label="Navegación principal" class="flex items-center justify-end gap-4 py-3">
-    <a href="/" class="rotulo inline-flex min-h-11 items-center hover:text-dorado-300">PORTADA</a><span aria-hidden="true" class="text-tenue">·</span><a href="/workflow" class="rotulo inline-flex min-h-11 items-center hover:text-dorado-300">WORKFLOW</a>
-   </nav>
-   <div class="flex flex-col items-start gap-6 lg:flex-row lg:gap-9">
-    <a href="/" class="shrink-0"><img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" class="h-16 w-auto lg:h-20" /></a>
-    <div class="min-w-0">
-     <p class="rotulo mb-4 text-dorado-300">ENTRADA 2 · CORPORACIÓN AUTÓNOMA REGIONAL DEL ATLÁNTICO</p>
-     <h1 class="titular max-w-5xl text-3xl lg:text-[2.6rem]">PLATAFORMA ABIERTA PARA LA RESTAURACIÓN Y CONSERVACIÓN DEL MANGLAR</h1>
-     <p class="mt-5 max-w-5xl font-bold leading-relaxed text-suave">Comunidades, entidades, academia, empresas y ciudadanos proponen, ejecutan y monitorean acciones sobre el manglar, y la autoridad ambiental las revisa y acompaña desde un solo lugar. Aquí llegan también los reportes de la app y del bot de WhatsApp de Zanky.</p>
-    </div>
-   </div>
+ <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 rounded-full bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
+ <CabeceraCRA activo="plataforma" />
+ <header class="relative isolate overflow-hidden">
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
+   <div class="absolute -top-40 right-[-10%] h-[28rem] w-[28rem] rounded-full bg-cra-600/30 blur-[110px]"></div>
+   <div class="absolute -bottom-32 left-[-8%] h-[22rem] w-[22rem] rounded-full bg-dorado-500/10 blur-[100px]"></div>
   </div>
-  <div class="border-b border-linea">
-   <nav aria-label="Secciones de la plataforma" class="pestanas mx-auto flex max-w-7xl gap-6 overflow-x-auto px-4 sm:px-6 lg:px-8">
-    {secciones.map(({ id, href, texto }) => <a href={href} aria-current={activa === id ? 'page' : undefined} class:list={['rotulo inline-flex min-h-11 shrink-0 items-center border-b-[3px] py-4 text-texto hover:text-dorado-300', activa === id ? 'border-dorado-300' : 'border-transparent']}>{texto}</a>)}
-   </nav>
+  <div class="mx-auto max-w-7xl px-4 pt-10 pb-6 sm:px-6 lg:px-8 lg:pt-14">
+   <p class="rotulo mb-4 text-dorado-300">Entrada 2 · Corporación Autónoma Regional del Atlántico</p>
+   <h1 class="titular max-w-4xl text-4xl sm:text-5xl">Plataforma abierta para la <span class="resalte">restauración</span> y conservación del manglar</h1>
+   <p class="mt-5 max-w-3xl text-base leading-relaxed text-suave sm:text-lg">Comunidades, entidades, academia, empresas y ciudadanos proponen, ejecutan y monitorean acciones sobre el manglar, y la autoridad ambiental las revisa y acompaña desde un solo lugar. Aquí llegan también los reportes de la app y del bot de WhatsApp de Zanky.</p>
   </div>
+  <nav aria-label="Secciones de la plataforma" class="pestanas mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 pb-4 sm:px-6 lg:px-8">
+   {secciones.map(({ id, href, texto }) => (
+    <a href={href} aria-current={activa === id ? 'page' : undefined}
+       class:list={['inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-sm font-semibold transition-colors',
+        activa === id ? 'border-dorado-500 bg-dorado-500 text-cra-950' : 'border-linea bg-white/5 text-suave hover:border-dorado-300 hover:text-texto']}>{texto}</a>
+   ))}
+  </nav>
  </header>
  <main id="contenido" class:list={['mx-auto px-4 py-8 sm:px-6 lg:px-8', ancho === 'normal' && 'max-w-7xl']}><slot /></main>
 </BaseLayout>

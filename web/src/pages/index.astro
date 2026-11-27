@@ -1,45 +1,100 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
 import Zanky from '../components/marca/Zanky.astro';
+
 const entradas = [
- { numero: 'ENTRADA 1', titulo: 'WORKFLOW', href: '/workflow', texto: 'La metodología paso a paso y el visor de datos: extensión, cambios, dosel, altura, agua, presión y riesgo, carbono.' },
- { numero: 'ENTRADA 2', titulo: 'PLATAFORMA ABIERTA PARA LA RESTAURACIÓN Y CONSERVACIÓN DEL MANGLAR', href: '/plataforma', texto: 'El espacio donde comunidades, entidades y ciudadanos proponen siembras, restauración y acciones de conservación, las siguen con la autoridad ambiental y formulan proyectos. Integra los reportes de la app y del bot de Zanky.' },
+ { numero: '01', rotulo: 'Workflow', titulo: 'El manglar visto desde el satélite', href: '/workflow', texto: 'La metodología paso a paso y el visor de datos: extensión, cambios, dosel, altura, agua, presión y riesgo, carbono.' },
+ { numero: '02', rotulo: 'Plataforma abierta', titulo: 'Restaurar y conservar entre todos', href: '/plataforma', texto: 'Comunidades, entidades y ciudadanos proponen siembras, restauración y acciones de conservación, las siguen con la autoridad ambiental y formulan proyectos. Integra los reportes de la app y del bot de Zanky.' },
+];
+
+// Cifras del workflow de monitoreo de la C.R.A. (ver src/lib/workflow.ts y web/CLAUDE.md).
+const cifras = [
+ { valor: '775 ha', texto: 'de manglar probable en 2025: 465 con probabilidad alta y 310 media.' },
+ { valor: '−34,7 ha', texto: 'de pérdida entre 2016 y 2025.' },
+ { valor: '194 ha', texto: 'en riesgo muy alto.' },
+ { valor: '270 t C/ha', texto: 'de carbono, el 92 % guardado en el suelo (125 mil t en total).' },
 ];
 ---
 <BaseLayout>
- <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
+ <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 rounded-full bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
+ <CabeceraCRA activo="portada" />
  <main id="contenido">
-  <section aria-labelledby="titulo-portada" class="relative isolate flex min-h-dvh flex-col overflow-hidden bg-linear-to-br from-cra-700 to-cra-950">
+  <!-- Portada -->
+  <section aria-labelledby="titulo-portada" class="relative isolate -mt-[4.75rem] overflow-hidden bg-linear-to-b from-cra-700 via-cra-900 to-fondo pt-[4.75rem]">
    <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
-    <div class="absolute -right-24 top-16 h-[34rem] w-[34rem] rounded-full bg-capa-manglar/25 blur-[100px]"></div>
-    <div class="absolute -left-32 top-1/3 h-[28rem] w-[28rem] rounded-full bg-capa-agua/20 blur-[100px]"></div>
-    <svg aria-hidden="true" focusable="false" viewBox="0 0 1440 1000" preserveAspectRatio="xMidYMid slice" class="absolute inset-0 h-full w-full fill-none stroke-white/10">
+    <div class="absolute -right-24 top-24 h-[34rem] w-[34rem] rounded-full bg-cra-500/30 blur-[110px]"></div>
+    <div class="absolute -left-32 top-1/2 h-[26rem] w-[26rem] rounded-full bg-dorado-500/10 blur-[110px]"></div>
+    <svg aria-hidden="true" focusable="false" viewBox="0 0 1440 1000" preserveAspectRatio="xMidYMid slice" class="absolute inset-0 h-full w-full fill-none stroke-white/[0.07]">
      {Array.from({ length: 12 }, (_, i) => <path d="M800 -160C450 20 1210 130 900 360S380 440 720 690s800 160 640 500" transform={`translate(${i * 31} ${i * -14})`} stroke-width="1" />)}
     </svg>
    </div>
-   <header class="mx-auto w-full max-w-7xl px-4 pt-8 sm:px-6 lg:px-8 lg:pt-12">
-    <img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" class="h-20 w-auto" />
-   </header>
-   <div class="mx-auto mt-auto w-full max-w-7xl px-4 pt-20 pb-7 sm:px-6 lg:px-8 lg:pt-28">
-    <p class="rotulo mb-5 text-dorado-300">DEPARTAMENTO DEL ATLÁNTICO · MONITOREO SATELITAL 2015–2026</p>
-    <h1 id="titulo-portada" class="titular max-w-4xl text-5xl sm:text-6xl lg:text-7xl">EL MANGLAR DEL ATLÁNTICO</h1>
-    <p class="mt-6 max-w-2xl text-sm font-black uppercase leading-relaxed lg:text-base">Implementación de herramientas tecnológicas y de inteligencia artificial para la gestión integral del ecosistema de manglar</p>
-    <div class="mt-8 grid border-t border-white/60 md:grid-cols-2">
-     {entradas.map(({ numero, titulo, href, texto }) => <a href={href} class="group relative min-h-11 border-b border-linea py-7 md:border-b-0 md:pr-10 md:last:border-l md:last:pl-10 md:last:pr-0">
-      <p class="rotulo mb-3 text-dorado-300">{numero}</p>
-      <h2 class="titular pr-8 text-2xl transition-colors group-hover:text-dorado-300 group-focus-visible:text-dorado-300">{titulo}</h2>
-      <span aria-hidden="true" class="absolute top-12 right-2 text-3xl text-dorado-300 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">→</span>
-      <p class="mt-4 max-w-xl text-sm leading-relaxed text-suave">{texto}</p>
-     </a>)}
+   <div class="mx-auto max-w-5xl px-4 pt-20 pb-14 text-center sm:px-6 lg:pt-28">
+    <p class="revelar mx-auto inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold text-suave">
+     <span class="h-2 w-2 rounded-full bg-dorado-500"></span>Departamento del Atlántico · Monitoreo satelital 2015–2026
+    </p>
+    <h1 id="titulo-portada" class="revelar titular mt-7 text-5xl sm:text-6xl lg:text-7xl">El manglar del Atlántico, <span class="resalte">cuidado</span> entre todos.</h1>
+    <p class="revelar mx-auto mt-6 max-w-2xl text-base leading-relaxed text-suave sm:text-lg">Implementación de herramientas tecnológicas y de inteligencia artificial para la gestión integral del ecosistema de manglar.</p>
+    <div class="revelar mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+     <a href="/plataforma" class="inline-flex min-h-12 items-center gap-2 rounded-full bg-dorado-500 px-7 text-base font-bold text-cra-950 shadow-[0_12px_34px_-14px_rgb(237_181_18/0.8)] transition-colors hover:bg-dorado-300">Entrar a la plataforma <span aria-hidden="true">→</span></a>
+     <a href="/workflow" class="inline-flex min-h-12 items-center rounded-full border border-white/25 bg-white/5 px-7 text-base font-semibold text-texto transition-colors hover:border-dorado-300 hover:text-dorado-300">Ver el workflow</a>
     </div>
-    <p class="mt-4 text-xs leading-relaxed text-tenue">Cifras del workflow de monitoreo de la C.R.A. (Sentinel-2, programa Copernicus) · Equipo SENTRALABS · UTB</p>
+   </div>
+   <!-- Tarjetas flotantes con cifras -->
+   <div class="mx-auto grid max-w-5xl gap-3 px-4 pb-20 sm:grid-cols-3 sm:px-6">
+    {cifras.slice(0, 3).map(({ valor, texto }, i) => (
+     <div class:list={['revelar rounded-3xl bg-white px-5 py-4 text-left text-cra-950 shadow-[var(--c-sombra-alta)]', i === 1 && 'sm:translate-y-6']}>
+      <p class="font-[family-name:var(--font-titulo)] text-3xl font-extrabold tracking-tight">{valor}</p>
+      <p class="mt-1 text-sm leading-snug text-cra-900/80">{texto}</p>
+     </div>
+    ))}
    </div>
   </section>
-  <section aria-label="Reporta con Zanky" class="border-t border-linea-suave bg-superficie">
-   <div class="mx-auto flex max-w-7xl flex-col items-start gap-4 px-4 py-6 sm:flex-row sm:items-center sm:px-6 lg:px-8">
-    <Zanky class="h-[72px] w-[72px] shrink-0" />
-    <p class="max-w-2xl font-bold text-suave">¿Viste algo raro en el manglar? Repórtalo con Zanky por WhatsApp o desde la app.</p>
-    <a href="/plataforma/monitoreo" class="inline-flex min-h-11 items-center text-sm font-black text-dorado-300 underline underline-offset-4 sm:ml-auto">Ver el monitoreo comunitario</a>
+
+  <!-- Las dos entradas -->
+  <section aria-label="Entradas" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+   <div class="grid gap-5 md:grid-cols-2">
+    {entradas.map(({ numero, rotulo, titulo, href, texto }) => (
+     <a href={href} class="revelar group relative flex min-h-11 flex-col rounded-[2rem] border border-linea-suave bg-superficie p-8 shadow-[var(--c-sombra)] transition-[transform,background-color] duration-300 hover:-translate-y-1 hover:bg-superficie-alta sm:p-10">
+      <p class="rotulo text-dorado-300">{numero} · {rotulo}</p>
+      <h2 class="titular mt-4 pr-10 text-3xl sm:text-4xl">{titulo}</h2>
+      <p class="mt-4 max-w-xl leading-relaxed text-suave">{texto}</p>
+      <span aria-hidden="true" class="absolute top-8 right-8 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-xl transition-colors group-hover:bg-dorado-500 group-hover:text-cra-950 sm:top-10 sm:right-10">→</span>
+     </a>
+    ))}
+   </div>
+  </section>
+
+  <!-- Cifras con fuente -->
+  <section aria-labelledby="titulo-cifras" class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+   <div class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+    <div class="revelar">
+     <p class="rotulo text-dorado-300">El ecosistema</p>
+     <h2 id="titulo-cifras" class="titular mt-4 text-4xl sm:text-5xl">El manglar en cifras, <span class="text-dorado-300">con su fuente.</span></h2>
+     <p class="mt-5 max-w-md leading-relaxed text-suave">Cada número sale del workflow de monitoreo de la C.R.A. con imágenes Sentinel-2. El manglar se reporta como <strong class="text-texto">probable</strong>: lo confirma el trabajo en campo.</p>
+    </div>
+    <dl class="revelar border-t border-linea">
+     {cifras.map(({ valor, texto }) => (
+      <div class="grid gap-2 border-b border-linea py-5 sm:grid-cols-[11rem_1fr] sm:items-baseline">
+       <dt class="font-[family-name:var(--font-titulo)] text-3xl font-extrabold tracking-tight text-texto">{valor}</dt>
+       <dd class="text-suave">{texto}</dd>
+      </div>
+     ))}
+     <p class="pt-4 text-xs text-tenue">Fuente: workflow de monitoreo de la C.R.A. (Sentinel-2, programa Copernicus).</p>
+    </dl>
+   </div>
+  </section>
+
+  <!-- Zanky -->
+  <section aria-label="Reporta con Zanky" class="px-3 py-12 sm:px-5">
+   <div class="revelar mx-auto flex max-w-7xl flex-col items-start gap-6 rounded-[2.25rem] bg-dorado-500 px-6 py-10 text-cra-950 sm:flex-row sm:items-center sm:px-12">
+    <Zanky class="h-24 w-24 shrink-0" />
+    <div class="max-w-2xl">
+     <p class="rotulo text-cra-900">Monitoreo comunitario</p>
+     <h2 class="titular mt-2 text-3xl sm:text-4xl">¿Viste algo raro en el manglar?</h2>
+     <p class="mt-3 text-base font-medium leading-relaxed text-cra-900">Repórtalo con Zanky por WhatsApp o desde la app: llega a la Corporación con su ubicación, la verifica y decide cómo actuar.</p>
+    </div>
+    <a href="/plataforma/monitoreo" class="inline-flex min-h-12 shrink-0 items-center rounded-full bg-cra-950 px-6 font-bold text-white transition-colors hover:bg-cra-800 sm:ml-auto">Ver el monitoreo</a>
    </div>
   </section>
  </main>

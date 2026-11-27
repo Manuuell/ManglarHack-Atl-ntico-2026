@@ -5,6 +5,6 @@ const { eyebrow, titulo, descripcion, align = 'left' } = Astro.props;
 ---
 <div class={cn('mb-10 max-w-3xl', align === 'center' && 'mx-auto text-center')}>
  <p class="rotulo mb-3 text-dorado-300">{eyebrow}</p>
- <h2 class="titular text-2xl text-texto">{titulo}</h2>
+ <h2 class="titular text-3xl text-texto sm:text-4xl">{titulo}</h2>
  {descripcion && <p class="mt-4 text-base leading-relaxed text-suave sm:text-lg">{descripcion}</p>}
 </div>
