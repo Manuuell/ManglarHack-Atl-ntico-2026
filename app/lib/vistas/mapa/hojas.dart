@@ -8,6 +8,7 @@ import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import '../biodiversidad/pantalla_biodiversidad.dart';
 import 'capa_prioridad.dart';
+import '../avisos_zona/pantalla_avisos_zona.dart';
 import 'modelo.dart';
 
 String _hectareas(double ha) => '${ha.toStringAsFixed(1).replaceAll('.', ',')} ha';
@@ -121,6 +122,18 @@ Future<void> abrirHojaZona(
               Navigator.of(c).pop();
               Navigator.of(context).push(MaterialPageRoute<void>(
                 builder: (_) => PantallaBiodiversidad(zona: zona)));
+            },
+          ),
+          const SizedBox(height: 10),
+          BotonZ(
+            texto: 'Avisarme de esta zona',
+            icono: Icons.notifications_active_outlined,
+            secundario: true,
+            onTap: () {
+              Navigator.of(c).pop();
+              Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => PantallaAvisosZona(zonaInicial: zona.id),
+              ));
             },
           ),
         ],

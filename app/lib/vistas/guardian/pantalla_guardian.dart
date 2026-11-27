@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../avisos_zona/entrada_voluntario.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../datos/estado.dart';
@@ -187,6 +188,7 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
               padding: const EdgeInsets.only(bottom: 16),
               child: EntradaEscalonada(index: i, child: secciones[i]),
             ),
+          const EntradaVoluntario(),
         ],
       ),
     );

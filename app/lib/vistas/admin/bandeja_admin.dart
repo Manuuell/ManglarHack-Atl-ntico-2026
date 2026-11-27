@@ -21,6 +21,7 @@ import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
+import '../avisos_zona/avisos_encargado.dart';
 import 'detalle_admin.dart';
 import 'piezas_admin.dart';
 
@@ -111,6 +112,16 @@ class _BandejaAdminState extends State<BandejaAdmin> {
           nombre: (f) => f.nombre,
           cuenta: (f) => c.cargado ? conteos[f] : null,
           alCambiar: c.cambiarFiltro,
+        ),
+        if (c.dentro) Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => AvisosEncargado(controlador: c),
+            )),
+            icon: const Icon(Icons.notifications_outlined),
+            label: const Text('Avisos de mi zona'),
+          ),
         ),
         Expanded(
           child: TirarActualizar(

@@ -244,6 +244,15 @@ class ControladorAdmin extends ChangeNotifier with WidgetsBindingObserver {
     if (s != null && s.porVencer(reloj())) await RepositorioRemoto.refrescar(servidor, s, reloj());
   }
 
+  /// Bandeja propia del encargado; usa la sesión del panel sin guardarla en disco.
+  Future<List<Map<String, dynamic>>> avisosZona() async {
+    final repo = _repo;
+    if (repo is! RepositorioRemoto) return const [];
+    await _renovarSesion();
+    if (_repo != repo) return const [];
+    return repo.avisosZona();
+  }
+
   void _avisarLlegada(List<ReporteAdmin> nuevos) {
     nuevos.sort((a, b) => b.prioridad.compareTo(a.prioridad));
     final a = AvisoLlegada(nuevos, ++_versionAviso);

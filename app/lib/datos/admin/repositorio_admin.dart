@@ -169,6 +169,13 @@ class RepositorioRemoto implements RepositorioAdmin {
     return res.body.isEmpty ? null : jsonDecode(res.body);
   }
 
+  /// Avisos dirigidos a este encargado; la RPC comprueba zona y rol vigente.
+  Future<List<Map<String, dynamic>>> avisosZona() async {
+    final datos = await _rpc('mis_avisos_encargado', const {});
+    if (datos is! List) throw const ErrorPanel('No se pudieron leer los avisos de tu zona.');
+    return [for (final x in datos) Map<String, dynamic>.from(x as Map)];
+  }
+
   Future<http.Response> _llamar(String metodo, String url, {String? cuerpo}) async {
     try {
       return await servidor.pedir(metodo, Uri.parse(url), _cab, cuerpo: cuerpo);
