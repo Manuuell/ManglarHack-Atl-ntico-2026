@@ -38,7 +38,7 @@ Enlace mágico: no está hecho (ver «Fuera»).
 | Sección | Permiso | Qué se edita |
 |---|---|---|
 | Portada | `editar_contenido` | Mensaje destacado y aviso del día (con interruptor). Se ven arriba de Inicio (`contenido/franja_portada.dart`). |
-| Jornadas | `gestionar_jornadas` | Crear, editar, cerrar/reabrir y quitar: título, fecha y hora, lugar, foto (https) y cupos «sin límite» o número. Aún no salen en la cartelera de Comunidad (pendiente). |
+| Jornadas | `gestionar_jornadas` | Crear, editar, cerrar/reabrir y quitar: título, fecha y hora, lugar, foto (https) y cupos «sin límite» o número. Las abiertas salen en la cartelera de Comunidad (sin inscripción en línea: «llega al punto de encuentro»). |
 | Noticias | `editar_contenido` | Fijar arriba (hasta 3) u ocultar. Comunidad las ordena y filtra (`contenido_publico.dart`). |
 | Puntos QR | `gestionar_puntos` | Activar o apagar cada punto (el servidor cambia `puntos_zanky.activo`). |
 | Umbrales | `gestionar_puntos` | Umbral de alerta por medida; el servidor lo copia a `sensores.umbral_alerta`. |

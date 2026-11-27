@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../comunidad/comunidad.dart';
+import '../experiencia/jornada.dart';
 import '../servidor.dart';
 import 'contenido_panel.dart';
 
@@ -64,3 +65,31 @@ Future<Lote<List<NoticiaManglar>>> ajustarLoteNoticias(Lote<List<NoticiaManglar>
   await cargarContenidoPublico();
   return Lote(aplicarAjustesNoticias(l.datos), l.origen, l.cuando);
 }
+
+const _prefijoPanel = 'panel-';
+
+/// Las jornadas abiertas que convocó el equipo desde el panel, como jornadas de la cartelera.
+/// Las cerradas no salen (ya no reciben gente). Sin coordenadas: el lugar va en el texto.
+List<Jornada> jornadasDelPanel([ContenidoPanel? c]) => [
+      for (final j in (c ?? contenidoPublico.value).jornadas)
+        if (!j.cerrada)
+          Jornada(
+            id: '$_prefijoPanel${j.id}',
+            accionId: '',
+            titulo: j.titulo,
+            tipo: '',
+            inicio: j.fecha,
+            fin: j.fecha.add(const Duration(hours: 3)),
+            puntoEncuentro: j.lugar,
+            lat: 0,
+            lon: 0,
+            cupos: j.cupos ?? 0,
+            inscritos: 0,
+            queLlevar: const [],
+            descripcion: 'Convocada por el equipo de la CRA desde el panel.',
+            imagenUrl: j.fotoUrl,
+          ),
+    ];
+
+/// Las del panel no tienen inscripción en línea todavía: se llega al punto de encuentro.
+bool esJornadaDelPanel(Jornada j) => j.id.startsWith(_prefijoPanel);

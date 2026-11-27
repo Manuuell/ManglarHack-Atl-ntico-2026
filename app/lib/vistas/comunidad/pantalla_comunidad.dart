@@ -178,8 +178,12 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
                 )),
                 const SizedBox(height: 26),
                 entra(SeccionEventos(
-                  eventos: _jornadas == null ? null : completarCartelera(_jornadas!, _respaldo),
+                  eventos: _jornadas == null ? null : completarCartelera([..._jornadas!, ...jornadasDelPanel()], _respaldo),
                   alInscribirse: (j) async {
+                    if (esJornadaDelPanel(j)) {
+                      avisar(context, 'Sin inscripción en línea: llega al punto de encuentro (${j.puntoEncuentro}).');
+                      return;
+                    }
                     final ok = await abrirInscripcion(context, j, _fuente);
                     if (ok == true) await _cargar();
                   },

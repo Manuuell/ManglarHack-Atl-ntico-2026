@@ -165,6 +165,18 @@ void main() {
       expect(aplicarAjustesNoticias([n(1), n(2)], ContenidoPanel.fabrica).map((x) => x.id), [1, 2]);
     });
 
+    test('jornadas del panel en la cartelera: solo las abiertas, cupos sin límite = 0', () {
+      final c = ContenidoPanel.fabrica.copiar(jornadas: [
+        _jornada.copiar(sinLimite: true),
+        _jornada.copiarId('j-2').copiar(cerrada: true),
+      ]);
+      final l = jornadasDelPanel(c);
+      expect(l.single.titulo, 'Siembra en Bocana');
+      expect(l.single.cupos, 0);
+      expect(l.single.llena, isFalse);
+      expect(esJornadaDelPanel(l.single), isTrue);
+    });
+
     testWidgets('Inicio: la franja sale al guardar la portada y no ocupa nada si está vacía', (tester) async {
       reiniciarContenidoPublico();
       await tester.pumpWidget(MaterialApp(theme: temaCra(), home: const Scaffold(body: Column(children: [FranjaPortada()]))));
