@@ -29,6 +29,8 @@ export const config = {
   openaiKey: env.OPENAI_API_KEY ?? '',
   openaiModel: env.OPENAI_MODEL ?? 'gpt-4o-mini',
   openaiUrl: (env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, ''),
+  /** POST /chat (charla con IA desde la web). Apagado: la web lleva a WhatsApp. Se prende con CHAT_WEB=si. */
+  chatWeb: env.CHAT_WEB === 'si',
   /** Sitios que pueden usar POST /chat desde el navegador. */
   chatOrigenes: (env.CHAT_ORIGENES ?? 'https://mimanglar.sentralabs.co,http://localhost:4329,http://localhost:4321')
     .split(',').map(o => o.trim()).filter(Boolean),

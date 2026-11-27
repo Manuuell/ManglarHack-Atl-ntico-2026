@@ -115,7 +115,7 @@ async function main() {
   almacen.iniciarAlmacen();
   console.log(`Zonas cargadas: ${cargarZonas(config.zonasGeojson)} · backend de prueba en ${process.env.SUPABASE_URL}\n`);
 
-  const persona = '573000000001';
+  let persona = '573000000001';
   let n = 0;
   const webhook = (mensaje: Record<string, unknown>) => ({
     entry: [{ changes: [{ field: 'messages', value: {
@@ -136,6 +136,12 @@ async function main() {
     ['toca Ahora mismo', boton('ahora')],
     ['toca Grande', boton('grande')],
     ['toca Enviar', boton('enviar')],
+  ];
+  // Lo que mandan el botón y los globos de la web a alguien que todavía no se registra.
+  const desdeLaWeb: [string, Record<string, unknown>][] = [
+    ['toca el botón de la web («Hola Zanky»)', { type: 'text', text: { body: 'Hola Zanky' } }],
+    ['toca Ahora no', boton('ahora_no')],
+    ['toca el globo de jornadas', { type: 'text', text: { body: 'Hola Zanky, quiero ver las jornadas' } }],
   ];
   const pasos: [string, Record<string, unknown>][] = [
     ['escribe "hola"', { type: 'text', text: { body: 'hola' } }],
@@ -168,6 +174,11 @@ async function main() {
       }
     }
   }
+
+  // 0) Lo que llega desde la web, con otro número (sin registro).
+  persona = '573009998877';
+  await correr(desdeLaWeb);
+  persona = '573000000001';
 
   // 1) Todo bien: el reporte llega al backend.
   await correr(pasos.slice(0, -1).concat([['vuelve a reportar (para probar la ubicación fuera)', boton('menu')], ['toca Reportar', boton('reportar')], ['elige Quema', lista('quema')], pasos[pasos.length - 1]]));

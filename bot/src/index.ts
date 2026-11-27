@@ -112,6 +112,10 @@ app.use('/chat', (req, res, next) => {
 });
 
 app.post('/chat', async (req, res) => {
+  if (!config.chatWeb) {
+    res.sendStatus(404);
+    return;
+  }
   if (!iaActiva()) {
     res.status(503).json({ error: 'sin_ia', mensaje: 'Zanky está descansando un momento. Mientras tanto puedes reportar o ver las jornadas.' });
     return;

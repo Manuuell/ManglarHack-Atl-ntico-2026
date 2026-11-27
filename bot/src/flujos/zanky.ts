@@ -398,7 +398,8 @@ export async function atender(m: MensajeEntrante): Promise<void> {
     await whatsapp.texto(de, T.COMO_FUNCIONA);
     return enviarMenu(de, s);
   }
-  if (COMANDOS_MENU.has(texto)) return inicio(de, s);
+  // Un saludo («hola zanky», el que trae el botón de la web) abre el menú; no gasta una pregunta de la IA.
+  if (COMANDOS_MENU.has(texto) || /^(hola|buenas|buenos dias|buenas tardes|buenas noches)[ ,!.]*(zanky|zanqui)?[ !.]*$/.test(texto)) return inicio(de, s);
 
   switch (s.paso) {
     case 'registro_inicio': {
@@ -453,7 +454,7 @@ export async function atender(m: MensajeEntrante): Promise<void> {
 
     case 'menu': {
       // Primer mensaje de alguien nuevo (cualquier texto): se le ofrece el registro.
-      if (!opcion && !s.rechazoRegistro && !almacen.usuario(almacen.hashDe(de))?.vigiaNumero && entrada.tipo === 'texto' && !texto.includes('report')) {
+      if (!opcion && !s.rechazoRegistro && !almacen.usuario(almacen.hashDe(de))?.vigiaNumero && entrada.tipo === 'texto' && !texto.includes('report') && !/jornad/.test(texto)) {
         return empezarRegistro(de, s);
       }
       if (opcion === 'reportar' || texto.includes('report') || texto.includes('denunci')) return empezarReporte(de, s);
