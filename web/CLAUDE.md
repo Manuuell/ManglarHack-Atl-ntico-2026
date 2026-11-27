@@ -36,8 +36,9 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | Ruta | Qué es |
 |---|---|
 | `/` | Portada (réplica de la de la C.R.A.): rótulo, «EL MANGLAR DEL ATLÁNTICO», subtítulo y dos entradas: Workflow y Plataforma |
-| `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
+| `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método, Fuentes y Metodología (cada una abre con `#id`); contenido en `lib/workflow.ts` y `lib/workflowSeries.ts` |
 | `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
+| `/plataforma/acerca` | «Acerca de la plataforma» de la C.R.A. (plan de manejo, qué hará, fase 2) y lo que agregó el equipo; enlazada desde el pie y el inicio de la plataforma |
 | `/plataforma/registro` | Registro de actor |
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
 | `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
@@ -65,7 +66,8 @@ src/
   lib/privacidad.ts             aReportePublico
   lib/reportesStore.ts          estado compartido de reportes + historial
   lib/exportar.ts               CSV, GeoJSON y KML públicos
-  lib/workflow.ts               cifras del workflow de la C.R.A. con su fuente
+  lib/workflow.ts               contenido del workflow de la C.R.A. (sectores, cifras, pestañas en bloques, metodología)
+  lib/workflowSeries.ts         series del workflow (extensión anual, dosel, agua, temperatura)
   lib/plataforma/               datos.ts, catalogos.ts, almacen.ts (store persistente), …
   layouts/                      BaseLayout.astro, PlataformaLayout.astro
   components/                   layout/, ui/, marca/ (Zanky), mapa/, panel/, workflow/, plataforma/
@@ -88,11 +90,11 @@ La capa de manglar de INVEMAR 2020 se importa con `?url` desde `../datos/` (por 
 - **Estados de acción**: `propuesta → en_revision → (con_observaciones ↔ en_revision) → aprobada → en_ejecucion → cerrada`.
 - **Jornada** (base Innvita): actividad con fecha, punto de encuentro, cupos e inscritos, ligada a una acción.
 - **Reporte de monitoreo**: plántulas vivas (%), altura media (cm), fotografías ubicadas, observaciones.
-- **Sectores**: Mallorquín (Mallorquín – Bocas de Ceniza), Balboa (Puerto Colombia – Balboa – Puerto Velero), Manatíes (Tubará – Juan de Acosta; correspondencia por confirmar con la C.R.A.), Totumo (Totumo – Astilleros – Galerazamba).
+- **Sectores** (nombres de la C.R.A.; los ids no cambian): Mallorquín (`mallorquin`, Mallorquín – Bocas de Ceniza), Puerto Colombia (`balboa`, Puerto Colombia – Balboa – Puerto Velero), Tubará (`manaties`, Tubará – Juan de Acosta), Totumo (`totumo`, Totumo – Astilleros – Galerazamba). Ver `../handoff/11-contenido-cra.md`.
 
 ## Cifras del workflow (fuente: workflow de la C.R.A., manglarcra.netlify.app)
 
-775 ha de manglar probable en 2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Balboa 197, Totumo 148, Manatíes 742 · pérdida −34,7 ha entre 2016 y 2025 · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
+775 ha de manglar probable en 2024–2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Puerto Colombia 197, Tubará 148, Totumo 742; manglar probable 348, 91, 45 y 291 · pérdida neta 34,7 ha entre 2016 y 2025 (36,6 perdidas y 1,9 ganadas) · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
 
 ## Diseño (identidad C.R.A. modernizada)
 
