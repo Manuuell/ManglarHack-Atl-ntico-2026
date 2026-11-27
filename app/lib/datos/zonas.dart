@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart' show compute;
+import 'package:flutter/foundation.dart' show compute, debugPrint, kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -208,49 +208,29 @@ class CapaPrioridadesCra {
   int get poligonos => _idx.length;
 
   static CapaPrioridadesCra desdeJson(Map<String, dynamic> j) {
-    final unidad = (j['unidad'] as num).toDouble();
-    String? vacioANulo(Object? t) => (t is String && t.isNotEmpty) ? t : null;
-    final planes = <PlanCRA>[
-      for (final a in j['atributos'] as List)
-        PlanCRA(
-          prioridad: PrioridadCRA.desdeTexto(a['p'] as String) ?? PrioridadCRA.baja,
-          accion: a['a'] as String,
-          escenario: a['e'] as String,
-          figura: a['f'] as String? ?? '',
-          areaProtegida: vacioANulo(a['z']),
-          unidad: vacioANulo(a['u']),
-        ),
-    ];
-    final polis = j['poligonos'] as List;
-    final idx = Int32List(polis.length);
-    final cajas = Float64List(polis.length * 4);
-    final anillos = <List<Float64List>>[];
-    for (var i = 0; i < polis.length; i++) {
-      final p = polis[i] as List;
-      idx[i] = (p[0] as num).toInt();
-      final rings = [for (final r in p[1] as List) _decodificarPlano(r as List, unidad)];
-      anillos.add(rings);
-      final e = rings.first;
-      var a = 1e9, b = 1e9, c = -1e9, d = -1e9;
-      for (var k = 0; k < e.length; k += 2) {
-        a = math.min(a, e[k]);
-        c = math.max(c, e[k]);
-        b = math.min(b, e[k + 1]);
-        d = math.max(d, e[k + 1]);
-      }
-      cajas[i * 4] = a;
-      cajas[i * 4 + 1] = b;
-      cajas[i * 4 + 2] = c;
-      cajas[i * 4 + 3] = d;
+    final c = _ConstructorCapa(j);
+    for (var i = 0; i < c.total; i++) {
+      c.agregar(i);
     }
-    return CapaPrioridadesCra._(
-      j['fuente'] as String? ?? '',
-      j['generado'] as String? ?? '',
-      planes,
-      idx,
-      cajas,
-      anillos,
-    );
+    return c.terminar();
+  }
+
+  /// Igual que [desdeJson] pero cediendo el hilo cada [tramoMs] ms. En la web no hay isolates y
+  /// `compute` corre en el hilo de la interfaz: decodificar 9.000 polígonos de golpe congela la
+  /// pantalla; por tramos, cada pausa deja pintar un cuadro y atender toques.
+  static Future<CapaPrioridadesCra> desdeJsonPorTramos(Map<String, dynamic> j, {int tramoMs = _tramoMs}) async {
+    final c = _ConstructorCapa(j);
+    final reloj = Stopwatch()..start();
+    for (var i = 0; i < c.total; i++) {
+      c.agregar(i);
+      if (reloj.elapsedMilliseconds >= tramoMs) {
+        await _cederHilo();
+        reloj
+          ..reset()
+          ..start();
+      }
+    }
+    return c.terminar();
   }
 
   /// Plan de la CRA en [p]; si lo contienen varios polígonos, el de prioridad más alta.
@@ -305,16 +285,84 @@ List<LatLng> _decodificarAnillo(List r, double unidad) {
   return [for (var i = 0; i < f.length; i += 2) LatLng(f[i + 1], f[i])];
 }
 
-/// Para `compute`: decodifica los dos archivos fuera del hilo de la interfaz.
-Manglar _decodificarCapas(List<String> textos) => Manglar.desdeJson(
-      jsonDecode(textos[0]) as Map<String, dynamic>,
-      jsonDecode(textos[1]) as Map<String, dynamic>,
-    );
+/// Cuánto trabaja cada tramo antes de ceder el hilo (menos de un cuadro a 60 Hz).
+const _tramoMs = 6;
+
+/// Cede el hilo a la interfaz: en la web deja que el navegador pinte y atienda toques.
+Future<void> _cederHilo() => Future<void>.delayed(Duration.zero);
+
+/// Arma [CapaPrioridadesCra] polígono a polígono, para poder hacerlo de golpe o por tramos.
+class _ConstructorCapa {
+  _ConstructorCapa(this._j)
+      : _unidad = (_j['unidad'] as num).toDouble(),
+        _polis = _j['poligonos'] as List {
+    String? vacioANulo(Object? t) => (t is String && t.isNotEmpty) ? t : null;
+    _planes = [
+      for (final a in _j['atributos'] as List)
+        PlanCRA(
+          prioridad: PrioridadCRA.desdeTexto(a['p'] as String) ?? PrioridadCRA.baja,
+          accion: a['a'] as String,
+          escenario: a['e'] as String,
+          figura: a['f'] as String? ?? '',
+          areaProtegida: vacioANulo(a['z']),
+          unidad: vacioANulo(a['u']),
+        ),
+    ];
+    _idx = Int32List(_polis.length);
+    _cajas = Float64List(_polis.length * 4);
+  }
+
+  final Map<String, dynamic> _j;
+  final double _unidad;
+  final List _polis;
+  late final List<PlanCRA> _planes;
+  late final Int32List _idx;
+  late final Float64List _cajas;
+  final List<List<Float64List>> _anillos = [];
+
+  int get total => _polis.length;
+
+  /// Decodifica el polígono [i] (hay que llamarlo en orden: 0, 1, 2…).
+  void agregar(int i) {
+    final p = _polis[i] as List;
+    _idx[i] = (p[0] as num).toInt();
+    final rings = [for (final r in p[1] as List) _decodificarPlano(r as List, _unidad)];
+    _anillos.add(rings);
+    final e = rings.first;
+    var a = 1e9, b = 1e9, c = -1e9, d = -1e9;
+    for (var k = 0; k < e.length; k += 2) {
+      a = math.min(a, e[k]);
+      c = math.max(c, e[k]);
+      b = math.min(b, e[k + 1]);
+      d = math.max(d, e[k + 1]);
+    }
+    _cajas[i * 4] = a;
+    _cajas[i * 4 + 1] = b;
+    _cajas[i * 4 + 2] = c;
+    _cajas[i * 4 + 3] = d;
+  }
+
+  CapaPrioridadesCra terminar() => CapaPrioridadesCra._(
+        _j['fuente'] as String? ?? '',
+        _j['generado'] as String? ?? '',
+        _planes,
+        _idx,
+        _cajas,
+        _anillos,
+      );
+}
+
+/// Para `compute`: decodifica el manglar fuera del hilo de la interfaz (solo donde hay isolates).
+Manglar _decodificarManglar(String texto) => Manglar.desdeJson(jsonDecode(texto) as Map<String, dynamic>);
+
+/// Para `compute`: decodifica la capa de prioridades.
+CapaPrioridadesCra _decodificarCapaCra(String texto) =>
+    CapaPrioridadesCra.desdeJson(jsonDecode(texto) as Map<String, dynamic>);
 
 /// Las zonas de manglar del Atlántico y las prioridades de la CRA, cargadas de los archivos que
 /// van dentro de la app: ubicar un reporte funciona sin internet.
 class Manglar {
-  Manglar._(this.zonas, this.fuente, this.provisional, this.areaTotalHa, this.prioridades,
+  Manglar._(this.zonas, this.fuente, this.provisional, this.areaTotalHa, this._prioridades,
       {this.fechaDatos = ''});
 
   final List<ZonaManglar> zonas;
@@ -325,35 +373,101 @@ class Manglar {
   final bool provisional;
   final double areaTotalHa;
 
-  /// Capa de prioridades de la CRA; null si no se cargó (p. ej. en pruebas que solo usan el manglar).
-  final CapaPrioridadesCra? prioridades;
+  CapaPrioridadesCra? _prioridades;
+  Future<void>? _cargaPrioridades;
 
-  /// Lee `manglar_zonas.json` (manglar 1:5.000 de la CRA) y `prioridades_cra.json`. La
-  /// decodificación (~2 MB de JSON) va en otro isolate para no trabar el arranque.
+  /// Capa de prioridades de la CRA. null mientras no llegó (o en pruebas que solo usan el
+  /// manglar): [ubicar] funciona igual, solo que sin plan; el servidor recalcula la prioridad.
+  CapaPrioridadesCra? get prioridades => _prioridades;
+
+  /// ¿Ya llegó la capa de prioridades?
+  bool get prioridadesListas => _prioridades != null;
+
+  /// Lee `manglar_zonas.json` (manglar 1:5.000 de la CRA, 357 KB): lo único que necesita la
+  /// primera pantalla. Las prioridades (1,5 MB) NO se esperan: [cargarPrioridades] las trae
+  /// después del primer cuadro.
   static Future<Manglar> cargar() async {
-    final textos = await Future.wait([
-      rootBundle.loadString('assets/datos/manglar_zonas.json', cache: false),
-      rootBundle.loadString('assets/datos/prioridades_cra.json', cache: false),
-    ]);
-    return compute(_decodificarCapas, textos);
+    final texto = await rootBundle.loadString('assets/datos/manglar_zonas.json', cache: false);
+    if (kIsWeb) {
+      // Sin isolates: decodificar por tramos para no congelar la pantalla.
+      return desdeJsonPorTramos(jsonDecode(texto) as Map<String, dynamic>);
+    }
+    return compute(_decodificarManglar, texto);
+  }
+
+  /// Lee `prioridades_cra.json` y la deja en [prioridades]. Idempotente (llamarla otra vez
+  /// espera la misma carga) y no lanza: sin la capa la app sigue con la regla de siempre.
+  Future<void> cargarPrioridades() => _cargaPrioridades ??= _traerPrioridades();
+
+  Future<void> _traerPrioridades() async {
+    try {
+      final texto = await rootBundle.loadString('assets/datos/prioridades_cra.json', cache: false);
+      if (kIsWeb) {
+        _prioridades = await CapaPrioridadesCra.desdeJsonPorTramos(jsonDecode(texto) as Map<String, dynamic>);
+      } else {
+        _prioridades = await compute(_decodificarCapaCra, texto);
+      }
+    } catch (e) {
+      debugPrint('Prioridades CRA no cargadas: $e');
+    }
+  }
+
+  /// Igual que [desdeJson] pero cediendo el hilo entre polígonos (para la web).
+  static Future<Manglar> desdeJsonPorTramos(Map<String, dynamic> j, {int tramoMs = _tramoMs}) async {
+    final unidad = (j['unidad'] as num).toDouble();
+    final reloj = Stopwatch()..start();
+    final zonas = <ZonaManglar>[];
+    for (final z in j['zonas'] as List) {
+      final m = z as Map<String, dynamic>;
+      final anillos = <List<LatLng>>[];
+      final huecos = <List<List<LatLng>>>[];
+      for (final p in m['poligonos'] as List) {
+        final polis = p as List;
+        anillos.add(_decodificarAnillo(polis.first as List, unidad));
+        huecos.add([for (final h in polis.skip(1)) _decodificarAnillo(h as List, unidad)]);
+        if (reloj.elapsedMilliseconds >= tramoMs) {
+          await _cederHilo();
+          reloj
+            ..reset()
+            ..start();
+        }
+      }
+      zonas.add(_zona(m, anillos, huecos));
+    }
+    return Manglar._(
+      zonas,
+      j['fuente'] as String,
+      j['provisional'] as bool? ?? false,
+      (j['areaTotalHa'] as num).toDouble(),
+      null,
+      fechaDatos: j['fechaDatos'] as String? ?? '',
+    );
+  }
+
+  static ZonaManglar _zona(Map<String, dynamic> z, List<List<LatLng>> anillos, List<List<List<LatLng>>> huecos) {
+    final prCra = PrioridadCRA.desdeTexto(z['prioridadCra'] as String?);
+    return ZonaManglar(
+      id: z['id'] as String,
+      nombre: z['nombre'] as String,
+      municipio: z['municipio'] as String,
+      sectorCra: z['sectorCra'] as String? ?? '',
+      prioridadCra: prCra,
+      prioridadConservacion: (z['prioridadConservacion'] as num?)?.toInt() ?? prCra?.puntos ?? 3,
+      nota: z['nota'] as String,
+      areaHa: (z['areaHa'] as num).toDouble(),
+      poligonos: anillos,
+      huecos: huecos,
+    );
   }
 
   static Manglar desdeJson(Map<String, dynamic> j, [Map<String, dynamic>? prioridades]) {
     final unidad = (j['unidad'] as num).toDouble();
     ZonaManglar zona(Map<String, dynamic> z) {
       final polis = [for (final p in z['poligonos'] as List) p as List];
-      final prCra = PrioridadCRA.desdeTexto(z['prioridadCra'] as String?);
-      return ZonaManglar(
-        id: z['id'] as String,
-        nombre: z['nombre'] as String,
-        municipio: z['municipio'] as String,
-        sectorCra: z['sectorCra'] as String? ?? '',
-        prioridadCra: prCra,
-        prioridadConservacion: (z['prioridadConservacion'] as num?)?.toInt() ?? prCra?.puntos ?? 3,
-        nota: z['nota'] as String,
-        areaHa: (z['areaHa'] as num).toDouble(),
-        poligonos: [for (final p in polis) _decodificarAnillo(p.first as List, unidad)],
-        huecos: [
+      return _zona(
+        z,
+        [for (final p in polis) _decodificarAnillo(p.first as List, unidad)],
+        [
           for (final p in polis) [for (final h in p.skip(1)) _decodificarAnillo(h as List, unidad)],
         ],
       );

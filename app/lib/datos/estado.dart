@@ -85,6 +85,18 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
 
     unawaited(cargarClima());
     unawaited(sincronizar());
+    unawaited(_traerPrioridades());
+  }
+
+  /// Las prioridades de la CRA (1,5 MB) no frenan la primera pantalla: se traen después del primer
+  /// cuadro y por tramos. Un reporte armado antes se ubica sin plan y el servidor lo recalcula.
+  Future<void> _traerPrioridades() async {
+    await WidgetsBinding.instance.endOfFrame;
+    // En la web (sin isolates) se deja pasar la primera pantalla o el modo evento antes de
+    // empezar: lo primero es que pinte e interactúe.
+    if (kIsWeb) await Future<void>.delayed(const Duration(milliseconds: 800));
+    if (_desechado) return;
+    await manglar.cargarPrioridades();
   }
 
   static bool _hayRed(List<ConnectivityResult> r) => r.any((x) => x != ConnectivityResult.none);
