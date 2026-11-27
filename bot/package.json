@@ -1,0 +1,28 @@
+{
+  "name": "zanqui-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zanqui BOT: reportes ciudadanos de amenazas al manglar del Atlántico por WhatsApp",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "simular": "tsx scripts/simular.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.17.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

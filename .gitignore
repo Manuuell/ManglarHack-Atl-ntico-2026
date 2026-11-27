@@ -29,3 +29,5 @@ build/
 # Configuración personal de agentes (lleva claves)
 .claude/settings.local.json
 
+# Datos locales del bot (reportes y fotos)
+bot/data/

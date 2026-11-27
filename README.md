@@ -10,7 +10,7 @@ Proyecto para **Manglar Hack Atlántico 2026**, organizado por la CRA y la Unive
 |---|---|---|
 | `app/` | App móvil (Flutter) | En construcción |
 | `web/` | Aplicación web: panel de la CRA y vista pública | En construcción |
-| `bot/` | Bot de WhatsApp | En construcción |
+| `bot/` | Zanqui BOT, el canal de WhatsApp. Ver [bot/README.md](bot/README.md) | Funciona en modo simulación; falta conectarlo a Meta |
 | `datos/` | Polígonos del manglar y datos de prueba | Capa de INVEMAR de referencia |
 | `handoff/` | Documentación del equipo: reto, solución y datos | Ver [handoff/README.md](handoff/README.md) |
 
