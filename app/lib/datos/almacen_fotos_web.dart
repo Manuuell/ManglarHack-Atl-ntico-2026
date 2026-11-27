@@ -20,7 +20,11 @@ class _AlmacenIndexedDb implements AlmacenFotos {
     final req = web.window.indexedDB.open(_base, 1);
     req.onupgradeneeded = ((web.Event _) {
       final db = req.result as web.IDBDatabase;
-      if (!db.objectStoreNames.contains(_almacen)) db.createObjectStore(_almacen);
+      try {
+        db.createObjectStore(_almacen);
+      } catch (_) {
+        // Ya existía (base de una versión anterior).
+      }
     }).toJS;
     req.onsuccess = ((web.Event _) => c.complete(req.result as web.IDBDatabase)).toJS;
     req.onerror = ((web.Event _) => c.completeError(_error(req.error, 'abrir IndexedDB'))).toJS;
