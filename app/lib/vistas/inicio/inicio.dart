@@ -29,7 +29,7 @@ import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../admin/contenido/franja_portada.dart';
 import '../guardian/editar_perfil.dart';
-import '../configuracion/pantalla_configuracion.dart';
+import '../configuracion/cuenta_entrar.dart';
 import '../comunidad/comunidad_inicio.dart';
 import '../comunidad/feed_y_eventos.dart' show recargaComunidadInicio;
 import '../sensores/sensores_compacto.dart';
@@ -307,7 +307,8 @@ class _InicioState extends State<Inicio> {
                 ),
                 const CampanaAvisos(),
                 const SizedBox(width: 8),
-                const BotonConfiguracion(),
+                // La cuenta a un toque (Configuración vive ahora en Guardián).
+                const AvatarCuenta(),
                 const SizedBox(width: 4),
                 ZankyMascota(
                   tamano: 74,

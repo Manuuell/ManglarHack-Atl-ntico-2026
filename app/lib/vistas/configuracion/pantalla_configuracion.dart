@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-import '../../datos/admin/repositorio_admin.dart';
 import '../../datos/cuenta/cuenta.dart';
 import '../../datos/estado.dart';
 import '../../datos/guardian.dart';
 import '../../datos/roles.dart';
-import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/kit/aviso.dart';
-import '../../nucleo/kit/boton_estado.dart';
 import '../../nucleo/kit/confirmar.dart';
 import '../../nucleo/kit/interruptor.dart';
-import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../admin/piezas_admin.dart';
 import '../guardian/borrar_datos.dart';
 import '../guardian/editar_perfil.dart';
+import 'cuenta_entrar.dart';
 import 'piezas_configuracion.dart';
 import 'seccion_gestion.dart';
 import '../avisos/bandeja_avisos.dart';
@@ -116,7 +112,7 @@ class PantallaConfiguracion extends StatelessWidget {
                 fin: InterruptorIos(
                   etiqueta: 'Reportar en anónimo',
                   valor: perfil?.anonimoPorDefecto ?? false,
-                  alCambiar: (v) => _cambiarAnonimo(context, v),
+                  alCambiar: (v) => cambiarAnonimo(context, v),
                 ),
               ),
             ],
@@ -157,8 +153,11 @@ class PantallaConfiguracion extends StatelessWidget {
       ),
     );
   }
+}
 
-  Future<void> _cambiarAnonimo(BuildContext context, bool valor) async {
+/// Guarda «Reportar en anónimo» en el perfil local. Lo usan Configuración y Guardián.
+Future<void> cambiarAnonimo(BuildContext context, bool valor) async {
+  {
     final estado = Zanky.leer(context);
     final base = estado.perfil ?? estado.perfilNuevo();
     final nuevo = Perfil(
@@ -235,245 +234,10 @@ class _BloqueCuenta extends StatelessWidget {
                 ),
               ],
             )
-          : _FormularioCuenta(
+          : FormularioEntrar(
               key: const ValueKey('sin_sesion'),
               cuenta: cuenta,
             ),
-    );
-  }
-}
-
-class _FormularioCuenta extends StatefulWidget {
-  const _FormularioCuenta({super.key, required this.cuenta});
-  final ControladorCuenta cuenta;
-
-  @override
-  State<_FormularioCuenta> createState() => _FormularioCuentaState();
-}
-
-class _FormularioCuentaState extends State<_FormularioCuenta> {
-  final _correo = TextEditingController();
-  final _clave = TextEditingController();
-  final _focoCorreo = FocusNode();
-  final _focoClave = FocusNode();
-  bool _ver = false;
-  String? _error;
-  String? _nota;
-
-  @override
-  void dispose() {
-    _correo.dispose();
-    _clave.dispose();
-    _focoCorreo.dispose();
-    _focoClave.dispose();
-    super.dispose();
-  }
-
-  bool get _completo => _correo.text.contains('@') && _clave.text.isNotEmpty;
-
-  Future<void> _entrar() async {
-    FocusScope.of(context).unfocus();
-    setState(() {
-      _error = null;
-      _nota = null;
-    });
-    try {
-      await widget.cuenta.entrar(_correo.text, _clave.text);
-      TextInput.finishAutofillContext();
-    } on ErrorCuenta catch (e) {
-      if (mounted) setState(() => _error = e.mensaje);
-      rethrow; // el botón lo muestra como error
-    } on ErrorPanel catch (e) {
-      if (mounted) setState(() => _error = e.mensaje);
-      rethrow;
-    }
-  }
-
-  Future<void> _recuperar() async {
-    setState(() {
-      _error = null;
-      _nota = null;
-    });
-    try {
-      await widget.cuenta.recuperarClave(_correo.text);
-      if (mounted) {
-        setState(
-          () => _nota =
-              'Si hay una cuenta con ese correo, te llegó un enlace para elegir otra contraseña.',
-        );
-      }
-    } on ErrorCuenta catch (e) {
-      if (mounted) setState(() => _error = e.mensaje);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = widget.cuenta;
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Semantics(
-              header: true,
-              child: Text(
-                'ENTRAR CON TU CUENTA',
-                style: tt.seccion.copyWith(color: Zc.textoSuave),
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Zc.superficie,
-              borderRadius: BorderRadius.circular(Zr.m),
-              border: Border.all(color: Zc.linea),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  c.configurado
-                      ? 'La misma cuenta de la web. Si el equipo te dio un rol (administración, moderación, '
-                            'investigación u organización), aquí se desbloquea lo tuyo.'
-                      : 'Este teléfono no está conectado al servidor, así que no hay cuentas. '
-                            'Puedes ver la demostración de la gestión con datos de ejemplo.',
-                  style: tt.bodyMedium,
-                ),
-                const SizedBox(height: 16),
-                if (c.restaurando)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                else if (c.configurado) ...[
-                  AutofillGroup(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CampoAdmin(
-                          etiqueta: 'Correo',
-                          icono: Icons.alternate_email_rounded,
-                          controlador: _correo,
-                          foco: _focoCorreo,
-                          teclado: TextInputType.emailAddress,
-                          pistas: const [
-                            AutofillHints.email,
-                            AutofillHints.username,
-                          ],
-                          alEnviar: _focoClave.requestFocus,
-                        ),
-                        const SizedBox(height: 14),
-                        CampoAdmin(
-                          etiqueta: 'Contraseña',
-                          icono: Icons.lock_outline_rounded,
-                          controlador: _clave,
-                          foco: _focoClave,
-                          oculto: !_ver,
-                          accion: TextInputAction.done,
-                          pistas: const [AutofillHints.password],
-                          alEnviar: () {
-                            if (_completo) _entrar().catchError((_) {});
-                          },
-                          sufijo: Presionable(
-                            etiqueta: _ver
-                                ? 'Ocultar contraseña'
-                                : 'Mostrar contraseña',
-                            onTap: () => setState(() => _ver = !_ver),
-                            child: SizedBox(
-                              width: 48,
-                              height: 48,
-                              child: Icon(
-                                _ver
-                                    ? Icons.visibility_off_rounded
-                                    : Icons.visibility_rounded,
-                                size: 22,
-                                color: Zc.textoSuave,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  AnimatedSize(
-                    duration: context.resolveDuration(Zm.corto),
-                    curve: Zm.entrar,
-                    child: (_error ?? _nota) == null
-                        ? const SizedBox(width: double.infinity)
-                        : Semantics(
-                            liveRegion: true,
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 12, left: 4),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    _error != null
-                                        ? Icons.error_outline_rounded
-                                        : Icons.mark_email_read_rounded,
-                                    size: 18,
-                                    color: _error != null
-                                        ? Zc.prioridad[5]
-                                        : Zc.hoja,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _error ?? _nota!,
-                                      key: const ValueKey('mensaje_cuenta'),
-                                      style: tt.bodySmall?.copyWith(
-                                        color: _error != null
-                                            ? Zc.prioridad[5]
-                                            : Zc.texto,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                  ),
-                  const SizedBox(height: 16),
-                  ListenableBuilder(
-                    listenable: Listenable.merge([_correo, _clave]),
-                    builder: (context, _) => BotonEstado(
-                      texto: 'Entrar',
-                      textoCargando: 'Entrando',
-                      textoHecho: 'Dentro',
-                      textoError: 'No se pudo entrar',
-                      icono: Icons.login_rounded,
-                      alPresionar: _completo ? _entrar : null,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Center(
-                    child: TextButton(
-                      onPressed: _recuperar,
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(48, 48),
-                      ),
-                      child: const Text('¿Olvidaste tu contraseña?'),
-                    ),
-                  ),
-                ] else
-                  BotonEstado(
-                    texto: 'Ver la demostración de gestión',
-                    textoHecho: 'Listo',
-                    icono: Icons.play_circle_outline_rounded,
-                    alPresionar: () async => c.entrarDemo(),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

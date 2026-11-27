@@ -16,7 +16,8 @@ import '../admin/piezas_admin.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
-import '../configuracion/pantalla_configuracion.dart';
+import '../configuracion/ajustes_guardian.dart';
+import '../configuracion/cuenta_entrar.dart';
 import '../configuracion/piezas_configuracion.dart';
 import '../configuracion/seccion_gestion.dart';
 import 'editar_perfil.dart';
@@ -164,8 +165,6 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                const BotonConfiguracion(),
-                const SizedBox(width: 8),
                 Presionable(
                   etiqueta: 'Editar mi perfil',
                   onTap: () => mostrarEditarPerfil(context),
@@ -183,6 +182,17 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
               ],
             ),
           ),
+          // La cuenta y, debajo, Configuración como en Ajustes de iOS (ya no hay engranaje en Inicio).
+          if (cuenta != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+              child: TarjetaCuenta(
+                cuenta: cuenta,
+                alAbrirPanel: () => abrirPanelDeCuenta(context),
+                alCerrar: () => confirmarCerrarSesion(context, cuenta),
+              ),
+            ),
+          const SeccionAjustesGuardian(),
           for (var i = 0; i < secciones.length; i++)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
