@@ -11,7 +11,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
-    "capas:prioridades": "node scripts/prioridades-cra.mjs"
+    "capas:prioridades": "node scripts/prioridades-cra.mjs",
+    "capas:manglar": "node scripts/manglar-cra.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.9",

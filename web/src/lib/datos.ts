@@ -2,7 +2,7 @@
 import reportes from '../data/mockReportes.json';
 import poligonos from '../data/poligonosManglar.json';
 import colegios from '../data/colegios.json';
-import type { CambioEstado, CapaPrioridades, Colegio, PropiedadesInvemar, Reporte, ZonasManglar } from '../types/manglar';
+import type { CambioEstado, CapaManglarCRA, CapaPrioridades, Colegio, PropiedadesInvemar, Reporte, ZonasManglar } from '../types/manglar';
 
 export async function obtenerReportes(): Promise<Reporte[]> {
   return structuredClone(reportes) as Reporte[];
@@ -54,4 +54,18 @@ export async function obtenerCapaPrioridades(): Promise<CapaPrioridades> {
   acciones.includes(String(f.properties.accion)) && niveles.includes(String(f.properties.prioridad)));
  if (!valida) throw new Error('La capa de prioridades de la C.R.A. no tiene el formato esperado');
  return capa as unknown as CapaPrioridades;
+}
+
+// Cobertura de manglar de la C.R.A. a escala 1:5.000 (geodatabase entregada por
+// la Corporación; copia ligera generada por scripts/manglar-cra.mjs).
+export const URL_CAPA_MANGLAR_CRA = '/datos/manglar-cra.geojson';
+export const FUENTE_MANGLAR_CRA = 'Cobertura de manglar del Atlántico, C.R.A., escala 1:5.000 (imágenes Maxar 2021–2022, verificación en campo)';
+export async function obtenerCapaManglarCRA(): Promise<CapaManglarCRA> {
+ const respuesta = await fetch(URL_CAPA_MANGLAR_CRA);
+ if (!respuesta.ok) throw new Error('No se pudo cargar la cobertura de manglar de la C.R.A.');
+ const capa: unknown = await respuesta.json();
+ const valida = objeto(capa) && capa.type === 'FeatureCollection' && Array.isArray(capa.features) && capa.features.length > 0 && capa.features.every((f: unknown) =>
+  objeto(f) && objeto(f.geometry) && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') && objeto(f.properties) && typeof f.properties.area_ha === 'number');
+ if (!valida) throw new Error('La cobertura de manglar de la C.R.A. no tiene el formato esperado');
+ return capa as unknown as CapaManglarCRA;
 }

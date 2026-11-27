@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import L from 'leaflet';
 import { GeoJSON, Pane, MapContainer, Marker, Polygon, Popup, TileLayer, Tooltip, ZoomControl, useMap } from 'react-leaflet';
-import type { NivelPrioridad, ReportePublico, PropiedadesInvemar, TipoReporte, ZonasManglar } from '../../types/manglar';
+import type { NivelPrioridad, ReportePublico, CapaManglarCRA, TipoReporte, ZonasManglar } from '../../types/manglar';
 import { LISTA_PRIORIDADES, LISTA_PRIORIDADES_ZONA, LISTA_TIPOS, PRIORIDADES, PRIORIDADES_ZONA, TIPOS, formatearFecha, nivelPrioridad } from '../../lib/catalogos';
 import { useReportesPublicos } from '../../lib/reportesStore';
 import { cn } from '../../lib/utils';
@@ -10,7 +10,7 @@ import BarraConfianza from '../ui/react/BarraConfianza';
 import ChipPrioridad from '../ui/react/ChipPrioridad';
 import ChipPrioridadZona from '../ui/react/ChipPrioridadZona';
 import ChipEstado from '../ui/react/ChipEstado';
-import { obtenerCapaManglar } from '../../lib/datos';
+import { FUENTE_MANGLAR_CRA, obtenerCapaManglarCRA } from '../../lib/datos';
 import type { FeatureCollection, Polygon as PoligonoGeo } from 'geojson';
 import { exportarCSV, exportarGeoJSON, exportarKML } from '../../lib/exportar';
 import ChipCanal from '../ui/react/ChipCanal';
@@ -74,15 +74,15 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
   const filtrados = useMemo(() => reportesVivos.filter((reporte) =>
     (!tipos.length || tipos.includes(reporte.tipo)) && (!prioridades.length || prioridades.includes(nivelPrioridad(reporte.prioridad))),
   ), [reportesVivos, tipos, prioridades]);
-  const [capa, setCapa] = useState<FeatureCollection<PoligonoGeo, PropiedadesInvemar> | null>(null);
+  const [capa, setCapa] = useState<CapaManglarCRA | null>(null);
   const [errorCapa, setErrorCapa] = useState(false);
   const [mostrarCapa, setMostrarCapa] = useState(true);
   useEffect(() => {
     let activo = true;
-    obtenerCapaManglar().then((datos) => { if (activo) setCapa(datos); }).catch(() => { if (activo) setErrorCapa(true); });
+    obtenerCapaManglarCRA().then((datos) => { if (activo) setCapa(datos); }).catch(() => { if (activo) setErrorCapa(true); });
     return () => { activo = false; };
   }, []);
-  const areaInvemar = capa?.features.reduce((total, f) => total + f.properties.AREA_HA, 0);
+  const areaInvemar = capa?.features.reduce((total, f) => total + f.properties.area_ha, 0);
   const hayFiltros = tipos.length > 0 || prioridades.length > 0;
 
   return (
@@ -115,8 +115,8 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
         <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2 text-xs font-medium text-texto">
           <input type="checkbox" role="switch" checked={mostrarZonas} onChange={(evento) => setMostrarZonas(evento.target.checked)} className="size-4 accent-dorado-500" />Zonas de trabajo (aproximadas)
         </label>
-        <label className="mt-2 flex min-h-11 items-center gap-2 text-xs font-medium"><input type="checkbox" role="switch" checked={mostrarCapa} onChange={(e) => setMostrarCapa(e.target.checked)} />Cobertura de manglar (INVEMAR 2020)</label>
-        {!capa && <p role="status" className="text-xs text-suave">{errorCapa ? 'No se pudo cargar la capa de INVEMAR' : 'Cargando cobertura de manglar…'}</p>}
+        <label className="mt-2 flex min-h-11 items-center gap-2 text-xs font-medium"><input type="checkbox" role="switch" checked={mostrarCapa} onChange={(e) => setMostrarCapa(e.target.checked)} />Cobertura de manglar (C.R.A. 1:5.000)</label>
+        {!capa && <p role="status" className="text-xs text-suave">{errorCapa ? 'No se pudo cargar la cobertura de manglar de la C.R.A.' : 'Cargando cobertura de manglar…'}</p>}
         {hayFiltros && <button type="button" onClick={() => { setTipos([]); setPrioridades([]); }} className="mt-2 min-h-11 text-xs font-semibold text-dorado-300 underline underline-offset-4">Limpiar filtros</button>}
       </div>
 
@@ -174,9 +174,9 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
       </div>
 
       <div aria-label="Leyenda del mapa" className="mt-3 space-y-3 rounded-sm bg-superficie/95 p-4 text-xs shadow-[var(--c-sombra-alta)] backdrop-blur ">
-        <div><h3 className="font-semibold">Cobertura de manglar (INVEMAR 2020)</h3>
+        <div><h3 className="font-semibold">Cobertura de manglar · C.R.A. 1:5.000</h3>
           {capa && <p>{capa.features.length.toLocaleString('es-CO')} polígonos · {areaInvemar?.toLocaleString('es-CO', { maximumFractionDigits: 0 })} ha</p>}
-          <p>INVEMAR, Capa Nacional de Manglares, imagen 2020, 1:25.000 · no es la capa oficial de la C.R.A.</p>
+          <p>{FUENTE_MANGLAR_CRA}.</p>
         </div>
         <div><h3 className="mb-2 font-semibold text-texto">Zonas de trabajo (aproximadas)</h3><ul className="flex flex-wrap gap-3">{LISTA_PRIORIDADES_ZONA.map((valor) => {
           const prioridad = PRIORIDADES_ZONA[valor];

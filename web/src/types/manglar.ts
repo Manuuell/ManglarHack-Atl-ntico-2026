@@ -45,3 +45,15 @@ export interface PropiedadesPrioridad {
   area_protegida: string | null;
 }
 export type CapaPrioridades = import('geojson').FeatureCollection<import('geojson').Polygon | import('geojson').MultiPolygon, PropiedadesPrioridad>;
+
+/** Polígono de la cobertura de manglar de la C.R.A. (1:5.000). */
+export interface PropiedadesManglarCRA {
+  codigo: string;
+  cobertura: string;
+  insumo: string;
+  fecha: string;
+  apoyo: string;
+  confiable: string;
+  area_ha: number;
+}
+export type CapaManglarCRA = import('geojson').FeatureCollection<import('geojson').Polygon | import('geojson').MultiPolygon, PropiedadesManglarCRA>;
