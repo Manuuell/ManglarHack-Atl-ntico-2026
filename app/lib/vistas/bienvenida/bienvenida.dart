@@ -4,26 +4,24 @@ import 'package:flutter/material.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/guardian.dart';
-import '../../datos/roles.dart';
 import '../../nucleo/base/movimiento.dart';
-import '../../nucleo/presionable.dart';
 import '../../nucleo/identidad.dart';
+import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/zanky_mascota.dart';
-import '../roles/selector_rol.dart';
-import 'fondo.dart';
 import 'formulario.dart';
+import 'fotos.dart';
 import 'puntos.dart';
 
-/// Primera pantalla de la app: tres páginas que cuentan para qué sirve Zanky y una
-/// cuarta que pide el nombre, el aviso de privacidad y el consentimiento (Ley 1581).
+/// Primera pantalla de la app: cuatro páginas con fotos reales del manglar del Caribe
+/// colombiano (a sangre completa, con velo para leer) y una quinta con el consentimiento
+/// (Ley 1581) arriba, visible sin buscarlo, y los datos opcionales debajo.
 ///
-/// Zanky es UNO solo, fijo arriba: cambia de ánimo con la página y encoge al llegar al
-/// formulario (y se esconde con el teclado para que nada tape el campo activo). Los
-/// textos de cada página no se deslizan completos con el PageView: se desvanecen y
-/// avanzan más despacio que el dedo (paralaje), leyendo el valor continuo del
-/// [PageController], así se sienten pegados al dedo.
+/// Las fotos siguen al dedo con paralaje (se quedan atrás al 30 %) y los textos avanzan
+/// más despacio todavía y se funden. Zanky habla desde la tarjeta de texto, pequeño, para
+/// no tapar la foto; tocarlo cuenta un dato del manglar. Con «reducir movimiento» solo
+/// quedan los fundidos. En pantallas anchas (≥ 900 px) foto y texto van en dos columnas.
 class Bienvenida extends StatefulWidget {
   const Bienvenida({super.key});
 
@@ -32,69 +30,72 @@ class Bienvenida extends StatefulWidget {
 }
 
 class _Paso {
-  const _Paso(this.burbuja, this.titulo, this.texto, this.cadena);
-  final String burbuja;
+  const _Paso(this.ceja, this.titulo, this.texto, this.foto, this.pildoras);
+  final String ceja;
   final String titulo;
   final String texto;
-  final List<_Eslabon> cadena;
-}
-
-class _Eslabon {
-  const _Eslabon(this.icono, this.etiqueta, this.color);
-  final IconData icono;
-  final String etiqueta;
-  final Color color;
+  final FotoManglar foto;
+  final List<(IconData, String)> pildoras;
 }
 
 class _BienvenidaState extends State<Bienvenida> {
-  static const _total = 5;
-  static const _ultima = _total - 1;
-  static const _paginaRol = _ultima - 1;
-
   static final _pasos = [
     const _Paso(
-      'Tócame y te cuento algo del manglar.',
-      '¡Ajá! Soy Zanky',
-      'Te ayudo a avisarle a la CRA cuando algo amenaza el manglar del Atlántico, en el momento en que pasa.',
+      'MANGLAR DEL ATLÁNTICO',
+      'Lo que pasa en el manglar, ahora.',
+      'Zanky convierte lo que ves en un aviso a la CRA. Tala, relleno, basura o quema: tú lo ves, ellos se enteran.',
+      FotoManglar.raices,
+      [],
+    ),
+    const _Paso(
+      'CÓMO AYUDAS',
+      'Una foto basta.',
+      'Tomas la foto, Zanky marca dónde estás y el aviso llega a la CRA para verificarlo.',
+      FotoManglar.garza,
       [
-        _Eslabon(Icons.photo_camera_rounded, 'Foto', Zc.hoja),
-        _Eslabon(Icons.place_rounded, 'Ubicación', Zc.cienaga),
-        _Eslabon(Icons.campaign_rounded, 'Aviso a la CRA', Zc.sol),
+        (Icons.photo_camera_rounded, 'Foto'),
+        (Icons.place_rounded, 'Ubicación'),
+        (Icons.campaign_rounded, 'Aviso a la CRA'),
       ],
     ),
     const _Paso(
-      'Sin señal no pasa nada: yo guardo todo.',
-      'Funciono sin señal',
-      'En la ciénaga casi no hay internet. Tomas la foto y la ubicación igual; yo lo envío apenas vuelva la señal.',
+      'CON O SIN SEÑAL',
+      'En la ciénaga también funciona.',
+      'Sin internet, tu reporte se guarda en el teléfono y sale solo cuando vuelve la señal.',
+      FotoManglar.sendero,
       [
-        _Eslabon(Icons.photo_camera_rounded, 'Tomas la foto', Zc.hoja),
-        _Eslabon(Icons.save_alt_rounded, 'Se guarda en tu teléfono', Zc.cienaga),
-        _Eslabon(Icons.cloud_done_rounded, 'Se envía al volver la señal', Zc.sol),
+        (Icons.save_alt_rounded, 'Se guarda'),
+        (Icons.cloud_done_rounded, 'Se envía después'),
       ],
     ),
     _Paso(
-      '¡Cada reporte verificado te hace crecer!',
-      'Tus reportes cuentan',
-      'Cuando la CRA verifica lo que reportas, creces: de propágulo a guardián del manglar.',
+      'CRECE CONTIGO',
+      'De propágulo a guardián.',
+      'Cada reporte que la CRA verifica hace crecer a tu Zanky. Tu manglar también se nota.',
+      FotoManglar.cano,
       [
-        _Eslabon(Icons.spa_rounded, Nivel.todos[0].nombre, Zc.hoja),
-        _Eslabon(Icons.eco_rounded, Nivel.todos[3].nombre, Zc.cienaga),
-        _Eslabon(Icons.park_rounded, Nivel.todos[5].nombre, Zc.sol),
+        (Icons.spa_rounded, Nivel.todos[0].nombre),
+        (Icons.eco_rounded, Nivel.todos[3].nombre),
+        (Icons.park_rounded, Nivel.todos[5].nombre),
       ],
     ),
   ];
 
-  static const _burbujaRol = 'Así te muestro lo que más te sirve.';
-  static const _burbujaPerfil = 'Casi listo. Cuéntame cómo te llamamos.';
+  /// La foto detrás del formulario (oscurecida).
+  static const _fotoFormulario = FotoManglar.raices;
+
+  static final _total = _pasos.length + 1;
+  static final _ultima = _total - 1;
 
   final PageController _ctrl = PageController();
   late final DatosPerfil _datos;
 
   int _indice = 0;
-  int _siguienteDato = 1; // el 0 repite la presentación de la primera página
+  int _siguienteDato = 0;
   String? _frase;
   bool _celebrando = false;
   bool _guardando = false;
+  bool _precargado = false;
 
   @override
   void initState() {
@@ -105,7 +106,6 @@ class _BienvenidaState extends State<Bienvenida> {
       nombre: previo?.nombre ?? '',
       colegio: previo?.colegio ?? '',
       anonimo: previo?.anonimoPorDefecto ?? false,
-      rol: previo?.rol ?? RolUsuario.ciudadano,
     );
   }
 
@@ -118,7 +118,7 @@ class _BienvenidaState extends State<Bienvenida> {
 
   Animo get _animo => _celebrando
       ? Animo.celebrando
-      : const [Animo.feliz, Animo.curioso, Animo.celebrando, Animo.curioso, Animo.feliz][_indice];
+      : const [Animo.feliz, Animo.curioso, Animo.curioso, Animo.celebrando, Animo.feliz][_indice];
 
   void _alCambiarPagina(int i) {
     if (i == _indice) return;
@@ -168,6 +168,7 @@ class _BienvenidaState extends State<Bienvenida> {
       final base = estado.perfil ?? estado.perfilNuevo();
       // Se arma un perfil nuevo con el mismo id: si guardar falla, el que ya está en
       // memoria no queda marcado como «con consentimiento» sin estarlo en el disco.
+      // El rol ya no se pregunta: el perfil conserva el que tenía (o el de por defecto).
       final perfil = Perfil(
         id: base.id,
         creado: base.creado,
@@ -177,7 +178,7 @@ class _BienvenidaState extends State<Bienvenida> {
         cedulaHash: base.cedulaHash,
         sal: base.sal,
         anonimoPorDefecto: _datos.anonimo,
-        rol: _datos.rol,
+        rol: base.rol,
         consentimiento: DateTime.now(),
       );
       await estado.guardarPerfil(perfil);
@@ -194,121 +195,139 @@ class _BienvenidaState extends State<Bienvenida> {
     }
   }
 
+  /// 0 en las páginas de foto, 1 en el formulario; sigue al dedo.
+  double _haciaForm() => (_paginaDe(_ctrl) - (_ultima - 1)).clamp(0.0, 1.0);
+
   @override
   Widget build(BuildContext context) {
     final insets = MediaQuery.viewInsetsOf(context).bottom;
     final relleno = MediaQuery.paddingOf(context);
-    final escala = MediaQuery.textScalerOf(context).scale(1);
-    final teclado = insets > 80;
+    final fotos = [for (final p in _pasos) p.foto, _fotoFormulario];
 
     return Scaffold(
       // Con pantalla completa el sistema no ajusta por el teclado: se hace a mano.
       resizeToAvoidBottomInset: false,
-      backgroundColor: Zc.arena,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: FondoBienvenida()),
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (context, caja) {
-                final libre = caja.maxHeight - insets;
-                final tamano = (libre * 0.26 / (escala > 1.15 ? 1.2 : 1.0)).clamp(120.0, 190.0);
-                return TweenAnimationBuilder<double>(
-                  tween: Tween(end: teclado ? 0.0 : 1.0),
-                  duration: context.resolveDuration(Zm.medio),
-                  curve: Zm.entrar,
-                  builder: (context, kf, _) => Padding(
-                    padding: EdgeInsets.only(bottom: insets),
-                    child: Column(
-                      children: [
-                        SizedBox(height: relleno.top),
-                        _cabecera(tamano, kf),
-                        Expanded(child: _paginas()),
-                        _barraInferior(kf, math.max(0, relleno.bottom - insets)),
-                      ],
+      backgroundColor: Cra.hero,
+      body: LayoutBuilder(
+        builder: (context, caja) {
+          final ancho = caja.maxWidth >= 900;
+          final anchoTexto = (caja.maxWidth * 0.42).clamp(420.0, 560.0);
+          if (!_precargado) {
+            _precargado = true;
+            FotosConParalaje.precargar(
+              context,
+              fotos,
+              ancho ? Size(caja.maxWidth - anchoTexto, caja.maxHeight) : caja.biggest,
+            );
+          }
+          final columna = Padding(
+            padding: EdgeInsets.only(bottom: insets),
+            child: Column(
+              children: [
+                SizedBox(height: relleno.top),
+                _cabecera(conLogo: !ancho),
+                Expanded(child: _paginas(caja.maxHeight, ancho)),
+                _barraInferior(math.max(0, relleno.bottom - insets), ancho),
+              ],
+            ),
+          );
+          if (!ancho) {
+            return Stack(
+              children: [
+                Positioned.fill(child: FotosConParalaje(controlador: _ctrl, fotos: fotos, oscurecerDesde: _ultima)),
+                // Velo de arriba: el logo y «Saltar» se leen sobre cualquier cielo.
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: relleno.top + 120,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Cra.hero.withValues(alpha: 0.55), Cra.hero.withValues(alpha: 0)],
+                        ),
+                      ),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          // Marca de la Corporación, a la izquierda; «Saltar» vive a la derecha.
-          Positioned(left: 24, top: relleno.top + 8, child: const InsigniaCra(alto: 40)),
-        ],
+                ),
+                Positioned.fill(child: columna),
+              ],
+            );
+          }
+          // Dos columnas: la foto a la izquierda (con el logo) y el texto a la derecha.
+          return Row(
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: FotosConParalaje(controlador: _ctrl, fotos: fotos, oscurecerDesde: _ultima)),
+                    Positioned(left: 32, top: relleno.top + 28, child: const InsigniaCra(alto: 52)),
+                  ],
+                ),
+              ),
+              SizedBox(width: anchoTexto, child: ColoredBox(color: Cra.hero, child: columna)),
+            ],
+          );
+        },
       ),
     );
   }
 
-  /// «Saltar» y Zanky. Los dos siguen al valor continuo del PageController: Zanky
-  /// encoge hacia el formulario y «Saltar» se pliega, sin saltos.
-  Widget _cabecera(double tamano, double kf) {
-    final alto = tamano * 1.2;
-    final mascota = ZankyMascota(tamano: tamano, animo: _animo, onTap: _tocarZanky);
-    return AnimatedBuilder(
-      animation: _ctrl,
-      child: mascota,
-      builder: (context, hijo) {
-        final p = _paginaDe(_ctrl);
-        final haciaForm = (p - (_ultima - 1)).clamp(0.0, 1.0);
-        final saltar = (1 - haciaForm) * kf;
-        final s = ((1 - 0.34 * haciaForm) * kf).clamp(0.001, 1.0);
-        return Column(
+  /// Logo de la CRA a la izquierda y «Saltar» a la derecha; «Saltar» se pliega al
+  /// llegar al formulario siguiendo al dedo.
+  Widget _cabecera({required bool conLogo}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 12, 4),
+      child: SizedBox(
+        height: 48,
+        child: Row(
           children: [
-            ClipRect(
-              child: Align(
-                heightFactor: saltar,
-                alignment: Alignment.topRight,
-                child: Opacity(
-                  opacity: saltar,
+            if (conLogo) const InsigniaCra(alto: 40),
+            const Spacer(),
+            AnimatedBuilder(
+              animation: _ctrl,
+              builder: (context, _) {
+                final v = 1 - _haciaForm();
+                return Opacity(
+                  opacity: v,
                   child: IgnorePointer(
-                    ignoring: saltar < 0.5,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 4, 12, 0),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Presionable(
-                          etiqueta: 'Saltar la presentación',
-                          onTap: () => _irA(_ultima),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(minHeight: 48, minWidth: 64),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
-                              child: Center(
-                                widthFactor: 1,
-                                child: Text(
-                                  'Saltar',
-                                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Zc.textoSuave),
-                                ),
-                              ),
+                    ignoring: v < 0.5,
+                    child: Presionable(
+                      etiqueta: 'Saltar la presentación',
+                      onTap: () => _irA(_ultima),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48, minWidth: 64),
+                        child: Center(
+                          widthFactor: 1,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Cra.hero.withValues(alpha: VeloFoto.alfaPildora),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Saltar',
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Cra.blanco),
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            ),
-            SizedBox(
-              height: alto * s,
-              width: double.infinity,
-              child: OverflowBox(
-                alignment: Alignment.topCenter,
-                minHeight: 0,
-                maxHeight: alto,
-                minWidth: 0,
-                maxWidth: tamano,
-                child: Transform.scale(scale: s, alignment: Alignment.topCenter, child: hijo),
-              ),
+                );
+              },
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _paginas() {
-    final paginas = PageView(
+  Widget _paginas(double altoPantalla, bool ancho) {
+    return PageView(
       controller: _ctrl,
       onPageChanged: _alCambiarPagina,
       physics: const PageScrollPhysics(parent: BouncingScrollPhysics()),
@@ -317,82 +336,91 @@ class _BienvenidaState extends State<Bienvenida> {
           _Paralaje(
             controlador: _ctrl,
             indice: i,
-            child: _PaginaIntro(paso: _pasos[i], frase: i == _indice ? _frase : null),
+            child: _PaginaFoto(
+              paso: _pasos[i],
+              zanky: ZankyMascota(tamano: 64, animo: i == _indice ? _animo : Animo.feliz, onTap: _tocarZanky),
+              frase: i == _indice ? _frase : null,
+              ancho: ancho,
+            ),
           ),
-        _Paralaje(
-          controlador: _ctrl,
-          indice: _paginaRol,
-          child: PaginaRol(datos: _datos, burbuja: _indice == _paginaRol ? (_frase ?? _burbujaRol) : _burbujaRol),
-        ),
         _Paralaje(
           controlador: _ctrl,
           indice: _ultima,
-          child: PaginaPerfil(datos: _datos, burbuja: _indice == _ultima ? (_frase ?? _burbujaPerfil) : _burbujaPerfil),
-        ),
-      ],
-    );
-    // Desvanecido de 24 px en el borde superior: lo que se desplaza no se corta en seco
-    // bajo las raíces de Zanky. Las páginas llevan 24 px de relleno arriba para que en
-    // reposo el contenido empiece justo donde termina el desvanecido.
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (r) => LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-        stops: [0, math.min(1.0, 24 / math.max(24.0, r.height))],
-      ).createShader(r),
-      child: paginas,
-    );
-  }
-
-  Widget _barraInferior(double kf, double seguro) {
-    final enForm = _indice == _ultima;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24, 6, 24, 16 + seguro),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ClipRect(
-            child: Align(
-              heightFactor: kf,
-              alignment: Alignment.topCenter,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 16, top: 4),
-                child: Center(child: PuntosPagina(controlador: _ctrl, total: _total, actual: _indice)),
+          child: Padding(
+            // En el teléfono se asoma un poco de foto arriba; el panel es una hoja.
+            padding: EdgeInsets.only(top: ancho ? 8 : math.min(120, altoPantalla * 0.08)),
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              child: ColoredBox(
+                color: Zc.arena,
+                child: PaginaPerfil(
+                  datos: _datos,
+                  zanky: ZankyMascota(tamano: 56, animo: _indice == _ultima ? _animo : Animo.feliz, onTap: _tocarZanky),
+                  frase: _indice == _ultima ? _frase : null,
+                ),
               ),
             ),
           ),
-          AnimatedSize(
-            duration: context.resolveDuration(Zm.corto),
-            curve: Zm.entrar,
-            alignment: Alignment.topCenter,
-            child: AnimatedSwitcher(
-              duration: context.resolveDuration(Zm.corto),
-              child: enForm
-                  ? ListenableBuilder(
-                      key: const ValueKey('empezar'),
-                      listenable: _datos,
-                      builder: (context, _) => _BotonEmpezar(
-                        activo: _datos.acepto,
-                        cargando: _guardando,
-                        onTap: _empezar,
-                        alPedirAcepto: () {
-                          vibrar(Vibracion.ligera);
-                          _datos.pedirAcepto();
-                        },
-                      ),
-                    )
-                  : BotonZ(
-                      key: const ValueKey('siguiente'),
-                      texto: 'Siguiente',
-                      icono: Icons.arrow_forward_rounded,
-                      onTap: () => _irA(_indice + 1),
-                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _barraInferior(double seguro, bool ancho) {
+    final enForm = _indice == _ultima;
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, hijo) {
+        final t = _haciaForm();
+        return ColoredBox(
+          color: Color.lerp(ancho ? Cra.hero : VeloFoto.texto, Zc.arena, t)!,
+          child: hijo,
+        );
+      },
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24, 6, 24, 16 + seguro),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 14, top: 4),
+              child: Center(
+                child: PuntosPagina(controlador: _ctrl, total: _total, actual: _indice, ultimaClara: true),
+              ),
             ),
-          ),
-        ],
+            AnimatedSize(
+              duration: context.resolveDuration(Zm.corto),
+              curve: Zm.entrar,
+              alignment: Alignment.topCenter,
+              child: AnimatedSwitcher(
+                duration: context.resolveDuration(Zm.corto),
+                child: enForm
+                    ? ListenableBuilder(
+                        key: const ValueKey('empezar'),
+                        listenable: _datos,
+                        builder: (context, _) => _BotonEmpezar(
+                          activo: _datos.acepto,
+                          cargando: _guardando,
+                          onTap: _empezar,
+                          alPedirAcepto: () {
+                            vibrar(Vibracion.ligera);
+                            _datos.pedirAcepto();
+                          },
+                        ),
+                      )
+                    : BotonZ(
+                        key: const ValueKey('siguiente'),
+                        texto: _indice == _ultima - 1 ? 'Casi listo' : 'Siguiente',
+                        icono: Icons.arrow_forward_rounded,
+                        color: Cra.dorado,
+                        colorTexto: Cra.azul,
+                        onTap: () => _irA(_indice + 1),
+                      ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -434,80 +462,155 @@ class _Paralaje extends StatelessWidget {
   }
 }
 
-/// Una de las tres primeras páginas: burbuja, título, texto y la cadena de tres pasos.
-class _PaginaIntro extends StatelessWidget {
-  const _PaginaIntro({required this.paso, required this.frase});
+/// Una página de foto: la tarjeta de texto abajo, sobre el velo. Si la letra crece, la
+/// tarjeta se desplaza en vez de desbordar (y nunca sale del velo: el fundido va encima).
+class _PaginaFoto extends StatelessWidget {
+  const _PaginaFoto({required this.paso, required this.zanky, required this.frase, required this.ancho});
 
   final _Paso paso;
+  final Widget zanky;
   final String? frase;
+  final bool ancho;
 
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context).textTheme;
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+    final tarjeta = Container(
+      width: double.infinity,
+      color: ancho ? Cra.hero : VeloFoto.texto,
+      padding: EdgeInsets.fromLTRB(ancho ? 40 : 24, 0, ancho ? 40 : 24, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          BurbujaZanky(texto: frase ?? paso.burbuja),
-          const SizedBox(height: 22),
-          Semantics(header: true, child: Text(paso.titulo, style: tema.headlineMedium)),
-          const SizedBox(height: 10),
-          Text(paso.texto, style: tema.bodyLarge?.copyWith(color: Zc.textoSuave)),
-          const SizedBox(height: 26),
-          _Cadena(eslabones: paso.cadena),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              zanky,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(paso.ceja, style: estiloSeccion(context)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Semantics(
+            header: true,
+            child: Text(
+              paso.titulo,
+              style: tema.headlineLarge?.copyWith(
+                color: Cra.blanco,
+                fontWeight: FontWeight.w900,
+                height: 1.08,
+                fontSize: ancho ? 40 : 32,
+                letterSpacing: -0.4,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(paso.texto, style: tema.bodyLarge?.copyWith(color: Cra.textoSuave, height: 1.45)),
+          if (paso.pildoras.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Semantics(
+              label: paso.pildoras.map((p) => p.$2).join(', luego '),
+              excludeSemantics: true,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [for (final p in paso.pildoras) _Pildora(icono: p.$1, texto: p.$2)],
+              ),
+            ),
+          ],
+          AnimatedSize(
+            duration: context.resolveDuration(Zm.corto),
+            curve: Zm.entrar,
+            alignment: Alignment.topCenter,
+            child: frase == null
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text.rich(
+                        TextSpan(
+                          text: 'Zanky: ',
+                          style: tema.titleSmall?.copyWith(color: Cra.dorado),
+                          children: [
+                            TextSpan(text: frase, style: tema.bodyMedium?.copyWith(color: Cra.blanco)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            paso.foto.credito,
+            style: tema.bodySmall?.copyWith(color: Cra.textoTenue, fontSize: 11),
+          ),
         ],
+      ),
+    );
+    return Align(
+      alignment: ancho ? Alignment.centerLeft : Alignment.bottomCenter,
+      child: SingleChildScrollView(
+        reverse: !ancho,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!ancho)
+              // El velo empieza antes que el texto: nada queda en el borde duro.
+              IgnorePointer(
+                child: Container(
+                  height: VeloFoto.alturaFundido,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Cra.hero.withValues(alpha: 0), VeloFoto.texto],
+                    ),
+                  ),
+                ),
+              ),
+            tarjeta,
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Tres pasos con su flecha: lo que Zanky hace, dibujado en vez de explicado.
-class _Cadena extends StatelessWidget {
-  const _Cadena({required this.eslabones});
+class _Pildora extends StatelessWidget {
+  const _Pildora({required this.icono, required this.texto});
 
-  final List<_Eslabon> eslabones;
+  final IconData icono;
+  final String texto;
 
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context).textTheme;
-    final hijos = <Widget>[];
-    for (var i = 0; i < eslabones.length; i++) {
-      final e = eslabones[i];
-      if (i > 0) {
-        hijos.add(const Padding(
-          padding: EdgeInsets.only(top: 14),
-          child: Icon(Icons.chevron_right_rounded, size: 20, color: Zc.textoTenue),
-        ));
-      }
-      hijos.add(
-        Expanded(
-          child: Column(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: e.color.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(Zr.m),
-                ),
-                child: Icon(e.icono, size: 26, color: e.color),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                e.etiqueta,
-                textAlign: TextAlign.center,
-                style: tema.bodySmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w600),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Cra.blanco.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Cra.blanco.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icono, size: 18, color: Cra.dorado),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              texto,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Cra.blanco, fontSize: 14),
+            ),
           ),
-        ),
-      );
-    }
-    return Semantics(
-      label: eslabones.map((e) => e.etiqueta).join(', luego '),
-      excludeSemantics: true,
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: hijos),
+        ],
+      ),
     );
   }
 }
@@ -580,40 +683,6 @@ class _BotonEmpezar extends StatelessWidget {
                     ],
                   ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// La cuarta página: cómo participas. Cuatro tarjetas ilustradas; se puede cambiar después en Guardián.
-class PaginaRol extends StatelessWidget {
-  const PaginaRol({super.key, required this.datos, required this.burbuja});
-
-  final DatosPerfil datos;
-  final String burbuja;
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context).textTheme;
-    return ListenableBuilder(
-      listenable: datos,
-      builder: (context, _) => SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            BurbujaZanky(texto: burbuja),
-            const SizedBox(height: 20),
-            Semantics(header: true, child: Text('¿Cómo participas?', style: tema.headlineMedium)),
-            const SizedBox(height: 8),
-            Text(
-              'Elige lo que más se parezca a ti: Inicio te muestra primero lo que te sirve. Lo puedes cambiar en Guardián.',
-              style: tema.bodyLarge?.copyWith(color: Zc.textoSuave),
-            ),
-            const SizedBox(height: 20),
-            SelectorRol(valor: datos.rol, alCambiar: datos.elegirRol),
-          ],
         ),
       ),
     );

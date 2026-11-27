@@ -282,29 +282,27 @@ void main() {
       await _cerrar(t);
     });
 
-    testWidgets('en la bienvenida: cuarta página, se elige y queda en el perfil guardado', (t) async {
+    testWidgets('en la bienvenida ya no se pregunta el rol: queda el de por defecto', (t) async {
       SharedPreferences.setMockInitialValues({});
       await _sinErrores(t, (_) async {
         final estado = EstadoZanky()
           ..manglar = _manglar
           ..listo = true;
         await _montar(t, estado, const Bienvenida(), _tamanos[1].$2, 1.0);
-        for (var i = 0; i < 3; i++) {
-          await t.tap(find.text('Siguiente'));
+        for (var i = 0; i < 4; i++) {
+          expect(find.text('¿Cómo participas?'), findsNothing);
+          await t.tap(find.text(i == 3 ? 'Casi listo' : 'Siguiente'));
           await _avanzar(t, veces: 8);
         }
-        expect(find.text('¿Cómo participas?'), findsOneWidget);
-        await t.tap(find.text('Estudiante'));
-        await _avanzar(t, veces: 3);
-        await t.tap(find.text('Siguiente'));
-        await _avanzar(t, veces: 8);
+        expect(find.text('¿Cómo participas?'), findsNothing);
         await t.ensureVisible(find.textContaining('Acepto el tratamiento'));
         await _avanzar(t, veces: 2);
         await t.tap(find.textContaining('Acepto el tratamiento'));
         await _avanzar(t, veces: 3);
         await t.tap(find.textContaining('Empezar a cuidar'));
         await _avanzar(t, veces: 10);
-        expect(estado.perfil?.rol, RolUsuario.estudiante);
+        expect(estado.perfil?.consentimiento, isNotNull);
+        expect(estado.perfil?.rol, RolUsuario.ciudadano);
         await _cerrar(t);
       });
     });

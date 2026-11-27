@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../datos/roles.dart';
 import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
@@ -115,12 +116,17 @@ class DatosPerfil extends ChangeNotifier {
   }
 }
 
-/// La última página: nombre, colegio, anonimato y aviso de privacidad.
+/// La última página. Arriba, lo que pide la Ley 1581 en una tarjeta que se ve sin buscarla
+/// (qué se envía y la casilla de aceptación); debajo, el aviso completo y, al final, los
+/// datos opcionales (nombre, colegio y anonimato).
 class PaginaPerfil extends StatelessWidget {
-  const PaginaPerfil({super.key, required this.datos, required this.burbuja});
+  const PaginaPerfil({super.key, required this.datos, this.zanky, this.frase});
 
   final DatosPerfil datos;
-  final String burbuja;
+
+  /// Zanky pequeño junto al título (tocarlo cuenta un dato del manglar).
+  final Widget? zanky;
+  final String? frase;
 
   @override
   Widget build(BuildContext context) {
@@ -129,19 +135,68 @@ class PaginaPerfil extends StatelessWidget {
       listenable: datos,
       builder: (context, _) => SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+        padding: const EdgeInsets.fromLTRB(24, 22, 24, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            BurbujaZanky(texto: burbuja),
-            const SizedBox(height: 20),
-            Semantics(header: true, child: Text('¿Cómo te llamamos?', style: tema.headlineMedium)),
-            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Sobre arena el eyebrow va en azul CRA: el dorado no llega a 4,5:1.
+                      Text('ANTES DE EMPEZAR', style: estiloSeccion(context, color: Cra.azul)),
+                      const SizedBox(height: 6),
+                      Semantics(header: true, child: Text('Tus datos, en claro', style: tema.headlineMedium)),
+                    ],
+                  ),
+                ),
+                if (zanky != null) ...[const SizedBox(width: 8), zanky!],
+              ],
+            ),
+            if (frase != null) ...[
+              const SizedBox(height: 10),
+              Semantics(liveRegion: true, child: BurbujaZanky(texto: frase!)),
+            ],
+            const SizedBox(height: 16),
+            _Consentimiento(datos: datos),
+            AnimatedSize(
+              duration: context.resolveDuration(Zm.corto),
+              curve: Zm.entrar,
+              alignment: Alignment.topCenter,
+              child: datos.errorGuardar == null
+                  ? const SizedBox(width: double.infinity)
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 14),
+                      child: Semantics(
+                        liveRegion: true,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Zc.prioridad[5]!.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(Zr.s),
+                          ),
+                          child: Text(
+                            datos.errorGuardar!,
+                            style: tema.bodyMedium?.copyWith(color: Zc.prioridad[5]),
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 16),
+            const _AvisoPrivacidad(),
+            const SizedBox(height: 26),
+            Text('SI QUIERES, CUÉNTANOS', style: estiloSeccion(context, color: Cra.azul)),
+            const SizedBox(height: 6),
             Text(
               'Nombre y colegio son opcionales y se quedan en tu teléfono. Sin ellos eres un «Guardián del manglar» igual de valioso.',
-              style: tema.bodyLarge?.copyWith(color: Zc.textoSuave),
+              style: tema.bodyMedium?.copyWith(color: Zc.textoSuave),
             ),
-            const SizedBox(height: 22),
+            const SizedBox(height: 16),
             CampoZ(
               etiqueta: 'Nombre',
               icono: Icons.person_rounded,
@@ -173,53 +228,89 @@ class PaginaPerfil extends StatelessWidget {
               valor: datos.anonimo,
               alCambiar: datos.alternarAnonimo,
             ),
-            const SizedBox(height: 16),
-            const _AvisoPrivacidad(),
-            const SizedBox(height: 16),
-            AnimatedContainer(
-              key: datos.claveAcepto,
-              duration: context.resolveDuration(Zm.corto),
-              curve: Zm.entrar,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(Zr.m),
-                border: Border.all(
-                  color: datos.resaltarAcepto && !datos.acepto ? Zc.hoja : Colors.transparent,
-                  width: 2,
-                ),
-              ),
-              child: CasillaZ(
-                texto: 'Acepto el tratamiento de mis datos para el monitoreo del manglar',
-                valor: datos.acepto,
-                alCambiar: datos.alternarAcepto,
-              ),
-            ),
-            AnimatedSize(
-              duration: context.resolveDuration(Zm.corto),
-              curve: Zm.entrar,
-              alignment: Alignment.topCenter,
-              child: datos.errorGuardar == null
-                  ? const SizedBox(width: double.infinity)
-                  : Padding(
-                      padding: const EdgeInsets.only(top: 14),
-                      child: Semantics(
-                        liveRegion: true,
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Zc.prioridad[5]!.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(Zr.s),
-                          ),
-                          child: Text(
-                            datos.errorGuardar!,
-                            style: tema.bodyMedium?.copyWith(color: Zc.prioridad[5]),
-                          ),
-                        ),
-                      ),
-                    ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// La tarjeta de la Ley 1581: en una frase qué llega a la CRA y qué no, y la casilla.
+/// El botón apagado trae la vista hasta aquí ([DatosPerfil.pedirAcepto]) y la resalta.
+class _Consentimiento extends StatelessWidget {
+  const _Consentimiento({required this.datos});
+
+  final DatosPerfil datos;
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context).textTheme;
+    final resaltar = datos.resaltarAcepto && !datos.acepto;
+    return AnimatedContainer(
+      key: datos.claveAcepto,
+      duration: context.resolveDuration(Zm.corto),
+      curve: Zm.entrar,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(Zr.m),
+        border: Border.all(color: resaltar ? Zc.hoja : (datos.acepto ? Zc.hoja.withValues(alpha: 0.5) : Zc.linea), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Zc.hoja.withValues(alpha: resaltar ? 0.22 : 0),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 1),
+                child: Icon(Icons.shield_rounded, size: 20, color: Zc.hoja),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'A la CRA solo llegan tus reportes: foto, ubicación, hora y descripción. Tu nombre y tu colegio '
+                  'se quedan en este teléfono.',
+                  style: tema.bodyMedium?.copyWith(color: Zc.texto),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          CasillaZ(
+            texto: 'Acepto el tratamiento de mis datos para el monitoreo del manglar',
+            valor: datos.acepto,
+            alCambiar: datos.alternarAcepto,
+          ),
+          AnimatedSize(
+            duration: context.resolveDuration(Zm.corto),
+            curve: Zm.entrar,
+            alignment: Alignment.topCenter,
+            child: resaltar
+                ? Padding(
+                    padding: const EdgeInsets.only(left: 44, bottom: 8),
+                    child: Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        'Marca esta casilla para empezar.',
+                        style: tema.bodySmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 44, bottom: 6),
+            child: Text('Aviso de privacidad completo abajo · Ley 1581 de 2012', style: tema.bodySmall),
+          ),
+        ],
       ),
     );
   }
@@ -594,7 +685,7 @@ class _AvisoPrivacidad extends StatelessWidget {
               Expanded(
                 child: Semantics(
                   header: true,
-                  child: Text('Tus datos, en claro', style: tema.titleMedium),
+                  child: Text('Aviso de privacidad', style: tema.titleMedium),
                 ),
               ),
             ],
@@ -602,7 +693,7 @@ class _AvisoPrivacidad extends StatelessWidget {
           const SizedBox(height: 2),
           Padding(
             padding: const EdgeInsets.only(left: 32),
-            child: Text('Aviso de privacidad · Ley 1581 de 2012', style: tema.bodySmall),
+            child: Text('Ley 1581 de 2012', style: tema.bodySmall),
           ),
           const SizedBox(height: 14),
           const _Vineta(
