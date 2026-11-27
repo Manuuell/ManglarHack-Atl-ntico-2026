@@ -31,3 +31,17 @@ export interface Colegio {
   estudiantes: number;
   guardian: boolean;
 }
+
+/** Polígono de la capa «Prioridades de conservación» de la C.R.A. */
+export interface PropiedadesPrioridad {
+  sector: 'mallorquin' | 'balboa' | 'manaties' | 'totumo';
+  accion: 'preservacion' | 'restauracion' | 'recuperacion' | 'rehabilitacion';
+  prioridad: 'alta' | 'media' | 'baja';
+  unidad: string | null;
+  subzona: string | null;
+  escenario: string | null;
+  accion_regional: string | null;
+  figura: string | null;
+  area_protegida: string | null;
+}
+export type CapaPrioridades = import('geojson').FeatureCollection<import('geojson').Polygon | import('geojson').MultiPolygon, PropiedadesPrioridad>;

@@ -24,6 +24,8 @@ type DatosActor = Omit<Actor, 'id' | 'verificado' | 'creado_en'>;
 export type DatosAccion = Omit<Accion, 'id' | 'estado' | 'observaciones' | 'creada_en' | 'requerimientos' | 'accion_plan' | 'prioridad_plan' | 'plan_aproximado'> & {
   requerimientos?: Requerimiento[];
   requerimientos_cumplidos?: string[];
+  /** Plan leído de la capa de la C.R.A. en el sitio; sin él se usa el respaldo por sector. */
+  plan?: { accion_plan: Accion['accion_plan']; prioridad_plan: Accion['prioridad_plan']; plan_aproximado: boolean };
 };
 const tiene = (catalogo: object, valor: string) => Object.prototype.hasOwnProperty.call(catalogo, valor);
 const nombreValido = (nombre: string) => typeof nombre === 'string' && nombre.trim().length >= 3;
@@ -63,7 +65,7 @@ export function proponerAccion(datos: DatosAccion): Resultado<{ accion: Accion; 
   const accion: Accion = {
     id: crypto.randomUUID(), nombre: datos.nombre.trim(), tipo: datos.tipo, actor_id: datos.actor_id,
     sector: datos.sector, lat: datos.lat, lon: datos.lon, hectareas: datos.hectareas,
-    ...heredarPlan(datos.sector), estado: 'propuesta', descripcion: datos.descripcion.trim(),
+    ...(datos.plan ?? heredarPlan(datos.sector)), estado: 'propuesta', descripcion: datos.descripcion.trim(),
     comunidad_coparticipante: datos.comunidad_coparticipante.trim(), requerimientos, observaciones: [], creada_en: new Date().toISOString(),
   };
   const cambio: CambioAccion = { id: crypto.randomUUID(), accion_id: accion.id, estado: 'propuesta', usuario_id: datos.actor_id, rol: 'sistema', nota: 'Propuesta registrada por el actor en modo demostración.', fecha: accion.creada_en };

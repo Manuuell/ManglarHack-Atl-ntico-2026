@@ -7,8 +7,8 @@
     "inicio": "2026-11-29T07:00:00-05:00",
     "fin": "2026-11-29T11:00:00-05:00",
     "punto_encuentro": "Ecoparque Ci?naga de Mallorqu?n, entrada principal",
-    "lat": 11.038,
-    "lon": -74.865,
+    "lat": 11.03217,
+    "lon": -74.85755,
     "cupos": 40,
     "inscritos": 23,
     "que_llevar": [
@@ -28,8 +28,8 @@
     "inicio": "2026-12-06T06:30:00-05:00",
     "fin": "2026-12-06T10:00:00-05:00",
     "punto_encuentro": "Muelle de pescadores del Totumo",
-    "lat": 10.73,
-    "lon": -75.23,
+    "lat": 10.73029,
+    "lon": -75.22261,
     "cupos": 15,
     "inscritos": 9,
     "que_llevar": [
@@ -49,8 +49,8 @@
     "inicio": "2026-12-07T08:00:00-05:00",
     "fin": "2026-12-07T11:30:00-05:00",
     "punto_encuentro": "Punto de encuentro del ca?o Balboa [por confirmar]",
-    "lat": 11.0385,
-    "lon": -74.915,
+    "lat": 11.03878,
+    "lon": -74.91318,
     "cupos": 30,
     "inscritos": 30,
     "que_llevar": [
@@ -70,8 +70,8 @@
     "inicio": "2026-12-13T07:30:00-05:00",
     "fin": "2026-12-13T10:00:00-05:00",
     "punto_encuentro": "Ecoparque Ci?naga de Mallorqu?n, entrada principal",
-    "lat": 11.038,
-    "lon": -74.865,
+    "lat": 11.03217,
+    "lon": -74.85755,
     "cupos": 12,
     "inscritos": 4,
     "que_llevar": [

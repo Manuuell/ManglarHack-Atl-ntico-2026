@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "check": "astro check"
+    "check": "astro check",
+    "capas:prioridades": "node scripts/prioridades-cra.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.9",
@@ -35,6 +36,7 @@
     "@types/geojson": "^7946.0.16",
     "@types/leaflet": "^1.9.23",
     "@xmldom/xmldom": "^0.9.12",
+    "mapshaper": "^0.8.13",
     "typescript": "^6.0.3"
   }
 }

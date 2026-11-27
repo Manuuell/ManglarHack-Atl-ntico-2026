@@ -8,20 +8,20 @@
     "fotos": [
       {
         "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+1",
-        "lat": 11.038,
-        "lon": -74.865,
+        "lat": 11.03177,
+        "lon": -74.85785,
         "tomada_en": "2026-08-15T08:00:00-05:00"
       },
       {
         "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+2",
-        "lat": 11.0383,
-        "lon": -74.86479999999999,
+        "lat": 11.03217,
+        "lon": -74.85705,
         "tomada_en": "2026-08-15T08:00:00-05:00"
       },
       {
         "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+3",
-        "lat": 11.0376,
-        "lon": -74.8647,
+        "lat": 11.03257,
+        "lon": -74.85785,
         "tomada_en": "2026-08-15T08:00:00-05:00"
       }
     ],
@@ -37,20 +37,20 @@
     "fotos": [
       {
         "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+1",
-        "lat": 11.038,
-        "lon": -74.865,
+        "lat": 11.03177,
+        "lon": -74.85785,
         "tomada_en": "2026-11-15T08:00:00-05:00"
       },
       {
         "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+2",
-        "lat": 11.0383,
-        "lon": -74.86479999999999,
+        "lat": 11.03217,
+        "lon": -74.85705,
         "tomada_en": "2026-11-15T08:00:00-05:00"
       },
       {
         "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+3",
-        "lat": 11.0376,
-        "lon": -74.8647,
+        "lat": 11.03257,
+        "lon": -74.85785,
         "tomada_en": "2026-11-15T08:00:00-05:00"
       }
     ],

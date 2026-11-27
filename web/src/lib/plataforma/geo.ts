@@ -1,5 +1,5 @@
 import type { Position, Polygon } from 'geojson';
-import type { ZonasManglar } from '../../types/manglar';
+import type { CapaPrioridades, ZonasManglar } from '../../types/manglar';
 import type { SectorId, AccionPlan, NivelPlan } from '../../types/plataforma';
 
 function distanciaSegmento(lat: number, lon: number, a: Position, b: Position): number {
@@ -45,7 +45,27 @@ export function sectorDePunto(lat: number, lon: number, zonas: ZonasManglar): { 
   // Fuera de los polígonos no se atribuye un sector; sin geometrías, Infinity.
   return { sector: null, dentro: false, distancia_m: distancia };
 }
-// Mapeo provisional: se reemplaza por la capa «Prioridades de conservación» de la C.R.A.
+export interface PlanHeredado {
+  accion_plan: AccionPlan;
+  prioridad_plan: NivelPlan | null;
+  plan_aproximado: boolean;
+  unidad?: string | null;
+  escenario?: string | null;
+  figura?: string | null;
+}
+/** Acción y prioridad del plan de manejo de la C.R.A. en un punto, leídas de su
+ *  capa «Prioridades de conservación». Fuera de todo polígono: fuera de la zonificación. */
+export function planDesdeCapa(lat: number, lon: number, capa: CapaPrioridades): PlanHeredado {
+  for (const f of capa.features) {
+    const poligonos = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+    if (poligonos.some((p) => p.length > 0 && puntoEnPoligono(lat, lon, p))) {
+      const p = f.properties;
+      return { accion_plan: p.accion, prioridad_plan: p.prioridad, plan_aproximado: false, unidad: p.unidad, escenario: p.escenario, figura: p.figura };
+    }
+  }
+  return { accion_plan: 'fuera_zonificacion', prioridad_plan: null, plan_aproximado: false };
+}
+// Respaldo solo si la capa de la C.R.A. no cargó: mapeo provisional por sector.
 export function heredarPlan(sector: SectorId | null): { accion_plan: AccionPlan; prioridad_plan: NivelPlan | null; plan_aproximado: true } {
   const planes: Record<SectorId, [AccionPlan, NivelPlan]> = {
     mallorquin: ['restauracion', 'alta'], balboa: ['recuperacion', 'media'],

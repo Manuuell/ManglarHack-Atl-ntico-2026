@@ -2,7 +2,7 @@
 import reportes from '../data/mockReportes.json';
 import poligonos from '../data/poligonosManglar.json';
 import colegios from '../data/colegios.json';
-import type { CambioEstado, Colegio, PropiedadesInvemar, Reporte, ZonasManglar } from '../types/manglar';
+import type { CambioEstado, CapaPrioridades, Colegio, PropiedadesInvemar, Reporte, ZonasManglar } from '../types/manglar';
 
 export async function obtenerReportes(): Promise<Reporte[]> {
   return structuredClone(reportes) as Reporte[];
@@ -38,4 +38,20 @@ export async function obtenerCapaManglar(): Promise<FeatureCollection<Polygon, P
  const capa: unknown = await respuesta.json();
  if (!esCapa(capa)) throw new Error('La capa de INVEMAR no contiene una colección válida de polígonos');
  return capa;
+}
+
+// Capa «Prioridades de conservación» de la C.R.A. (KMZ entregado por la
+// Corporación), recortada a los sectores del manglar por scripts/prioridades-cra.mjs.
+export const URL_CAPA_PRIORIDADES = '/datos/prioridades-cra.geojson';
+export async function obtenerCapaPrioridades(): Promise<CapaPrioridades> {
+ const respuesta = await fetch(URL_CAPA_PRIORIDADES);
+ if (!respuesta.ok) throw new Error('No se pudo cargar la capa de prioridades de la C.R.A.');
+ const capa: unknown = await respuesta.json();
+ const acciones = ['preservacion', 'restauracion', 'recuperacion', 'rehabilitacion'];
+ const niveles = ['alta', 'media', 'baja'];
+ const valida = objeto(capa) && capa.type === 'FeatureCollection' && Array.isArray(capa.features) && capa.features.every((f: unknown) =>
+  objeto(f) && objeto(f.geometry) && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') && objeto(f.properties) &&
+  acciones.includes(String(f.properties.accion)) && niveles.includes(String(f.properties.prioridad)));
+ if (!valida) throw new Error('La capa de prioridades de la C.R.A. no tiene el formato esperado');
+ return capa as unknown as CapaPrioridades;
 }
