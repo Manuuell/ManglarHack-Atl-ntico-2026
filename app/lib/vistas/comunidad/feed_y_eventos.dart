@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../datos/comunidad/comunidad.dart';
 import '../../datos/comunidad/feed.dart';
+import '../../datos/comunidad/marcas_comunidad.dart';
 import '../../datos/experiencia/jornada.dart';
 import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/hoja.dart';
@@ -17,6 +17,7 @@ import '../../nucleo/tema.dart';
 import '../mapa/marcadores.dart' show tintaSobre;
 import '../mis_reportes/gestos_reporte.dart' show copiarCodigoReporte;
 import '../raiz.dart';
+import 'detalle_evento.dart';
 import 'piezas_comunidad.dart';
 
 /// Lleva al mapa y lo centra en el punto (el mapa escucha [puntoPedidoMapa]).
@@ -302,45 +303,78 @@ class _FichaReporte extends StatelessWidget {
 
 // ------------------------------------------------------------------ eventos
 
-/// Como la web y el bot: sin cupo definido es «sin límite de cupos»; nunca se bloquea la inscripción.
-String textoCupos(Jornada j) {
-  final ins = '${j.inscritos} ${j.inscritos == 1 ? 'inscrito' : 'inscritos'}';
-  if (j.cupos <= 0) return '$ins · sin límite de cupos';
-  final libres = j.cupos - j.inscritos;
-  return '${j.inscritos} de ${j.cupos} inscritos${libres > 0 ? ' · $libres cupos libres' : ' · cupo completo, igual puedes apuntarte'}';
-}
+/// Como la web y el bot desplegado: las jornadas no tienen límite de cupos; se dice cuántos van.
+String textoCupos(Jornada j) => '${j.inscritos} ${j.inscritos == 1 ? 'inscrito' : 'inscritos'} · cupos sin límite';
 
-/// Tarjeta de un evento: foto, tipo, fecha, lugar, cupos e inscripción. Mantener: vista previa con
-/// «Inscribirme» y «Compartir».
+/// La jornada que «Próximo evento» muestra en grande en Inicio: «Próximas jornadas» la salta para
+/// no repetirla.
+final proximoEventoMostrado = ValueNotifier<String?>(null);
+
+/// Tarjeta de un evento: foto, tipo, fecha, lugar, inscritos e inscripción.
+/// - Tocar: abre el detalle (la foto viaja con Hero).
+/// - Mantener: vista previa con Inscribirme / Al calendario, Ver en el mapa, Compartir y Abrir.
+/// - Deslizar a la derecha: inscribirme (o «Al calendario» si ya lo estoy); a la izquierda: compartir.
 class TarjetaEvento extends StatelessWidget {
-  const TarjetaEvento({super.key, required this.e, required this.alInscribirse, this.compacta = false});
+  const TarjetaEvento({super.key, required this.e, required this.alInscribirse, this.compacta = false, this.fuente});
   final EventoCartelera e;
   final VoidCallback? alInscribirse;
   final bool compacta;
+  final FuenteComunidad? fuente;
 
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final j = e.jornada;
-    final compartir = AccionGesto(
-      etiqueta: 'Compartir',
-      icono: Icons.ios_share_rounded,
-      alEjecutar: () => SharePlus.instance.share(ShareParams(
-          text: '${j.titulo}\n${cuandoTexto(j.inicio.toLocal())} · ${j.puntoEncuentro}\nInscríbete en Zanky: https://mimanglar.sentralabs.co/#jornadas')),
+    final semilla = '${j.tipo} ${j.titulo} ${j.puntoEncuentro}';
+    void abrir() => abrirDetalleEvento(context, e, fuente: fuente);
+    return ValueListenableBuilder<Set<String>>(
+      valueListenable: jornadasInscritas,
+      builder: (context, inscritas, _) {
+        final ya = inscritas.contains(j.id);
+        final compartir = AccionGesto(
+          etiqueta: 'Compartir',
+          icono: Icons.ios_share_rounded,
+          color: Cra.azul,
+          alEjecutar: () => compartirJornada(j),
+        );
+        final calendario = AccionGesto(
+          etiqueta: 'Al calendario',
+          icono: Icons.event_available_rounded,
+          color: Zc.cienaga,
+          alEjecutar: () => agregarJornadaAlCalendario(context, j),
+        );
+        final inscribir = AccionGesto(
+          etiqueta: 'Inscribirme',
+          icono: Icons.how_to_reg_rounded,
+          color: Zc.hoja,
+          alEjecutar: () => alInscribirse?.call(),
+        );
+        final principal = ya ? calendario : inscribir;
+        return MenuMantenido(
+          etiqueta: '${e.respaldo ? 'Respaldo, por confirmar. ' : ''}${ya ? 'Inscrito. ' : ''}${j.tipoLegible}: ${j.titulo}, '
+              '${cuandoTexto(j.inicio.toLocal())}, ${j.puntoEncuentro}, ${textoCupos(j)}',
+          radio: BorderRadius.circular(Zr.l),
+          alTocar: abrir,
+          vistaPrevia: (_) => _VistaPreviaEvento(e: e),
+          acciones: [
+            if (ya || alInscribirse != null) principal,
+            if (tieneLugar(j))
+              AccionGesto(etiqueta: 'Ver en el mapa', icono: Icons.map_rounded, alEjecutar: () => verJornadaEnMapa(context, j)),
+            compartir,
+            AccionGesto(etiqueta: 'Abrir', icono: Icons.open_in_full_rounded, alEjecutar: abrir),
+          ],
+          child: FilaDeslizable(
+            radio: BorderRadius.circular(Zr.l),
+            accionesInicio: [if (ya || alInscribirse != null) principal],
+            accionesFin: [compartir],
+            hijo: _cuerpo(context, tt, j, semilla, ya),
+          ),
+        );
+      },
     );
-    final inscribir = AccionGesto(
-      etiqueta: 'Inscribirme',
-      icono: Icons.how_to_reg_rounded,
-      alEjecutar: () => alInscribirse?.call(),
-    );
-    return MenuMantenido(
-      etiqueta: '${e.respaldo ? 'Respaldo, por confirmar. ' : ''}${j.tipoLegible}: ${j.titulo}, '
-          '${cuandoTexto(j.inicio.toLocal())}, ${j.puntoEncuentro}, ${textoCupos(j)}',
-      radio: BorderRadius.circular(Zr.l),
-      alTocar: compacta ? alInscribirse : null,
-      vistaPrevia: (_) => _VistaPreviaEvento(e: e),
-      acciones: [if (alInscribirse != null) inscribir, compartir],
-      child: Container(
+  }
+
+  Widget _cuerpo(BuildContext context, TextTheme tt, Jornada j, String semilla, bool ya) => Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: Zc.superficie,
@@ -351,12 +385,8 @@ class TarjetaEvento extends StatelessWidget {
           AspectRatio(
             aspectRatio: compacta ? 21 / 9 : 16 / 9,
             child: Stack(fit: StackFit.expand, children: [
-              FotoNoticia(url: j.imagen?.toString()),
-              Positioned(
-                left: 12,
-                top: 12,
-                child: _FechaGrande(j.inicio.toLocal()),
-              ),
+              Hero(tag: heroEvento(j), child: FotoNoticia(url: j.imagen?.toString(), semilla: semilla)),
+              Positioned(left: 12, top: 12, child: _FechaGrande(j.inicio.toLocal())),
               if (e.respaldo || j.esEjemplo)
                 Positioned(
                   right: 12,
@@ -368,6 +398,25 @@ class TarjetaEvento extends StatelessWidget {
                         style: tt.labelSmall?.copyWith(color: Cra.azul, fontWeight: FontWeight.w800)),
                   ),
                 ),
+              // Microdetalle: la marca «Inscrito» brota con rebote cuando quedas en la lista.
+              Positioned(
+                left: 12,
+                bottom: 12,
+                child: AnimatedScale(
+                  scale: ya ? 1 : 0,
+                  duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
+                  curve: Curves.easeOutBack,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: Zc.hoja, borderRadius: BorderRadius.circular(99)),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                      const SizedBox(width: 4),
+                      Text('Inscrito', style: tt.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+                    ]),
+                  ),
+                ),
+              ),
             ]),
           ),
           Padding(
@@ -376,8 +425,7 @@ class TarjetaEvento extends StatelessWidget {
               Text(j.tipoLegible.toUpperCase(), style: tt.seccion.copyWith(color: Zc.cienaga)),
               const SizedBox(height: 4),
               Text(j.titulo,
-                  maxLines: 2, overflow: TextOverflow.ellipsis,
-                  style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
+                  maxLines: 2, overflow: TextOverflow.ellipsis, style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
               const SizedBox(height: 6),
               Row(children: [
                 const Icon(Icons.schedule_rounded, size: 15, color: Zc.textoTenue),
@@ -393,29 +441,31 @@ class TarjetaEvento extends StatelessWidget {
                       maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.labelMedium?.copyWith(color: Zc.textoSuave)),
                 ),
               ]),
-              const SizedBox(height: 10),
-              if (j.cupos > 0) ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: LinearProgressIndicator(
-                  value: j.cupos == 0 ? 0 : j.inscritos / j.cupos,
-                  minHeight: 6,
-                  backgroundColor: Zc.linea,
-                  color: Zc.hoja,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(textoCupos(j),
-                  style: tt.labelMedium?.copyWith(color: Zc.textoSuave)),
+              const SizedBox(height: 2),
+              Row(children: [
+                const Icon(Icons.groups_rounded, size: 15, color: Zc.textoTenue),
+                const SizedBox(width: 4),
+                Flexible(child: Text(textoCupos(j), style: tt.labelMedium?.copyWith(color: Zc.textoSuave))),
+              ]),
               if (!compacta) ...[
                 const SizedBox(height: 12),
-                BotonZ(texto: 'Inscribirme', icono: Icons.how_to_reg_rounded, onTap: alInscribirse),
+                AnimatedSwitcher(
+                  duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.corto,
+                  child: ya
+                      ? BotonZ(
+                          key: const ValueKey('ya'),
+                          texto: 'Al calendario',
+                          icono: Icons.event_available_rounded,
+                          secundario: true,
+                          onTap: () => agregarJornadaAlCalendario(context, j),
+                        )
+                      : BotonZ(key: const ValueKey('no'), texto: 'Inscribirme', icono: Icons.how_to_reg_rounded, onTap: alInscribirse),
+                ),
               ],
             ]),
           ),
         ]),
-      ),
-    );
-  }
+      );
 }
 
 class _FechaGrande extends StatelessWidget {
@@ -449,12 +499,16 @@ class _VistaPreviaEvento extends StatelessWidget {
     return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       ClipRRect(
         borderRadius: BorderRadius.circular(Zr.m),
-        child: AspectRatio(aspectRatio: 16 / 9, child: FotoNoticia(url: j.imagen?.toString())),
+        child: AspectRatio(
+            aspectRatio: 16 / 9, child: FotoNoticia(url: j.imagen?.toString(), semilla: '${j.tipo} ${j.titulo} ${j.puntoEncuentro}')),
       ),
       const SizedBox(height: 12),
       Text(j.titulo, style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
       const SizedBox(height: 4),
       Text('${cuandoTexto(j.inicio.toLocal())} · ${j.puntoEncuentro}', style: tt.labelMedium?.copyWith(color: Zc.textoSuave)),
+      const SizedBox(height: 4),
+      Text('${textoCuentaRegresiva(j.inicio, j.fin, DateTime.now())} · ${textoCupos(j)}',
+          style: tt.labelMedium?.copyWith(color: Cra.azul, fontWeight: FontWeight.w700)),
       if (j.descripcion.isNotEmpty) ...[
         const SizedBox(height: 8),
         Text(j.descripcion, maxLines: 5, overflow: TextOverflow.ellipsis, style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.4)),
@@ -467,21 +521,54 @@ class _VistaPreviaEvento extends StatelessWidget {
   }
 }
 
+/// Esqueleto con la forma exacta de [TarjetaEvento] (foto 16:9 o 21:9 y cuatro líneas): al llegar
+/// los datos no salta nada.
+class EsqueletoEvento extends StatelessWidget {
+  const EsqueletoEvento({super.key, this.compacta = false});
+  final bool compacta;
+  @override
+  Widget build(BuildContext context) => Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(color: Zc.superficie, borderRadius: BorderRadius.circular(Zr.l)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
+          AspectRatio(
+            aspectRatio: compacta ? 21 / 9 : 16 / 9,
+            child: const Skeleton(width: double.infinity, height: double.infinity, borderRadius: BorderRadius.zero),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Skeleton(width: 70, height: 10),
+              const SizedBox(height: 8),
+              const Skeleton(width: 220, height: 16),
+              const SizedBox(height: 10),
+              const Skeleton(width: 160, height: 11),
+              const SizedBox(height: 6),
+              const Skeleton(width: 190, height: 11),
+              if (!compacta) ...[const SizedBox(height: 14), const Skeleton(width: double.infinity, height: 48)],
+            ]),
+          ),
+        ]),
+      );
+}
+
 /// La cartelera de eventos de Comunidad.
 class SeccionEventos extends StatelessWidget {
-  const SeccionEventos({super.key, required this.eventos, required this.alInscribirse});
+  const SeccionEventos({super.key, required this.eventos, required this.alInscribirse, this.fuente});
   final List<EventoCartelera>? eventos;
   final void Function(Jornada) alInscribirse;
+  final FuenteComunidad? fuente;
 
   @override
   Widget build(BuildContext context) {
     final ev = eventos;
     return LayoutBuilder(builder: (context, c) {
       final dos = c.maxWidth >= 720;
+      final ancho = dos ? (c.maxWidth - 40 - 12) / 2 : c.maxWidth - 40;
       return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const TituloSeccion(antetitulo: 'Cartelera', titulo: 'Eventos y jornadas', tono: 'para sumarte.'),
         if (ev == null)
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.tarjeta())
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: SizedBox(width: ancho, child: const EsqueletoEvento()))
         else if (ev.isEmpty)
           const EstadoVacio(
             titulo: 'No hay jornadas programadas',
@@ -495,16 +582,19 @@ class SeccionEventos extends StatelessWidget {
             child: Wrap(spacing: 12, runSpacing: 12, children: [
               for (final e in ev.take(6))
                 SizedBox(
-                  width: dos ? (c.maxWidth - 40 - 12) / 2 : c.maxWidth - 40,
-                  child: TarjetaEvento(e: e, alInscribirse: () => alInscribirse(e.jornada)),
+                  width: ancho,
+                  child: TarjetaEvento(e: e, fuente: fuente, alInscribirse: () => alInscribirse(e.jornada)),
                 ),
             ]),
           ),
-        if (ev != null && ev.any((e) => e.respaldo))
+        if (ev != null && ev.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: Text('«Respaldo · por confirmar»: jornadas guardadas en la app; el servidor aún no las publica.',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Zc.textoSuave)),
+            child: Text(
+              '${ev.any((e) => e.respaldo) ? '«Respaldo · por confirmar»: jornadas guardadas en la app; el servidor aún no las publica. ' : ''}'
+              'Desliza una tarjeta a la derecha para inscribirte y a la izquierda para compartirla; mantén presionado para la vista previa.',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Zc.textoSuave, height: 1.4),
+            ),
           ),
       ]);
     });
@@ -512,9 +602,12 @@ class SeccionEventos extends StatelessWidget {
 }
 
 /// Tarjeta «Próximo evento» de Inicio: lo guardado primero y luego la red, completado con el respaldo.
+/// Tocar abre el detalle; «Inscribirme» (deslizar o mantener) abre la hoja de inscripción.
 class ProximoEventoInicio extends StatefulWidget {
   const ProximoEventoInicio({super.key, this.fuente, required this.alAbrir});
   final FuenteJornadas? fuente;
+
+  /// Abre Comunidad (el «Ver todos»).
   final VoidCallback alAbrir;
   @override
   State<ProximoEventoInicio> createState() => _ProximoEventoInicioState();
@@ -528,18 +621,28 @@ class _ProximoEventoInicioState extends State<ProximoEventoInicio> {
   @override
   void initState() {
     super.initState();
+    jornadasInscritas.cargar();
     _cargar();
+  }
+
+  @override
+  void dispose() {
+    if (proximoEventoMostrado.value == _proximo?.jornada.id) proximoEventoMostrado.value = null;
+    super.dispose();
   }
 
   Future<void> _cargar() async {
     final respaldo = await cargaJornadasRespaldo();
     Future<void> usar(List<Jornada> l) async {
-      final c = completarCartelera(l, respaldo);
+      final ahora = DateTime.now();
+      // Solo las que no han terminado: «Próximo» nunca muestra una jornada pasada.
+      final c = completarCartelera(l, respaldo).where((e) => !e.jornada.inicio.isBefore(ahora.subtract(const Duration(hours: 3))));
       if (mounted) {
         setState(() {
           _proximo = c.isEmpty ? null : c.first;
           _listo = true;
         });
+        proximoEventoMostrado.value = _proximo?.jornada.id;
       }
     }
 
@@ -555,22 +658,45 @@ class _ProximoEventoInicioState extends State<ProximoEventoInicio> {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final p = _proximo;
-    return AnimatedSwitcher(
-      duration: Zm.corto,
-      child: !_listo
-          ? const Padding(key: ValueKey('esq'), padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.tarjeta())
-          : p == null
-              ? const SizedBox(key: ValueKey('nada'), width: double.infinity)
-              : Column(key: ValueKey(p.jornada.id), crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                    child: Text('PRÓXIMO EVENTO', style: tt.seccion.copyWith(color: Cra.azul)),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: TarjetaEvento(e: p, alInscribirse: widget.alAbrir, compacta: true),
-                  ),
-                ]),
+    return AnimatedSize(
+      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
+      curve: Zm.entrar,
+      alignment: Alignment.topCenter,
+      child: AnimatedSwitcher(
+        duration: Zm.corto,
+        child: !_listo
+            ? const Padding(
+                key: ValueKey('esq'), padding: EdgeInsets.symmetric(horizontal: 20), child: EsqueletoEvento(compacta: true))
+            : p == null
+                ? const SizedBox(key: ValueKey('nada'), width: double.infinity)
+                : Column(key: ValueKey(p.jornada.id), crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 8, 4),
+                      child: Row(children: [
+                        Expanded(child: Text('PRÓXIMO EVENTO', style: tt.seccion.copyWith(color: Cra.azul))),
+                        Presionable(
+                          etiqueta: 'Ver todos los eventos',
+                          onTap: widget.alAbrir,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Center(child: Text('Ver todos', style: tt.labelLarge?.copyWith(color: Zc.cienaga))),
+                            ),
+                          ),
+                        ),
+                      ]),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: TarjetaEvento(
+                        e: p,
+                        compacta: true,
+                        alInscribirse: () => inscribirEnJornada(context, p.jornada),
+                      ),
+                    ),
+                  ]),
+      ),
     );
   }
 }

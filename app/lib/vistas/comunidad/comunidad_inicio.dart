@@ -181,14 +181,14 @@ class TarjetaAlertaInicio extends StatelessWidget {
     final a = calma ? null : grupos.first.$1;
     final color = a == null ? Zc.hoja : colorNivel(a.nivel);
     final pie = [
-      if (a != null) a.fuentesTexto else 'IDEAM + DIMAR + CRA + Comunidad',
+      if (a != null) sinPuntosCra(a.fuentesTexto) else 'IDEAM + DIMAR + CRA + Comunidad',
       if (generado != null) 'actualizado ${haceCuanto(generado!)}',
     ].join(' · ');
     return Presionable(
       escala: 0.98,
       etiqueta: calma
           ? 'Sin alertas en el manglar ahora. Abrir Comunidad'
-          : '${a!.nivel.texto} en ${a.lugar}: ${a.titulo}. ${a.recomendacion}. Ver detalle',
+          : '${a!.nivel.texto} en ${sinPuntosCra(a.lugar)}: ${sinPuntosCra(a.titulo)}. ${sinPuntosCra(a.recomendacion)}. Ver detalle',
       onTap: alTocar,
       child: Container(
         clipBehavior: Clip.antiAlias,
@@ -215,23 +215,23 @@ class TarjetaAlertaInicio extends StatelessWidget {
                   ]),
                   const SizedBox(height: 6),
                   Text(
-                    calma ? '✅ Sin alertas en el manglar ahora' : '${a!.icono} ${a.titulo}',
+                    calma ? '✅ Sin alertas en el manglar ahora' : '${a!.icono} ${sinPuntosCra(a.titulo)}',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800),
                   ),
-                  if (a != null && a.lugar.isNotEmpty)
+                  if (a != null && sinPuntosCra(a.lugar).isNotEmpty)
                     Text(
                       grupos.length > 1
-                          ? '${a.lugar} · y ${grupos.length - 1} ${grupos.length == 2 ? 'lugar' : 'lugares'} más'
-                          : a.lugar,
+                          ? '${sinPuntosCra(a.lugar)} · y ${grupos.length - 1} ${grupos.length == 2 ? 'lugar' : 'lugares'} más'
+                          : sinPuntosCra(a.lugar),
                       style: tt.labelMedium?.copyWith(color: Zc.textoSuave),
                     ),
                   const SizedBox(height: 6),
                   Text(
                     calma
                         ? 'No hay mar de leva, aguaceros, vientos fuertes ni riesgo de incendio a la vista.'
-                        : 'Qué hacer: ${a!.recomendacion}',
+                        : 'Qué hacer: ${sinPuntosCra(a!.recomendacion)}',
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: tt.bodyMedium?.copyWith(color: Zc.texto, height: 1.35),

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../../datos/avisos/centro_avisos.dart';
 import '../../datos/comunidad/comunidad.dart';
+import '../../datos/comunidad/marcas_comunidad.dart';
 import '../../datos/crecimiento/ranking_colegios.dart';
 import '../../datos/estado.dart';
 import '../../datos/experiencia/jornada.dart';
@@ -14,6 +15,7 @@ import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/boton_estado.dart';
 import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/ruta_borde.dart';
 import '../../nucleo/kit/tirar_actualizar.dart';
@@ -270,7 +272,7 @@ class _SeccionAlertas extends StatelessWidget {
             child: Text(
               'Actualizado ${haceCuanto(l.datos.generado!)} · '
               '${l.datos.fuentes.map((f) => '${f.ok ? '●' : '○'} ${f.nombre}').join(' · ')}\n'
-              '${l.datos.nota} Si hay peligro para las personas, llama al 123.',
+              '${sinPuntosCra(l.datos.nota)} Si hay peligro para las personas, llama al 123.',
               style: tt.labelSmall?.copyWith(color: Zc.textoSuave, height: 1.4),
             ),
           ),
@@ -299,7 +301,7 @@ class _Inscripcion extends StatefulWidget {
 class _InscripcionState extends State<_Inscripcion> {
   late final _nombre = TextEditingController(text: widget.nombre);
   final _cel = TextEditingController();
-  bool _datos = false, _whatsapp = false, _enviando = false;
+  bool _datos = false, _whatsapp = false;
   String _error = '';
 
   @override
@@ -309,28 +311,32 @@ class _InscripcionState extends State<_Inscripcion> {
     super.dispose();
   }
 
+  /// Lo llama el botón con estado: cargando → ✓ (y entonces [_listo] cierra) o error con sacudida.
   Future<void> _enviar() async {
-    if (_nombre.text.trim().length < 2) return setState(() => _error = 'Escribe tu nombre.');
-    if (!_datos) return setState(() => _error = 'Para inscribirte, acepta el tratamiento de tus datos (Ley 1581).');
-    setState(() {
-      _enviando = true;
-      _error = '';
-    });
+    String? falta;
+    if (_nombre.text.trim().length < 2) falta = 'Escribe tu nombre.';
+    if (falta == null && !_datos) falta = 'Para inscribirte, acepta el tratamiento de tus datos (Ley 1581).';
+    if (falta != null) {
+      setState(() => _error = falta!);
+      throw StateError(falta);
+    }
+    setState(() => _error = '');
     final r = await widget.fuente.inscribirse(widget.j.id,
         nombre: _nombre.text, telefono: _cel.text, aceptaDatos: _datos, aceptaWhatsapp: _whatsapp && _cel.text.trim().isNotEmpty);
     if (!mounted) return;
-    if (r.ok) {
-      // Desde aquí se recuerda la jornada: la víspera y 2 h antes.
-      CentroAvisos.compartido.recordarJornada(widget.j).ignore();
-      vibrar(Vibracion.media);
-      Navigator.of(context).pop(true);
-      avisar(context, '¡Listo! Quedaste en la lista. Te esperamos.', tipo: TipoAviso.exito);
-    } else {
-      setState(() {
-        _enviando = false;
-        _error = r.mensaje;
-      });
+    if (!r.ok) {
+      setState(() => _error = r.mensaje);
+      throw StateError(r.mensaje);
     }
+    jornadasInscritas.poner(widget.j.id, true);
+    // Desde aquí se recuerda la jornada: la víspera y 2 h antes.
+    CentroAvisos.compartido.recordarJornada(widget.j).ignore();
+  }
+
+  void _listo() {
+    if (!mounted) return;
+    Navigator.of(context).pop(true);
+    avisar(context, '¡Listo! Quedaste en la lista. Te esperamos.', tipo: TipoAviso.exito);
   }
 
   @override
@@ -381,7 +387,15 @@ class _InscripcionState extends State<_Inscripcion> {
               ),
       ),
       const SizedBox(height: 14),
-      BotonZ(texto: 'Confirmar asistencia', icono: Icons.check_rounded, cargando: _enviando, onTap: _enviando ? null : _enviar),
+      BotonEstado(
+        texto: 'Confirmar asistencia',
+        icono: Icons.check_rounded,
+        textoCargando: 'Inscribiendo',
+        textoHecho: 'Inscrito',
+        textoError: 'Revisa los datos',
+        alPresionar: _enviar,
+        alHecho: _listo,
+      ),
     ]);
   }
 }
