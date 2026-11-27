@@ -12,6 +12,7 @@ import { reemplazarReportes, useHistorial, useReportes } from '../../lib/reporte
 import { CIFRAS, FUENTE_WORKFLOW } from '../../lib/workflow';
 import { cn } from '../../lib/utils';
 import PanelCRA from '../panel/PanelCRA';
+import AvisoZanky from '../marca/AvisoZanky';
 import { RADIO_INFLUENCIA_M, enAreaDeReporte } from '../../lib/areaReporte';
 
 interface Props {
@@ -132,6 +133,11 @@ export default function PanelCorporacion(props: Props) {
             <div className="flex flex-col-reverse border-t-2 border-dorado-300 pt-2"><span className="rotulo mt-1 text-dorado-300">hectáreas propuestas</span><span className="titular text-4xl tabular-nums">{ha(hectareas)}</span></div>
           </div>
 
+          {acciones.length === 0 ? (
+            <AvisoZanky animo="curioso" forma="bloque" titulo="Todavía no hay acciones" className="rounded-3xl border border-dashed border-linea p-8">
+              <p>Cuando un actor proponga una acción, llegará aquí para revisarla.</p>
+            </AvisoZanky>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] text-left text-[13px]">
               <thead>
@@ -179,6 +185,7 @@ export default function PanelCorporacion(props: Props) {
               </tbody>
             </table>
           </div>
+          )}
 
           <section aria-labelledby="titulo-alertas">
             <h3 id="titulo-alertas" className="rotulo border-b border-white pb-2">Alertas de seguimiento</h3>

@@ -1,5 +1,7 @@
 ---
 // Barra de navegación flotante (píldora de vidrio) con el logo de la C.R.A.
+// El botón «Reportar con Zanky» lleva su avatar; es decorativo porque el texto ya lo nombra.
+import Zanky from '../marca/Zanky.astro';
 interface Props { rotulo?: string; activo?: 'portada' | 'workflow' | 'plataforma'; fija?: boolean; }
 const { rotulo, activo, fija = true } = Astro.props;
 const enlaces = [
@@ -20,7 +22,8 @@ const enlaces = [
        class:list={['inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors',
         activo === id ? 'bg-white/12 text-texto' : 'text-suave hover:bg-white/8 hover:text-texto']}>{texto}</a>
    ))}
-   <a href="/plataforma/monitoreo" class="ml-1 inline-flex min-h-11 items-center rounded-full bg-dorado-500 px-5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">Reportar con Zanky</a>
+   <a href="/plataforma/monitoreo" class="group ml-1 inline-flex min-h-11 items-center gap-2 rounded-full bg-dorado-500 pr-5 pl-1.5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">
+    <span class="grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-cra-950/10"><Zanky animo="feliz" decorativo carga="eager" sizes="32px" class="size-8 drop-shadow-none transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110" /></span>Reportar con Zanky</a>
   </nav>
   <details class="relative md:hidden">
    <summary class="inline-flex min-h-11 cursor-pointer list-none items-center rounded-full bg-white/10 px-4 text-sm font-semibold text-texto [&::-webkit-details-marker]:hidden">Menú</summary>
@@ -29,7 +32,7 @@ const enlaces = [
      <a href={href} aria-current={activo === id ? 'page' : undefined}
         class:list={['inline-flex min-h-11 items-center rounded-2xl px-4 text-sm font-semibold', activo === id ? 'bg-white/12 text-texto' : 'text-suave hover:bg-white/8']}>{texto}</a>
     ))}
-    <a href="/plataforma/monitoreo" class="inline-flex min-h-11 items-center justify-center rounded-2xl bg-dorado-500 px-4 text-sm font-bold text-cra-950">Reportar con Zanky</a>
+    <a href="/plataforma/monitoreo" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-dorado-500 px-4 text-sm font-bold text-cra-950"><Zanky animo="feliz" decorativo sizes="28px" class="size-7 drop-shadow-none" />Reportar con Zanky</a>
    </nav>
   </details>
  </div>

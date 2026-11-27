@@ -1,12 +1,15 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
+import Zanky from '../components/marca/Zanky.astro';
 interface Props {
  title: string;
  activa: 'inicio' | 'registro' | 'proponer' | 'seguimiento' | 'jornadas' | 'monitoreo' | 'proyectos' | 'panel';
  ancho?: 'normal' | 'completo';
+ /** Zanky en el encabezado; se quita en las páginas donde ya es protagonista (monitoreo). */
+ zanky?: boolean;
 }
-const { title, activa, ancho = 'normal' } = Astro.props;
+const { title, activa, ancho = 'normal', zanky = true } = Astro.props;
 const secciones = [
  { id: 'inicio', href: '/plataforma', texto: 'Inicio' },
  { id: 'registro', href: '/plataforma/registro', texto: 'Registro de actor' },
@@ -26,7 +29,9 @@ const secciones = [
    <div class="absolute -top-40 right-[-10%] h-[28rem] w-[28rem] rounded-full bg-cra-600/30 blur-[110px]"></div>
    <div class="absolute -bottom-32 left-[-8%] h-[22rem] w-[22rem] rounded-full bg-dorado-500/10 blur-[100px]"></div>
   </div>
-  <div class="mx-auto max-w-7xl px-4 pt-10 pb-6 sm:px-6 lg:px-8 lg:pt-14">
+  <div class="relative mx-auto max-w-7xl px-4 pt-10 pb-6 sm:px-6 lg:px-8 lg:pt-14">
+   <!-- Zanky acompaña desde un lado (solo en pantallas anchas, para no tapar el texto); el párrafo ya lo nombra. -->
+   {zanky && <Zanky animo="feliz" decorativo sizes="160px" class="pointer-events-none absolute right-8 bottom-2 hidden size-28 rotate-3 lg:block xl:right-16 xl:size-40" />}
    <p class="rotulo mb-4 text-dorado-300">Entrada 2 · Corporación Autónoma Regional del Atlántico</p>
    <h1 class="titular max-w-4xl text-4xl sm:text-5xl">Plataforma abierta para la <span class="resalte">restauración</span> y conservación del manglar</h1>
    <p class="mt-5 max-w-3xl text-base leading-relaxed text-suave sm:text-lg">Comunidades, entidades, academia, empresas y ciudadanos proponen, ejecutan y monitorean acciones sobre el manglar, y la autoridad ambiental las revisa y acompaña desde un solo lugar. Aquí llegan también los reportes de la app y del bot de WhatsApp de Zanky.</p>

@@ -15,6 +15,7 @@ import { FUENTE_MANGLAR_CRA, obtenerCapaManglarCRA } from '../../lib/datos';
 import type { FeatureCollection, Polygon as PoligonoGeo } from 'geojson';
 import { exportarCSV, exportarGeoJSON, exportarKML } from '../../lib/exportar';
 import ChipCanal from '../ui/react/ChipCanal';
+import ZankyImg from '../marca/ZankyImg';
 import 'leaflet/dist/leaflet.css';
 import '../../styles/mapa.css';
 
@@ -95,7 +96,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
         <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-dorado-300">Datos de ejemplo</div>
         <div role="status" aria-live="polite" className="text-sm text-suave">
           Mostrando {filtrados.length} de {reportesVivos.length} reportes{fueraDeArea > 0 ? ` · ${fueraDeArea} fuera del área de reporte no se publica${fueraDeArea === 1 ? "" : "n"}` : ""}
-          {filtrados.length === 0 && <span className="mt-2 block text-texto">Ningún reporte coincide con los filtros</span>}
+          {filtrados.length === 0 && <span className="mt-2 flex items-center gap-2 text-texto"><ZankyImg animo="curioso" decorativo sizes="40px" className="size-10 shrink-0" />Ningún reporte coincide con los filtros</span>}
         </div>
         <fieldset className="mt-3">
           <legend className="mb-2 text-xs font-semibold text-suave">Tipo</legend>
@@ -120,7 +121,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
           <input type="checkbox" role="switch" checked={mostrarZonas} onChange={(evento) => setMostrarZonas(evento.target.checked)} className="size-4 accent-dorado-500" />Zonas de trabajo (aproximadas)
         </label>
         <label className="mt-2 flex min-h-11 items-center gap-2 text-xs font-medium"><input type="checkbox" role="switch" checked={mostrarCapa} onChange={(e) => setMostrarCapa(e.target.checked)} />Cobertura de manglar (C.R.A. 1:5.000)</label>
-        {!capa && <p role="status" className="text-xs text-suave">{errorCapa ? 'No se pudo cargar la cobertura de manglar de la C.R.A.' : 'Cargando cobertura de manglar…'}</p>}
+        {!capa && <p role="status" className="flex items-center gap-2 text-xs text-suave">{errorCapa && <ZankyImg animo="preocupado" decorativo sizes="32px" className="size-8 shrink-0 drop-shadow-none" />}{errorCapa ? 'No se pudo cargar la cobertura de manglar de la C.R.A.' : 'Cargando cobertura de manglar…'}</p>}
         {hayFiltros && <button type="button" onClick={() => { setTipos([]); setPrioridades([]); }} className="mt-2 min-h-11 text-xs font-semibold text-dorado-300 underline underline-offset-4">Limpiar filtros</button>}
       </div>
 

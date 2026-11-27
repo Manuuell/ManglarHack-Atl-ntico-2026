@@ -21,7 +21,7 @@ const [reportes, zonas, colegios, acciones, monitoreos] = await Promise.all([
 const publicos = reportes.map(aReportePublico);
 ---
 
-<PlataformaLayout title="Monitoreo comunitario · Plataforma abierta del manglar" activa="monitoreo">
+<PlataformaLayout title="Monitoreo comunitario · Plataforma abierta del manglar" activa="monitoreo" zanky={false}>
   <div class="grid gap-14">
     <section aria-labelledby="titulo-reportes" class="grid gap-6">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-linea pb-3">

@@ -1,9 +1,12 @@
 ---
 // Zanky, la mascota oficial (arte de Manuel en marca/zanky; WebP generados con
-// `npm run marca:zanky`). Único lugar de la web donde se elige su imagen.
+// `npm run marca:zanky`). Único lugar de la web donde se elige su imagen, junto a
+// `ZankyImg.tsx`, su equivalente para las islas de React.
+import { cn } from '../../lib/utils';
 type Animo = 'feliz' | 'curioso' | 'preocupado' | 'celebrando';
-interface Props { class?: string; title?: string; animo?: Animo; decorativo?: boolean; carga?: 'lazy' | 'eager' }
-const { class: clase, title, animo = 'feliz', decorativo = false, carga = 'lazy' } = Astro.props;
+// `sizes`: ancho con que se muestra; por omisión, el de las ilustraciones (los avatares pequeños lo bajan).
+interface Props { class?: string; title?: string; animo?: Animo; decorativo?: boolean; carga?: 'lazy' | 'eager'; sizes?: string }
+const { class: clase, title, animo = 'feliz', decorativo = false, carga = 'lazy', sizes = '(min-width: 1024px) 160px, 120px' } = Astro.props;
 const descripcion: Record<Animo, string> = {
   feliz: 'Zanky, el mangle rojo con zancos, saluda contento',
   curioso: 'Zanky, el mangle rojo con zancos, mira con curiosidad',
@@ -15,12 +18,12 @@ const base = `/marca/zanky/zanky-${animo}`;
 <img
   src={`${base}-256.webp`}
   srcset={`${base}-256.webp 256w, ${base}-512.webp 512w`}
-  sizes="(min-width: 1024px) 160px, 120px"
+  sizes={sizes}
   width="256"
   height="256"
   alt={decorativo ? '' : (title ?? descripcion[animo])}
   aria-hidden={decorativo ? 'true' : undefined}
   loading={carga}
   decoding="async"
-  class:list={['object-contain drop-shadow-[0_6px_12px_rgb(0_0_0/0.35)]', clase]}
+  class={cn('object-contain drop-shadow-[0_6px_12px_rgb(0_0_0/0.35)]', clase)}
 />
