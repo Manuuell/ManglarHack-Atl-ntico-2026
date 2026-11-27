@@ -1,31 +1,125 @@
 @import "tailwindcss";
+
+/* =========================================================
+   Identidad de la plataforma: la de la C.R.A. en manglarcra.netlify.app
+   Fondo azul institucional oscuro, tarjetas en azul intermedio, texto
+   blanco, acentos dorados en etiquetas y botones, Lato con titulares en
+   mayúsculas (peso 900) y esquinas rectas.
+
+   Los tokens semánticos (fondo, superficie, texto…) son la API de los
+   componentes: no escribir hex sueltos en un componente.
+   ========================================================= */
+
 :root {
- --c-fondo:#f6f9f7; --c-fondo-alt:#eef3f0; --c-superficie:#ffffff; --c-linea:#dde6e1; --c-linea-suave:#e9efec; --c-texto:#0f1f1a; --c-texto-suave:#4b5d56; --c-texto-tenue:#6b7c75;
- --c-sombra:0 1px 2px rgb(11 61 46 / .06),0 12px 28px -12px rgb(11 61 46 / .16);
- --c-sombra-alta:0 2px 8px rgb(11 61 46 / .06),0 24px 50px -12px rgb(11 61 46 / .24);
+  --c-fondo: #0b3a58;          /* azul institucional oscuro (fondo de página) */
+  --c-fondo-alt: #082d45;      /* franjas y cabeceras más profundas */
+  --c-superficie: #0e4f78;     /* tarjetas: azul intermedio */
+  --c-superficie-alta: #125f8f;/* tarjeta elevada, hover, fila activa */
+  --c-linea: rgb(255 255 255 / 0.24);
+  --c-linea-suave: rgb(255 255 255 / 0.12);
+
+  --c-texto: #ffffff;
+  --c-texto-suave: rgb(255 255 255 / 0.82);
+  --c-texto-tenue: rgb(255 255 255 / 0.64);
+
+  --c-sombra: 0 1px 2px rgb(0 0 0 / 0.25), 0 16px 36px -18px rgb(0 0 0 / 0.55);
+  --c-sombra-alta: 0 2px 8px rgb(0 0 0 / 0.3), 0 24px 56px -16px rgb(0 0 0 / 0.65);
+
+  color-scheme: dark;
 }
+
 @theme inline {
- --font-sans:'Inter',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
- --color-fondo:var(--c-fondo); --color-fondo-alt:var(--c-fondo-alt); --color-superficie:var(--c-superficie); --color-linea:var(--c-linea); --color-linea-suave:var(--c-linea-suave); --color-texto:var(--c-texto); --color-suave:var(--c-texto-suave); --color-tenue:var(--c-texto-tenue);
+  --font-sans: 'Lato', 'Century Gothic', 'Helvetica Neue', Arial, sans-serif;
+
+  --color-fondo: var(--c-fondo);
+  --color-fondo-alt: var(--c-fondo-alt);
+  --color-superficie: var(--c-superficie);
+  --color-superficie-alta: var(--c-superficie-alta);
+  --color-linea: var(--c-linea);
+  --color-linea-suave: var(--c-linea-suave);
+  --color-texto: var(--c-texto);
+  --color-suave: var(--c-texto-suave);
+  --color-tenue: var(--c-texto-tenue);
 }
+
 @theme {
- --color-manglar-950:#052e22; --color-manglar-900:#0b3d2e; --color-manglar-800:#0f5132; --color-manglar-700:#14653f; --color-manglar-600:#1a7f4e; --color-manglar-500:#22a061; --color-manglar-400:#4fbf85; --color-manglar-200:#b5e0c7; --color-manglar-100:#dcefe4; --color-manglar-50:#eef7f2;
- --color-agua-800:#115e59; --color-agua-700:#0f766e; --color-agua-600:#0d9488; --color-agua-500:#14b8a6; --color-agua-400:#2dd4bf; --color-agua-200:#99f6e4; --color-agua-100:#ccfbf1; --color-agua-50:#effcf9;
- --color-critica:#7f1d1d; --color-critica-texto:#7f1d1d; --color-critica-suave:#fbe9e9;
- --color-alta:#dc2626; --color-alta-texto:#b91c1c; --color-alta-suave:#fdecec;
- --color-media:#d97706; --color-media-texto:#92400e; --color-media-suave:#fef3e2;
- --color-baja:#16a34a; --color-baja-texto:#15803d; --color-baja-suave:#e8f6ec;
+  /* Azul institucional de la C.R.A. (#005F96 es su color de fondo). */
+  --color-cra-950: #05243a;
+  --color-cra-900: #0b3a58;
+  --color-cra-800: #0c4669;
+  --color-cra-700: #005f96;
+  --color-cra-600: #1170a8;
+  --color-cra-500: #2b87be;
+  --color-cra-300: #7fb8dc;
+  --color-cra-100: #d6e8f4;
+
+  /* Dorado de acento (etiquetas, pestaña activa, botones). Texto sobre
+     dorado siempre cra-950. */
+  --color-dorado-500: #edb512;
+  --color-dorado-400: #f2c63e;
+  --color-dorado-300: #f8d86f;
+  --color-dorado-100: #fdf1c7;
+
+  /* Convenciones de capas del workflow de la C.R.A. */
+  --color-capa-manglar: #d946ef;      /* magenta = manglar probable */
+  --color-capa-dosel: #22c55e;        /* verde = dosel */
+  --color-capa-agua: #38bdf8;         /* azul = agua */
+  --color-capa-recuperacion: #f97316; /* naranja = recuperación */
+  --color-capa-riesgo: #ef4444;       /* rojo = riesgo muy alto */
+
+  /* Acciones del plan de manejo de la Corporación. */
+  --color-plan-preservacion: #34d399;
+  --color-plan-restauracion: #60a5fa;
+  --color-plan-recuperacion: #f97316;
+  --color-plan-rehabilitacion: #facc15;
+
+  /* Semáforo de prioridad sobre fondo oscuro: el color pleno para puntos y
+     rellenos, -texto claro para tipografía, -suave translúcido para chips. */
+  --color-critica: #b91c1c;  --color-critica-texto: #fca5a5;  --color-critica-suave: rgb(185 28 28 / 0.32);
+  --color-alta: #ef4444;     --color-alta-texto: #fca5a5;     --color-alta-suave: rgb(239 68 68 / 0.2);
+  --color-media: #f59e0b;    --color-media-texto: #fcd34d;    --color-media-suave: rgb(245 158 11 / 0.2);
+  --color-baja: #22c55e;     --color-baja-texto: #86efac;     --color-baja-suave: rgb(34 197 94 / 0.2);
+
+  /* Escalas de la versión anterior (Zanqui eco-tech). Se conservan para
+     la mascota y la transición; no usarlas en piezas nuevas. */
+  --color-manglar-950: #052e22; --color-manglar-900: #0b3d2e; --color-manglar-800: #0f5132; --color-manglar-700: #14653f; --color-manglar-600: #1a7f4e; --color-manglar-500: #22a061; --color-manglar-400: #4fbf85; --color-manglar-200: #b5e0c7; --color-manglar-100: #dcefe4; --color-manglar-50: #eef7f2;
+  --color-agua-800: #115e59; --color-agua-700: #0f766e; --color-agua-600: #0d9488; --color-agua-500: #14b8a6; --color-agua-400: #2dd4bf; --color-agua-200: #99f6e4; --color-agua-100: #ccfbf1; --color-agua-50: #effcf9;
 }
+
 @layer base {
- html {scroll-behavior:smooth;scroll-padding-top:5rem}
- body {@apply bg-fondo text-texto font-sans;}
- h1,h2,h3 {letter-spacing:-0.02em}
- ::selection {background:var(--color-agua-500);color:white}
- :focus-visible {outline:2px solid var(--color-agua-600);outline-offset:2px}
+  html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+  body { @apply bg-fondo text-texto font-sans antialiased; }
+  ::selection { background: var(--color-dorado-500); color: var(--color-cra-950); }
+  :focus-visible { outline: 2px solid var(--color-dorado-300); outline-offset: 2px; }
 }
-@keyframes flotar {0%,100% {transform:translateY(0)} 50% {transform:translateY(-12px)}}
-@utility animate-flotar {animation:flotar 6s ease-in-out infinite;}
-@media (prefers-reduced-motion:reduce) {
- html {scroll-behavior:auto}
- *,*::before,*::after {animation:none !important;transition:none !important;scroll-behavior:auto !important}
+
+/* Tipografía de la C.R.A.: titulares Lato 900 en mayúsculas; rótulos
+   (eyebrows, cabeceras de sección, pestañas) pequeños, en mayúsculas y
+   espaciados. */
+@utility titular {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.98;
+}
+@utility rotulo {
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  line-height: 1.35;
+}
+@utility etiqueta-campo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@keyframes flotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@utility animate-flotar { animation: flotar 6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

@@ -1,98 +1,103 @@
-# CLAUDE.md
+# CLAUDE.md — web/
 
-Guía para agentes (Claude Code, Codex) que trabajen en este repositorio.
+Guía para agentes (Claude Code, Codex) que trabajan en `web/`. Las reglas del equipo están en `../CLAUDE.md` y `../handoff/05-coordinacion-y-reglas.md`, y mandan sobre esta guía.
 
-Proyecto: plataforma web de **Zanqui**, solución de ciencia ciudadana para demostrar el monitoreo de los manglares del departamento del Atlántico (Colombia). Hackatón **ManglarHack Atlántico 2026** (C.R.A. — Corporación Autónoma Regional del Atlántico — y Universidad Simón Bolívar).
+**Qué es:** la aplicación web del reto ManglarHack Atlántico 2026 (equipo SENTRALABS · UTB, para la C.R.A.). Replica la identidad y la información de la plataforma de la Corporación ([manglarcra.netlify.app](https://manglarcra.netlify.app)) y la extiende: aquí se integra todo lo que llega de la **app móvil** y del **bot de WhatsApp de Zanqui** (la mascota; su nombre viene de los zancos del mangle rojo y de los zanqueros del Carnaval).
 
-El ecosistema tiene tres piezas; esta web es la tercera:
-
-1. **Zanqui en WhatsApp**: mascota y bot con IA (su nombre viene de los zancos del mangle rojo). El ciudadano manda foto + ubicación; la IA clasifica el reporte y le asigna un puntaje de confianza.
-2. **App móvil offline-first**: registra reportes sin señal y los sincroniza al reconectar.
-3. **Plataforma web** (este repo): mapa público, panel de control de la C.R.A., datos abiertos y comunidad.
+Rama de trabajo: **`web`** (nunca `main`). Un commit por punto, en español, **sin trailer de coautoría**. `git pull --rebase` antes de subir; nunca `--force`.
 
 ## Comandos
 
 ```bash
-npm run dev      # Servidor de desarrollo en http://localhost:4321
-npm run check    # astro check: TypeScript estricto en .astro, .ts y .tsx
-npm run build    # Build estático a dist/
-npm run preview  # Sirve dist/
+npm run dev      # http://localhost:4321
+npm run check    # astro check (TS estricto en .astro/.ts/.tsx)
+npm run build    # build estático a dist/
 ```
 
-No hay suite de pruebas. `npm run check` y `npm run build` son la puerta de calidad: ambos deben pasar antes de cada commit.
+No hay pruebas automatizadas: `check` y `build` deben pasar antes de cada commit, y cada pantalla se mira en el navegador antes de darla por buena.
 
 ## Stack
 
-- **Astro 7** (salida estática, una sola página `src/pages/index.astro`).
-- **React 19** vía `@astrojs/react` para las islas interactivas.
-- **Tailwind CSS v4** vía `@tailwindcss/vite` (no `@astrojs/tailwind`: ese paquete solo soporta Astro ≤ 5 y Tailwind 3). No hay `tailwind.config.*`: los tokens viven en `src/styles/global.css` con `@theme inline`.
-- **Leaflet 1.9 + react-leaflet 5** para el mapa. Teselas de OpenStreetMap / CARTO.
-- **lucide-react** para íconos, también dentro de `.astro` (Astro los renderiza como SVG estático sin hidratar).
-- `clsx` + `tailwind-merge` en `cn()` (`src/lib/utils.ts`).
+Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas · Tailwind v4 (`@tailwindcss/vite`; tokens en `src/styles/global.css`, sin `tailwind.config`) · Leaflet 1.9 + react-leaflet 5 (teselas OpenStreetMap) · lucide-react · `cn()` en `src/lib/utils.ts`.
 
 ## Reglas críticas
 
-1. **El mapa se renderiza solo en el cliente.** Todo componente que importe `leaflet` o `react-leaflet` se monta con `client:only="react"`. Leaflet toca `window` al importarse; con SSR el build falla con `window is not defined`. Nunca importar Leaflet desde frontmatter de `.astro` ni desde un módulo que también usen componentes renderizados en servidor.
-2. **Toda la interfaz en español** (textos, `aria-label`, `title`, mensajes, nombres de archivo exportados). Código y nombres de variables también en español cuando sean del dominio (`reportes`, `prioridad`, `zona`).
-3. **Datos desacoplados.** Los componentes nunca importan los JSON de `src/data/` directamente: piden los datos a `src/lib/datos.ts`. Para conectar la base de datos real o el GeoJSON oficial de la C.R.A., solo cambia ese archivo (las funciones ya son `async`).
-4. **Paleta eco-tech con semáforo de prioridad** (ver "Diseño"). Los colores de prioridad salen de `src/lib/catalogos.ts`, nunca escritos a mano en un componente.
-5. **Commits**: uno por implementación, mensaje en español y **sin trailer de coautoría** (`Co-Authored-By` ni similares).
+1. **Leaflet solo en cliente**: todo componente que importe `leaflet`/`react-leaflet` se monta con `client:only="react"` y con un `slot="fallback"` del mismo alto.
+2. **Todo en español**, también `aria-label`, `title` y nombres de archivos descargados.
+3. **Datos desacoplados**: solo `src/lib/datos.ts` (reportes, zonas, capas) y `src/lib/plataforma/datos.ts` (actores, acciones…) leen `src/data/`. Sus funciones son `async` para cambiarlas por la API del backend.
+4. **Honestidad del dato**: toda cifra lleva su fuente; los datos inventados se rotulan **«Datos de ejemplo»**; lo que no funciona aún se dice («pendiente del KMZ de la C.R.A.», «se conectará al backend»). Manglar **probable**, nunca «confirmado».
+5. **Privacidad**: lo público pasa por `aReportePublico` (sin foto, sin reportante, coordenadas difuminadas). Correos y teléfonos de actores nunca se muestran en vistas públicas.
+6. **Permisos y auditoría**: en esta demo los cambios de estado viven en el navegador (memoria o `localStorage`) y se rotulan «Modo demostración». En producción los decide el servidor (rol comprobado en un solo lugar + línea de auditoría).
+7. **Catálogos únicos**: etiquetas, colores, estados y transiciones salen de `src/lib/catalogos.ts` (reportes) y `src/lib/plataforma/catalogos.ts` (plataforma). Nunca reescribirlos en un componente.
+
+## Rutas
+
+| Ruta | Qué es |
+|---|---|
+| `/` | Portada (réplica de la de la C.R.A.): rótulo, «EL MANGLAR DEL ATLÁNTICO», subtítulo y dos entradas: Workflow y Plataforma |
+| `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
+| `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
+| `/plataforma/registro` | Registro de actor |
+| `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
+| `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
+| `/plataforma/monitoreo` | Monitoreo comunitario: reportes de Zanqui (app/bot/web) y fotos georreferenciadas |
+| `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada, nota conceptual) |
+| `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
+
+Todas las páginas de la plataforma usan `src/layouts/PlataformaLayout.astro` (cabecera con logo C.R.A., título y barra de pestañas).
 
 ## Arquitectura
 
 ```
 src/
-  data/                      Datos mock (reemplazables)
-    poligonosManglar.json    GeoJSON FeatureCollection de zonas de manglar
-    mockReportes.json        Reportes ciudadanos (WhatsApp / app)
-    colegios.json            Ranking de colegios participantes
-  types/
-    manglar.ts               Tipos del dominio (fuente de verdad del esquema)
-  lib/
-    datos.ts                 Capa de acceso a datos (async). Único lector de src/data/
-    catalogos.ts             Etiquetas, íconos y colores por tipo / prioridad / estado / canal
-    reportesStore.ts         Estado compartido en memoria entre islas (useSyncExternalStore)
-    exportar.ts              Exportación pública CSV, GeoJSON y KML con descarga desde el navegador
-    utils.ts                 cn()
-  styles/global.css          Tokens de diseño + overrides de Leaflet
-  layouts/BaseLayout.astro   <html lang="es">, fuentes, meta, Navbar fija, Footer
-  components/
-    layout/                  Navbar.astro, Footer.astro
-    ui/                      Primitivas Astro: Button, Card, Badge, SectionHeading
-    marca/Zanqui.astro        Mascota en SVG
-    sections/                Una sección de la página por archivo (Hero, Ecosistema, MapaSection, PanelSection, Comunidad)
-    mapa/MapaMonitoreo.tsx   Isla React-Leaflet (client:only="react")
-    panel/PanelCRA.tsx       Isla del dashboard (client:load): KPIs, filtros, tabla, exportación
-  pages/index.astro          Single page: obtiene datos en el frontmatter y los pasa como props
+  data/                         mocks y datos (solo los leen las capas de datos)
+    mockReportes.json           reportes ciudadanos (contrato común)
+    historialEstados.json       auditoría de reportes
+    poligonosManglar.json       4 sectores C.R.A. aproximados (envolvente INVEMAR)
+    colegios.json               ranking (ejemplo)
+    plataforma/*.json           actores, acciones, cambios de acción, jornadas, monitoreos
+  types/manglar.ts              contrato común de reportes
+  types/plataforma.ts           actores, acciones, jornadas, monitoreo
+  lib/datos.ts                  reportes, zonas, capa INVEMAR (URL_CAPA_INVEMAR, obtenerCapaManglar)
+  lib/catalogos.ts              tipos/estados/prioridad/canal de reportes
+  lib/privacidad.ts             aReportePublico
+  lib/reportesStore.ts          estado compartido de reportes + historial
+  lib/exportar.ts               CSV, GeoJSON y KML públicos
+  lib/workflow.ts               cifras del workflow de la C.R.A. con su fuente
+  lib/plataforma/               datos.ts, catalogos.ts, almacen.ts (store persistente), …
+  layouts/                      BaseLayout.astro, PlataformaLayout.astro
+  components/                   layout/, ui/, marca/ (Zanqui), mapa/, panel/, workflow/, plataforma/
+  pages/                        rutas de la tabla
+public/marca/logo-cra-blanco.png
 ```
 
-### Flujo de datos
+La capa de manglar de INVEMAR 2020 se importa con `?url` desde `../datos/` (por eso `vite.server.fs.allow: ['..']`). El KMZ oficial de la C.R.A. se convierte a GeoJSON (script y carga en el panel) y reemplaza a los sectores aproximados.
 
-`index.astro` obtiene reportes, historial, polígonos y colegios desde `src/lib/datos.ts`. Al mapa le pasa únicamente `ReportePublico[]` mediante `aReportePublico`; el panel de demostración recibe el contrato completo. La cobertura INVEMAR se obtiene en el navegador con `obtenerCapaManglar`, con estados de carga y error.
+## Contrato común de reportes (de `../handoff/05`)
 
-El store compartido usa `useSyncExternalStore`: el panel llama `useReportes` y `useHistorial`; el mapa llama `useReportesPublicos`, una proyección que elimina fotos, identidad y precisión y redondea coordenadas. `cambiarEstado` comprueba `TRANSICIONES` y añade auditoría. Al recargar se restauran los ejemplos. En producción permisos, transiciones y auditoría se resuelven en el servidor, nunca en el navegador.
+- tipos `tala | quema | relleno | vertimiento | basuras | cano_taponado | fauna | otro`;
+- estados `recibido → en_verificacion → verificado → alerta_oficial → en_atencion → cerrado`, o `descartado`;
+- `id` UUID del dispositivo; `capturado_en` (dispositivo) y `recibido_en` (servidor); canal `app | web | whatsapp`; prioridad 1–5 propuesta por IA (semáforo: 4–5 alta, 3 media, 1–2 baja) y confianza 0–100.
 
-## Esquema de datos
+## Plataforma (modelo de la C.R.A.)
 
-El contrato común del equipo prevalece. La definición completa está en `src/types/manglar.ts`; las etiquetas, iconos, colores y transiciones viven en `src/lib/catalogos.ts`.
+- **Actor**: tipo (comunidad u organización de base, entidad pública, academia, empresa, ONG, ciudadano), sector de interés y papel (proponer y ejecutar, coparticipar, monitorear y reportar, financiar o cooperar). Tratamiento de datos según Ley 1581 de 2012.
+- **Acción**: tipo (siembra, restauración hidrológica, solución basada en la naturaleza, conservación y vigilancia), sitio en el mapa, hectáreas, acción y prioridad heredadas del plan de manejo, lista de requerimientos, comunidad coparticipante.
+- **Estados de acción**: `propuesta → en_revision → (con_observaciones ↔ en_revision) → aprobada → en_ejecucion → cerrada`.
+- **Jornada** (base Innvita): actividad con fecha, punto de encuentro, cupos e inscritos, ligada a una acción.
+- **Reporte de monitoreo**: plántulas vivas (%), altura media (cm), fotografías ubicadas, observaciones.
+- **Sectores**: Mallorquín (Mallorquín – Bocas de Ceniza), Balboa (Puerto Colombia – Balboa – Puerto Velero), Manatíes (Tubará – Juan de Acosta; correspondencia por confirmar con la C.R.A.), Totumo (Totumo – Astilleros – Galerazamba).
 
-- `Reporte`: UUID v4 del dispositivo; canal `app | web | whatsapp`; tipo `tala | quema | relleno | vertimiento | basuras | cano_taponado | fauna | otro`; descripción; `lat`, `lon`, `precision_m`; horas ISO `capturado_en` y `recibido_en`; zona anulable, municipio, `dentro_poligono`, `distancia_m`; prioridad 1–5 propuesta por IA, confianza 0–100; estado; tipo y confianza detectados por IA; URL/hash de foto e identificador del reportante anulables.
-- Estados: `recibido`, `en_verificacion`, `verificado`, `alerta_oficial`, `en_atencion`, `cerrado`, `descartado`. Solo una persona verifica y emite una alerta; superar el umbral IA de 80 no sustituye esa decisión.
-- `CambioEstado`: id, reporte_id, estado, usuario_id, nota, fecha. Cada reporte tiene recepción y todos los pasos hasta su estado actual.
-- `ReportePublico`: omite reportante_id, foto_url, foto_hash y precision_m; añade ubicacion_aproximada. Redondea coordenadas a 2 decimales para tipos sensibles y 3 para el resto.
-- Las exportaciones incluyen solo id, capturado_en, tipo, municipio, zona, prioridad, estado, lat, lon y canal. Siempre pasan por privacidad; llevan CC BY 4.0 y Datos de ejemplo.
-- Zonas de trabajo: geometrías aproximadas sin área oficial (`area_ha: null`); prioridad propuesta y fuente explícita. Se mantiene el campo `amenazas` del contrato. La cobertura INVEMAR 2020 es independiente del futuro KMZ de la C.R.A.
-- Colegio conserva id, nombre, municipio, puntos, reportes_validados, estudiantes y guardian. Ranking y cifras se rotulan como ejemplos.
+## Cifras del workflow (fuente: workflow de la C.R.A., manglarcra.netlify.app)
 
-## Diseño
+775 ha de manglar probable en 2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Balboa 197, Totumo 148, Manatíes 742 · pérdida −34,7 ha entre 2016 y 2025 · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
 
-Basado en el sistema de Innvita (`C:\Nodo`): tokens semánticos como variables CSS, expuestos a Tailwind con `@theme inline`, superficies blancas sobre un fondo apenas tintado, esquinas grandes (`rounded-2xl`/`rounded-3xl`), sombras suaves en vez de bordes duros, tipografía Inter con tracking negativo en titulares.
+## Diseño (identidad C.R.A.)
 
-Utilidades disponibles (definidas en `global.css`):
-
-- Neutros: `bg-fondo`, `bg-fondo-alt`, `bg-superficie`, `border-linea`, `text-texto`, `text-suave`, `text-tenue`.
-- Marca: `manglar-950…50` (verde profundo, `manglar-900 = #0b3d2e`), `agua-700…50` (teal, `agua-500 = #14b8a6`).
-- Semáforo (cada uno con `-texto` para tipografía AA y `-suave` para fondo de chip): `critica`, `alta` (rojo), `media` (ámbar), `baja` (verde).
-- Sombras: `shadow-[var(--c-sombra)]`, `shadow-[var(--c-sombra-alta)]`.
-
-La navegación es fija arriba (`z-[1100]`, por encima de los controles de Leaflet que usan `z-index: 1000`) y `html` tiene `scroll-padding-top` para que las anclas `#inicio`, `#mapa`, `#panel`, `#comunidad` no queden tapadas. El contenedor del mapa lleva `relative z-0` (`isolation`) para que las capas de Leaflet no se monten sobre la navegación.
+- Fondo azul institucional oscuro (`bg-fondo` #0B3A58, `bg-fondo-alt`), tarjetas azul intermedio (`bg-superficie`, `bg-superficie-alta`), texto blanco (`text-texto`, `text-suave`, `text-tenue`), líneas finas blancas translúcidas (`border-linea`, `border-linea-suave`).
+- Acento **dorado** (`dorado-500` #EDB512, `dorado-300` #F8D86F): rótulos, pestaña activa (subrayado dorado de 3 px), botones primarios (`bg-dorado-500 text-cra-950 hover:bg-dorado-300`). Azul C.R.A. `cra-950…100` (`cra-700` = #005F96).
+- Tipografía **Lato** (400/700/900). Utilidades: `titular` (900, mayúsculas, interlineado apretado), `rotulo` (12 px, 900, mayúsculas, espaciado 0.14em, normalmente `text-dorado-300`), `etiqueta-campo` (etiquetas de formulario).
+- Esquinas rectas o casi (`rounded-none`/`rounded-sm`), tablas con filetes blancos finos, campos translúcidos (`bg-white/5 border-b border-white/60`).
+- Capas: `capa-manglar` magenta (manglar probable), `capa-dosel` verde, `capa-agua` azul, `capa-recuperacion` naranja, `capa-riesgo` rojo. Plan de manejo: `plan-preservacion`, `plan-restauracion`, `plan-recuperacion`, `plan-rehabilitacion`.
+- Prioridad de reportes: semáforo `alta`/`media`/`baja`/`critica` con `-texto` y `-suave` pensados para fondo oscuro.
+- Toques de 44 px o más, letra legible al sol, estados vacío/carga/error en cada pantalla, `prefers-reduced-motion` respetado.
