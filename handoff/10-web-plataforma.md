@@ -34,7 +34,7 @@ fondo azul institucional, tarjetas azul intermedio, acentos dorados, Lato, titul
 | `/plataforma/proponer` | Proponer una acción marcando el sitio: hereda acción, prioridad, unidad hidrográfica y escenario **de la capa de prioridades de la CRA en ese punto**. |
 | `/plataforma/seguimiento` | Seguimiento con detalle, requerimientos, observaciones y línea de tiempo; **jornadas** (base Innvita): inscripción, invitación por WhatsApp, enlace, `.ics`; enlaces `?accion=` y `?jornada=`. |
 | `/plataforma/monitoreo` | Reportes ciudadanos de Zanky (app, bot, web) en mapa público anonimizado + exportación CSV/GeoJSON/KML; reporte de monitoreo con **fotos georreferenciadas** (EXIF, GPS del teléfono o mapa; miniaturas sin metadatos); ranking de colegios. |
-| `/plataforma/proyectos` | **Pendiente**: plantillas MGA / nota conceptual (la lógica ya está en `web/src/lib/plataforma/proyectos.ts`). |
+| `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada y nota conceptual) con los datos del sitio y del workflow; lo desconocido queda [entre corchetes]; descargar, copiar e imprimir. |
 | `/plataforma/panel` | Panel de la Corporación con **roles de demostración**: decisiones sobre acciones (observaciones obligatorias), alertas calculadas de los datos, cola de reportes ciudadanos por rol, auditoría unificada, carga de KMZ/KML → GeoJSON. |
 
 ## Datos de la CRA ya integrados (en `datos/cra/`)
@@ -79,7 +79,7 @@ El contrato de la web ya coincide con `backend/supabase/schema.sql` (tipos, esta
 
 ## Pendientes de la web (marcar también en `07`)
 
-- [ ] `/plataforma/proyectos` (componente con las plantillas; la lógica ya existe).
+- [x] `/plataforma/proyectos`.
 - [ ] Conexión a Supabase (pasos de arriba) y mapa en vivo.
 - [ ] Formulario ligero para turistas que entran por QR (canal `web`), con UUID generado en el navegador.
 - [ ] Zanky con el arte oficial de Flow (`web/src/components/marca/Zanky.astro` es el único lugar a cambiar).
