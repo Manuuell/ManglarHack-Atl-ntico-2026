@@ -19,6 +19,7 @@ export interface Jornada {
   punto_encuentro: string;
   lat: number;
   lon: number;
+  /** Ya no limita las inscripciones (las jornadas no tienen límite de cupos); 0 = sin límite. */
   cupos: number;
   inscritos: number;
   que_llevar: string[];

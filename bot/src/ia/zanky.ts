@@ -66,7 +66,7 @@ async function contextoJornadas(canal: Canal): Promise<string> {
     todasDeEjemplo = jornadas.every(deEjemplo);
     const lineas = jornadas.slice(0, 4).map(j =>
       `- ${j.titulo}${deEjemplo(j) ? ' [Datos de ejemplo]' : ''}: ${fmt.larga(j.inicio)}, ${fmt.hora(j.inicio)} a ${fmt.hora(j.fin)}, en ${j.punto_encuentro}. ` +
-      `Cupos libres: ${Math.max(0, j.cupos - j.inscritos)} de ${j.cupos}. Inscripción: ${enlaceInvitacion(j)} · Ese día, con Zanky: ${enlaceEventoZanky(j)}` +
+      `Inscritos: ${j.inscritos} (gratis y sin límite de cupos). Inscripción: ${enlaceInvitacion(j)} · Ese día, con Zanky: ${enlaceEventoZanky(j)}` +
       (canal === 'whatsapp' ? ' (o escribir «jornadas» aquí)' : ''),
     );
     return `Próximas jornadas (datos de la plataforma). Cuando hables de una, da su enlace de inscripción.` +

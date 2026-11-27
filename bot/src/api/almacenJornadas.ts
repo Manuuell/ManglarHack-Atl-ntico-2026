@@ -134,7 +134,9 @@ export function validarJornada(x: Record<string, unknown> | Partial<JornadaGuard
   const fin = String(v.fin ?? '');
   const lat = Number(v.lat);
   const lon = Number(v.lon);
-  const cupos = Math.round(Number(v.cupos));
+  // Las jornadas no tienen límite de cupos. El campo se conserva por compatibilidad (0 = sin límite):
+  // el panel viejo manda un número y se acepta, pero ya no se usa para cerrar inscripciones.
+  const cupos = v.cupos === undefined || v.cupos === null || v.cupos === '' ? 0 : Math.round(Number(v.cupos));
   const imagen = texto(v.imagen_url, 500);
   if (titulo.length < 4) return { error: 'Escribe el título de la jornada.' };
   if (!(tipo in TIPOS_JORNADA)) return { error: 'Elige el tipo de jornada.' };
@@ -142,7 +144,7 @@ export function validarJornada(x: Record<string, unknown> | Partial<JornadaGuard
   if (Date.parse(fin) <= Date.parse(inicio)) return { error: 'La hora de fin debe ser después del inicio.' };
   if (!texto(v.punto_encuentro, 160)) return { error: 'Escribe el punto de encuentro.' };
   if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < 10 || lat > 11.6 || lon < -75.6 || lon > -74.5) return { error: 'Marca el punto de encuentro en el Atlántico.' };
-  if (!Number.isFinite(cupos) || cupos < 1 || cupos > 5000) return { error: 'Los cupos deben estar entre 1 y 5.000.' };
+  if (!Number.isFinite(cupos) || cupos < 0) return { error: 'Los cupos no son válidos.' };
   if (imagen && !/^https:\/\/[^\s]+$/i.test(imagen)) return { error: 'La imagen debe ser una dirección https.' };
   const queLlevar = Array.isArray(v.que_llevar) ? v.que_llevar.map(q => texto(q, 80)).filter(Boolean).slice(0, 12) : [];
   return {
@@ -180,11 +182,11 @@ export function cancelarJornada(id: string): boolean {
 
 // --- inscripciones ------------------------------------------------------------------------------
 
-export function inscribir(j: JornadaGuardada, p: { nombre: string; telefono: string | null; cuenta_id: string | null; acepta_whatsapp: boolean }): Inscripcion | 'sin_cupo' {
+export function inscribir(j: JornadaGuardada, p: { nombre: string; telefono: string | null; cuenta_id: string | null; acepta_whatsapp: boolean }): Inscripcion {
   const previa = datos.inscripciones.find(i => i.jornada_id === j.id && i.estado === 'inscrita'
     && ((p.cuenta_id && i.cuenta_id === p.cuenta_id) || (p.telefono && i.telefono === p.telefono)));
   if (previa) return previa;
-  if (publica(j).inscritos >= j.cupos) return 'sin_cupo';
+  // Sin límite de cupos: se inscribe quien quiera ir.
   const i: Inscripcion = { id: randomUUID(), jornada_id: j.id, ...p, fecha: new Date().toISOString(), estado: 'inscrita' };
   datos.inscripciones.push(i);
   guardar();

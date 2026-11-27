@@ -77,7 +77,6 @@ api.post('/jornadas/:id/inscripciones', async (req, res) => {
   const telefono = b.telefono ? normalizarTelefono(b.telefono) : cuenta?.telefono ?? null;
   if (b.telefono && !telefono) return falla(res, 400, 'telefono', 'Revisa el celular: escribe los 10 dígitos.');
   const r = J.inscribir(j, { nombre, telefono, cuenta_id: cuenta?.id ?? null, acepta_whatsapp: Boolean(telefono) && (b.acepta_whatsapp === true || Boolean(cuenta?.whatsappOk)) });
-  if (r === 'sin_cupo') return falla(res, 409, 'sin_cupo', 'Esta jornada ya no tiene cupos.');
   res.status(201).json({ ok: true, id: r.id, inscritos: J.jornada(j.id)?.inscritos ?? 0 });
 });
 

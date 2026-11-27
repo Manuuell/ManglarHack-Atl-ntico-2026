@@ -255,13 +255,12 @@ export function jornadasNoDisponibles(web: string): string {
 }
 
 export function invitacionJornada(j: Jornada, aviso: string): string {
-  const libres = Math.max(0, j.cupos - j.inscritos);
   return (
     `${TIPOS_JORNADA[j.tipo].emoji} *${j.titulo}*\n\n` +
     `📅 ${fmtJornada.larga(j.inicio)}, de ${fmtJornada.hora(j.inicio)} a ${fmtJornada.hora(j.fin)}\n` +
     `📍 ${j.punto_encuentro}\n` +
     `🧭 Cómo llegar: ${enlaceComoLlegar(j)}\n` +
-    `👥 ${libres > 0 ? `${libres} cupos libres de ${j.cupos}` : 'Sin cupos por ahora'}\n` +
+    `👥 ${j.inscritos > 0 ? `${j.inscritos} ${j.inscritos === 1 ? 'persona inscrita' : 'personas inscritas'}` : 'Sé de las primeras personas en inscribirte'} · gratis y sin límite de cupos\n` +
     (j.que_llevar.length ? `🎒 Qué llevar: ${j.que_llevar.join(', ')}\n` : '') +
     `\n✅ Inscríbete aquí: ${enlaceInvitacion(j)}\n` +
     'Desde ese enlace también la agregas a tu calendario y la compartes.\n' +
