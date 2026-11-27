@@ -375,6 +375,10 @@ class _BienvenidaState extends State<Bienvenida> {
                         activo: _datos.acepto,
                         cargando: _guardando,
                         onTap: _empezar,
+                        alPedirAcepto: () {
+                          vibrar(Vibracion.ligera);
+                          _datos.pedirAcepto();
+                        },
                       ),
                     )
                   : BotonZ(
@@ -508,11 +512,19 @@ class _Cadena extends StatelessWidget {
 /// El botón del final. Igual que [BotonZ] pero deja que el texto largo pase a dos
 /// renglones (con letra grande no se corta) y explica por qué está apagado.
 class _BotonEmpezar extends StatelessWidget {
-  const _BotonEmpezar({required this.activo, required this.cargando, required this.onTap});
+  const _BotonEmpezar({
+    required this.activo,
+    required this.cargando,
+    required this.onTap,
+    required this.alPedirAcepto,
+  });
 
   final bool activo;
   final bool cargando;
   final VoidCallback onTap;
+
+  /// Con el botón apagado, tocarlo lleva a la casilla que falta.
+  final VoidCallback alPedirAcepto;
 
   static const _texto = 'Empezar a cuidar el manglar';
 
@@ -521,7 +533,7 @@ class _BotonEmpezar extends StatelessWidget {
     const color = Zc.hoja;
     final habilitado = activo && !cargando;
     return Presionable(
-      onTap: habilitado ? onTap : null,
+      onTap: habilitado ? onTap : (cargando ? null : alPedirAcepto),
       vibracion: Vibracion.ligera,
       etiqueta: activo ? _texto : '$_texto. Primero acepta el tratamiento de tus datos.',
       child: AnimatedOpacity(

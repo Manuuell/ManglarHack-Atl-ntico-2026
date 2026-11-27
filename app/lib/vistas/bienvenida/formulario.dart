@@ -67,7 +67,27 @@ class DatosPerfil extends ChangeNotifier {
 
   void alternarAcepto() {
     acepto = !acepto;
+    if (acepto) resaltarAcepto = false;
     notifyListeners();
+  }
+
+  /// Casilla de aceptación: el botón apagado la busca y la resalta para que se
+  /// entienda por qué no deja empezar.
+  final GlobalKey claveAcepto = GlobalKey();
+  bool resaltarAcepto = false;
+
+  void pedirAcepto() {
+    resaltarAcepto = true;
+    notifyListeners();
+    final ctx = claveAcepto.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+        alignment: 0.5,
+      );
+    }
   }
 
   void mostrarErrores() {
@@ -156,10 +176,22 @@ class PaginaPerfil extends StatelessWidget {
             const SizedBox(height: 16),
             const _AvisoPrivacidad(),
             const SizedBox(height: 16),
-            CasillaZ(
-              texto: 'Acepto el tratamiento de mis datos para el monitoreo del manglar',
-              valor: datos.acepto,
-              alCambiar: datos.alternarAcepto,
+            AnimatedContainer(
+              key: datos.claveAcepto,
+              duration: context.resolveDuration(Zm.corto),
+              curve: Zm.entrar,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(Zr.m),
+                border: Border.all(
+                  color: datos.resaltarAcepto && !datos.acepto ? Zc.hoja : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: CasillaZ(
+                texto: 'Acepto el tratamiento de mis datos para el monitoreo del manglar',
+                valor: datos.acepto,
+                alCambiar: datos.alternarAcepto,
+              ),
             ),
             AnimatedSize(
               duration: context.resolveDuration(Zm.corto),
