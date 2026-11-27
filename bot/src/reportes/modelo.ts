@@ -1,15 +1,17 @@
 // Tipos, estados y número de caso del contrato común (handoff/05 y backend/supabase/schema.sql).
 // La gravedad es la misma que usan la app y el servidor (app/lib/datos/tipos.dart).
 
+// `nombre` y `corto` son las etiquetas de la web (web/src/lib/catalogos.ts: etiquetaLarga y etiqueta), para que
+// el ciudadano lea lo mismo en WhatsApp, en el mapa y en el panel. La gravedad es la del servidor (schema.sql).
 export const TIPOS = {
-  tala: { nombre: 'Tala de mangle', emoji: '🪓', gravedad: 5, descripcion: 'Están cortando o arrancando mangle' },
-  quema: { nombre: 'Quema o incendio', emoji: '🔥', gravedad: 5, descripcion: 'Fuego o humo en el manglar o cerca' },
-  relleno: { nombre: 'Relleno o construcción', emoji: '🚧', gravedad: 4, descripcion: 'Echan tierra o escombros, o construyen' },
-  vertimiento: { nombre: 'Vertimiento', emoji: '🛢️', gravedad: 4, descripcion: 'Aguas negras, aceite o químicos al agua' },
-  cano_taponado: { nombre: 'Caño tapado', emoji: '🚱', gravedad: 4, descripcion: 'Un caño o paso de agua está bloqueado' },
-  fauna: { nombre: 'Fauna afectada', emoji: '🐟', gravedad: 4, descripcion: 'Caza, o peces o aves muertos' },
-  basuras: { nombre: 'Basuras', emoji: '🗑️', gravedad: 2, descripcion: 'Residuos acumulados en el manglar o la orilla' },
-  otro: { nombre: 'Otra amenaza', emoji: '❓', gravedad: 2, descripcion: 'Algo distinto que pone en riesgo el manglar' },
+  tala: { nombre: 'Tala o corte de mangle', corto: 'Tala', emoji: '🪓', gravedad: 5, descripcion: 'Están cortando o arrancando mangle' },
+  quema: { nombre: 'Quema o incendio', corto: 'Quema', emoji: '🔥', gravedad: 5, descripcion: 'Fuego o humo en el manglar o cerca' },
+  relleno: { nombre: 'Relleno o construcción', corto: 'Relleno', emoji: '🚧', gravedad: 4, descripcion: 'Echan tierra o escombros, o construyen' },
+  vertimiento: { nombre: 'Vertimiento o contaminación del agua', corto: 'Vertimiento', emoji: '🛢️', gravedad: 4, descripcion: 'Aguas negras, aceite o químicos al agua' },
+  cano_taponado: { nombre: 'Caño taponado o alteración del agua', corto: 'Caño taponado', emoji: '🚱', gravedad: 4, descripcion: 'Un caño o paso de agua está bloqueado' },
+  fauna: { nombre: 'Fauna afectada', corto: 'Fauna', emoji: '🐟', gravedad: 4, descripcion: 'Caza, o peces o aves muertos' },
+  basuras: { nombre: 'Basuras o residuos', corto: 'Basuras', emoji: '🗑️', gravedad: 2, descripcion: 'Residuos acumulados en el manglar o la orilla' },
+  otro: { nombre: 'Otro', corto: 'Otro', emoji: '❓', gravedad: 2, descripcion: 'Algo distinto que pone en riesgo el manglar' },
 } as const;
 
 export type TipoId = keyof typeof TIPOS;
@@ -46,11 +48,12 @@ export function esMagnitud(id: string): id is MagnitudId {
 
 export type Estado = 'recibido' | 'en_verificacion' | 'verificado' | 'alerta_oficial' | 'en_atencion' | 'cerrado' | 'descartado';
 
+/** Etiquetas de estado de la web (web/src/lib/catalogos.ts). */
 export const ESTADOS: Record<Estado, string> = {
   recibido: 'Recibido',
   en_verificacion: 'En verificación',
   verificado: 'Verificado',
-  alerta_oficial: 'Alerta oficial (expediente abierto)',
+  alerta_oficial: 'Alerta oficial',
   en_atencion: 'En atención',
   cerrado: 'Cerrado',
   descartado: 'Descartado',

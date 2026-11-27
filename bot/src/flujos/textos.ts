@@ -88,14 +88,12 @@ export const CONSENTIMIENTO = {
 export const SIN_CONSENTIMIENTO =
   'Entendido. Sin tu autorización no puedo guardar el reporte.\n\nSi cambias de opinión, escribe *menu*. Si hay peligro para las personas, llama al *123*.';
 
-const TITULO_CORTO: Partial<Record<TipoId, string>> = { relleno: 'Relleno/construcción' };
-
 export const TIPO = {
   cuerpo: '¿Qué está pasando en el manglar?',
   boton: 'Elegir',
   filas: (Object.keys(TIPOS) as TipoId[]).map<Fila>(id => ({
     id,
-    titulo: `${TIPOS[id].emoji} ${TITULO_CORTO[id] ?? TIPOS[id].nombre}`,
+    titulo: `${TIPOS[id].emoji} ${TIPOS[id].corto}`,
     descripcion: TIPOS[id].descripcion,
   })),
 };
