@@ -7,6 +7,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:zanky/nucleo/presionable.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // ignore: depend_on_referenced_packages
@@ -197,10 +198,13 @@ void main() {
         await _montar(t, e, const PantallaMisReportes(), reducir: reducir);
         expect(find.byType(TarjetaReporte), findsOneWidget);
 
+        // Deslizar revela la baldosa «Quitar»; tocarla confirma en una hoja.
         await t.fling(find.byType(TarjetaReporte), const Offset(-400, 0), 1800);
         await _avanzar(t, 10);
+        await t.tap(find.byKey(const Key('accion-Quitar del teléfono')));
+        await _avanzar(t, 10);
         expect(find.text('¿Quitar este reporte?'), findsOneWidget, reason: 'confirma en una hoja');
-        await t.tap(find.text('Quitar del teléfono'));
+        await t.tap(find.widgetWithText(BotonZ, 'Quitar del teléfono'));
         await _avanzar(t, 14);
 
         expect(e.reportes, isEmpty);
@@ -223,6 +227,8 @@ void main() {
         await _montar(t, e, const PantallaMisReportes(), reducir: reducir);
         await t.fling(find.byType(TarjetaReporte), const Offset(-400, 0), 1800);
         await _avanzar(t, 10);
+        await t.tap(find.byKey(const Key('accion-Quitar del teléfono')));
+        await _avanzar(t, 10);
         await t.tap(find.text('Cancelar'));
         await _avanzar(t, 14);
         expect(e.reportes, [r]);
@@ -239,8 +245,10 @@ void main() {
         await _montar(t, e, const PantallaMisReportes(), reducir: reducir);
         await t.longPress(find.byType(TarjetaReporte));
         await _avanzar(t, 10);
+        await t.tap(find.byKey(const Key('menu-Quitar del teléfono')));
+        await _avanzar(t, 10);
         expect(find.text('¿Quitar este reporte?'), findsOneWidget);
-        await t.tap(find.text('Quitar del teléfono'));
+        await t.tap(find.widgetWithText(BotonZ, 'Quitar del teléfono'));
         await _avanzar(t, 14);
         expect(e.reportes, isEmpty);
         expect(find.text('Reporte quitado'), findsOneWidget);

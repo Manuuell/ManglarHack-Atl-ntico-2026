@@ -81,12 +81,19 @@ class FilaDeslizable extends StatefulWidget {
 }
 
 class _FilaDeslizableState extends State<FilaDeslizable> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController.unbounded(vsync: this);
+  // Nace en initState: perezoso, una fila nunca arrastrada lo creaba por primera vez dentro de dispose().
+  late final AnimationController _c;
   bool _avisoUmbral = false;
   bool _abierta = false;
 
   double get _anchoIni => widget.accionesInicio.length * widget.anchoAccion;
   double get _anchoFin => widget.accionesFin.length * widget.anchoAccion;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController.unbounded(vsync: this);
+  }
 
   @override
   void dispose() {
