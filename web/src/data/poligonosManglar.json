@@ -1,0 +1,61 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cienaga-mallorquin",
+        "nombre": "Ciénaga de Mallorquín",
+        "municipio": "Barranquilla",
+        "prioridad": "critica",
+        "area_ha": 412,
+        "especies": ["Mangle rojo (Rhizophora mangle)", "Mangle blanco (Laguncularia racemosa)", "Mangle negro (Avicennia germinans)", "Mangle zaragoza (Conocarpus erectus)"],
+        "amenazas": ["Relleno urbano", "Tala", "Vertimientos"],
+        "descripcion": "Humedal costero con manglares que sirven de refugio y alimentación para aves y peces. La presión urbana sobre sus bordes exige seguimiento comunitario continuo."
+      },
+      "geometry": { "type": "Polygon", "coordinates": [[[-74.885,11.040],[-74.872,11.058],[-74.850,11.064],[-74.832,11.055],[-74.828,11.038],[-74.842,11.026],[-74.866,11.024],[-74.885,11.040]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "puerto-colombia",
+        "nombre": "Puerto Colombia",
+        "municipio": "Puerto Colombia",
+        "prioridad": "alta",
+        "area_ha": 138,
+        "especies": ["Mangle rojo (Rhizophora mangle)", "Mangle blanco (Laguncularia racemosa)", "Mangle negro (Avicennia germinans)"],
+        "amenazas": ["Relleno urbano", "Vertimientos", "Expansión turística"],
+        "descripcion": "Franja de manglar vinculada a humedales costeros y áreas de uso comunitario. La conservación de sus canales favorece el intercambio de agua y el refugio de fauna."
+      },
+      "geometry": { "type": "Polygon", "coordinates": [[[-74.946,11.002],[-74.930,11.010],[-74.916,11.000],[-74.914,10.984],[-74.928,10.974],[-74.944,10.980],[-74.946,11.002]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "tubara",
+        "nombre": "Tubará",
+        "municipio": "Tubará",
+        "prioridad": "media",
+        "area_ha": 96,
+        "especies": ["Mangle rojo (Rhizophora mangle)", "Mangle negro (Avicennia germinans)", "Mangle zaragoza (Conocarpus erectus)"],
+        "amenazas": ["Quemas", "Sedimentación", "Tala"],
+        "descripcion": "Sector costero de manglar que conecta zonas húmedas con vegetación terrestre. Las jornadas comunitarias de restauración apoyan la recuperación de áreas degradadas."
+      },
+      "geometry": { "type": "Polygon", "coordinates": [[[-75.030,10.952],[-75.014,10.958],[-75.002,10.948],[-75.004,10.932],[-75.018,10.924],[-75.032,10.934],[-75.030,10.952]]] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "juan-de-acosta-piojo",
+        "nombre": "Juan de Acosta / Piojó",
+        "municipio": "Juan de Acosta y Piojó",
+        "prioridad": "alta",
+        "area_ha": 174,
+        "especies": ["Mangle rojo (Rhizophora mangle)", "Mangle blanco (Laguncularia racemosa)", "Mangle negro (Avicennia germinans)", "Mangle zaragoza (Conocarpus erectus)"],
+        "amenazas": ["Expansión turística", "Sedimentación", "Tala"],
+        "descripcion": "Conjunto de manglares costeros que ofrece refugio a reptiles, aves y fauna acuática. Mantener la conectividad de sus humedales es clave para su conservación."
+      },
+      "geometry": { "type": "Polygon", "coordinates": [[[-75.124,10.828],[-75.110,10.824],[-75.106,10.806],[-75.120,10.790],[-75.138,10.786],[-75.146,10.800],[-75.138,10.818],[-75.124,10.828]]] }
+    }
+  ]
+}

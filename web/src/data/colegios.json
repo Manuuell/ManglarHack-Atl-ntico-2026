@@ -1,0 +1,8 @@
+[
+  { "id": "colegio-semillas-de-mallorquin", "nombre": "Institución Educativa Semillas de Mallorquín", "municipio": "Barranquilla", "puntos": 2480, "reportes_validados": 41, "estudiantes": 64, "guardian": true },
+  { "id": "colegio-brisas-del-muelle", "nombre": "Institución Educativa Brisas del Muelle", "municipio": "Puerto Colombia", "puntos": 2160, "reportes_validados": 36, "estudiantes": 52, "guardian": true },
+  { "id": "colegio-raices-de-tubara", "nombre": "Institución Educativa Raíces de Tubará", "municipio": "Tubará", "puntos": 1840, "reportes_validados": 30, "estudiantes": 45, "guardian": true },
+  { "id": "colegio-horizontes-del-mar", "nombre": "Institución Educativa Horizontes del Mar", "municipio": "Juan de Acosta", "puntos": 1320, "reportes_validados": 22, "estudiantes": 34, "guardian": false },
+  { "id": "colegio-lomas-del-manglar", "nombre": "Institución Educativa Lomas del Manglar", "municipio": "Piojó", "puntos": 960, "reportes_validados": 15, "estudiantes": 26, "guardian": false },
+  { "id": "colegio-semilleros-del-rio", "nombre": "Institución Educativa Semilleros del Río", "municipio": "Soledad", "puntos": 640, "reportes_validados": 9, "estudiantes": 18, "guardian": false }
+]
