@@ -58,6 +58,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
             ))}
           </dl>
           <p className="mt-3 text-xs text-tenue">Manglar probable, no confirmado: requiere verificación en campo. Fuente: {FUENTE_WORKFLOW}.</p>
+          <a href="/plataforma/acerca" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-dorado-300 underline underline-offset-4">Acerca de la plataforma: plan de manejo, qué hará y condiciones para la fase 2</a>
         </section>
 
         <section aria-labelledby="titulo-acciones">
