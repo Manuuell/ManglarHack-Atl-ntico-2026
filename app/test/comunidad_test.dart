@@ -93,7 +93,7 @@ void main() {
   });
 
   group('reportes de la comunidad (datos abiertos)', () {
-    test('los de prueba del bot y los descartados no salen', () {
+    test('los de prueba del bot se ven pero se marcan; los descartados no salen', () {
       expect(esReporteDePrueba(descripcion: 'PRUEBA — descartar'), isTrue);
       expect(esReporteDePrueba(descripcion: '  prueba del bot'), isTrue);
       expect(esReporteDePrueba(codigo: 'ZK-0A6B'), isTrue);
@@ -108,7 +108,10 @@ void main() {
             },
         ],
       });
-      expect(reportesDeGeoJson(geo).map((r) => r.publico.id), ['ZK-2']);
+      // Se ven (también en el mapa), pero los de prueba quedan marcados para no contarlos.
+      final r = reportesDeGeoJson(geo);
+      expect(r.map((x) => x.publico.id).toSet(), {'ZK-1', 'ZK-2', 'ZK-0A6B'});
+      expect({for (final x in r) x.publico.id: x.prueba}, {'ZK-1': true, 'ZK-2': false, 'ZK-0A6B': true});
     });
 
     test('lee el GeoJSON real con su canal', () {

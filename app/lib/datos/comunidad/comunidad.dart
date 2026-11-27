@@ -273,9 +273,12 @@ EstadoReporte estadoDeNombre(String nombre) {
 
 /// Un reporte de la comunidad, con el canal (WhatsApp o app/web) que la web también muestra.
 class ReporteComunidad {
-  const ReporteComunidad(this.publico, this.canal);
+  const ReporteComunidad(this.publico, this.canal, {this.prueba = false});
   final ReportePublico publico;
   final String canal;
+
+  /// Reporte de prueba del bot: se ve en el mapa y en el feed, pero no entra en las cifras.
+  final bool prueba;
 }
 
 /// GeoJSON de datos abiertos del servidor de Zanky (coordenadas a 3 decimales, sin descripción
@@ -294,7 +297,8 @@ List<ReporteComunidad> reportesDeGeoJson(String texto) {
     final codigo = p['codigo'];
     if (fecha == null || codigo is! String) continue;
     final estado = estadoDeNombre('${p['estado'] ?? ''}');
-    if (esReporteDePrueba(codigo: codigo, descripcion: '${p['descripcion'] ?? p['nota'] ?? ''}', estado: estado)) continue;
+    if (estado == EstadoReporte.descartado) continue;
+    final prueba = esReporteDePrueba(codigo: codigo, descripcion: '${p['descripcion'] ?? p['nota'] ?? ''}');
     salida.add(ReporteComunidad(
       ReportePublico(
         id: codigo,
@@ -306,6 +310,7 @@ List<ReporteComunidad> reportesDeGeoJson(String texto) {
         zona: p['zona'] as String? ?? '',
       ),
       p['canal'] as String? ?? 'whatsapp',
+      prueba: prueba,
     ));
   }
   salida.sort((a, b) => b.publico.capturadoEn.compareTo(a.publico.capturadoEn));
@@ -313,7 +318,7 @@ List<ReporteComunidad> reportesDeGeoJson(String texto) {
 }
 
 /// Reportes de prueba del bot (descripción «PRUEBA — descartar»…) y los descartados o rechazados:
-/// no salen en el feed, en el mapa ni en las cifras.
+/// se siguen viendo en el mapa, pero NO se cuentan en las cifras ([contarReales]).
 ///
 /// La vista pública `reportes_publicos` no trae la descripción, así que los de prueba que ya se
 /// conocen van por código en [codigosDePrueba] hasta que la vista los excluya.

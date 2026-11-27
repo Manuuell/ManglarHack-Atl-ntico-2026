@@ -38,11 +38,12 @@ void main() {
       }
     });
 
-    test('el feed deja fuera los de prueba y los descartados', () {
+    test('el feed deja fuera los descartados y no cuenta los de prueba', () {
       ReportePublico r(String id, EstadoReporte e) => ReportePublico(
           id: id, tipo: TipoAmenaza.otro, punto: const LatLng(11, -74.9), prioridad: 3, estado: e, capturadoEn: ahora, zona: 'tubara');
       final feed = unirFeed(supabase: [r('a', EstadoReporte.recibido), r('b', EstadoReporte.descartado), r('ZK-0A6B', EstadoReporte.recibido)]);
-      expect(feed.map((x) => x.publico.id), ['a']);
+      expect(feed.map((x) => x.publico.id).toSet(), {'a', 'ZK-0A6B'});
+      expect(contarReales(feed), 1);
     });
 
     test('no se suman a las cifras reales y no pisan a un real', () {

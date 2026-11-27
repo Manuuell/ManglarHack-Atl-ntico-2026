@@ -14,10 +14,13 @@ import 'comunidad.dart';
 ///
 /// Los simulados se muestran SIEMPRE rotulados «Simulado» y nunca entran en las cifras reales.
 class ReporteFeed {
-  const ReporteFeed(this.publico, {this.canal = 'app', this.simulado = false});
+  const ReporteFeed(this.publico, {this.canal = 'app', this.simulado = false, this.prueba = false});
   final ReportePublico publico;
   final String canal;
   final bool simulado;
+
+  /// Reporte de prueba del bot: visible, pero fuera de las cifras.
+  final bool prueba;
   bool get porWhatsapp => canal == 'whatsapp';
 }
 
@@ -74,12 +77,12 @@ List<ReporteFeed> unirFeed({
   List<ReporteFeed> simulados = const [],
 }) {
   final vistos = <String>{};
-  bool fuera(ReportePublico p) => esReporteDePrueba(codigo: p.id, estado: p.estado);
+  bool fuera(ReportePublico p) => p.estado == EstadoReporte.descartado;
   final salida = <ReporteFeed>[
     for (final r in abiertos)
-      if (!fuera(r.publico) && vistos.add(r.publico.id)) ReporteFeed(r.publico, canal: r.canal),
+      if (!fuera(r.publico) && vistos.add(r.publico.id)) ReporteFeed(r.publico, canal: r.canal, prueba: r.prueba),
     for (final p in supabase)
-      if (!fuera(p) && vistos.add(p.id)) ReporteFeed(p),
+      if (!fuera(p) && vistos.add(p.id)) ReporteFeed(p, prueba: esReporteDePrueba(codigo: p.id)),
     for (final s in simulados)
       if (vistos.add(s.publico.id)) s,
   ]..sort((a, b) => b.publico.capturadoEn.compareTo(a.publico.capturadoEn));
@@ -89,8 +92,8 @@ List<ReporteFeed> unirFeed({
 /// «Ver en el mapa»: el punto que el mapa debe enfocar al abrirse (lo consume y lo deja en null).
 final puntoPedidoMapa = ValueNotifier<LatLng?>(null);
 
-/// Cuenta solo los reales: los simulados nunca se suman a las cifras.
-int contarReales(List<ReporteFeed> feed) => feed.where((r) => !r.simulado).length;
+/// Cuenta solo los reales: los simulados y los de prueba del bot nunca se suman a las cifras.
+int contarReales(List<ReporteFeed> feed) => feed.where((r) => !r.simulado && !r.prueba).length;
 
 // ------------------------------------------------------------------ eventos
 

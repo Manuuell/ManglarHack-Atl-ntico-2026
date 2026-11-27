@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:flutter_map/flutter_map.dart' show LatLngBounds;
 import 'package:latlong2/latlong.dart';
 
-import '../../datos/comunidad/comunidad.dart' show esReporteDePrueba;
 import '../../datos/estado.dart';
 import '../../datos/reporte.dart';
 import '../../datos/servidor.dart';
@@ -65,8 +64,7 @@ List<PuntoMapa> construirPuntos(EstadoZanky e, {List<ReportePublico> comunidad =
   return [
     for (final r in e.reportes) PuntoMapa.mio(r),
     for (final p in [...e.publicos, ...comunidad])
-      if (!propios.contains(p.id) && !esReporteDePrueba(codigo: p.id, estado: p.estado) && vistos.add(p.id))
-        PuntoMapa.publico(p),
+      if (!propios.contains(p.id) && vistos.add(p.id)) PuntoMapa.publico(p),
   ];
 }
 
