@@ -5,6 +5,8 @@ import { ESTADOS, LISTA_ESTADOS, LISTA_PRIORIDADES, PRIORIDADES, UMBRAL_IA, esAb
 import { cambiarEstado as registrarCambio, useHistorial, useReportes } from '../../lib/reportesStore';
 import { exportarCSV, exportarGeoJSON, exportarKML } from '../../lib/exportar';
 import { cn } from '../../lib/utils';
+import type { Rol } from '../../types/plataforma';
+import { puede } from '../../lib/plataforma/catalogos';
 import ReportesPanel, { type CampoOrden, type Orden } from './ReportesPanel';
 
 function KpiCard({ etiqueta, valor, detalle, icono: Icono, acento }: {
@@ -18,7 +20,14 @@ function KpiCard({ etiqueta, valor, detalle, icono: Icono, acento }: {
   </article>;
 }
 
-export default function PanelCRA({ reportes: iniciales, poligonos, historial: historialInicial }: { reportes: Reporte[]; poligonos: ZonasManglar; historial: CambioEstado[] }) {
+// Qué puede hacer cada rol de demostración con un reporte. En producción lo decide el servidor.
+function motivoBloqueo(rol: Rol, a: EstadoReporte): string | null {
+  if (puede(rol, 'gestionar_reportes')) return null;
+  if (puede(rol, 'verificar_en_campo') && (a === 'en_verificacion' || a === 'verificado')) return null;
+  return rol === 'vigia' ? 'El vigía comunitario solo inicia la verificación y marca verificado.' : 'Este rol no cambia estados de reportes.';
+}
+
+export default function PanelCRA({ reportes: iniciales, poligonos, historial: historialInicial, rol = 'moderador' }: { reportes: Reporte[]; poligonos: ZonasManglar; historial: CambioEstado[]; rol?: Rol }) {
   const reportes = useReportes(iniciales);
   const historial = useHistorial(historialInicial);
   const [estado, setEstado] = useState<EstadoReporte | 'todos' | 'abiertos'>('abiertos');
@@ -31,7 +40,7 @@ export default function PanelCRA({ reportes: iniciales, poligonos, historial: hi
   function cambiarEstado(id: string, nuevoEstado: EstadoReporte) {
     const reporte = reportes.find((r) => r.id === id);
     const transicion = reporte && TRANSICIONES[reporte.estado].find((t) => t.a === nuevoEstado);
-    if (!transicion || !registrarCambio(id, nuevoEstado, { usuario_id: 'moderador-cra-demo', nota: `${transicion.accion}. Acción de demostración.` })) return;
+    if (!transicion || motivoBloqueo(rol, nuevoEstado) !== null || !registrarCambio(id, nuevoEstado, { usuario_id: `${rol}-demo`, nota: `${transicion.accion}. Acción de demostración.` })) return;
     if (timeout.current !== null) clearTimeout(timeout.current);
     setAviso(`Estado: ${ESTADOS[nuevoEstado].etiqueta} · ${id.slice(0, 8)}`);
     timeout.current = setTimeout(() => { setAviso(''); timeout.current = null; }, 3000);
@@ -84,7 +93,7 @@ export default function PanelCRA({ reportes: iniciales, poligonos, historial: hi
         </div>
         <p className="text-xs text-tenue">Mostrando {filtrados.length} de {reportes.length} reportes · la exportación descarga la vista filtrada con campos públicos y coordenadas aproximadas · CC BY 4.0</p>
       </div>
-      {filtrados.length > 0 ? <ReportesPanel historial={historial} reportes={filtrados} orden={orden} ordenar={ordenar} cambiarEstado={cambiarEstado} /> : <div className="flex flex-col items-center gap-4 px-5 py-14 text-center">
+      {filtrados.length > 0 ? <ReportesPanel historial={historial} reportes={filtrados} orden={orden} ordenar={ordenar} cambiarEstado={cambiarEstado} permitido={(a) => motivoBloqueo(rol, a)} /> : <div className="flex flex-col items-center gap-4 px-5 py-14 text-center">
         <SearchX size={32} className="text-tenue" aria-hidden="true" /><p className="font-medium text-suave">No hay reportes con estos filtros</p>
         <button type="button" onClick={limpiarFiltros} className={cn(boton, 'bg-dorado-500 text-cra-950 hover:bg-dorado-300')}>Limpiar filtros</button>
       </div>}

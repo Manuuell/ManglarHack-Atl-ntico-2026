@@ -11,10 +11,12 @@ import ChipTipo from '../ui/react/ChipTipo';
 export type CampoOrden = 'capturado_en' | 'confianza';
 export interface Orden { campo: CampoOrden; direccion: 'asc' | 'desc'; }
 type CambiarEstado = (id: string, estado: EstadoReporte) => void;
+export type Permitido = (estado: EstadoReporte) => string | null;
+const libre: Permitido = () => null;
 
-function Acciones({ reporte, cambiarEstado }: { reporte: Reporte; cambiarEstado: CambiarEstado }) {
+function Acciones({ reporte, cambiarEstado, permitido = libre }: { reporte: Reporte; cambiarEstado: CambiarEstado; permitido?: Permitido }) {
  const tonos = { primaria: 'bg-dorado-500 text-cra-950', peligro: 'text-alta-texto ring-1 ring-alta/30', secundaria: 'text-suave ring-1 ring-linea' };
- return <div className="flex flex-wrap gap-2">{TRANSICIONES[reporte.estado].map((t) => <button key={t.a} type="button" className={`min-h-11 rounded-xl px-3 py-2 text-xs font-medium ${tonos[t.tono]}`} onClick={() => cambiarEstado(reporte.id, t.a)}>{t.accion}</button>)}</div>;
+ return <div className="flex flex-wrap gap-2">{TRANSICIONES[reporte.estado].map((t) => { const motivo = permitido(t.a); return <button key={t.a} type="button" disabled={motivo !== null} title={motivo ?? undefined} className={`min-h-11 rounded-sm px-3 py-2 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40 ${tonos[t.tono]}`} onClick={() => cambiarEstado(reporte.id, t.a)}>{t.accion}</button>; })}</div>;
 }
 function Identidad({ reporte }: { reporte: Reporte }) {
  return <div><p className="font-medium text-texto">{TIPOS[reporte.tipo].etiqueta} · {reporte.zona ?? 'Fuera de zona'}</p><p className="mt-1 text-xs text-tenue">{reporte.id.slice(0, 8)} · <time dateTime={reporte.capturado_en}>{formatearFecha(reporte.capturado_en)}</time></p><div className="mt-2 flex flex-wrap gap-2 text-xs text-suave">{sincronizadoTarde(reporte) && <span className="rounded-full bg-white/10 px-2 py-1">Sincronizado tarde</span>}{reporte.reportante_id === null && <span className="rounded-full bg-fondo-alt px-2 py-1">Anónimo</span>}</div></div>;
@@ -26,8 +28,8 @@ function LineaTiempo({ reporte, historial }: { reporte: Reporte; historial: Camb
  </div>;
 }
 
-export default function ReportesPanel({ reportes, historial, orden, ordenar, cambiarEstado }: {
-  reportes: Reporte[]; historial: CambioEstado[]; orden: Orden; ordenar: (campo: CampoOrden) => void; cambiarEstado: CambiarEstado;
+export default function ReportesPanel({ reportes, historial, orden, ordenar, cambiarEstado, permitido = libre }: {
+  reportes: Reporte[]; historial: CambioEstado[]; orden: Orden; ordenar: (campo: CampoOrden) => void; cambiarEstado: CambiarEstado; permitido?: Permitido;
 }) {
   const [expandidos, setExpandidos] = useState<string[]>([]);
   const expandir = (id: string) => setExpandidos((actuales) => actuales.includes(id) ? actuales.filter((v) => v !== id) : [...actuales, id]);
@@ -57,7 +59,7 @@ export default function ReportesPanel({ reportes, historial, orden, ordenar, cam
           <td className="w-[140px] min-w-[140px] px-4 py-4"><BarraConfianza valor={reporte.confianza} compacta /></td>
           <td className="px-4 py-4"><ChipCanal canal={reporte.canal} /></td>
           <td className="px-4 py-4"><ChipEstado estado={reporte.estado} /></td>
-          <td className="min-w-48 px-4 py-4"><Acciones reporte={reporte} cambiarEstado={cambiarEstado} />{botonHistorial(reporte)}</td>
+          <td className="min-w-48 px-4 py-4"><Acciones reporte={reporte} cambiarEstado={cambiarEstado} permitido={permitido} />{botonHistorial(reporte)}</td>
         </tr>{expandidos.includes(reporte.id) && <tr><td colSpan={8} className="bg-fondo"><LineaTiempo reporte={reporte} historial={historial} /></td></tr>}</Fragment>)}</tbody>
       </table>
     </div>
@@ -66,7 +68,7 @@ export default function ReportesPanel({ reportes, historial, orden, ordenar, cam
       <div className="flex flex-wrap gap-2"><ChipTipo tipo={reporte.tipo} /><ChipPrioridad prioridad={reporte.prioridad} /><ChipCanal canal={reporte.canal} /><ChipEstado estado={reporte.estado} /></div>
       <p className="text-sm text-suave"><span className="font-medium">Zona: </span>{reporte.zona ?? 'Fuera de zona'} · {reporte.municipio}</p>
       <div><p className="mb-2 text-xs text-tenue">Confianza IA</p><BarraConfianza valor={reporte.confianza} compacta /></div>
-      <Acciones reporte={reporte} cambiarEstado={cambiarEstado} />{botonHistorial(reporte)}
+      <Acciones reporte={reporte} cambiarEstado={cambiarEstado} permitido={permitido} />{botonHistorial(reporte)}
       {expandidos.includes(reporte.id) && <LineaTiempo reporte={reporte} historial={historial} />}
     </li>)}</ul>
   </>;
