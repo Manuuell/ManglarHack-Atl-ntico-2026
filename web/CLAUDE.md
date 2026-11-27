@@ -35,7 +35,7 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 
 | Ruta | Qué es |
 |---|---|
-| `/` | Portada (réplica de la de la C.R.A.): rótulo, «EL MANGLAR DEL ATLÁNTICO», subtítulo y dos entradas: Workflow y Plataforma |
+| `/` | Portada (`src/styles/portada.css` + `src/scripts/portada.ts`): cabecera que pasa a cápsula al bajar, hero con el visor satelital del manglar y los reportes en vivo, el reto y sus 3 preguntas, y un visor por entregable: chat de Zanky (reportar), cola por prioridad (ubicar), boceto animado del panel de la C.R.A. (verificar), descargas de datos abiertos, jornadas; animaciones de entrada con `data-reveal` |
 | `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
 | `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
 | `/plataforma/registro` | Registro de actor |
