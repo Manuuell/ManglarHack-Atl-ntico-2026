@@ -33,7 +33,7 @@ import 'movimiento.dart';
 /// Hoja modal arrastrable con resultado.
 ///
 /// ```dart
-/// import 'package:zanqui/core/navigation/ruta_hoja_modal.dart';
+/// import 'package:zanky/core/navigation/ruta_hoja_modal.dart';
 ///
 /// final elegido = await mostrarHojaModal<String>(
 ///   context,

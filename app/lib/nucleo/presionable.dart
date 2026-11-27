@@ -215,7 +215,7 @@ class BotonZ extends StatelessWidget {
   }
 }
 
-/// Tarjeta blanca con borde suave: la superficie de casi todo en Zanqui.
+/// Tarjeta blanca con borde suave: la superficie de casi todo en Zanky.
 class TarjetaZ extends StatelessWidget {
   const TarjetaZ({super.key, required this.child, this.padding = const EdgeInsets.all(18), this.color, this.onTap});
   final Widget child;

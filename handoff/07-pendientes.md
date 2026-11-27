@@ -2,20 +2,33 @@
 
 Lista única del equipo. Cada pendiente grande tiene su issue en GitHub; aquí está el resumen para verlo todo de un vistazo.
 **Al terminar algo:** márcalo aquí (`[x]`), cierra el issue y avisa por el correo de agentes. Si aparece algo nuevo, se agrega
-aquí con dueño. Última actualización: 27-11-2026, 11:25.
+aquí con dueño. Última actualización: 27-11-2026, 11:05.
 
 Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
+
+## Estado a las 11:05 (lo que hay y lo que falta)
+
+| Pieza | Dueño | Estado | Lo que falta |
+|---|---|---|---|
+| App Flutter (Android + web instalable) | Á | En `main`, vista en pantalla | Supabase real, probar en un Android, arte oficial de Zanky |
+| Backend Supabase | Á | Esquema en `main`, **sin ejecutar** | Crear el proyecto, correr el SQL y probar de punta a punta |
+| IA que revisa la foto | Á | En construcción | Clave de API y prueba con fotos |
+| Panel de la CRA | **J** (sin avance en el repo) → Á lo arranca en `panel/` | En construcción | Que Jerson diga qué tiene, para unir |
+| Bot de WhatsApp | M | Rama `zanqui-bot`, solo en simulador | Conectarlo a Supabase, caso `ZK-`, cuenta real de Meta, revisión del #10 |
+| Arte de Zanky (Flow) | M | Solo prompts (`08`), **sin imágenes en el repo** | PNG de los 4 ánimos en `marca/zanky/` |
+| Pitch, ficha y video | Todos | Guion en `09` | Grabar a las 16:00, rúbrica, ensayo |
+| Correo de agentes (Mesa) | M, J | **Ninguno conectado** | Conectarse con la clave que mandó Ángel |
 
 ## A. Coordinación (ya)
 
 - [ ] **M, J** — Conectar su agente al correo de Mesa (clave por WhatsApp; hooks en `.claude/settings.local.json`).
 - [ ] **M** — Enlace del repo de **Invitta**, su stack y su backend (¿Supabase, Firebase u otro?). De esto depende si el
   backend común se queda en Supabase.
-- [ ] **M** — Arte oficial de **Zanqui** hecho con Flow: PNG transparentes de 1024 px en 4 ánimos (feliz, curioso,
+- [ ] **M** — Arte oficial de **Zanky** hecho con Flow: PNG transparentes de 1024 px en 4 ánimos (feliz, curioso,
   preocupado, celebrando) con el mismo encuadre y los pies en la misma línea; bucles cortos opcionales; paleta. Va en
-  `marca/zanqui/`. La app ya tiene el lugar único donde se cambia (`app/lib/vistas/comun/zanqui_mascota.dart`).
+  `marca/zanqui/`. La app ya tiene el lugar único donde se cambia (`app/lib/vistas/comun/zanky_mascota.dart`).
 - [ ] **Todos** — Validar con los mentores (antes de las 11:00): lista de **tipos de amenaza**, su **gravedad**, la
-  **prioridad de conservación** de cada zona y el nombre de Zanqui con los mentores comunitarios.
+  **prioridad de conservación** de cada zona y el nombre de Zanky con los mentores comunitarios.
 - [ ] **Todos** — Pedir la **rúbrica del jurado** y alinear el pitch con ella.
 - [ ] **Todos** — Cuando llegue el **KMZ de la CRA**: guardarlo en `datos/cra/`, convertirlo a GeoJSON y regenerar
   `app/assets/datos/manglar_zonas.json` (`node app/tool/preparar_zonas.mjs ruta.geojson`) y `backend/supabase/zonas.sql`.
@@ -33,15 +46,15 @@ Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
 
 ## C. App móvil (`app/`, Á)
 
-- [x] Base: datos sin señal, zonas en el teléfono, prioridad con motivos, solidez, guardián, tema, Zanqui, barra.
+- [x] Base: datos sin señal, zonas en el teléfono, prioridad con motivos, solidez, guardián, tema, Zanky, barra.
 - [x] Flujo de reporte: tipo → ubicación (GPS, mapa, enlace de Google Maps) → foto → detalles → enviado.
 - [x] Pantallas: bienvenida y privacidad, mapa, mis reportes y detalle, guardián (tarjeta, nivel, insignias, misiones).
 - [x] Recorrido completo visto en el navegador a 375 px (bienvenida → reporte → confirmación → mis reportes → mapa → guardián); 8 defectos de pantalla encontrados y arreglados.
 - [ ] Ver cada pantalla en el navegador y en un Android real; medir la fluidez cuadro a cuadro.
 - [ ] Probar **sin señal**: reportar en modo avión, volver y ver que llega sola, sin duplicar.
 - [ ] Probar el **peor caso**: el servidor guarda y la respuesta se pierde; reintentar no duplica.
-- [ ] Cambiar a Zanqui por el arte oficial cuando llegue.
-- [ ] Ícono de la app y pantalla de arranque con Zanqui.
+- [ ] Cambiar a Zanky por el arte oficial cuando llegue.
+- [ ] Ícono de la app y pantalla de arranque con Zanky.
 - [ ] Pruebas de pantallas (widget) del flujo de reporte.
 
 ## D. Web: panel de la CRA y vista pública (`web/`, M y J)
@@ -52,18 +65,18 @@ Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
 - [ ] **Exportar datos abiertos**: GeoJSON, CSV y KML (Gobierno Digital).
 - [ ] **Vista pública** con el mapa anonimizado + formulario ligero para turistas que entran por QR.
 - [ ] **Eventos** (base de Invitta): siembras, limpiezas, recorridos; invitaciones con enlace.
-- [ ] Zanqui interactivo también en la web.
+- [ ] Zanky interactivo también en la web.
 
-## E. Bot de WhatsApp (`bot/`, Á con Codex)
+## E. Bot de WhatsApp (`bot/`, M; revisión de Á en el issue #10)
 
-- [ ] Flujos: reportar (con foto, ubicación y **audio** transcrito), número de caso, consultar estado, eventos.
+- [ ] Flujos (rama `zanqui-bot` de Manuel): reportar (con foto, ubicación y **audio** transcrito), número de caso, consultar estado, eventos.
 - [ ] Probar con el simulador y luego con una cuenta real (Meta Cloud o Evolution; cuenta de Ángel). En construcción en `bot/`.
 - [ ] Aviso al ciudadano cuando cambia su caso; difusión solo con consentimiento.
 - [ ] Llamadas (después de la entrega, documentado).
 
 ## F. Participación y difusión (pregunta 3)
 
-- [ ] Videos de Zanqui (propios o con IA) para líderes ecológicos y redes, siempre con la invitación a la web y a los eventos.
+- [ ] Videos de Zanky (propios o con IA) para líderes ecológicos y redes, siempre con la invitación a la web y a los eventos.
 - [ ] Letreros con **QR/NFC** en Mallorquín, Puerto Colombia y playas.
 - [ ] Colegios: servicio social estudiantil y PRAE; ranking «Guardianes del manglar».
 - [ ] Alianzas con empresas que ya siembran manglar (RSE) y con la asociación de pescadores.

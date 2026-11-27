@@ -52,7 +52,7 @@ class LineaTiempo extends StatelessWidget {
 
   List<_Paso> _pasos(BuildContext context) {
     final r = reporte;
-    final demo = !Zanqui.de(context).servidor.configurado;
+    final demo = !Zanky.de(context).servidor.configurado;
     final enviado = r.envio == Envio.enviado;
     final pasos = <_Paso>[
       _Paso(

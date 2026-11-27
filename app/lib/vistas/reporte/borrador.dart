@@ -27,7 +27,7 @@ class Borrador extends ChangeNotifier {
     _iniciarGps();
   }
 
-  final EstadoZanqui estado;
+  final EstadoZanky estado;
   final String id;
 
   /// Cuándo lo vio: al abrir el flujo. Es la «hora de captura» del contrato.
@@ -222,6 +222,7 @@ class Borrador extends ChangeNotifier {
         fotoHash: huella,
         fotoDeCamara: fotoDeCamara,
         capturadoSinSenal: !estado.enLinea,
+        canal: kIsWeb ? 'web' : 'app',
       );
       return await estado.agregar(r, foto);
     } finally {

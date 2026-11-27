@@ -35,7 +35,7 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
   @override
   void initState() {
     super.initState();
-    final p = Zanqui.leer(context).perfil;
+    final p = Zanky.leer(context).perfil;
     _nombre = TextEditingController(text: p?.nombre ?? '');
     _colegio = TextEditingController(text: p?.colegio ?? '');
     _anonimo = p?.anonimoPorDefecto ?? false;
@@ -63,7 +63,7 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
       huella = Perfil.huellaCedula(digitos);
     }
     setState(() => _guardando = true);
-    final estado = Zanqui.leer(context);
+    final estado = Zanky.leer(context);
     final p = estado.perfil ?? estado.perfilNuevo();
     p
       ..nombre = _nombre.text.trim()

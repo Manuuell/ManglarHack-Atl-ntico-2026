@@ -61,9 +61,13 @@ class PildoraPrioridad extends StatelessWidget {
         children: [
           Container(width: 7, height: 7, decoration: BoxDecoration(color: c, shape: BoxShape.circle)),
           const SizedBox(width: 6),
-          Text(
-            compacta ? 'P$prioridad' : 'Prioridad ${Prioridad.nombres[prioridad]}',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Color.lerp(c, Zc.texto, 0.35)),
+          Flexible(
+            child: Text(
+              compacta ? 'P$prioridad' : 'Prioridad ${Prioridad.nombres[prioridad]}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Color.lerp(c, Zc.texto, 0.35)),
+            ),
           ),
         ],
       ),
@@ -78,7 +82,7 @@ class ChipEstado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final demo = !Zanqui.de(context).servidor.configurado;
+    final demo = !Zanky.de(context).servidor.configurado;
     final (texto, color, icono) = switch (reporte.envio) {
       Envio.enCola when demo => ('Demostración · guardado en este teléfono', Zc.textoSuave, Icons.phone_android_rounded),
       Envio.enCola => ('En el teléfono · se envía con señal', Zc.textoSuave, Icons.schedule_rounded),
@@ -148,7 +152,7 @@ class FranjaConexion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final e = Zanqui.de(context);
+    final e = Zanky.de(context);
     final String? texto;
     final IconData icono;
     final Color color;

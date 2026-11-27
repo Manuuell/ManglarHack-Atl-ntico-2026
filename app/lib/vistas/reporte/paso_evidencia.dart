@@ -147,9 +147,9 @@ class _PasoEvidenciaState extends State<PasoEvidencia> {
                 children: [
                   const Icon(Icons.photo_library_outlined, size: 19, color: Zc.textoSuave),
                   const SizedBox(width: 8),
-                  Text('Elegir de la galería', style: tt.labelLarge),
+                  Flexible(child: Text('Elegir de la galería', maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.labelLarge)),
                   const SizedBox(width: 6),
-                  Text('(pesa menos)', style: tt.bodySmall),
+                  Flexible(child: Text('(pesa menos)', maxLines: 1, overflow: TextOverflow.ellipsis, style: tt.bodySmall)),
                 ],
               ),
             ),
@@ -240,8 +240,7 @@ class _MedidorSolidez extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('Solidez del reporte', style: tt.titleSmall),
-              const Spacer(),
+              Expanded(child: Text('Solidez del reporte', style: tt.titleSmall)),
               TweenAnimationBuilder<double>(
                 tween: Tween(end: v.toDouble()),
                 duration: Zm.largo,

@@ -111,7 +111,7 @@ class PaginaPerfil extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            BurbujaZanqui(texto: burbuja),
+            BurbujaZanky(texto: burbuja),
             const SizedBox(height: 20),
             Semantics(header: true, child: Text('¿Cómo te llamamos?', style: tema.headlineMedium)),
             const SizedBox(height: 8),
@@ -599,7 +599,7 @@ class _AvisoPrivacidad extends StatelessWidget {
           const _Vineta(
             icono: Icons.eco_rounded,
             titulo: 'Para qué. ',
-            texto: 'Solo para verificar y atender las amenazas al manglar. No los vendemos ni los usamos para publicidad.',
+            texto: 'Solo para verificar y atender las amenazas al manglar. Una IA revisa la foto (sin identificar personas) para ayudar a la CRA a confirmarla. No los vendemos ni los usamos para publicidad.',
           ),
           const SizedBox(height: 12),
           const _Vineta(

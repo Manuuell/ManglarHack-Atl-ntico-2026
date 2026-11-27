@@ -8,7 +8,7 @@ import '../../nucleo/base/transicion_pestanas.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
 import 'editar_perfil.dart';
 import 'insignias_guardian.dart';
@@ -35,7 +35,7 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
     // Solo se celebra con la pestaña a la vista: una celebración sobre otra pestaña
     // sería un susto. Al abrirla, didChangeDependencies vuelve a pasar por aquí.
     if (PestanaVisible.de(context)) {
-      final progreso = Zanqui.de(context).progreso;
+      final progreso = Zanky.de(context).progreso;
       WidgetsBinding.instance.addPostFrameCallback((_) => _celebrar(progreso));
     }
   }
@@ -63,7 +63,7 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
 
   @override
   Widget build(BuildContext context) {
-    final estado = Zanqui.de(context);
+    final estado = Zanky.de(context);
     final perfil = estado.perfil;
     final progreso = estado.progreso;
     final secciones = <Widget>[
@@ -123,7 +123,7 @@ class _SinPerfil extends StatelessWidget {
       child: TarjetaZ(
         child: Column(
           children: [
-            const ZanquiMascota(tamano: 90, animo: Animo.curioso),
+            const ZankyMascota(tamano: 90, animo: Animo.curioso),
             const SizedBox(height: 8),
             Text('Crea tu tarjeta de guardián', style: tt.titleLarge),
             const SizedBox(height: 6),

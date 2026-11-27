@@ -1,5 +1,5 @@
 -- =====================================================================================
--- Zanqui · Manglar Hack Atlántico 2026 · Backend común (Supabase = Postgres 15 + PostGIS 3)
+-- Zanky · Manglar Hack Atlántico 2026 · Backend común (Supabase = Postgres 15 + PostGIS 3)
 -- =====================================================================================
 -- Se pega ENTERO en el SQL Editor de Supabase (rol postgres). Es idempotente: se puede
 -- volver a correr sin romper nada ni duplicar nada.
@@ -432,10 +432,10 @@ returns jsonb language sql stable security definer
 set search_path = public, extensions, pg_temp as $$
   select jsonb_build_object(
     'type', 'FeatureCollection',
-    'name', 'zanqui_reportes_manglar_atlantico',
+    'name', 'zanky_reportes_manglar_atlantico',
     'licencia', 'CC BY 4.0',
     'licencia_url', 'https://creativecommons.org/licenses/by/4.0/deed.es',
-    'fuente', 'Zanqui, ciencia ciudadana para el manglar del Atlántico',
+    'fuente', 'Zanky, ciencia ciudadana para el manglar del Atlántico',
     'aviso', 'Reportes ciudadanos: los de estado «recibido» aún no están verificados. Coordenadas a 3 decimales (~110 m).',
     'generado_en', now(),
     'features', coalesce(jsonb_agg(
@@ -463,7 +463,7 @@ returns text language sql stable security definer
 set search_path = public, extensions, pg_temp as $$
   select '<?xml version="1.0" encoding="UTF-8"?>' || E'\n'
       || '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>'
-      || '<name>Zanqui - reportes del manglar del Atlántico</name>'
+      || '<name>Zanky - reportes del manglar del Atlántico</name>'
       || '<description>Licencia CC BY 4.0. Reportes ciudadanos; los de estado recibido no están verificados. Coordenadas a 3 decimales.</description>'
       || coalesce(string_agg(
            '<Placemark><name>' || public._xml(public._nombre_tipo(p.tipo)) || '</name>'

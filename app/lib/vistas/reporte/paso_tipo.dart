@@ -38,13 +38,15 @@ class _PasoTipoState extends State<PasoTipo> {
   @override
   Widget build(BuildContext context) {
     final elegido = widget.borrador.tipo;
+    // Con letra grande el texto de cada tarjeta crece: la altura fija crece con él.
+    final letra = (MediaQuery.textScalerOf(context).scale(14) / 14).clamp(1.0, 2.0);
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        mainAxisExtent: 148,
+        mainAxisExtent: 148 + 60 * (letra - 1),
       ),
       itemCount: TipoAmenaza.values.length,
       itemBuilder: (context, i) {

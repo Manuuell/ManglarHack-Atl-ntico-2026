@@ -22,8 +22,8 @@ import 'zonas.dart';
 /// la cola se vacía sola cuando vuelve la señal (al cambiar la conectividad, al volver
 /// a la app y cada 45 s mientras quede algo pendiente). Reintentar nunca duplica: el
 /// id lo pone el teléfono.
-class EstadoZanqui extends ChangeNotifier with WidgetsBindingObserver {
-  EstadoZanqui({Servidor? servidor}) : servidor = servidor ?? Servidor();
+class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
+  EstadoZanky({Servidor? servidor}) : servidor = servidor ?? Servidor();
 
   final Servidor servidor;
   static const _uuid = Uuid();
@@ -234,12 +234,12 @@ class EstadoZanqui extends ChangeNotifier with WidgetsBindingObserver {
 }
 
 /// Publica el estado al árbol de widgets sin dependencias extra.
-class Zanqui extends InheritedNotifier<EstadoZanqui> {
-  const Zanqui({super.key, required EstadoZanqui estado, required super.child}) : super(notifier: estado);
+class Zanky extends InheritedNotifier<EstadoZanky> {
+  const Zanky({super.key, required EstadoZanky estado, required super.child}) : super(notifier: estado);
 
-  static EstadoZanqui de(BuildContext context) =>
-      context.dependOnInheritedWidgetOfExactType<Zanqui>()!.notifier!;
+  static EstadoZanky de(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<Zanky>()!.notifier!;
 
-  static EstadoZanqui leer(BuildContext context) =>
-      (context.getElementForInheritedWidgetOfExactType<Zanqui>()!.widget as Zanqui).notifier!;
+  static EstadoZanky leer(BuildContext context) =>
+      (context.getElementForInheritedWidgetOfExactType<Zanky>()!.widget as Zanky).notifier!;
 }

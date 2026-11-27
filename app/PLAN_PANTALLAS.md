@@ -1,4 +1,4 @@
-# App Zanqui: plan de pantallas y kit común
+# App Zanky: plan de pantallas y kit común
 
 Guía para quien construye una pantalla (persona o agente). Antes de escribir, lee `../handoff/06-la-vara-y-aprendizajes.md`
 §4 (lista de chequeo por pantalla) y este archivo entero.
@@ -20,10 +20,10 @@ Guía para quien construye una pantalla (persona o agente). Antes de escribir, l
 
 ## Kit común (úsalo, no lo copies)
 
-- **Estado:** `Zanqui.de(context)` → `EstadoZanqui` (`lib/datos/estado.dart`): `manglar` (zonas y polígonos), `perfil`,
+- **Estado:** `Zanky.de(context)` → `EstadoZanky` (`lib/datos/estado.dart`): `manglar` (zonas y polígonos), `perfil`,
   `reportes` (los del teléfono, más nuevo primero), `publicos` (del servidor, puede estar vacío), `clima`, `enLinea`,
   `pendientes`, `progreso` (puntos, nivel, insignias), `servidor.configurado`, `guardarPerfil()`, `sincronizar()`.
-  `Zanqui.leer(context)` para leer sin suscribirse (en callbacks).
+  `Zanky.leer(context)` para leer sin suscribirse (en callbacks).
 - **Datos:** `lib/datos/tipos.dart` (`TipoAmenaza`, `EstadoReporte`, `Momento`, `Magnitud`), `reporte.dart`
   (`Reporte`, `Envio`, `CambioEstado`, `caso` = ZQ-XXXX), `zonas.dart` (`Manglar`, `ZonaManglar`, `Ubicacion`,
   `puntoMallorquin`), `prioridad.dart` (`Prioridad`, `Solidez`), `guardian.dart` (`Perfil`, `Nivel`, `Insignia`,
@@ -38,9 +38,9 @@ Guía para quien construye una pantalla (persona o agente). Antes de escribir, l
   tope 6), `Esqueleto`/`Skeleton` (carga con la forma real), `mostrarHojaZ` / `HojaZ` (hoja inferior que se arrastra
   para cerrar), `context.animationsDisabled` (respetar «reducir movimiento»).
 - **Comunes:** `lib/vistas/comun/comunes.dart`: `CabeceraZ` (título grande), `PildoraPrioridad`, `ChipEstado`
-  (envío + estado), `IconoTipo`, `FranjaConexion`, `haceCuanto()`. `zanqui_mascota.dart`: `ZanquiMascota(tamano:,
-  animo: Animo.feliz|curioso|preocupado|celebrando, onTap:)`. `burbuja.dart`: `BurbujaZanqui(texto:)` y
-  `DatosZanqui.todos` (frases para concientizar).
+  (envío + estado), `IconoTipo`, `FranjaConexion`, `haceCuanto()`. `zanky_mascota.dart`: `ZankyMascota(tamano:,
+  animo: Animo.feliz|curioso|preocupado|celebrando, onTap:)`. `burbuja.dart`: `BurbujaZanky(texto:)` y
+  `DatosZanky.todos` (frases para concientizar).
 - **Navegación:** `abrirReporte(context, tipo: …)` abre el flujo de reporte; `Raiz.irA(context, 1)` cambia de pestaña
   (0 Inicio, 1 Mapa, 2 Mis reportes, 3 Guardián).
 
@@ -48,7 +48,7 @@ Guía para quien construye una pantalla (persona o agente). Antes de escribir, l
 
 - Español en todo, sin jerga. Letra que se lee al sol; toques de 44 px o más; nada que salte bajo el dedo.
 - La barra de pestañas flota abajo (72 px + borde inferior): deja `padding` inferior de **110 px** en listas con scroll.
-- Estados **vacío, cargando, error y sin señal** pensados y bonitos (con Zanqui cuando aporte), nunca una pantalla
+- Estados **vacío, cargando, error y sin señal** pensados y bonitos (con Zanky cuando aporte), nunca una pantalla
   en blanco ni un «0» que mienta.
 - Honestidad: datos de prueba se dicen de prueba; si no hay servidor, se dice «modo demostración».
 - Movimiento con intención: entrada escalonada en listas, resortes en lo que se toca, `Hero` para tarjetas que se

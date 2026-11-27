@@ -1,6 +1,6 @@
 # Instrucciones para los agentes del equipo (Claude Code, Codex, OpenCode)
 
-Proyecto **Zanqui** para Manglar Hack Atlántico 2026. Antes de trabajar, lee en este orden:
+Proyecto **Zanky** para Manglar Hack Atlántico 2026. Antes de trabajar, lee en este orden:
 
 1. `handoff/README.md` y los documentos 01 a 04 (el reto, el evento, la solución y los datos).
 2. `handoff/05-coordinacion-y-reglas.md`: quién lleva qué, cómo hablar con los otros agentes por el correo de Mesa

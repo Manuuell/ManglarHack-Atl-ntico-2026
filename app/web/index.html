@@ -1,46 +1,114 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
+    `flutter build` reemplaza $FLUTTER_BASE_HREF (por defecto "/"). Si se publica en una subcarpeta,
+    compilar con --base-href "/subcarpeta/".
   -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
 
-  <!-- iOS meta tags & icons -->
+  <title>Zanky · Guardianes del manglar</title>
+  <meta name="description" content="Escanea, mira qué le pasa al manglar del Atlántico y repórtalo desde tu teléfono. Sin instalar nada. Zanky: guardianes del manglar.">
+  <meta name="theme-color" content="#1FA2A6">
+  <meta name="color-scheme" content="light">
+  <meta name="application-name" content="Zanky">
+
+  <!-- Al compartir (WhatsApp, Telegram, X, Facebook...).
+       TODO al publicar: las imágenes necesitan URL ABSOLUTA (https://tu-dominio/og-zanky.png) para que
+       los rastreadores las lean; cambiar og:image, og:url y twitter:image por la dirección real. -->
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_CO">
+  <meta property="og:site_name" content="Zanky">
+  <meta property="og:title" content="Zanky · Guardianes del manglar">
+  <meta property="og:description" content="Mira qué le pasa al manglar del Atlántico y repórtalo desde tu teléfono. Sin instalar nada.">
+  <meta property="og:image" content="og-zanky.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Zanky, la mascota del manglar, con su corona de hojas sobre un pin de ubicación.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Zanky · Guardianes del manglar">
+  <meta name="twitter:description" content="Mira qué le pasa al manglar del Atlántico y repórtalo desde tu teléfono. Sin instalar nada.">
+  <meta name="twitter:image" content="og-zanky.png">
+
+  <!-- iOS / Android: instalable y a pantalla completa -->
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="zanqui">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>zanqui</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Zanky">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body { margin: 0; height: 100%; background: #1FA2A6; }
+    /* Pantalla de carga: se ve al instante, mientras baja el motor de Flutter. */
+    #zk-carga {
+      position: fixed; inset: 0; z-index: 99999; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 22px; color: #fff; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(120% 90% at 20% 0%, #4cc3c6 0%, #1FA2A6 45%, #12787C 100%);
+      transition: opacity .45s cubic-bezier(.2,.9,.25,1), visibility .45s;
+    }
+    #zk-carga.zk-fuera { opacity: 0; visibility: hidden; }
+    #zk-carga svg { width: 148px; height: 148px; overflow: visible; animation: zk-bota 1.6s cubic-bezier(.45,0,.35,1) infinite; }
+    #zk-carga .zk-sombra { width: 84px; height: 12px; border-radius: 50%; background: rgba(0,40,44,.28); margin-top: -10px;
+      animation: zk-sombra 1.6s cubic-bezier(.45,0,.35,1) infinite; }
+    #zk-carga .zk-texto { font-size: 17px; font-weight: 600; letter-spacing: -.1px; }
+    #zk-carga .zk-puntos span { animation: zk-punto 1.2s infinite both; }
+    #zk-carga .zk-puntos span:nth-child(2) { animation-delay: .15s; }
+    #zk-carga .zk-puntos span:nth-child(3) { animation-delay: .3s; }
+    @keyframes zk-bota { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
+    @keyframes zk-sombra { 0%,100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(.78); opacity: .6; } }
+    @keyframes zk-punto { 0%,80%,100% { opacity: .25; } 40% { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      #zk-carga svg, #zk-carga .zk-sombra, #zk-carga .zk-puntos span { animation: none; }
+      #zk-carga { transition: none; }
+    }
+  </style>
 </head>
 <body>
-  <!--
-    You can customize the "flutter_bootstrap.js" script.
-    This is useful to provide a custom configuration to the Flutter loader
-    or to give the user feedback during the initialization process.
+  <div id="zk-carga" role="status" aria-live="polite">
+    <!-- Zanky simple: corona de hojas, cara de tronco y su pin -->
+    <svg viewBox="0 0 200 200" aria-hidden="true">
+      <path d="M100 188 L52 112 A56 56 0 1 1 148 112 Z" fill="#fff"/>
+      <circle cx="100" cy="92" r="40" fill="#8B3A2B"/>
+      <ellipse cx="100" cy="84" rx="32" ry="25" fill="#A24B39"/>
+      <ellipse cx="87" cy="94" rx="8.5" ry="10" fill="#1B1210"/><ellipse cx="113" cy="94" rx="8.5" ry="10" fill="#1B1210"/>
+      <circle cx="90" cy="90" r="3" fill="#fff"/><circle cx="116" cy="90" r="3" fill="#fff"/>
+      <path d="M84 106 Q100 122 116 106" fill="none" stroke="#1B1210" stroke-width="3.5" stroke-linecap="round"/>
+      <g fill="#2E7D32"><ellipse cx="82" cy="40" rx="9" ry="22" transform="rotate(-32 82 40)"/>
+        <ellipse cx="118" cy="40" rx="9" ry="22" transform="rotate(32 118 40)"/></g>
+      <g fill="#43A047"><ellipse cx="93" cy="34" rx="9" ry="24" transform="rotate(-10 93 34)"/>
+        <ellipse cx="107" cy="34" rx="9" ry="24" transform="rotate(10 107 34)"/></g>
+      <path d="M110 22 L124 8" stroke="#558B2F" stroke-width="4" stroke-linecap="round"/><circle cx="125" cy="7" r="4" fill="#7CB342"/>
+    </svg>
+    <div class="zk-sombra"></div>
+    <div class="zk-texto">Cargando el manglar<span class="zk-puntos"><span>.</span><span>.</span><span>.</span></span></div>
+    <noscript><div class="zk-texto" style="max-width:280px;text-align:center">Zanky necesita JavaScript para funcionar. Actívalo en tu navegador y vuelve a abrir esta página.</div></noscript>
+  </div>
 
-    For more details:
-    * https://docs.flutter.dev/platform-integration/web/initialization
-  -->
+  <script>
+    // Quita la pantalla de carga con un fundido cuando Flutter pinta su primer cuadro.
+    (function () {
+      var quitada = false;
+      function quitar() {
+        if (quitada) return;
+        quitada = true;
+        var el = document.getElementById('zk-carga');
+        if (!el) return;
+        el.classList.add('zk-fuera');
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 600);
+      }
+      // El evento se lanza en el documento y no burbujea: se escucha en captura desde la ventana.
+      window.addEventListener('flutter-first-frame', quitar, true);
+      document.addEventListener('flutter-first-frame', quitar, true);
+      // Red de seguridad: si algo falla, no dejar el fundido tapando para siempre.
+      setTimeout(quitar, 25000);
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

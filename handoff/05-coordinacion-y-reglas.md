@@ -7,7 +7,7 @@ Esto es lo que acordamos el 27-11-2026 en la mañana para trabajar rápido y sin
 
 | Quién | Qué lleva | Carpeta |
 |---|---|---|
-| **Ángel** | App móvil Flutter (ciudadano y vigía), offline primero, Zanqui interactivo, tarjeta del guardián | `app/` |
+| **Ángel** | App móvil Flutter (ciudadano y vigía), offline primero, Zanky interactivo, tarjeta del guardián | `app/` |
 | **Manuel y Jerson** | Aplicación web: panel de la CRA con roles + vista pública. Se toma la base de **Invitta** (eventos e invitaciones) y se adapta al reto; se reaprovecha todo lo bueno de la web de la CRA (manglarcra.netlify.app) | `web/` |
 | Por definir (lo decide quien termine primero) | Backend común, bot de WhatsApp y clasificación con IA | `backend/`, `bot/` |
 
@@ -21,12 +21,12 @@ por prioridad** y se avisa a los **vigías**. Mostrar que fuimos más allá de l
    verificar reportes de todos los tipos, revisar fotos, cambiar estados, abrir expediente, auditoría de cada acción.
 2. **Invitta como panel de eventos**: copiar su base y mejorarla para el reto (jornadas de siembra, limpiezas,
    recorridos de vigías, invitaciones con enlace).
-3. **Zanqui como mascota interactiva** en app, web y bot, para que la gente que no lo conoce se familiarice con él.
+3. **Zanky como mascota interactiva** en app, web y bot, para que la gente que no lo conoce se familiarice con él.
 4. **Todo conectado**: app ↔ panel ↔ bot, con datos en vivo. Usar **Open-Meteo** (viento y lluvia para priorizar un
    incendio, oleaje y nivel del mar) y las demás fuentes de `04-datos.md`.
 5. **Bot de WhatsApp completo**: recibe reportes con foto, ubicación, **audios** (se transcriben) y texto; da el número
    de caso y avisa cuando cambia; informa y **invita a eventos**.
-6. **Difusión**: videos de Zanqui (propios o hechos con IA) enviados a líderes ecológicos y redes, siempre con la
+6. **Difusión**: videos de Zanky (propios o hechos con IA) enviados a líderes ecológicos y redes, siempre con la
    invitación a la web y a los eventos.
 7. **Gamificación seria**: tarjeta digital del guardián (por nombre; la cédula solo se guarda como hash, nunca se
    muestra), niveles, insignias, misiones, ranking de colegios; los puntos salen de reportes **validados**, no de la
@@ -62,7 +62,7 @@ persona la apruebe. Por el correo nunca van claves ni datos personales.
 - **Nada de secretos:** ni `.env`, ni claves, ni tokens, ni `google-services.json`. Solo `.env.example` con nombres de
   variables. El mentor de ciberseguridad va a leer el código.
 - **Un commit por punto**, con un mensaje claro en español que diga qué cambia para el usuario. Los mensajes hablan
-  solo de Zanqui y del reto.
+  solo de Zanky y del reto.
 - **Cada uno en su carpeta.** Si hay que tocar algo común (`datos/`, `handoff/`, el contrato de la API), se avisa por
   el correo antes.
 - **Antes de push:** `git pull --rebase`. Nunca `--force` a `main`.

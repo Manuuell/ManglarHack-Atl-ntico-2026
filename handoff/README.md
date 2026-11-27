@@ -12,6 +12,7 @@ Aquí está la información común del equipo para que todos trabajemos con lo m
 | 06 | [La vara y aprendizajes](06-la-vara-y-aprendizajes.md) | La vara de calidad completa de Ángel y 134 lecciones numeradas (app, web y panel, offline, seguridad, dato honesto, pruebas, video y voz, agentes y git), con su comprobación |
 | 07 | [Pendientes](07-pendientes.md) | Lista viva de pendientes por área y dueño, enlazada a los issues de GitHub, y las indicaciones de excelencia |
 | 08 | [Identidad de Zanky](08-zanky-identidad.md) | Paleta, prompts de diseño (personaje, poses, ícono, stickers, letrero QR) y de video de la mascota |
+| 09 | [Pitch, ficha y video](09-pitch-ficha-y-video.md) | Ficha técnica con herramientas y modelos de IA, guion del pitch de 7 min, guion del video, lista «No afirmar» y checklist de entrega |
 
 ## Lo esencial en 30 segundos
 

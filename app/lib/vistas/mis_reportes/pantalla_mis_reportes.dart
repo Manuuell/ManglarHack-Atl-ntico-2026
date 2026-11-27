@@ -10,7 +10,7 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
-import '../comun/zanqui_mascota.dart';
+import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
 import 'detalle_reporte.dart';
 import 'tarjeta_reporte.dart';
@@ -41,7 +41,7 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
 
   Future<void> _actualizar() async {
     try {
-      await Zanqui.leer(context).sincronizar();
+      await Zanky.leer(context).sincronizar();
     } catch (_) {
       // sincronizar() ya deja el error en cada reporte; el gesto solo termina.
     }
@@ -59,7 +59,7 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
 
   @override
   Widget build(BuildContext context) {
-    final e = Zanqui.de(context);
+    final e = Zanky.de(context);
     final todos = e.reportes;
     final filtrados = todos.where(_pasa).toList();
     final enTel = filtrados.where((r) => r.envio != Envio.enviado).toList();
@@ -83,7 +83,7 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CabeceraZ(titulo: 'Mis reportes', subtitulo: _resumen(todos)),
-          if (Zanqui.de(context).servidor.configurado) const FranjaConexion(),
+          if (Zanky.de(context).servidor.configurado) const FranjaConexion(),
           if (todos.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -160,7 +160,7 @@ class _AvisoEnvio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final e = Zanqui.de(context);
+    final e = Zanky.de(context);
     final tt = Theme.of(context).textTheme;
     final conError = e.reportes.any((r) => r.envio == Envio.error);
     final String texto;
@@ -204,7 +204,7 @@ class _AvisoEnvio extends StatelessWidget {
                 color: Zc.sol,
                 colorTexto: Zc.raiz,
                 cargando: e.sincronizando,
-                onTap: () => Zanqui.leer(context).sincronizar(),
+                onTap: () => Zanky.leer(context).sincronizar(),
               ),
             ],
           ],
@@ -214,7 +214,7 @@ class _AvisoEnvio extends StatelessWidget {
   }
 }
 
-/// Todavía no hay ni un reporte: Zanqui invita al primero.
+/// Todavía no hay ni un reporte: Zanky invita al primero.
 class _VacioTotal extends StatelessWidget {
   const _VacioTotal();
 
@@ -224,9 +224,9 @@ class _VacioTotal extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const ZanquiMascota(tamano: 190, animo: Animo.curioso),
+            const ZankyMascota(tamano: 190, animo: Animo.curioso),
             const SizedBox(height: 20),
-            const BurbujaZanqui(
+            const BurbujaZanky(
               texto: 'Aún no has reportado nada. Cuando veas algo raro en el manglar, tócame aquí abajo.',
             ),
             const SizedBox(height: 24),
@@ -261,7 +261,7 @@ class _VacioFiltro extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const ZanquiMascota(tamano: 110),
+          const ZankyMascota(tamano: 110),
           const SizedBox(height: 14),
           Text(titulo, style: tt.titleLarge, textAlign: TextAlign.center),
           const SizedBox(height: 6),

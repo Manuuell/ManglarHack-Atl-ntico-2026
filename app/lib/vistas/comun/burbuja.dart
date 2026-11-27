@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../nucleo/tema.dart';
 
-/// La burbuja de diálogo de Zanqui. El texto nuevo entra con un fundido y un leve
+/// La burbuja de diálogo de Zanky. El texto nuevo entra con un fundido y un leve
 /// desplazamiento; el alto se acomoda con animación para que nada salte.
-class BurbujaZanqui extends StatelessWidget {
-  const BurbujaZanqui({
+class BurbujaZanky extends StatelessWidget {
+  const BurbujaZanky({
     super.key,
     required this.texto,
     this.colaIzquierda = true,
@@ -81,11 +81,11 @@ class _Cola extends CustomPainter {
   bool shouldRepaint(_Cola o) => o.color != color || o.izquierda != izquierda;
 }
 
-/// Lo que Zanqui cuenta cuando lo tocas: concientizar sin sermonear.
+/// Lo que Zanky cuenta cuando lo tocas: concientizar sin sermonear.
 /// Las cifras vienen de lo que dijo la CRA en el lanzamiento o de fuentes públicas.
-abstract final class DatosZanqui {
+abstract final class DatosZanky {
   static const todos = [
-    '¡Ajá! Soy Zanqui. Mis raíces parecen zancos, como los zanqueros del Carnaval.',
+    '¡Ajá! Soy Zanky. Mis raíces parecen zancos, como los zanqueros del Carnaval.',
     'El manglar frena el oleaje y protege la costa cuando el mar sube.',
     'Guardamos carbono en el fango por siglos: somos de los bosques que más carbono atrapan.',
     'Necesito agua salada del mar y agua dulce de los caños. Si un caño se tapa, me ahogo de sal.',

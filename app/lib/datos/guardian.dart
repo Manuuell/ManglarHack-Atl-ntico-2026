@@ -38,7 +38,7 @@ class Perfil {
 
   static String huellaCedula(String cedula) {
     final limpia = cedula.replaceAll(RegExp(r'\D'), '');
-    return sha256.convert(utf8.encode('zanqui-guardian:$limpia')).toString();
+    return sha256.convert(utf8.encode('zanky-guardian:$limpia')).toString();
   }
 
   Map<String, dynamic> toJson() => {
@@ -76,7 +76,7 @@ class Nivel {
     Nivel(1, 'Propágulo', 0, 'Acabas de caer al agua. Todo guardián empezó así.'),
     Nivel(2, 'Plántula', 60, 'Echaste raíz: ya sabes qué mirar en el manglar.'),
     Nivel(3, 'Mangle joven', 180, 'Tus reportes ya ayudaron a la CRA a actuar.'),
-    Nivel(4, 'Raíz de zanco', 400, 'Como Zanqui: firme sobre el agua y el fango.'),
+    Nivel(4, 'Raíz de zanco', 400, 'Como Zanky: firme sobre el agua y el fango.'),
     Nivel(5, 'Mangle rojo', 800, 'Tu ciénaga sabe que estás pendiente.'),
     Nivel(6, 'Guardián del manglar', 1500, 'Eres de los que sostienen la costa.'),
   ];
@@ -97,7 +97,7 @@ class Insignia {
     Insignia('primer_aviso', 'Primer aviso', 'Envía tu primer reporte.', Icons.campaign_rounded, Color(0xFF2E9E6A)),
     Insignia('ojo_de_garza', 'Ojo de garza', 'Tres reportes verificados por la CRA.', Icons.visibility_rounded,
         Color(0xFF1F7A8C)),
-    Insignia('sin_senal', 'Sin señal, sin excusa', 'Reporta sin internet: Zanqui lo envía después.',
+    Insignia('sin_senal', 'Sin señal, sin excusa', 'Reporta sin internet: Zanky lo envía después.',
         Icons.signal_cellular_off_rounded, Color(0xFF55655F)),
     Insignia('centinela_fuego', 'Centinela del fuego', 'Un reporte de quema verificado.',
         Icons.local_fire_department_rounded, Color(0xFFD13B3B)),

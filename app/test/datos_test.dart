@@ -3,11 +3,11 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:zanqui/datos/guardian.dart';
-import 'package:zanqui/datos/prioridad.dart';
-import 'package:zanqui/datos/reporte.dart';
-import 'package:zanqui/datos/tipos.dart';
-import 'package:zanqui/datos/zonas.dart';
+import 'package:zanky/datos/guardian.dart';
+import 'package:zanky/datos/prioridad.dart';
+import 'package:zanky/datos/reporte.dart';
+import 'package:zanky/datos/tipos.dart';
+import 'package:zanky/datos/zonas.dart';
 
 void main() {
   late Manglar manglar;
@@ -141,7 +141,7 @@ void main() {
         );
 
     test('el número de caso son los 4 primeros hex del id', () {
-      expect(ejemplo().caso, 'ZQ-7F3A');
+      expect(ejemplo().caso, 'ZK-7F3A');
     });
 
     test('lo que viaja al servidor nunca lleva la ruta local de la foto', () {
@@ -155,6 +155,13 @@ void main() {
       final r = ejemplo(anonimo: true);
       expect(r.aServidor()['reportante_id'], isNull);
       expect(Reporte.fromJson(r.toJson()).reportanteId, 'guardian-1');
+    });
+
+    test('el canal viaja al servidor y se conserva al guardar (app por defecto, web desde el navegador)', () {
+      expect(ejemplo().aServidor()['canal'], 'app');
+      final web = Reporte.fromJson({...ejemplo().toJson(), 'canal': 'web'});
+      expect(web.aServidor()['canal'], 'web');
+      expect(Reporte.fromJson(web.toJson()).canal, 'web');
     });
 
     test('guardar y leer devuelve el mismo reporte', () {

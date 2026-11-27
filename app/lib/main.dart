@@ -5,6 +5,7 @@ import 'datos/estado.dart';
 import 'nucleo/tema.dart';
 import 'vistas/bienvenida/bienvenida.dart';
 import 'vistas/raiz.dart';
+import 'vistas/web/envoltura_web.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,21 +15,22 @@ Future<void> main() async {
     statusBarIconBrightness: Brightness.dark,
   ));
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  final estado = EstadoZanqui();
-  runApp(Zanqui(estado: estado, child: const AppZanqui()));
+  final estado = EstadoZanky();
+  runApp(Zanky(estado: estado, child: const AppZanky()));
   await estado.iniciar();
 }
 
-class AppZanqui extends StatelessWidget {
-  const AppZanqui({super.key});
+class AppZanky extends StatelessWidget {
+  const AppZanky({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final estado = Zanqui.de(context);
+    final estado = Zanky.de(context);
     return MaterialApp(
-      title: 'Zanqui',
+      title: 'Zanky · Guardianes del manglar', // también es el título de la pestaña en la web
       debugShowCheckedModeBanner: false,
-      theme: temaZanqui(),
+      theme: temaZanky(),
+      builder: (context, child) => EnvolturaWeb(child: child!), // solo hace algo en el navegador
       home: AnimatedSwitcher(
         duration: Zm.medio,
         switchInCurve: Zm.entrar,

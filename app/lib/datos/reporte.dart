@@ -63,6 +63,7 @@ class Reporte {
     this.ultimoError,
     this.enviadoEn,
     this.capturadoSinSenal = false,
+    this.canal = 'app',
   }) : historial = historial ?? [];
 
   /// UUID generado en el teléfono: si la respuesta del servidor se pierde y se
@@ -115,13 +116,17 @@ class Reporte {
   /// Se capturó sin señal: el panel lo muestra como «sincronizado tarde» con su hora real.
   final bool capturadoSinSenal;
 
-  /// Número de caso corto para decirlo por teléfono o WhatsApp: ZQ-7F3A.
-  String get caso => 'ZQ-${id.replaceAll('-', '').substring(0, 4).toUpperCase()}';
+  /// Por dónde llegó: 'app' (Android) o 'web' (navegador, p. ej. el QR de un letrero).
+  /// El backend acepta app, web y whatsapp.
+  final String canal;
+
+  /// Número de caso corto para decirlo por teléfono o WhatsApp: ZK-7F3A (ZK de Zanky; los 4 hex salen del id, así reintentar no cambia el número).
+  String get caso => 'ZK-${id.replaceAll('-', '').substring(0, 4).toUpperCase()}';
 
   /// Lo que viaja al servidor (contrato común, handoff/05). Nunca la ruta local de la foto.
   Map<String, dynamic> aServidor() => {
         'id': id,
-        'canal': 'app',
+        'canal': canal,
         'tipo': tipo.slug,
         'descripcion': descripcion,
         'lat': punto.latitude,
@@ -192,5 +197,6 @@ class Reporte {
         ultimoError: j['ultimo_error'] as String?,
         enviadoEn: j['enviado_en'] == null ? null : DateTime.parse(j['enviado_en'] as String),
         capturadoSinSenal: j['sincronizado_tarde'] as bool? ?? false,
+        canal: j['canal'] as String? ?? 'app',
       );
 }
