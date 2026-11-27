@@ -5,6 +5,7 @@ import 'datos/estado.dart';
 import 'nucleo/tema.dart';
 import 'vistas/bienvenida/bienvenida.dart';
 import 'vistas/experiencia/puerta_evento.dart';
+import 'vistas/punto/puerta_punto.dart';
 import 'vistas/raiz.dart';
 import 'vistas/web/envoltura_web.dart';
 
@@ -32,7 +33,7 @@ class AppZanky extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: temaZanky(),
       builder: (context, child) => EnvolturaWeb(child: child!), // solo hace algo en el navegador
-      home: PuertaEvento(
+      home: PuertaPunto(child: PuertaEvento(
         child: AnimatedSwitcher(
           duration: Zm.medio,
           switchInCurve: Zm.entrar,
@@ -40,7 +41,7 @@ class AppZanky extends StatelessWidget {
               ? const _Arranque()
               : (estado.perfil?.consentimiento == null ? const Bienvenida() : const Raiz()),
         ),
-      ),
+      )),
     );
   }
 }

@@ -396,3 +396,15 @@ curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/ranking_colegios" -H "apikey: $ANON" 
 **Sensores (maqueta):** `anon` no tiene `SELECT` directo sobre `sensores` ni `lecturas_sensor`; consulta `ultimas_lecturas()`. El panel autenticado conserva los permisos de tabla definidos en `estadisticas.sql`. No hay lecturas inventadas: `seed_sensores_demo.sql` es aparte y va marcado `[DEMO]` / `-- DEMOSTRACIÓN`.
 
 **Comprobación original de `estadisticas.sql`:** PGlite (Postgres en WASM) con un PostGIS de mentira, cargando `schema.sql` + `seed_demo.sql` + `estadisticas.sql` dos veces. Este resultado no cubre el parche ni PostGIS real: tras cargarlo, comprobar en Supabase con `select public.estadisticas();` y sesiones `anon`/panel.
+
+## 10. Puntos Zanky (`puntos.sql`)
+
+Ejecuta `puntos.sql` **después de** `schema.sql` y `estadisticas.sql` (crea la relación con `sensores`). Es aditivo e idempotente. Si se vuelve a cargar `schema.sql`, vuelve a ejecutar `puntos.sql` para recuperar los permisos y funciones propios de los puntos. No incluye datos ni claves.
+
+`puntos_zanky` guarda QR/NFC administrables; `visitas_punto` guarda un identificador aleatorio del teléfono, sin datos personales. `registrar_visita(codigo, telefono_id)` limita a una visita por punto y teléfono al día y a 20 visitas por teléfono al día (hora de Bogotá). Reintentar una visita no suma dos veces; la respuesta da 5 puntos nuevos y el total acumulado de esta participación. La app guarda las visitas pendientes en el teléfono y reintenta al recuperar conexión y periódicamente mientras esté abierta. El registro sin señal cuenta el día en que llega al servidor. Sin servidor, los dos puntos locales de ejemplo se muestran como **DEMOSTRACIÓN** y no envían visitas.
+
+La API pública lee `puntos_publicos`, que muestra solo puntos activos y coordenadas redondeadas a tres decimales. `anon` no tiene permiso de lectura para las columnas precisas de la tabla. `puntos_de(zona)`, `guardar_punto(p)` y `resumen_punto(codigo)` requieren un rol activo de `admin`, `moderador_cra`, `investigador` u `organizador` confirmado por `panel_rol_de(auth.uid())`. La tabla de visitas no se expone directamente. `asignar_rol_punto(p_user, p_rol)` permite al admin dar los dos roles nuevos y deja la auditoría del disparador de `panel_roles`.
+
+Para una foto fija, el flujo de reporte existente guarda la evidencia. `vincular_foto_punto(codigo, reporte_id)` asocia el reporte a `fotos_punto` cuando ya llegó al servidor y tiene foto; exige ubicación a menos de unos 300 m del punto. La app conserva la asociación pendiente y la reintenta al recuperar conexión. `resumen_punto` incluye el número de fotografías vinculadas. La evidencia sigue protegida por el flujo de reportes y no se expone como galería pública.
+
+Para probar en Supabase: consultar `puntos_publicos` como `anon`; comprobar que `select lat from puntos_zanky` falla para `anon`; llamar `puntos_de` con un usuario sin rol y verificar `sin_permiso`; crear un punto con un usuario autorizado; registrar dos veces el mismo teléfono y punto y verificar que `resumen_punto` cuenta una; desactivar el punto y verificar que deja de aparecer en `puntos_publicos`.
