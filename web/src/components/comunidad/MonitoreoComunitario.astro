@@ -1,15 +1,14 @@
 ---
 // Monitoreo comunitario dentro de la portada: el mapa público de reportes con
-// filtros y datos abiertos, y el seguimiento de las siembras. Antes era la
-// página /plataforma/monitoreo (ahora redirige a /#monitoreo).
+// filtros y datos abiertos. Antes era la página /plataforma/monitoreo (ahora
+// redirige a /#monitoreo). El seguimiento de siembras (ReporteMonitoreo) se quitó
+// de la portada por pedido de Manuel; el componente sigue en components/monitoreo/.
 import MapaMonitoreo from '../mapa/MapaMonitoreo';
-import ReporteMonitoreo from '../monitoreo/ReporteMonitoreo';
 import type { ReportePublico, ZonasManglar } from '../../types/manglar';
-import type { Accion, ReporteMonitoreo as Monitoreo } from '../../types/plataforma';
 import '../../styles/monitoreo-portada.css';
 
-interface Props { reportes: ReportePublico[]; sectores: ZonasManglar; acciones: Accion[]; monitoreos: Monitoreo[] }
-const { reportes, sectores, acciones, monitoreos } = Astro.props;
+interface Props { reportes: ReportePublico[]; sectores: ZonasManglar }
+const { reportes, sectores } = Astro.props;
 ---
 <section class="panel" data-tono="hondo" id="monitoreo" aria-labelledby="titulo-monitoreo">
   <div class="panel-dentro">
@@ -23,21 +22,6 @@ const { reportes, sectores, acciones, monitoreos } = Astro.props;
         <div slot="fallback" class="mon-cargando" style="height: 600px"><p>Cargando el mapa de reportes…</p></div>
       </MapaMonitoreo>
       <p class="mon-visores">Cada mapa tiene su propia página: <a href="/visores/reportes">reportes</a>, <a href="/visores/riesgo">puntos críticos y focos de calor</a>, <a href="/visores/agua">calidad del agua</a> y <a href="/workflow">estado del manglar</a>.</p>
-    </div>
-  </div>
-</section>
-
-<section class="panel" data-tono="abismo" id="siembras" aria-labelledby="titulo-siembras">
-  <div class="panel-dentro">
-    <div class="mon-cab" data-reveal>
-      <p class="kicker">Seguimiento de las siembras</p>
-      <h2 id="titulo-siembras">¿Sembraste mangle? <span class="tono">Cuenta cómo va.</span></h2>
-      <p class="mon-sub">Quien ejecuta una acción reporta a la C.R.A. cuántas plántulas siguen vivas, su altura y fotos ubicadas, en las fechas que se acuerden.</p>
-    </div>
-    <div class="mon" data-reveal="card">
-      <ReporteMonitoreo client:only="react" acciones={acciones} monitoreos={monitoreos}>
-        <div slot="fallback" class="mon-cargando" style="height: 520px"><p>Cargando el formulario de seguimiento…</p></div>
-      </ReporteMonitoreo>
     </div>
   </div>
 </section>

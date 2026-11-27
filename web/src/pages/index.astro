@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import '../styles/portada.css';
 import { obtenerPoligonos, obtenerReportes } from '../lib/datos';
 import { aReportePublico } from '../lib/privacidad';
-import { obtenerAcciones, obtenerJornadas, obtenerMonitoreos } from '../lib/plataforma/datos';
+import { obtenerJornadas } from '../lib/plataforma/datos';
 import { obtenerColegios } from '../lib/datos';
 import MapaEnVivo from '../components/comunidad/MapaEnVivo';
 import ReportarProblema from '../components/comunidad/ReportarProblema';
@@ -27,7 +27,7 @@ const SECCIONES_PORTADA = [
 ];
 
 // Lo público pasa por aReportePublico: sin foto, sin quién reporta y con la ubicación difuminada.
-const [reportes, sectores, jornadas, acciones, monitoreos, colegios] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerJornadas(), obtenerAcciones(), obtenerMonitoreos(), obtenerColegios()]);
+const [reportes, sectores, jornadas, colegios] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerJornadas(), obtenerColegios()]);
 const publicos = reportes.map(aReportePublico);
 ---
 <BaseLayout title="Zanky · Lo que pasa en el manglar del Atlántico, ahora" class="portada" sinPie>
@@ -104,7 +104,7 @@ const publicos = reportes.map(aReportePublico);
       </div>
     </section>
 
-    <MonitoreoComunitario reportes={publicos} sectores={sectores} acciones={acciones} monitoreos={monitoreos} />
+    <MonitoreoComunitario reportes={publicos} sectores={sectores} />
 
     <GuardianesManglar colegios={colegios} />
 
