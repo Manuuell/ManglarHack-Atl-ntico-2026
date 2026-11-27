@@ -1,13 +1,16 @@
-// Panel de administración (/admin): información del bot de WhatsApp, jornadas (crear, editar, cancelar,
-// inscritos) e invitaciones por WhatsApp con la plantilla aprobada. Todo vive en el servidor de Zanky;
-// cada petición lleva el token de la cuenta y el servidor comprueba el rol de administrador.
+// Panel de administración (/admin), en una sola página con barra de secciones: métricas de los últimos
+// 30 días, personas registradas, jornadas (crear, editar, cancelar, inscritos), invitaciones por WhatsApp
+// con la plantilla aprobada, historial de envíos y el bot. Todo vive en el servidor de Zanky; cada petición
+// lleva el token de la cuenta y el servidor comprueba el rol de administrador. Los reportes de las
+// métricas salen de la vista pública del servidor común (sin datos personales).
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { CalendarDays, Check, Download, Image as Imagen, MapPin, MessageCircle, Pencil, Plus, RefreshCw, Send, ShieldCheck, Users, X } from 'lucide-react';
+import { CalendarDays, Check, Download, Image as Imagen, MapPin, MessageCircle, Pencil, Plus, RefreshCw, Search, Send, ShieldCheck, Users, X } from 'lucide-react';
 import type { TipoJornada } from '../../types/plataforma';
 import { TIPOS_JORNADA } from '../../lib/plataforma/catalogos';
 import { renovarSesion, useSesion } from '../../lib/cuenta';
 import { ErrorBot, pedirBot, pedirBotCrudo } from '../../lib/bot';
 import { sincronizarJornadas } from '../../lib/plataforma/jornadasApi';
+import { backendActivo, leerReportesPublicos, type FilaPublica } from '../../lib/backend/supabase';
 import { cn } from '../../lib/utils';
 
 // --- Tipos del contrato con el servidor -----------------------------------------------------------
@@ -30,11 +33,15 @@ interface Contacto { cuenta_id: string; nombre: string; telefono_mascara: string
 interface Envio { fecha: string; jornada_id: string; jornada_titulo: string; nombre: string; telefono_mascara: string | null; estado: string; error?: string; por: string }
 interface ResultadoEnvio { enviados: number; fallidos: number; resultados: { nombre: string; telefono_mascara: string | null; estado: string; error?: string }[] }
 
-type Seccion = 'resumen' | 'jornadas' | 'invitar' | 'envios';
+/** Una persona de la lista: una cuenta de la web o alguien que se inscribió a una jornada sin cuenta. */
+interface Persona { clave: string; nombre: string; telefono: string | null; whatsapp: boolean; origen: 'cuenta' | 'inscripcion'; detalle: string; fecha: string; cuenta_id?: string }
+
+type Seccion = 'metricas' | 'personas' | 'jornadas' | 'invitar' | 'envios' | 'bot';
 const SECCIONES: { id: Seccion; texto: string }[] = [
-  { id: 'resumen', texto: 'Resumen del bot' }, { id: 'jornadas', texto: 'Jornadas' },
-  { id: 'invitar', texto: 'Invitar por WhatsApp' }, { id: 'envios', texto: 'Envíos' },
+  { id: 'metricas', texto: 'Últimos 30 días' }, { id: 'personas', texto: 'Personas' }, { id: 'jornadas', texto: 'Jornadas' },
+  { id: 'invitar', texto: 'Invitar por WhatsApp' }, { id: 'envios', texto: 'Envíos' }, { id: 'bot', texto: 'Zanky BOT' },
 ];
+const DIAS = 30;
 const TIPOS = Object.keys(TIPOS_JORNADA) as TipoJornada[];
 const PUNTOS = [
   { nombre: 'Ecoparque Ciénaga de Mallorquín', lat: 11.03217, lon: -74.85755 },
@@ -54,6 +61,9 @@ const horaBogota = (iso: string) => new Date(iso).toLocaleTimeString('en-GB', { 
 const etiquetaConteo = (k: string) => capital(k.replace(/_/g, ' '));
 /** Fecha como va en la plantilla: «sábado 28 de noviembre, 8:00 a. m.». */
 const fechaPlantilla = (iso: string) => `${fechaLarga(iso)}, ${hora(iso)}`;
+/** «27 nov.» a partir de la clave de un día (AAAA-MM-DD en Bogotá). */
+const diaCorto = (clave: string) => new Intl.DateTimeFormat('es-CO', { ...zona, day: 'numeric', month: 'short' }).format(new Date(`${clave}T12:00:00-05:00`));
+const desplazar = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
 
 // --- Piezas -----------------------------------------------------------------------------------------
 function Tarjeta({ titulo, valor, detalle, icono }: { titulo: string; valor: ReactNode; detalle?: ReactNode; icono?: ReactNode }) {
@@ -76,6 +86,53 @@ function Barras({ titulo, datos, vacio }: { titulo: string; datos: Conteo; vacio
       </li>)}
     </ul>}
   </div>;
+}
+
+/** Barras de los últimos 30 días (un día por barra, en hora de Bogotá), con el total y los datos debajo. */
+function GraficoDias({ titulo, unidad, fechas, error, detalle }: { titulo: string; unidad: [string, string]; fechas: string[] | null; error?: string; detalle?: ReactNode }) {
+  const serie = useMemo(() => {
+    const hoy = Date.now();
+    const dias = Array.from({ length: DIAS }, (_, i) => diaBogota(hoy - (DIAS - 1 - i) * 86_400_000));
+    const conteo = new Map(dias.map((d) => [d, 0]));
+    for (const f of fechas ?? []) { const d = diaBogota(f); const n = conteo.get(d); if (n !== undefined) conteo.set(d, n + 1); }
+    return dias.map((dia) => ({ dia, n: conteo.get(dia) ?? 0 }));
+  }, [fechas]);
+  const total = serie.reduce((t, p) => t + p.n, 0);
+  const max = Math.max(1, ...serie.map((p) => p.n));
+  const pico = serie.reduce((a, b) => (b.n > a.n ? b : a), serie[0]);
+  const conDatos = serie.filter((p) => p.n > 0).reverse();
+  return <div className="flex min-w-0 flex-col rounded-3xl border border-linea-suave bg-superficie p-5 sm:p-6">
+    <p className="text-sm font-semibold text-suave">{titulo}</p>
+    {fechas === null && !error ? <p className="mt-3 text-sm text-tenue" role="status">Cargando…</p> : error ? <p className="mt-3 text-sm text-alta-texto">{error}</p> : <>
+      <p className="mt-1 flex items-baseline gap-2"><span className="titular text-4xl tabular-nums">{total.toLocaleString('es-CO')}</span><span className="text-suave">{total === 1 ? unidad[0] : unidad[1]}</span></p>
+      {detalle && <div className="mt-1 text-sm text-tenue">{detalle}</div>}
+      <div className="mt-auto pt-5">
+        <div role="img" aria-label={`${titulo}: ${total} ${total === 1 ? unidad[0] : unidad[1]} en los últimos ${DIAS} días${pico.n ? `; el día con más fue el ${diaCorto(pico.dia)}, con ${pico.n}` : ''}.`}
+          className="flex h-24 items-end gap-[3px] border-b border-linea-suave">
+          {serie.map((p) => <div key={p.dia} title={`${diaCorto(p.dia)}: ${p.n}`} className={cn('min-w-0 flex-1 rounded-t-[3px]', p.n ? 'bg-dorado-500' : 'bg-white/10')}
+            style={{ height: p.n ? `${Math.max(8, (p.n / max) * 100)}%` : '3px' }} />)}
+        </div>
+        <div className="mt-1.5 flex justify-between text-[11px] text-tenue" aria-hidden="true"><span>{diaCorto(serie[0].dia)}</span><span>hoy</span></div>
+        <details className="mt-2 text-sm">
+          <summary className="inline-flex min-h-11 cursor-pointer items-center gap-1 font-semibold text-suave hover:text-texto">Ver los datos</summary>
+          {conDatos.length === 0 ? <p className="pb-1 text-tenue">Sin registros en estos {DIAS} días.</p> :
+            <table className="w-full text-left"><thead className="text-xs text-tenue"><tr><th className="py-1 font-semibold">Día</th><th className="py-1 text-right font-semibold">Cantidad</th></tr></thead>
+              <tbody>{conDatos.map((p) => <tr key={p.dia} className="border-t border-linea-suave"><td className="py-1.5">{diaCorto(p.dia)}</td><td className="py-1.5 text-right tabular-nums">{p.n}</td></tr>)}</tbody></table>}
+        </details>
+      </div>
+    </>}
+  </div>;
+}
+
+function SeccionAdmin({ id, titulo, descripcion, accion, children }: { id: Seccion; titulo: string; descripcion?: ReactNode; accion?: ReactNode; children: ReactNode }) {
+  return <section id={id} aria-labelledby={`${id}-titulo`} className="grid scroll-mt-40 gap-5">
+    <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="min-w-0"><h2 id={`${id}-titulo`} className="titular text-2xl sm:text-3xl">{titulo}</h2>
+        {descripcion && <p className="mt-1 max-w-3xl text-suave">{descripcion}</p>}</div>
+      {accion}
+    </div>
+    {children}
+  </section>;
 }
 
 const boton = (tono: 'dorado' | 'claro' | 'peligro' = 'claro') => cn(
@@ -204,7 +261,11 @@ export default function PanelAdmin() {
   const [jornadas, setJornadas] = useState<JornadaAdmin[]>([]);
   const [contactos, setContactos] = useState<Contacto[]>([]);
   const [envios, setEnvios] = useState<Envio[]>([]);
-  const [seccion, setSeccion] = useState<Seccion>('resumen');
+  const [activa, setActiva] = useState<Seccion>('metricas');
+  const [reportes, setReportes] = useState<FilaPublica[] | null>(null);
+  const [errorReportes, setErrorReportes] = useState('');
+  const [inscritosListos, setInscritosListos] = useState(false);
+  const [filtro, setFiltro] = useState('');
   const [editando, setEditando] = useState<JornadaAdmin | 'nueva' | null>(null);
   const [abiertaInscritos, setAbiertaInscritos] = useState<string | null>(null);
   const [inscritos, setInscritos] = useState<Record<string, Inscrito[]>>({});
@@ -234,8 +295,18 @@ export default function PanelAdmin() {
         api<{ contactos: Contacto[] }>('/api/admin/contactos'),
         api<{ envios: Envio[] }>('/api/admin/envios'),
       ]);
-      setYo(quien); setResumen(r); setJornadas(j?.jornadas ?? []); setContactos(c?.contactos ?? []); setEnvios(e?.envios ?? []);
+      const lista = j?.jornadas ?? [];
+      setYo(quien); setResumen(r); setJornadas(lista); setContactos(c?.contactos ?? []); setEnvios(e?.envios ?? []);
       setEstado('listo');
+      // Los inscritos de todas las jornadas alimentan las métricas y la lista de personas.
+      void Promise.allSettled(lista.map((x) => api<{ inscritos: Inscrito[] }>(`/api/admin/jornadas/${encodeURIComponent(x.id)}/inscritos`).then((res) => [x.id, res?.inscritos ?? []] as const)))
+        .then((rs) => {
+          setInscritos((p) => { const n = { ...p }; for (const x of rs) if (x.status === 'fulfilled') n[x.value[0]] = x.value[1]; return n; });
+          setInscritosListos(true);
+        });
+      if (!backendActivo) setErrorReportes('La web no está conectada al servidor de reportes.');
+      else void leerReportesPublicos().then((f) => { setReportes(f); setErrorReportes(''); })
+        .catch((err: unknown) => setErrorReportes(err instanceof Error ? err.message : 'No se pudieron leer los reportes.'));
     } catch (err) {
       const status = err instanceof ErrorBot ? err.status : -1;
       if (status === 401) setEstado('sin_sesion');
@@ -246,20 +317,58 @@ export default function PanelAdmin() {
 
   useEffect(() => { void cargar(); }, [sesion?.usuario.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // La sección va en el enlace (#jornadas, #invitar…) para poder compartirla.
+  // La sección va en el enlace (#jornadas, #invitar…) para poder compartirla: al cargar el panel se baja a ella,
+  // y la barra marca la sección que se está leyendo.
   useEffect(() => {
-    const leer = () => { const h = location.hash.slice(1) as Seccion; if (SECCIONES.some((s) => s.id === h)) setSeccion(h); };
-    leer();
-    window.addEventListener('hashchange', leer);
-    return () => window.removeEventListener('hashchange', leer);
-  }, []);
-  function irA(s: Seccion) { setSeccion(s); history.replaceState(null, '', `#${s}`); setAviso(null); }
+    if (estado !== 'listo') return;
+    const h = location.hash.slice(1);
+    if (SECCIONES.some((x) => x.id === h)) requestAnimationFrame(() => document.getElementById(h)?.scrollIntoView({ block: 'start' }));
+    const obs = new IntersectionObserver((entradas) => {
+      for (const en of entradas) if (en.isIntersecting) setActiva(en.target.id as Seccion);
+    }, { rootMargin: '-30% 0px -65% 0px' });
+    for (const x of SECCIONES) { const el = document.getElementById(x.id); if (el) obs.observe(el); }
+    return () => obs.disconnect();
+  }, [estado]);
+  function irA(s: Seccion) { history.replaceState(null, '', `#${s}`); setAviso(null); setActiva(s); desplazar(s); }
 
   const publicadas = useMemo(() => jornadas.filter((j) => j.estado === 'publicada').sort((a, b) => a.inicio.localeCompare(b.inicio)), [jornadas]);
   const proximas = useMemo(() => publicadas.filter((j) => Date.parse(j.fin) > Date.now()), [publicadas]);
   useEffect(() => { if (!jornadaInvitar && proximas[0]) setJornadaInvitar(proximas[0].id); }, [proximas, jornadaInvitar]);
   const conWhatsapp = useMemo(() => contactos.filter((c) => c.whatsapp_ok), [contactos]);
   useEffect(() => { if (!cuentaUna && conWhatsapp[0]) setCuentaUna(conWhatsapp[0].cuenta_id); }, [conWhatsapp, cuentaUna]);
+
+  // Personas: las cuentas de la web y, aparte, quienes se inscribieron sin cuenta (una fila por persona).
+  const personas = useMemo<Persona[]>(() => {
+    const lista: Persona[] = contactos.map((c) => ({ clave: `c-${c.cuenta_id}`, nombre: c.nombre, telefono: c.telefono_mascara, whatsapp: c.whatsapp_ok, origen: 'cuenta', detalle: 'Cuenta de la web', fecha: c.actualizado_en, cuenta_id: c.cuenta_id }));
+    const sinCuenta = new Map<string, Persona & { jornadas: string[] }>();
+    for (const j of jornadas) for (const i of inscritos[j.id] ?? []) {
+      if (i.cuenta) continue;
+      const k = `${i.nombre.trim().toLocaleLowerCase('es-CO')}|${i.telefono_mascara ?? ''}`;
+      const previa = sinCuenta.get(k);
+      if (previa) { previa.jornadas.push(j.titulo); if (i.fecha > previa.fecha) previa.fecha = i.fecha; previa.whatsapp ||= i.acepta_whatsapp; }
+      else sinCuenta.set(k, { clave: `i-${i.id}`, nombre: i.nombre, telefono: i.telefono_mascara, whatsapp: i.acepta_whatsapp, origen: 'inscripcion', detalle: '', fecha: i.fecha, jornadas: [j.titulo] });
+    }
+    for (const x of sinCuenta.values()) lista.push({ ...x, detalle: x.jornadas.length === 1 ? `Inscripción sin cuenta en «${x.jornadas[0]}»` : `Inscripción sin cuenta en ${x.jornadas.length} jornadas` });
+    return lista.sort((a, b) => b.fecha.localeCompare(a.fecha));
+  }, [contactos, inscritos, jornadas]);
+  const personasVisibles = useMemo(() => {
+    const q = filtro.trim().toLocaleLowerCase('es-CO');
+    return q ? personas.filter((x) => x.nombre.toLocaleLowerCase('es-CO').includes(q) || (x.telefono ?? '').replace(/\s/g, '').includes(q.replace(/\s/g, ''))) : personas;
+  }, [personas, filtro]);
+
+  // Series de las métricas.
+  const fechasReportes = useMemo(() => reportes?.map((r) => r.capturado_en) ?? null, [reportes]);
+  const reportesPorCanal = useMemo(() => {
+    const desde = Date.now() - DIAS * 86_400_000;
+    const c: Conteo = {};
+    for (const r of reportes ?? []) if (Date.parse(r.capturado_en) >= desde) c[r.canal] = (c[r.canal] ?? 0) + 1;
+    return c;
+  }, [reportes]);
+  const fechasInscripciones = useMemo(() => (inscritosListos ? Object.values(inscritos).flat().filter((i) => i.estado !== 'cancelada').map((i) => i.fecha) : null), [inscritos, inscritosListos]);
+  const fechasInvitaciones = useMemo(() => envios.filter((e) => e.estado === 'enviado').map((e) => e.fecha), [envios]);
+  const fallidasMes = useMemo(() => envios.filter((e) => e.estado !== 'enviado' && Date.parse(e.fecha) >= Date.now() - DIAS * 86_400_000).length, [envios]);
+
+  function invitarA(cuenta: string) { setDestino('uno'); setCuentaUna(cuenta); setConfirmando(false); setResultado(null); irA('invitar'); }
 
   async function verInscritos(id: string, forzar = false) {
     if (abiertaInscritos === id && !forzar) { setAbiertaInscritos(null); return; }
@@ -329,10 +438,12 @@ export default function PanelAdmin() {
 
   // --- Estados sin panel ---
   const pedirSesion = () => window.dispatchEvent(new Event('zanky-cuenta:abrir'));
-  const encabezado = <header className="grid gap-3">
-    <p className="rotulo text-dorado-300">Administración · Zanky y la C.R.A.</p>
-    <h1 className="titular text-4xl sm:text-5xl">Panel de administración</h1>
-    <p className="max-w-3xl text-suave">Información del bot de WhatsApp, jornadas e invitaciones. Todo se guarda en el servidor de Zanky, el mismo del bot.</p>
+  const encabezado = <header className="flex min-w-0 items-start gap-4">
+    <span className="mt-1 grid size-12 shrink-0 place-items-center rounded-2xl bg-dorado-500/15 text-dorado-500 sm:size-14"><ShieldCheck className="size-7 sm:size-8" aria-hidden="true" /></span>
+    <div className="min-w-0">
+      <h1 className="titular text-4xl sm:text-5xl">Administración</h1>
+      <p className="mt-2 max-w-3xl text-suave">Métricas, personas, jornadas, invitaciones por WhatsApp y el bot. Todo se guarda en el servidor de Zanky, el mismo del bot.</p>
+    </div>
   </header>;
 
   if (estado !== 'listo') {
@@ -359,47 +470,69 @@ export default function PanelAdmin() {
     </div>;
   }
 
-  return <div className="grid gap-8">
+  const bot = resumen?.bot;
+  return <div className="grid gap-10">
     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       {encabezado}
       <div className="flex flex-wrap items-center gap-3 text-sm text-suave">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-linea px-3 py-2"><ShieldCheck className="size-4 text-dorado-300" aria-hidden="true" />{yo?.correo} · {yo?.rol}</span>
+        <span className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-linea px-3 py-2"><ShieldCheck className="size-4 text-dorado-300" aria-hidden="true" />{yo?.correo} · {yo?.rol.replace(/_/g, ' ')}</span>
         <button type="button" onClick={() => void cargar()} className={boton()}><RefreshCw className="size-4" aria-hidden="true" />Actualizar</button>
       </div>
     </div>
 
-    <nav aria-label="Secciones del panel" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-      {SECCIONES.map((s) => <button key={s.id} type="button" aria-pressed={seccion === s.id} onClick={() => irA(s.id)}
-        className={cn('inline-flex min-h-11 shrink-0 items-center rounded-full border px-5 text-sm font-semibold transition-colors', seccion === s.id ? 'border-dorado-500 bg-dorado-500 text-cra-950' : 'border-linea bg-white/5 text-suave hover:border-dorado-300 hover:text-texto')}>{s.texto}</button>)}
+    <nav aria-label="Secciones del panel" className="sticky top-[4.75rem] z-30 -mx-4 bg-fondo/95 px-4 py-2 shadow-[0_10px_24px_-18px_rgb(0_0_0/0.8)] backdrop-blur-md sm:mx-0 sm:rounded-full sm:px-2">
+      <ul className="flex gap-2 overflow-x-auto">
+        {SECCIONES.map((x) => <li key={x.id} className="shrink-0"><a href={`#${x.id}`} aria-current={activa === x.id ? 'true' : undefined}
+          onClick={(e) => { e.preventDefault(); irA(x.id); }}
+          className={cn('inline-flex min-h-11 items-center rounded-full border px-5 text-sm font-semibold transition-colors', activa === x.id ? 'border-dorado-500 bg-dorado-500 text-cra-950' : 'border-linea bg-white/5 text-suave hover:border-dorado-300 hover:text-texto')}>{x.texto}</a></li>)}
+      </ul>
     </nav>
 
     {aviso && <Aviso tipo={aviso.tipo}>{aviso.texto}</Aviso>}
 
-    {seccion === 'resumen' && resumen && <section aria-label="Resumen del bot" className="grid gap-6">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <Tarjeta titulo="Vigías en Zanky BOT" icono={<MessageCircle className="size-4" aria-hidden="true" />} valor={resumen.bot.vigias} detalle="Personas registradas por WhatsApp" />
-        <Tarjeta titulo="Reportes por WhatsApp" valor={resumen.bot.reportes.total}
-          detalle={<>{resumen.bot.reportes.pendientes_envio > 0 ? `${resumen.bot.reportes.pendientes_envio} esperando llegar al servidor común` : 'Todos llegaron al servidor común'}</>} />
-        <Tarjeta titulo="Cuentas con WhatsApp" icono={<Users className="size-4" aria-hidden="true" />} valor={resumen.cuentas.con_whatsapp} detalle={`de ${resumen.cuentas.total_sincronizadas} cuentas sincronizadas aceptaron recibir invitaciones`} />
-        <Tarjeta titulo="Jornadas" icono={<CalendarDays className="size-4" aria-hidden="true" />} valor={resumen.jornadas.proximas} detalle={`próximas de ${resumen.jornadas.publicadas} publicadas · ${resumen.jornadas.inscripciones} inscripciones`} />
-        <Tarjeta titulo="Invitaciones" icono={<Send className="size-4" aria-hidden="true" />} valor={resumen.envios.enviados} detalle={`enviadas · ${resumen.envios.fallidos} fallidas`} />
-        <Tarjeta titulo="Estado del bot" valor={resumen.bot.simulacion ? 'Simulación' : 'En línea'}
-          detalle={<>{resumen.bot.simulacion ? 'Sin token de WhatsApp: no envía mensajes reales.' : 'Conectado a WhatsApp.'} IA {resumen.bot.ia ? 'activa' : 'apagada'}.</>} />
+    <SeccionAdmin id="metricas" titulo={`Últimos ${DIAS} días`} descripcion="Reportes de la comunidad (app, web y WhatsApp, sin los descartados), inscripciones a jornadas e invitaciones enviadas, día por día.">
+      <div className="grid gap-4 md:grid-cols-3">
+        <GraficoDias titulo="Reportes de la comunidad" unidad={['reporte', 'reportes']} fechas={fechasReportes} error={errorReportes || undefined}
+          detalle={Object.keys(reportesPorCanal).length ? Object.entries(reportesPorCanal).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${n} ${k === 'whatsapp' ? 'WhatsApp' : k}`).join(' · ') : undefined} />
+        <GraficoDias titulo="Inscripciones a jornadas" unidad={['inscripción', 'inscripciones']} fechas={fechasInscripciones} detalle={`En ${publicadas.length} ${publicadas.length === 1 ? 'jornada publicada' : 'jornadas publicadas'}`} />
+        <GraficoDias titulo="Invitaciones por WhatsApp" unidad={['enviada', 'enviadas']} fechas={fechasInvitaciones} detalle={fallidasMes ? `${fallidasMes} ${fallidasMes === 1 ? 'fallida' : 'fallidas'} en estos días` : 'Ninguna fallida en estos días'} />
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Barras titulo="Vigías por municipio" datos={resumen.bot.vigias_por_municipio} vacio="Todavía no hay vigías registrados." />
-        <Barras titulo="Vigías por rol" datos={resumen.bot.vigias_por_rol} vacio="Todavía no hay vigías registrados." />
-        <Barras titulo="Reportes por tipo" datos={resumen.bot.reportes.por_tipo} vacio="Todavía no hay reportes por WhatsApp." />
-      </div>
-      <Barras titulo="Reportes por estado" datos={resumen.bot.reportes.por_estado} vacio="Todavía no hay reportes por WhatsApp." />
-      <p className="text-xs text-tenue">Plantilla de invitación: {resumen.plantilla.nombre} ({resumen.plantilla.idioma}). Los números nunca se muestran completos en el panel.</p>
-    </section>}
+      {resumen && bot && <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Tarjeta titulo="Vigías en Zanky BOT" icono={<MessageCircle className="size-4" aria-hidden="true" />} valor={bot.vigias} detalle="Personas registradas por WhatsApp" />
+        <Tarjeta titulo="Cuentas con WhatsApp" icono={<Users className="size-4" aria-hidden="true" />} valor={resumen.cuentas.con_whatsapp} detalle={`de ${resumen.cuentas.total_sincronizadas} cuentas sincronizadas aceptaron invitaciones`} />
+        <Tarjeta titulo="Jornadas próximas" icono={<CalendarDays className="size-4" aria-hidden="true" />} valor={resumen.jornadas.proximas} detalle={`de ${resumen.jornadas.publicadas} publicadas · ${resumen.jornadas.inscripciones} inscripciones`} />
+        <Tarjeta titulo="Reportes por WhatsApp" valor={bot.reportes.total} detalle={bot.reportes.pendientes_envio > 0 ? `${bot.reportes.pendientes_envio} esperando llegar al servidor común` : 'Todos llegaron al servidor común'} />
+      </div>}
+    </SeccionAdmin>
 
-    {seccion === 'jornadas' && <section aria-label="Jornadas" className="grid gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-suave">Las jornadas publicadas aparecen en la cartelera, en la portada y en Zanky BOT.</p>
-        {editando === null && <button type="button" onClick={() => setEditando('nueva')} className={boton('dorado')}><Plus className="size-4" aria-hidden="true" />Nueva jornada</button>}
-      </div>
+    <SeccionAdmin id="personas" titulo="Personas registradas"
+      descripcion={<>Las cuentas de la web y quienes se inscribieron a una jornada sin cuenta: {personas.length} en total{bot ? `, más ${bot.vigias} ${bot.vigias === 1 ? 'vigía' : 'vigías'} de Zanky BOT` : ''}. Los celulares nunca se muestran completos.</>}>
+      <label className="relative block max-w-md">
+        <span className="sr-only">Filtrar personas por nombre o celular</span>
+        <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-tenue" aria-hidden="true" />
+        <input type="search" value={filtro} onChange={(e) => setFiltro(e.target.value)} placeholder="Filtrar por nombre o celular" className={cn(campo, 'pl-11')} />
+      </label>
+      {personas.length === 0 ? <p className="rounded-3xl border border-dashed border-linea p-8 text-center text-suave">{inscritosListos ? 'Todavía no hay personas registradas.' : 'Cargando…'}</p> :
+        <div className="overflow-x-auto rounded-3xl border border-linea-suave bg-superficie"><table className="w-full min-w-[680px] text-left text-sm">
+          <thead className="bg-white/[0.04] text-xs tracking-wide text-tenue uppercase"><tr>
+            <th scope="col" className="px-5 py-3 font-semibold">Persona</th><th scope="col" className="pr-4 font-semibold">Celular</th><th scope="col" className="pr-4 font-semibold">WhatsApp</th>
+            <th scope="col" className="pr-4 font-semibold">Fecha</th><th scope="col" className="pr-5 text-right font-semibold">Acción</th></tr></thead>
+          <tbody>{personasVisibles.map((x) => <tr key={x.clave} className="border-t border-linea-suave align-top">
+            <td className="px-5 py-3"><span className="block font-semibold">{x.nombre}</span><span className="block text-xs text-tenue">{x.detalle}</span></td>
+            <td className="pr-4 py-3 tabular-nums">{x.telefono ?? '—'}</td>
+            <td className="pr-4 py-3"><span className={cn('inline-flex rounded-full px-2.5 py-1 text-xs font-bold', x.whatsapp ? 'bg-baja/20 text-baja-texto' : 'bg-white/10 text-tenue')}>{x.whatsapp ? 'Acepta' : 'No'}</span></td>
+            <td className="pr-4 py-3 whitespace-nowrap text-suave">{fechaCorta(x.fecha)}</td>
+            <td className="pr-5 py-2 text-right">{x.origen === 'cuenta' && x.whatsapp && x.cuenta_id && proximas.length > 0
+              ? <button type="button" onClick={() => invitarA(x.cuenta_id!)} className={boton()}><Send className="size-4" aria-hidden="true" />Invitar</button>
+              : <span className="text-tenue">—</span>}</td>
+          </tr>)}
+          {personasVisibles.length === 0 && <tr><td colSpan={5} className="px-5 py-6 text-center text-suave">Nadie coincide con «{filtro}».</td></tr>}
+          </tbody>
+        </table></div>}
+    </SeccionAdmin>
+
+    <SeccionAdmin id="jornadas" titulo="Jornadas" descripcion="Las jornadas publicadas aparecen en la cartelera, en la portada y en Zanky BOT."
+      accion={editando === null ? <button type="button" onClick={() => setEditando('nueva')} className={boton('dorado')}><Plus className="size-4" aria-hidden="true" />Nueva jornada</button> : undefined}>
       {editando !== null && <FormularioJornada key={editando === 'nueva' ? 'nueva' : editando.id} jornada={editando === 'nueva' ? undefined : editando} onGuardar={guardarJornada} onCerrar={() => setEditando(null)} />}
       {jornadas.length === 0 ? <p className="rounded-3xl border border-dashed border-linea p-8 text-center text-suave">Todavía no hay jornadas. Publica la primera.</p> : <ul className="grid gap-4">
         {[...jornadas].sort((a, b) => b.inicio.localeCompare(a.inicio)).map((j) => {
@@ -423,7 +556,7 @@ export default function PanelAdmin() {
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <button type="button" onClick={() => void verInscritos(j.id)} aria-expanded={abiertaInscritos === j.id} className={boton()}><Users className="size-4" aria-hidden="true" />Inscritos</button>
-              {!cancelada && <button type="button" onClick={() => { setEditando(j); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className={boton()}><Pencil className="size-4" aria-hidden="true" />Editar</button>}
+              {!cancelada && <button type="button" onClick={() => { setEditando(j); desplazar('jornadas'); }} className={boton()}><Pencil className="size-4" aria-hidden="true" />Editar</button>}
               {!cancelada && !pasada && <button type="button" onClick={() => { setJornadaInvitar(j.id); irA('invitar'); }} className={boton()}><Send className="size-4" aria-hidden="true" />Invitar</button>}
               {!cancelada && <button type="button" onClick={() => void cancelarJornada(j)} className={boton('peligro')}><X className="size-4" aria-hidden="true" />Cancelar</button>}
             </div>
@@ -443,9 +576,10 @@ export default function PanelAdmin() {
           </li>;
         })}
       </ul>}
-    </section>}
+    </SeccionAdmin>
 
-    {seccion === 'invitar' && <section aria-label="Invitar por WhatsApp" className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
+    <SeccionAdmin id="invitar" titulo="Invitar por WhatsApp" descripcion="Con la plantilla aprobada por Meta: elige la jornada y a quién le llega.">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
       <div className="grid content-start gap-5">
         {proximas.length === 0 ? <p className="rounded-3xl border border-dashed border-linea p-8 text-center text-suave">No hay jornadas próximas para invitar. Publica una en «Jornadas».</p> : <>
           <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Jornada</span>
@@ -500,9 +634,10 @@ export default function PanelAdmin() {
         </div>
         <p className="mt-3 text-xs text-tenue">Plantilla aprobada por Meta: {resumen?.plantilla.nombre}. «Ver el evento» abre la invitación en la plataforma; «No podré ir» libera el cupo.</p>
       </aside>}
-    </section>}
+      </div>
+    </SeccionAdmin>
 
-    {seccion === 'envios' && <section aria-label="Historial de envíos" className="grid gap-4">
+    <SeccionAdmin id="envios" titulo="Envíos" descripcion="Historial de invitaciones enviadas desde este panel.">
       {envios.length === 0 ? <p className="rounded-3xl border border-dashed border-linea p-8 text-center text-suave">Todavía no se han enviado invitaciones.</p> :
         <div className="overflow-x-auto rounded-3xl border border-linea-suave bg-superficie"><table className="w-full min-w-[640px] text-left text-sm">
           <thead className="text-xs text-tenue"><tr><th className="px-4 py-3 font-semibold">Fecha</th><th className="pr-3 font-semibold">Jornada</th><th className="pr-3 font-semibold">Para</th><th className="pr-3 font-semibold">Estado</th><th className="pr-4 font-semibold">Por</th></tr></thead>
@@ -514,6 +649,21 @@ export default function PanelAdmin() {
             <td className="pr-4 py-2.5 text-tenue">{e.por}</td>
           </tr>)}</tbody>
         </table></div>}
-    </section>}
+    </SeccionAdmin>
+
+    {resumen && bot && <SeccionAdmin id="bot" titulo="Zanky BOT" descripcion="El bot de WhatsApp: vigías registrados y reportes que llegan por ese canal.">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Tarjeta titulo="Estado del bot" valor={bot.simulacion ? 'Simulación' : 'En línea'}
+          detalle={<>{bot.simulacion ? 'Sin token de WhatsApp: no envía mensajes reales.' : 'Conectado a WhatsApp.'} IA {bot.ia ? 'activa' : 'apagada'}.</>} />
+        <Tarjeta titulo="Invitaciones" icono={<Send className="size-4" aria-hidden="true" />} valor={resumen.envios.enviados} detalle={`enviadas en total · ${resumen.envios.fallidos} fallidas`} />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Barras titulo="Vigías por municipio" datos={bot.vigias_por_municipio} vacio="Todavía no hay vigías registrados." />
+        <Barras titulo="Vigías por rol" datos={bot.vigias_por_rol} vacio="Todavía no hay vigías registrados." />
+        <Barras titulo="Reportes por tipo" datos={bot.reportes.por_tipo} vacio="Todavía no hay reportes por WhatsApp." />
+      </div>
+      <Barras titulo="Reportes por estado" datos={bot.reportes.por_estado} vacio="Todavía no hay reportes por WhatsApp." />
+      <p className="text-xs text-tenue">Plantilla de invitación: {resumen.plantilla.nombre} ({resumen.plantilla.idioma}).</p>
+    </SeccionAdmin>}
   </div>;
 }

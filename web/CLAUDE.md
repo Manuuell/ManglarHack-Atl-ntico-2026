@@ -52,6 +52,8 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | `/plataforma/monitoreo` | Redirige a `/#monitoreo` (`redirects` en `astro.config.mjs`): el monitoreo comunitario vive en la portada. La pestaña de la plataforma, «Reportar con Zanky» y el pie apuntan allí |
 | `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada, nota conceptual) |
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
+| `/perfil` | Perfil de la cuenta (`components/cuenta/PaginaPerfil.tsx`): tarjeta de identidad fija a la izquierda y, a la derecha, próximas jornadas, «Tus datos» (`#datos`: nombre, celular, permiso de WhatsApp, sector) y «Seguridad» (`#seguridad`: contraseña nueva, cerrar sesión). Sin sesión invita a entrar |
+| `/admin` | Administración en una sola página con barra de secciones fija (`components/admin/PanelAdmin.tsx`): últimos 30 días (reportes de la vista pública por canal, inscripciones y invitaciones, barras por día con «Ver los datos»), personas registradas (cuentas e inscritos sin cuenta, con filtro e «Invitar»), jornadas, invitar por WhatsApp, envíos y Zanky BOT. Solo para cuentas con rol en el servidor de Zanky |
 
 Todas las páginas de la plataforma usan `src/layouts/PlataformaLayout.astro` (cabecera con logo C.R.A., título y barra de pestañas).
 
@@ -110,7 +112,9 @@ La capa de manglar de INVEMAR 2020 se importa con `?url` desde `../datos/` (por 
 
 ## Cuentas de la comunidad (iniciar sesión y crear cuenta)
 
-- Botón de perfil en las dos cabeceras (`.cab` de la portada y `CabeceraCRA`): `components/cuenta/PanelCuenta.tsx` (`client:load`) con `styles/cuenta.css`. Abre un `<dialog>` modal (capa superior, por encima de la burbuja de Zanky y los avisos) para iniciar sesión, crear cuenta, recuperar la contraseña y, con sesión, el perfil (nombre, sector, cambiar contraseña, cerrar sesión).
+- Botón de perfil en las dos cabeceras (`.cab` de la portada y `CabeceraCRA`): `components/cuenta/PanelCuenta.tsx` (`client:load`) con `styles/cuenta.css`.
+  - **Con sesión** abre un menú corto bajo el avatar: nombre y correo, «Ver perfil» (`/perfil`), «Configuración» (`/perfil#datos`), «Administración» (`/admin`, solo si `rolDeAdmin()` lo confirma) y «Cerrar sesión». Se cierra con Escape o con un clic fuera, y se recorre con las flechas.
+  - **Sin sesión** abre un `<dialog>` modal (capa superior, por encima de la burbuja de Zanky y los avisos) para iniciar sesión, crear cuenta o recuperar la contraseña. Al entrar sin un destino pendiente se cierra y se abre el menú; el enlace que confirma el correo lleva a `/perfil?bienvenida=1`.
 - **Reportar nunca exige cuenta.** Los enlaces con `data-cuenta-reportar` («Reportar» de la cabecera, del hero y del cierre; «Reportar con Zanky») abren el panel si no hay sesión, con «Seguir sin cuenta», que no vuelve a preguntar en esa visita (`sessionStorage`).
 - `src/lib/cuenta.ts`: Supabase Auth por REST con la clave pública de `web/.env` (`signup`, `token`, `logout`, `recover`, `user`). La sesión vive en `localStorage` (`zanky-web:v1:sesion`) y se renueva sola. Nombre, sector y fecha del consentimiento (Ley 1581) van en `user_metadata`: no hay tablas nuevas. `sesionActual()` da el id de la cuenta para ligar reportes (pendiente en `ReportarProblema`).
 - Los enlaces del correo (confirmar o recuperar) vuelven con `#access_token=…`: `tomarSesionDelEnlace()` los toma y limpia la barra.
