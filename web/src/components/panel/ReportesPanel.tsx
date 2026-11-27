@@ -13,15 +13,15 @@ export interface Orden { campo: CampoOrden; direccion: 'asc' | 'desc'; }
 type CambiarEstado = (id: string, estado: EstadoReporte) => void;
 
 function Acciones({ reporte, cambiarEstado }: { reporte: Reporte; cambiarEstado: CambiarEstado }) {
- const tonos = { primaria: 'bg-manglar-900 text-white', peligro: 'text-alta-texto ring-1 ring-alta/30', secundaria: 'text-suave ring-1 ring-linea' };
+ const tonos = { primaria: 'bg-dorado-500 text-cra-950', peligro: 'text-alta-texto ring-1 ring-alta/30', secundaria: 'text-suave ring-1 ring-linea' };
  return <div className="flex flex-wrap gap-2">{TRANSICIONES[reporte.estado].map((t) => <button key={t.a} type="button" className={`min-h-11 rounded-xl px-3 py-2 text-xs font-medium ${tonos[t.tono]}`} onClick={() => cambiarEstado(reporte.id, t.a)}>{t.accion}</button>)}</div>;
 }
 function Identidad({ reporte }: { reporte: Reporte }) {
- return <div><p className="font-medium text-texto">{TIPOS[reporte.tipo].etiqueta} · {reporte.zona ?? 'Fuera de zona'}</p><p className="mt-1 text-xs text-tenue">{reporte.id.slice(0, 8)} · <time dateTime={reporte.capturado_en}>{formatearFecha(reporte.capturado_en)}</time></p><div className="mt-2 flex flex-wrap gap-2 text-xs text-suave">{sincronizadoTarde(reporte) && <span className="rounded-full bg-agua-50 px-2 py-1">Sincronizado tarde</span>}{reporte.reportante_id === null && <span className="rounded-full bg-fondo-alt px-2 py-1">Anónimo</span>}</div></div>;
+ return <div><p className="font-medium text-texto">{TIPOS[reporte.tipo].etiqueta} · {reporte.zona ?? 'Fuera de zona'}</p><p className="mt-1 text-xs text-tenue">{reporte.id.slice(0, 8)} · <time dateTime={reporte.capturado_en}>{formatearFecha(reporte.capturado_en)}</time></p><div className="mt-2 flex flex-wrap gap-2 text-xs text-suave">{sincronizadoTarde(reporte) && <span className="rounded-full bg-white/10 px-2 py-1">Sincronizado tarde</span>}{reporte.reportante_id === null && <span className="rounded-full bg-fondo-alt px-2 py-1">Anónimo</span>}</div></div>;
 }
 function LineaTiempo({ reporte, historial }: { reporte: Reporte; historial: CambioEstado[] }) {
  return <div className="space-y-3 p-4">
-  {reporte.ia_tipo_detectado !== null && reporte.ia_tipo_detectado !== reporte.tipo && <p className="rounded-xl bg-agua-50 p-3 text-sm">La IA detectó: {TIPOS[reporte.ia_tipo_detectado].etiqueta} ({reporte.ia_confianza ?? '—'} %)</p>}
+  {reporte.ia_tipo_detectado !== null && reporte.ia_tipo_detectado !== reporte.tipo && <p className="rounded-xl bg-white/10 p-3 text-sm">La IA detectó: {TIPOS[reporte.ia_tipo_detectado].etiqueta} ({reporte.ia_confianza ?? '—'} %)</p>}
   <ol aria-label="Historial del reporte" className="space-y-4 border-l-2 border-linea pl-4">{historial.filter((c) => c.reporte_id === reporte.id).sort((a, b) => Date.parse(a.fecha) - Date.parse(b.fecha)).map((c) => <li key={c.id}><ChipEstado estado={c.estado} /><p className="mt-1 text-xs text-suave">{c.usuario_id} · <time dateTime={c.fecha}>{formatearFecha(c.fecha)}</time></p><p className="text-sm">{c.nota}</p></li>)}</ol>
  </div>;
 }
@@ -61,7 +61,7 @@ export default function ReportesPanel({ reportes, historial, orden, ordenar, cam
         </tr>{expandidos.includes(reporte.id) && <tr><td colSpan={8} className="bg-fondo"><LineaTiempo reporte={reporte} historial={historial} /></td></tr>}</Fragment>)}</tbody>
       </table>
     </div>
-    <ul className="space-y-3 p-4 md:hidden" aria-label="Reportes filtrados">{reportes.map((reporte) => <li key={reporte.id} className="space-y-4 rounded-2xl bg-superficie p-4 ring-1 ring-linea-suave">
+    <ul className="space-y-3 p-4 md:hidden" aria-label="Reportes filtrados">{reportes.map((reporte) => <li key={reporte.id} className="space-y-4 rounded-sm bg-superficie p-4 ring-1 ring-linea-suave">
       <Identidad reporte={reporte} />
       <div className="flex flex-wrap gap-2"><ChipTipo tipo={reporte.tipo} /><ChipPrioridad prioridad={reporte.prioridad} /><ChipCanal canal={reporte.canal} /><ChipEstado estado={reporte.estado} /></div>
       <p className="text-sm text-suave"><span className="font-medium">Zona: </span>{reporte.zona ?? 'Fuera de zona'} · {reporte.municipio}</p>

@@ -87,8 +87,8 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
 
   return (
     <div className="relative z-0">
-      <div className="mb-3 rounded-2xl bg-superficie/95 p-4 shadow-[var(--c-sombra-alta)] backdrop-blur ">
-        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-manglar-700">Datos de ejemplo</div>
+      <div className="mb-3 rounded-sm bg-superficie/95 p-4 shadow-[var(--c-sombra-alta)] backdrop-blur ">
+        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-dorado-300">Datos de ejemplo</div>
         <div role="status" aria-live="polite" className="text-sm text-suave">
           Mostrando {filtrados.length} de {reportesVivos.length} reportes
           {filtrados.length === 0 && <span className="mt-2 block text-texto">Ningún reporte coincide con los filtros</span>}
@@ -98,7 +98,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
           <div className="flex flex-wrap gap-2">{LISTA_TIPOS.map((tipo) => {
             const Icono = TIPOS[tipo].icono;
             return <button key={tipo} type="button" aria-pressed={tipos.includes(tipo)} onClick={() => setTipos((actuales) => alternar(actuales, tipo))}
-              className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors', tipos.includes(tipo) ? 'bg-manglar-900 text-white' : 'bg-fondo-alt text-suave hover:bg-manglar-100')}>
+              className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors', tipos.includes(tipo) ? 'bg-dorado-500 text-cra-950' : 'bg-fondo-alt text-suave hover:bg-white/10')}>
               <Icono size={14} aria-hidden="true" />{TIPOS[tipo].etiqueta}
             </button>;
           })}</div>
@@ -107,25 +107,25 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
           <legend className="mb-2 text-xs font-semibold text-suave">Prioridad</legend>
           <div className="flex flex-wrap gap-2">{LISTA_PRIORIDADES.map((prioridad) => (
             <button key={prioridad} type="button" aria-pressed={prioridades.includes(prioridad)} onClick={() => setPrioridades((actuales) => alternar(actuales, prioridad))}
-              className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors', prioridades.includes(prioridad) ? PRIORIDADES[prioridad].chip : 'bg-fondo-alt text-suave hover:bg-manglar-100')}>
+              className={cn('inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors', prioridades.includes(prioridad) ? PRIORIDADES[prioridad].chip : 'bg-fondo-alt text-suave hover:bg-white/10')}>
               <span className={cn('size-2 rounded-full', PRIORIDADES[prioridad].punto)} aria-hidden="true" />{PRIORIDADES[prioridad].etiqueta}
             </button>
           ))}</div>
         </fieldset>
         <label className="mt-3 flex min-h-11 cursor-pointer items-center gap-2 text-xs font-medium text-texto">
-          <input type="checkbox" role="switch" checked={mostrarZonas} onChange={(evento) => setMostrarZonas(evento.target.checked)} className="size-4 accent-manglar-900" />Zonas de trabajo (aproximadas)
+          <input type="checkbox" role="switch" checked={mostrarZonas} onChange={(evento) => setMostrarZonas(evento.target.checked)} className="size-4 accent-dorado-500" />Zonas de trabajo (aproximadas)
         </label>
         <label className="mt-2 flex min-h-11 items-center gap-2 text-xs font-medium"><input type="checkbox" role="switch" checked={mostrarCapa} onChange={(e) => setMostrarCapa(e.target.checked)} />Cobertura de manglar (INVEMAR 2020)</label>
         {!capa && <p role="status" className="text-xs text-suave">{errorCapa ? 'No se pudo cargar la capa de INVEMAR' : 'Cargando cobertura de manglar…'}</p>}
-        {hayFiltros && <button type="button" onClick={() => { setTipos([]); setPrioridades([]); }} className="mt-2 min-h-11 text-xs font-semibold text-manglar-700 underline underline-offset-4">Limpiar filtros</button>}
+        {hayFiltros && <button type="button" onClick={() => { setTipos([]); setPrioridades([]); }} className="mt-2 min-h-11 text-xs font-semibold text-dorado-300 underline underline-offset-4">Limpiar filtros</button>}
       </div>
 
-      <div role="region" aria-label="Mapa de monitoreo de manglares del Atlántico" className="h-[520px] overflow-hidden rounded-3xl shadow-[var(--c-sombra)] ring-1 ring-linea sm:h-[600px]">
+      <div role="region" aria-label="Mapa de monitoreo de manglares del Atlántico" className="h-[520px] overflow-hidden rounded-sm shadow-[var(--c-sombra)] ring-1 ring-linea sm:h-[600px]">
         <MapContainer center={[10.93, -74.99]} zoom={11} scrollWheelZoom={false} zoomControl={false} className="h-full w-full">
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" maxZoom={19} attribution='&copy; <a href="https://www.openstreetmap.org/copyright">colaboradores de OpenStreetMap</a>' />
           <ZoomControl position="bottomright" zoomInTitle="Acercar" zoomOutTitle="Alejar" />
           <AjustarMapa poligonos={poligonos} />
-          <Pane name="cobertura-invemar" style={{ zIndex: 350 }}>{mostrarCapa && capa && <GeoJSON data={capa} style={{ fillColor: '#1a7f4e', fillOpacity: 0.45, color: '#0f5132', weight: 1 }} />}</Pane>
+          <Pane name="cobertura-invemar" style={{ zIndex: 350 }}>{mostrarCapa && capa && <GeoJSON data={capa} style={{ fillColor: '#d946ef', fillOpacity: 0.5, color: '#f0abfc', weight: 0.8 }} />}</Pane>
           {mostrarZonas && poligonos.features.map((zona) => {
             const datos = zona.properties;
             const prioridad = PRIORIDADES_ZONA[datos.prioridad];
@@ -144,7 +144,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
                   <div><strong>Área:</strong> {datos.area_ha === null ? 'Sin cifra oficial · KMZ C.R.A. pendiente' : `${datos.area_ha.toLocaleString('es-CO')} ha`}</div>
                   <div><strong>Especies</strong><ul className="mt-1 list-disc pl-4">{datos.especies.slice(0, 4).map((especie) => <li key={especie}>{especie}</li>)}</ul></div>
                   <div><strong>Presiones principales</strong><ul className="mt-1 list-disc pl-4">{datos.amenazas.slice(0, 3).map((presion) => <li key={presion}>{presion}</li>)}</ul></div>
-                  <p className="text-xs text-suave">{datos.fuente}</p><div className="font-semibold text-manglar-700">{reportesVivos.filter((reporte) => reporte.zona === datos.nombre).length} reportes en esta zona</div>
+                  <p className="text-xs text-suave">{datos.fuente}</p><div className="font-semibold text-dorado-300">{reportesVivos.filter((reporte) => reporte.zona === datos.nombre).length} reportes en esta zona</div>
                 </div>
               </Popup>
             </Polygon>;
@@ -173,7 +173,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
         </MapContainer>
       </div>
 
-      <div aria-label="Leyenda del mapa" className="mt-3 space-y-3 rounded-2xl bg-superficie/95 p-4 text-xs shadow-[var(--c-sombra-alta)] backdrop-blur ">
+      <div aria-label="Leyenda del mapa" className="mt-3 space-y-3 rounded-sm bg-superficie/95 p-4 text-xs shadow-[var(--c-sombra-alta)] backdrop-blur ">
         <div><h3 className="font-semibold">Cobertura de manglar (INVEMAR 2020)</h3>
           {capa && <p>{capa.features.length.toLocaleString('es-CO')} polígonos · {areaInvemar?.toLocaleString('es-CO', { maximumFractionDigits: 0 })} ha</p>}
           <p>INVEMAR, Capa Nacional de Manglares, imagen 2020, 1:25.000 · no es la capa oficial de la C.R.A.</p>

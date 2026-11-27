@@ -1,0 +1,77 @@
+---
+// Cómo llegan los reportes ciudadanos a la plataforma: los tres canales de
+// Zanqui y el contrato común que comparten la app, el bot y esta web.
+import { MessageCircle, Smartphone, QrCode, PlugZap } from 'lucide-react';
+import Zanqui from '../marca/Zanqui.astro';
+import { TIPOS, ESTADOS, LISTA_TIPOS, LISTA_ESTADOS } from '../../lib/catalogos';
+
+const canales = [
+  {
+    icono: MessageCircle,
+    titulo: 'WhatsApp con Zanqui',
+    texto: 'El bot guía el reporte: foto, ubicación, audio o texto. La IA propone tipo y prioridad, entrega un número de caso y avisa cuando el caso cambia de estado.',
+  },
+  {
+    icono: Smartphone,
+    titulo: 'App móvil sin señal',
+    texto: 'Para vigías, pescadores y colegios en campo: guarda el reporte con GPS y foto aunque no haya cobertura y lo sincroniza al volver la señal, sin duplicarlo.',
+  },
+  {
+    icono: QrCode,
+    titulo: 'Web por código QR',
+    texto: 'Letreros en playas y ecoparques llevan a un formulario ligero para turistas y visitantes, sin instalar nada.',
+  },
+];
+---
+
+<section aria-labelledby="titulo-canales" class="grid gap-6 lg:grid-cols-[auto_1fr] lg:items-start">
+  <div class="flex items-center gap-4 lg:flex-col lg:items-start">
+    <Zanqui class="h-24 w-24 shrink-0" />
+    <div>
+      <p class="rotulo text-dorado-300">Reporta con Zanqui</p>
+      <h2 id="titulo-canales" class="titular mt-2 max-w-xs text-2xl">¡Ajá! ¿Qué viste en el manglar?</h2>
+    </div>
+  </div>
+
+  <div>
+    <ul class="grid gap-4 md:grid-cols-3">
+      {canales.map(({ icono: Icono, titulo, texto }) => (
+        <li class="rounded-sm border border-linea-suave bg-superficie p-5">
+          <Icono className="size-6 text-dorado-300" aria-hidden="true" />
+          <h3 class="rotulo mt-3 text-texto">{titulo}</h3>
+          <p class="mt-2 text-sm leading-relaxed text-suave">{texto}</p>
+        </li>
+      ))}
+    </ul>
+
+    <div class="mt-4 flex gap-3 rounded-sm border border-dorado-300/40 bg-white/5 p-4 text-sm text-suave">
+      <PlugZap className="mt-0.5 size-5 shrink-0 text-dorado-300" aria-hidden="true" />
+      <p>
+        La conexión en vivo con la app y el bot llega con el backend común. Hoy el mapa muestra
+        <strong class="text-texto">reportes de ejemplo</strong> con el mismo contrato de datos que usarán las tres piezas.
+      </p>
+    </div>
+
+    <details class="mt-3 text-sm text-suave">
+      <summary class="etiqueta-campo inline-flex min-h-11 cursor-pointer items-center text-texto hover:text-dorado-300">Ver el contrato común de reportes</summary>
+      <div class="mt-2 grid gap-4 border-t border-linea-suave pt-4 md:grid-cols-2">
+        <div>
+          <p class="rotulo text-dorado-300">Tipos</p>
+          <ul class="mt-2 flex flex-wrap gap-2">
+            {LISTA_TIPOS.map((tipo) => <li class="rounded-sm bg-white/10 px-2 py-1 text-xs">{TIPOS[tipo].etiquetaLarga}</li>)}
+          </ul>
+        </div>
+        <div>
+          <p class="rotulo text-dorado-300">Estados</p>
+          <ul class="mt-2 flex flex-wrap gap-2">
+            {LISTA_ESTADOS.map((estado) => <li class="rounded-sm bg-white/10 px-2 py-1 text-xs">{ESTADOS[estado].etiqueta}</li>)}
+          </ul>
+        </div>
+        <p class="md:col-span-2">
+          El identificador del reporte lo genera el dispositivo (así un reintento sin señal no lo duplica) y se guardan dos horas: la de captura y la de recepción.
+          En público nunca se muestran nombre, teléfono, fotos ni coordenadas exactas.
+        </p>
+      </div>
+    </details>
+  </div>
+</section>
