@@ -276,3 +276,6 @@ export const BOTONES_DESPUES_DE_JORNADA: Boton[] = [
 ];
 
 export const NO_ENTENDI = 'No te entendí 🤔. Toca una de las opciones o escribe *menu* para empezar de nuevo.';
+
+export const IA_NO_DISPONIBLE =
+  'Uy, se me enredó la respuesta 🙈. Intenta de nuevo en un momento, o usa el menú: puedo recibir tu reporte o mostrarte las jornadas.';

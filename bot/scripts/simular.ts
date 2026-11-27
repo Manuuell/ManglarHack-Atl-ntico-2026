@@ -54,6 +54,15 @@ const servidor = http.createServer((req, res) => {
         ],
       }));
     }
+    // OpenAI de mentira: exige la clave y que el sistema presente a Zanky.
+    if (req.method === 'POST' && req.url === '/v1/chat/completions') {
+      const { messages, model } = JSON.parse(cuerpo);
+      const ok = req.headers.authorization === 'Bearer sk-prueba' && messages?.[0]?.role === 'system' && /Eres Zanky/.test(messages[0].content);
+      const pregunta = messages?.[messages.length - 1]?.content ?? '';
+      return res.writeHead(ok ? 200 : 401, { 'Content-Type': 'application/json' }).end(JSON.stringify({
+        choices: [{ message: { content: `(IA de prueba, ${model}) El manglar protege la costa y es vivero de peces 🌱. Me preguntaste: «${pregunta}».` } }],
+      }));
+    }
     if (req.headers.apikey !== 'anon-de-prueba') return res.writeHead(401).end();
     if (fallarProximos > 0) {
       fallarProximos--;
@@ -90,6 +99,8 @@ async function main() {
   process.env.HASH_SALT = 'simulacion';
   process.env.SUPABASE_URL = `http://127.0.0.1:${puerto}`;
   process.env.SUPABASE_ANON_KEY = 'anon-de-prueba';
+  process.env.OPENAI_API_KEY = 'sk-prueba';
+  process.env.OPENAI_BASE_URL = `http://127.0.0.1:${puerto}/v1`;
   process.env.JORNADAS_URL = `http://127.0.0.1:${puerto}/datos/jornadas.json`;
   process.env.ZONAS_GEOJSON = path.resolve(__dirname, '../../app/assets/datos/manglar_zonas.json');
 
@@ -137,6 +148,8 @@ async function main() {
     ['toca Jornadas', boton('jornadas')],
     ['elige la siembra', lista('jor:jornada-1')],
     ['toca Menú', boton('menu')],
+    ['pregunta algo libre', { type: 'text', text: { body: '¿Por qué es importante el manglar?' } }],
+    ['sigue la charla', { type: 'text', text: { body: '¿Y cuándo es la próxima siembra?' } }],
     ['manda una ubicación fuera del Atlántico', { type: 'location', location: { latitude: 6.2442, longitude: -75.5812 } }],
   ];
 

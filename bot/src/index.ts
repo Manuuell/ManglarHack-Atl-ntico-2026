@@ -12,6 +12,7 @@ import { atender, avisarCambio } from './flujos/zanky';
 import { enviarReporte } from './backend/envio';
 import { backendActivo } from './backend/supabase';
 import { enviadoTarde } from './flujos/textos';
+import { ErrorIA, iaActiva, responder, Turno } from './ia/zanky';
 
 type ConCuerpoCrudo = Request & { cuerpoCrudo?: Buffer };
 
@@ -86,6 +87,61 @@ app.post('/webhook', (req: ConCuerpoCrudo, res: Response) => {
     if (vistos.has(m.messageId)) continue;
     vistos.set(m.messageId, ahora);
     encolar(m);
+  }
+});
+
+// --- Conversación con Zanky para la burbuja de la web -----------------------
+
+const usosPorIp = new Map<string, number[]>();
+let usosHora: number[] = [];
+
+app.use('/chat', (req, res, next) => {
+  const origen = req.header('origin') ?? '';
+  if (config.chatOrigenes.includes(origen)) {
+    res.setHeader('Access-Control-Allow-Origin', origen);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(config.chatOrigenes.includes(origen) ? 204 : 403);
+    return;
+  }
+  next();
+});
+
+app.post('/chat', async (req, res) => {
+  if (!iaActiva()) {
+    res.status(503).json({ error: 'sin_ia', mensaje: 'Zanky está descansando un momento. Mientras tanto puedes reportar o ver las jornadas.' });
+    return;
+  }
+  const ahora = Date.now();
+  const ip = req.ip ?? 'desconocida';
+  const propios = (usosPorIp.get(ip) ?? []).filter(t => ahora - t < 10 * 60_000);
+  usosHora = usosHora.filter(t => ahora - t < 60 * 60_000);
+  if (propios.length >= config.chatPorIp || usosHora.length >= config.chatPorHora) {
+    res.status(429).json({ error: 'limite', mensaje: 'Me has preguntado mucho seguido 😅. Dame unos minutos y seguimos.' });
+    return;
+  }
+  const mensajes = (req.body as { mensajes?: unknown })?.mensajes;
+  const turnos: Turno[] = Array.isArray(mensajes)
+    ? mensajes.slice(-12).map(m => ({ rol: (m as Turno)?.rol === 'zanky' ? 'zanky' : 'usuario', texto: String((m as Turno)?.texto ?? '') }))
+    : [];
+  if (!turnos.length || turnos[turnos.length - 1].rol !== 'usuario' || !turnos[turnos.length - 1].texto.trim()) {
+    res.status(400).json({ error: 'sin_pregunta', mensaje: 'Escríbeme tu pregunta.' });
+    return;
+  }
+  propios.push(ahora);
+  usosPorIp.set(ip, propios);
+  if (usosPorIp.size > 5000) for (const [k, v] of usosPorIp) if (!v.some(t => ahora - t < 10 * 60_000)) usosPorIp.delete(k);
+  usosHora.push(ahora);
+  try {
+    res.json({ respuesta: await responder(turnos, 'web') });
+  } catch (err) {
+    // En el log va el error, nunca lo que escribió la persona.
+    console.warn(`[chat] ${(err as Error).message.slice(0, 200)}`);
+    res.status(err instanceof ErrorIA ? 502 : 500).json({ error: 'fallo', mensaje: 'Se me enredó la respuesta. ¿Me lo preguntas otra vez?' });
   }
 });
 

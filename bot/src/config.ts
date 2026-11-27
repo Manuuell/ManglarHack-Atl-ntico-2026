@@ -25,6 +25,16 @@ export const config = {
   /** Jornadas comunitarias publicadas por la web (siembras, limpiezas, recorridos). */
   jornadasUrl: env.JORNADAS_URL ?? 'https://mimanglar.sentralabs.co/datos/jornadas.json',
   radioInfluenciaM: Number(env.RADIO_INFLUENCIA_M ?? 500),
+  /** OpenAI: Zanky conversa en la burbuja de la web (POST /chat) y responde preguntas libres en WhatsApp. */
+  openaiKey: env.OPENAI_API_KEY ?? '',
+  openaiModel: env.OPENAI_MODEL ?? 'gpt-4o-mini',
+  openaiUrl: (env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, ''),
+  /** Sitios que pueden usar POST /chat desde el navegador. */
+  chatOrigenes: (env.CHAT_ORIGENES ?? 'https://mimanglar.sentralabs.co,http://localhost:4329,http://localhost:4321')
+    .split(',').map(o => o.trim()).filter(Boolean),
+  /** Tope de preguntas a la IA: por IP cada 10 minutos y en total por hora (para que el costo no se dispare). */
+  chatPorIp: Number(env.CHAT_POR_IP ?? 20),
+  chatPorHora: Number(env.CHAT_POR_HORA ?? 400),
   /** Más allá de esta distancia se pregunta si la ubicación es correcta. */
   distanciaSospechosaM: 3000,
   /** Reportes por persona en una hora antes de frenar el envío. */
@@ -40,5 +50,6 @@ export function avisosDeConfiguracion(): string[] {
   if (env.HASH_SALT === undefined) avisos.push('HASH_SALT vacío: se usa una sal de desarrollo.');
   if (!config.panelApiKey) avisos.push('PANEL_API_KEY vacío: la API del panel queda cerrada.');
   if (!config.supabaseUrl || !config.supabaseAnon) avisos.push('SUPABASE_URL o SUPABASE_ANON_KEY vacíos: los reportes NO llegan al backend común (app, web y panel).');
+  if (!config.openaiKey) avisos.push('OPENAI_API_KEY vacío: Zanky no conversa (burbuja de la web ni preguntas libres en WhatsApp).');
   return avisos;
 }

@@ -12,6 +12,7 @@ import { backendActivo, estadoDeReportes } from '../backend/supabase';
 import { buscarJornada, proximasJornadas } from '../jornadas/jornadas';
 import { config as configBot } from '../config';
 import * as T from './textos';
+import { iaActiva, limpiarHistorial, responder, Turno } from '../ia/zanky';
 
 type Paso =
   | 'menu'
@@ -359,6 +360,25 @@ async function misReportesConEstado(de: string) {
   return propios;
 }
 
+// Lo último que se habló con cada persona (solo en memoria, 30 minutos), para que Zanky siga el hilo.
+const charlas = new Map<string, { turnos: Turno[]; hasta: number }>();
+
+async function conversar(de: string, texto: string): Promise<void> {
+  const ahora = Date.now();
+  for (const [k, v] of charlas) if (v.hasta < ahora) charlas.delete(k);
+  const previa = charlas.get(de);
+  const turnos: Turno[] = [...(previa && previa.hasta > ahora ? previa.turnos : []), { rol: 'usuario', texto }];
+  try {
+    const respuesta = await responder(turnos, 'whatsapp');
+    charlas.set(de, { turnos: limpiarHistorial([...turnos, { rol: 'zanky', texto: respuesta }]).slice(-8), hasta: ahora + config.sesionTtlMs });
+    // La respuesta va con los botones del menú en el mismo mensaje (el cuerpo admite hasta 1024 caracteres).
+    await whatsapp.botones(de, respuesta.length > 1000 ? `${respuesta.slice(0, 997)}…` : respuesta, T.MENU.botones);
+  } catch (err) {
+    console.warn(`[ia] ${(err as Error).message.slice(0, 200)}`);
+    await whatsapp.botones(de, T.IA_NO_DISPONIBLE, T.MENU.botones);
+  }
+}
+
 /** Atiende un mensaje entrante según el paso en que va la conversación. */
 export async function atender(m: MensajeEntrante): Promise<void> {
   const { de, entrada } = m;
@@ -447,6 +467,8 @@ export async function atender(m: MensajeEntrante): Promise<void> {
         await whatsapp.botones(de, '¿Qué quieres hacer?', T.MENU.botones);
         return;
       }
+      // Una pregunta o comentario libre: Zanky conversa (OpenAI) y deja a mano el menú.
+      if (entrada.tipo === 'texto' && iaActiva() && entrada.texto.trim().length >= 2) return conversar(de, entrada.texto);
       return enviarMenu(de, s);
     }
 
