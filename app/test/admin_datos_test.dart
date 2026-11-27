@@ -1,6 +1,5 @@
 // Lógica del panel de la CRA dentro de la app: filtros, cifras, decisiones con «Deshacer»,
 // consulta periódica con avisos de llegada y el contrato con Supabase (sin red real).
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -10,8 +9,12 @@ import 'package:zanky/datos/admin/aviso_navegador.dart';
 import 'package:zanky/datos/admin/controlador_admin.dart';
 import 'package:zanky/datos/admin/repositorio_admin.dart';
 import 'package:zanky/datos/admin/reporte_admin.dart';
+import 'package:zanky/datos/avisos_ciudadano.dart';
+import 'package:zanky/datos/reporte.dart';
 import 'package:zanky/datos/servidor.dart';
 import 'package:zanky/datos/tipos.dart';
+
+import 'apoyo_datos.dart';
 
 final _ahora = DateTime(2026, 11, 27, 13, 30);
 
@@ -291,6 +294,42 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(c.reportes.length, repo + 1);
       c.salir(); // cancela el reloj: no hay Timer colgado
+    });
+  });
+
+  group('Aviso al ciudadano (cambio de estado de su reporte)', () {
+    test('solo cuenta lo enviado cuyo estado difiere del último visto; sin registro = recibido', () {
+      final a = reporteDePrueba(idDePrueba(1), envio: Envio.enviado, estado: EstadoReporte.verificado);
+      final b = reporteDePrueba(idDePrueba(2), envio: Envio.enviado, estado: EstadoReporte.recibido);
+      final c = reporteDePrueba(idDePrueba(3), envio: Envio.enCola, estado: EstadoReporte.verificado);
+      final d = reporteDePrueba(idDePrueba(4), envio: Envio.enviado, estado: EstadoReporte.descartado);
+      final ya = {d.id: 'descartado'};
+      final l = AvisosCiudadano.pendientes([a, b, c, d], ya);
+      expect(l.map((x) => x.reporte.id), [a.id]);
+      expect(l.single.antes, EstadoReporte.recibido);
+      expect(AvisosCiudadano.pendientes([a], {a.id: 'verificado'}), isEmpty);
+    });
+
+    test('la instantánea solo guarda lo enviado y, aplicada, deja sin avisos', () {
+      final a = reporteDePrueba(idDePrueba(1), envio: Envio.enviado, estado: EstadoReporte.verificado);
+      final b = reporteDePrueba(idDePrueba(2), envio: Envio.enCola);
+      final snap = AvisosCiudadano.instantanea([a, b]);
+      expect(snap, {a.id: 'verificado'});
+      expect(AvisosCiudadano.pendientes([a, b], snap), isEmpty);
+    });
+
+    test('las frases dicen aprobado o no confirmado, y traen lo que dejó la CRA', () {
+      final ok = reporteDePrueba(idDePrueba(1), envio: Envio.enviado, estado: EstadoReporte.verificado);
+      expect(CambioDeReporte(ok, EstadoReporte.recibido).frase, contains('Aprobaron tu reporte'));
+      final no = reporteDePrueba(idDePrueba(2), envio: Envio.enviado, estado: EstadoReporte.descartado)
+        ..historial.add(CambioEstado(EstadoReporte.descartado, DateTime(2026, 11, 27), 'Foto repetida'));
+      expect(CambioDeReporte(no, EstadoReporte.recibido).frase, allOf(contains('No se pudo confirmar'), contains('Foto repetida')));
+      final pide = reporteDePrueba(idDePrueba(3), envio: Envio.enviado, estado: EstadoReporte.enVerificacion)
+        ..historial.add(CambioEstado(EstadoReporte.enVerificacion, DateTime(2026, 11, 27), '¿Hay maquinaria?'));
+      expect(CambioDeReporte(pide, EstadoReporte.recibido).frase, contains('Piden más datos'));
+      expect(AvisosCiudadano.titulo([CambioDeReporte(ok, EstadoReporte.recibido)]), 'Tu reporte cambió');
+      expect(AvisosCiudadano.titulo([CambioDeReporte(ok, EstadoReporte.recibido), CambioDeReporte(no, EstadoReporte.recibido)]),
+          '2 de tus reportes cambiaron');
     });
   });
 

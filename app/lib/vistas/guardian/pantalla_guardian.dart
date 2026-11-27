@@ -9,6 +9,9 @@ import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/celebracion.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
+import '../admin/entrada_panel.dart';
+import '../admin/panel_cra.dart';
+import '../admin/piezas_admin.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
@@ -115,6 +118,7 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
         colegio: perfil?.colegio.trim() ?? '',
         servidorConectado: estado.servidor.configurado,
       ),
+      const EntradaPanelCra(),
     ];
     return SafeArea(
       bottom: false,
@@ -124,19 +128,34 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
           CabeceraZ(
             titulo: 'Guardián',
             subtitulo: 'Tu lugar en el manglar',
-            accion: Presionable(
-              etiqueta: 'Editar mi perfil',
-              onTap: () => mostrarEditarPerfil(context),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Zc.superficie,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Zc.linea),
+            accion: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // El ícono del panel solo aparece con la sesión del equipo, con su contador.
+                if (AdminScope.maybeDe(context)?.dentro ?? false) ...[
+                  BotonIcono(
+                    icono: Icons.shield_rounded,
+                    etiqueta: 'Panel CRA',
+                    cuenta: AdminScope.de(context).sinVer,
+                    alTocar: () => abrirPanelCra(context),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Presionable(
+                  etiqueta: 'Editar mi perfil',
+                  onTap: () => mostrarEditarPerfil(context),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Zc.superficie,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Zc.linea),
+                    ),
+                    child: const Icon(Icons.edit_rounded, size: 22, color: Zc.raiz),
+                  ),
                 ),
-                child: const Icon(Icons.edit_rounded, size: 22, color: Zc.raiz),
-              ),
+              ],
             ),
           ),
           for (var i = 0; i < secciones.length; i++)
