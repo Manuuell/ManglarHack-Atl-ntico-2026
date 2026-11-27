@@ -17,9 +17,10 @@ import 'reporte/flujo_reporte.dart';
 class Raiz extends StatefulWidget {
   const Raiz({super.key});
 
-  /// Permite que una pantalla cambie de pestaña (p. ej. «Ver en el mapa»).
-  static void irA(BuildContext context, int pestana) =>
-      context.findAncestorStateOfType<_RaizState>()?._ir(pestana);
+  /// Cambia de pestaña desde cualquier pantalla, incluso desde una ruta apilada encima
+  /// (la confirmación de un reporte no tiene a la raíz como ancestro).
+  static void irA(BuildContext context, int pestana) => _pedida.value = pestana;
+  static final _pedida = ValueNotifier<int?>(null);
 
   @override
   State<Raiz> createState() => _RaizState();
@@ -27,6 +28,25 @@ class Raiz extends StatefulWidget {
 
 class _RaizState extends State<Raiz> {
   int _actual = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    Raiz._pedida.addListener(_atenderPedido);
+  }
+
+  @override
+  void dispose() {
+    Raiz._pedida.removeListener(_atenderPedido);
+    super.dispose();
+  }
+
+  void _atenderPedido() {
+    final p = Raiz._pedida.value;
+    if (p == null) return;
+    Raiz._pedida.value = null;
+    _ir(p);
+  }
 
   void _ir(int i) {
     if (i == _actual) return;

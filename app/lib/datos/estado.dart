@@ -103,10 +103,12 @@ class EstadoZanqui extends ChangeNotifier with WidgetsBindingObserver {
 
   // ---------------------------------------------------------------- perfil
 
+  /// Primero a disco, después a memoria: si guardar falla, la app no cree que ya
+  /// hay consentimiento (y no salta a la pantalla principal sin él).
   Future<void> guardarPerfil(Perfil p) async {
-    perfil = p;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_clavePerfil, jsonEncode(p.toJson()));
+    perfil = p;
     notifyListeners();
   }
 

@@ -15,13 +15,7 @@ enum Animo { feliz, curioso, preocupado, celebrando }
 /// Todo está dibujado en código: se ve nítido a cualquier tamaño, pesa nada y se anima
 /// por partes (parpadeo, respiración, balanceo, hojas, mirada, salto al tocarlo).
 class ZanquiMascota extends StatefulWidget {
-  const ZanquiMascota({
-    super.key,
-    this.tamano = 160,
-    this.animo = Animo.feliz,
-    this.onTap,
-    this.mirar,
-  });
+  const ZanquiMascota({super.key, this.tamano = 160, this.animo = Animo.feliz, this.onTap, this.mirar});
 
   final double tamano;
   final Animo animo;
@@ -40,8 +34,10 @@ class _ZanquiMascotaState extends State<ZanquiMascota> with TickerProviderStateM
     ..repeat();
 
   /// Parpadeo: 140 ms, cada 2,5-5 s al azar (un ritmo fijo se nota robótico).
-  late final AnimationController _parpado =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 140));
+  late final AnimationController _parpado = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 140),
+  );
 
   /// Salto al tocarlo: resorte con algo de rebote, se siente vivo.
   late final AnimationController _salto = AnimationController.unbounded(vsync: this);
@@ -69,9 +65,11 @@ class _ZanquiMascotaState extends State<ZanquiMascota> with TickerProviderStateM
       }
       // Y de vez en cuando mira para un lado, curioso.
       if (mounted && widget.mirar == null && _toque == null) {
-        setState(() => _mirada = _azar.nextDouble() < 0.4
-            ? Offset(_azar.nextDouble() * 1.6 - 0.8, _azar.nextDouble() * 0.6 - 0.2)
-            : Offset.zero);
+        setState(
+          () => _mirada = _azar.nextDouble() < 0.4
+              ? Offset(_azar.nextDouble() * 1.6 - 0.8, _azar.nextDouble() * 0.6 - 0.2)
+              : Offset.zero,
+        );
       }
       _programarParpadeo();
     });
@@ -79,12 +77,14 @@ class _ZanquiMascotaState extends State<ZanquiMascota> with TickerProviderStateM
 
   void _saltar() {
     _salto.value = 0;
-    _salto.animateWith(SpringSimulation(
-      SpringDescription.withDampingRatio(mass: 1, stiffness: 260, ratio: 0.38),
-      0,
-      0,
-      -9, // impulso hacia arriba
-    ));
+    _salto.animateWith(
+      SpringSimulation(
+        SpringDescription.withDampingRatio(mass: 1, stiffness: 260, ratio: 0.38),
+        0,
+        0,
+        -9, // impulso hacia arriba
+      ),
+    );
   }
 
   @override
@@ -100,16 +100,22 @@ class _ZanquiMascotaState extends State<ZanquiMascota> with TickerProviderStateM
     final quieto = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final ancho = widget.tamano, alto = widget.tamano * 1.2;
     final dibujo = RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_vida, _parpado, _salto]),
-        builder: (context, _) => CustomPaint(
-          size: Size(ancho, alto),
-          painter: _PintorZanqui(
-            t: quieto ? 0 : _vida.value,
-            parpado: _parpado.value,
-            salto: _salto.value,
-            animo: widget.animo,
-            mirada: _toque ?? widget.mirar ?? _mirada,
+      child: SizedBox(
+        width: ancho,
+        height: alto,
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_vida, _parpado, _salto]),
+          builder: (context, _) => CustomPaint(
+            // Tamaño fijo pase lo que pase con el padre.
+            size: Size(ancho, alto),
+            willChange: true,
+            painter: _PintorZanqui(
+              t: quieto ? 0 : _vida.value,
+              parpado: _parpado.value,
+              salto: _salto.value,
+              animo: widget.animo,
+              mirada: _toque ?? widget.mirar ?? _mirada,
+            ),
           ),
         ),
       ),
@@ -162,8 +168,10 @@ class _PintorZanqui extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Lienzo de diseño 200 × 240, escalado al tamaño pedido.
-    final s = size.width / 200;
+    // Lienzo de diseño 200 × 240, escalado para CABER en la caja (no solo por el ancho:
+    // si un padre lo estira, Zanqui no se sale de su espacio) y centrado en ella.
+    final s = math.min(size.width / 200, size.height / 240);
+    canvas.translate((size.width - 200 * s) / 2, (size.height - 240 * s) / 2);
     canvas.scale(s);
     final w = 2 * math.pi * t;
     final celebra = animo == Animo.celebrando;
@@ -406,8 +414,11 @@ class _PintorZanqui extends CustomPainter {
     };
     final sube = animo == Animo.curioso ? -3.0 : 0.0;
     canvas.drawLine(Offset(74, 95 - inclinacion + sube), Offset(89, 95 + inclinacion * 0.3), ceja);
-    canvas.drawLine(Offset(111, 95 + inclinacion * 0.3 + (animo == Animo.curioso ? 0 : 0)),
-        Offset(126, 95 - inclinacion), ceja);
+    canvas.drawLine(
+      Offset(111, 95 + inclinacion * 0.3 + (animo == Animo.curioso ? 0 : 0)),
+      Offset(126, 95 - inclinacion),
+      ceja,
+    );
 
     // Boca.
     final boca = Paint()
@@ -429,8 +440,10 @@ class _PintorZanqui extends CustomPainter {
           ..quadraticBezierTo(100, 152, 114, 133)
           ..close();
         canvas.drawPath(b, Paint()..color = Zc.raiz);
-        canvas.drawOval(Rect.fromCenter(center: const Offset(100, 143), width: 12, height: 5),
-            Paint()..color = const Color(0xFFE06B6B));
+        canvas.drawOval(
+          Rect.fromCenter(center: const Offset(100, 143), width: 12, height: 5),
+          Paint()..color = const Color(0xFFE06B6B),
+        );
       case Animo.curioso:
         canvas.drawOval(Rect.fromCenter(center: const Offset(102, 139), width: 9, height: 10), boca);
       case Animo.preocupado:

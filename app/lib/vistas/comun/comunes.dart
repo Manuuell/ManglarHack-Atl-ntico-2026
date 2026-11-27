@@ -78,7 +78,9 @@ class ChipEstado extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final demo = !Zanqui.de(context).servidor.configurado;
     final (texto, color, icono) = switch (reporte.envio) {
+      Envio.enCola when demo => ('Demostración · guardado en este teléfono', Zc.textoSuave, Icons.phone_android_rounded),
       Envio.enCola => ('En el teléfono · se envía con señal', Zc.textoSuave, Icons.schedule_rounded),
       Envio.enviando => ('Enviando…', Zc.cienaga, Icons.cloud_upload_rounded),
       Envio.error => ('Reintentando', Zc.sol, Icons.refresh_rounded),
