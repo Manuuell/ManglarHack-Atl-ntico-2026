@@ -11,4 +11,4 @@ const tonos = {
  media: PRIORIDADES_ZONA.media.chip, baja: PRIORIDADES_ZONA.baja.chip,
 };
 ---
-<span class={cn('inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-[11px] font-black uppercase tracking-[0.1em]', tonos[tono], clase)}>{tono === 'ejemplo' ? 'DATOS DE EJEMPLO' : <slot />}</span>
+<span class={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em]', tonos[tono], clase)}>{tono === 'ejemplo' ? 'DATOS DE EJEMPLO' : <slot />}</span>

@@ -1,35 +1,37 @@
 @import "tailwindcss";
 
 /* =========================================================
-   Identidad de la plataforma: la de la C.R.A. en manglarcra.netlify.app
-   Fondo azul institucional oscuro, tarjetas en azul intermedio, texto
-   blanco, acentos dorados en etiquetas y botones, Lato con titulares en
-   mayúsculas (peso 900) y esquinas rectas.
+   Identidad de la plataforma: la de la C.R.A., modernizada.
+   Azul institucional profundo, tarjetas en azul intermedio, texto blanco y
+   acento dorado, con titulares en Figtree, texto en Inter, esquinas
+   redondeadas, barra de navegación flotante y paneles amplios.
 
    Los tokens semánticos (fondo, superficie, texto…) son la API de los
    componentes: no escribir hex sueltos en un componente.
    ========================================================= */
 
 :root {
-  --c-fondo: #0b3a58;          /* azul institucional oscuro (fondo de página) */
-  --c-fondo-alt: #082d45;      /* franjas y cabeceras más profundas */
-  --c-superficie: #0e4f78;     /* tarjetas: azul intermedio */
-  --c-superficie-alta: #125f8f;/* tarjeta elevada, hover, fila activa */
-  --c-linea: rgb(255 255 255 / 0.24);
-  --c-linea-suave: rgb(255 255 255 / 0.12);
+  --c-fondo: #082b45;          /* azul institucional profundo (fondo de página) */
+  --c-fondo-alt: #061f33;      /* franjas, pie y cabeceras más profundas */
+  --c-superficie: #0d3a5c;     /* tarjetas: azul intermedio */
+  --c-superficie-alta: #124b73;/* tarjeta elevada, hover, fila activa */
+  --c-linea: rgb(255 255 255 / 0.18);
+  --c-linea-suave: rgb(255 255 255 / 0.09);
 
   --c-texto: #ffffff;
   --c-texto-suave: rgb(255 255 255 / 0.82);
   --c-texto-tenue: rgb(255 255 255 / 0.64);
 
-  --c-sombra: 0 1px 2px rgb(0 0 0 / 0.25), 0 16px 36px -18px rgb(0 0 0 / 0.55);
-  --c-sombra-alta: 0 2px 8px rgb(0 0 0 / 0.3), 0 24px 56px -16px rgb(0 0 0 / 0.65);
+  --c-sombra: 0 1px 2px rgb(0 0 0 / 0.2), 0 18px 50px -24px rgb(0 0 0 / 0.6);
+  --c-sombra-alta: 0 2px 8px rgb(0 0 0 / 0.25), 0 28px 70px -24px rgb(0 0 0 / 0.7);
+  --suave: cubic-bezier(0.16, 1, 0.3, 1);
 
   color-scheme: dark;
 }
 
 @theme inline {
-  --font-sans: 'Lato', 'Century Gothic', 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-titulo: 'Figtree', 'Inter', system-ui, -apple-system, sans-serif;
 
   --color-fondo: var(--c-fondo);
   --color-fondo-alt: var(--c-fondo-alt);
@@ -43,6 +45,9 @@
 }
 
 @theme {
+  /* Esquinas redondeadas en toda la web (también en los componentes que usan rounded-sm). */
+  --radius-sm: 0.875rem;
+
   /* Azul institucional de la C.R.A. (#005F96 es su color de fondo). */
   --color-cra-950: #05243a;
   --color-cra-900: #0b3a58;
@@ -88,26 +93,50 @@
 
 @layer base {
   html { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+  /* Que ningún hijo de una rejilla o fila flexible empuje la página a lo ancho en un teléfono de 360 px:
+     el contenido largo se parte o se desplaza dentro de su caja. */
+  main :where(.grid, .flex) > * { min-width: 0; }
+  /* Red de seguridad: lo decorativo (halos, pestañas desplazables) nunca mueve la página a lo ancho. */
+  html, body { overflow-x: clip; }
+  main :where(td, th, dd, p, h1, h2, h3, li) { overflow-wrap: anywhere; }
   body { @apply bg-fondo text-texto font-sans antialiased; }
   ::selection { background: var(--color-dorado-500); color: var(--color-cra-950); }
   :focus-visible { outline: 2px solid var(--color-dorado-300); outline-offset: 2px; }
 }
 
-/* Tipografía de la C.R.A.: titulares Lato 900 en mayúsculas; rótulos
-   (eyebrows, cabeceras de sección, pestañas) pequeños, en mayúsculas y
-   espaciados. */
+/* Tipografía: titulares en Figtree, apretados y sin mayúsculas forzadas;
+   rótulos (eyebrows, cabeceras de sección) pequeños, en mayúsculas y
+   espaciados, normalmente en dorado. */
 @utility titular {
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.01em;
-  line-height: 0.98;
+  font-family: var(--font-titulo);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  text-wrap: balance;
 }
 @utility rotulo {
-  font-size: 0.75rem;
-  font-weight: 900;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   line-height: 1.35;
+}
+/* Una palabra destacada del titular, en una píldora dorada ligeramente girada. */
+@utility resalte {
+  display: inline-block;
+  padding: 0 0.32em 0.06em;
+  border-radius: 0.38em;
+  background: var(--color-dorado-500);
+  color: var(--color-cra-950);
+  transform: rotate(-1.5deg);
+  box-shadow: 0 10px 30px -12px rgb(237 181 18 / 0.6);
+}
+/* Vidrio para la barra flotante y las tarjetas sobre el mapa. */
+@utility vidrio {
+  background: rgb(6 31 51 / 0.72);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid rgb(255 255 255 / 0.12);
 }
 @utility etiqueta-campo {
   font-size: 0.75rem;
@@ -119,7 +148,13 @@
 @keyframes flotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
 @utility animate-flotar { animation: flotar 6s ease-in-out infinite; }
 
+/* Entrada al bajar: solo se oculta si el JavaScript corrió (clase .js en <html>), así
+   sin JavaScript todo se ve igual. */
+.js .revelar { opacity: 0; transform: translateY(22px); transition: opacity 0.8s var(--suave), transform 0.8s var(--suave); }
+.js .revelar.visto { opacity: 1; transform: none; }
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .js .revelar { opacity: 1; transform: none; }
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
