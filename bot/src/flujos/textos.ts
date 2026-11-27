@@ -1,5 +1,5 @@
 import { Boton, Fila } from '../whatsapp/cloudApi';
-import { Jornada, TIPOS_JORNADA, enlaceComoLlegar, enlaceInvitacion, fmt as fmtJornada } from '../jornadas/jornadas';
+import { Jornada, TIPOS_JORNADA, enlaceComoLlegar, enlaceEventoZanky, enlaceInvitacion, fmt as fmtJornada } from '../jornadas/jornadas';
 import { ESTADOS, MAGNITUDES, MOMENTOS, MUNICIPIOS, MagnitudId, MomentoId, MunicipioId, ROLES, Reporte, RolId, TIPOS, TipoId } from '../reportes/modelo';
 
 export const ENCABEZADO = 'Zanky BOT 🌿';
@@ -263,7 +263,9 @@ export function invitacionJornada(j: Jornada, aviso: string): string {
     `👥 ${libres > 0 ? `${libres} cupos libres de ${j.cupos}` : 'Sin cupos por ahora'}\n` +
     (j.que_llevar.length ? `🎒 Qué llevar: ${j.que_llevar.join(', ')}\n` : '') +
     `\n✅ Inscríbete aquí: ${enlaceInvitacion(j)}\n` +
-    'Desde ese enlace también la agregas a tu calendario y la compartes.' +
+    'Desde ese enlace también la agregas a tu calendario y la compartes.\n' +
+    `\n📱 El día de la jornada, interactúa conmigo: ${enlaceEventoZanky(j)}\n` +
+    'Ahí registras tu llegada, haces el reto del manglar y reportas lo que veas.' +
     (aviso ? `\n\nℹ️ _${aviso}_` : '')
   );
 }

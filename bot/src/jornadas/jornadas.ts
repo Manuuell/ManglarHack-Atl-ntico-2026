@@ -71,6 +71,14 @@ export function enlaceInvitacion(j: Jornada): string {
   return `${new URL(config.jornadasUrl).origin}/plataforma/jornadas?jornada=${encodeURIComponent(j.id)}`;
 }
 
+/**
+ * Experiencia del evento en la app (versión web en /app/ del mismo sitio): el día de la jornada la persona
+ * registra su llegada, habla con Zanky, hace el reto del manglar y reporta. Es el mismo enlace del QR del cartel.
+ */
+export function enlaceEventoZanky(j: Jornada): string {
+  return `${new URL(config.jornadasUrl).origin}/app/?evento=${encodeURIComponent(j.id)}`;
+}
+
 export function enlaceComoLlegar(j: Jornada): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${j.lat},${j.lon}`;
 }
