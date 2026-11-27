@@ -1,0 +1,25 @@
+---
+// Página no encontrada: Zanky preocupado y el camino de vuelta a la Portada o a la Plataforma.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
+import Zanky from '../components/marca/Zanky.astro';
+---
+<BaseLayout title="Página no encontrada · El manglar del Atlántico · C.R.A.">
+ <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 rounded-full bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
+ <CabeceraCRA />
+ <main id="contenido" class="px-4 py-12 sm:px-6 sm:py-16">
+  <section aria-labelledby="titulo-404" class="relative isolate mx-auto max-w-4xl overflow-hidden rounded-[2rem] border border-linea-suave bg-superficie px-6 py-12 text-center shadow-[var(--c-sombra)] sm:px-12 sm:py-16">
+   <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
+    <div class="absolute -top-32 left-1/2 h-[22rem] w-[22rem] -translate-x-1/2 rounded-full bg-cra-600/30 blur-[100px]"></div>
+   </div>
+   <Zanky animo="preocupado" title="Zanky, el mangle rojo con zancos, se ve preocupado porque no encontró la página" carga="eager" sizes="(min-width: 640px) 192px, 160px" class="mx-auto size-40 sm:size-48" />
+   <p class="rotulo mt-6 text-dorado-300">Error 404</p>
+   <h1 id="titulo-404" class="titular mt-3 text-4xl sm:text-5xl">Esta página se la llevó la <span class="resalte">marea</span></h1>
+   <p class="mx-auto mt-5 max-w-xl leading-relaxed text-suave">Zanky buscó entre las raíces y no la encontró. Puede que el enlace esté mal escrito o que la página ya no exista.</p>
+   <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+    <a href="/" class="inline-flex min-h-12 items-center rounded-full bg-dorado-500 px-7 font-bold text-cra-950 transition-colors hover:bg-dorado-300">Volver a la portada</a>
+    <a href="/plataforma" class="inline-flex min-h-12 items-center rounded-full border border-white/25 bg-white/5 px-7 font-semibold text-texto transition-colors hover:border-dorado-300 hover:text-dorado-300">Ir a la plataforma</a>
+   </div>
+  </section>
+ </main>
+</BaseLayout>

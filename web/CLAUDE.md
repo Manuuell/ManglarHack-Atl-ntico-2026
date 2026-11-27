@@ -38,12 +38,13 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | Ruta | Qué es |
 |---|---|
 | `/` | Portada comunitaria en vivo (`src/styles/portada.css` + `src/scripts/portada.ts` + `src/components/comunidad/`): cabecera que pasa a cápsula al bajar; hero con el mapa satelital y la lista «Ahora en el manglar» (reportes de la comunidad y jornadas); «Reportar un problema» (tipo, ubicación en el mapa con la regla del área de reporte, foto, detalles, consentimiento); próximas jornadas con inscritos; avisos en tiempo real (otras pestañas incluidas, vía `lib/comunidad/reportesLocales.ts`); **monitoreo comunitario** (`#monitoreo`: mapa público con filtros y datos abiertos CSV/GeoJSON/KML), **seguimiento de siembras** (`#siembras`: plántulas vivas, altura y fotos ubicadas) y **guardianes del manglar** (`#guardianes`: ranking de colegios y pasaporte), en `components/comunidad/MonitoreoComunitario.astro` y `GuardianesManglar.astro` con `styles/monitoreo-portada.css`. Sin texto del reto: solo lo que hace la comunidad |
-| `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
+| `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método, Fuentes y Metodología (cada una abre con `#id`); contenido en `lib/workflow.ts` y `lib/workflowSeries.ts` |
 | `/visores` | Índice de los visores (cada mapa en su propia página, `layouts/VisorLayout.astro` con pestañas entre visores) |
 | `/visores/reportes` | Reportes de la comunidad a pantalla completa (`MapaMonitoreo`, el mismo de `#monitoreo`) |
 | `/visores/riesgo` | Puntos críticos y focos de calor de la C.R.A. cerca del manglar: mapa + lista ordenada por distancia (`components/visores/VisorCapasCRA.tsx`, `modo="riesgo"`) |
 | `/visores/agua` | Calidad del agua (ICA) de las ciénagas con manglar: mapa + fichas por ciénaga (`VisorCapasCRA`, `modo="agua"`) |
 | `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
+| `/plataforma/acerca` | «Acerca de la plataforma» de la C.R.A. (plan de manejo, qué hará, fase 2) y lo que agregó el equipo; enlazada desde el pie y el inicio de la plataforma |
 | `/plataforma/registro` | Registro de actor |
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
 | `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
@@ -78,7 +79,9 @@ src/
   lib/privacidad.ts             aReportePublico
   lib/reportesStore.ts          estado compartido de reportes + historial
   lib/exportar.ts               CSV, GeoJSON y KML públicos
-  lib/workflow.ts               cifras y pestañas del workflow, construidas del resumen de la C.R.A. (con respaldo fijo)
+  lib/workflow.ts               contenido del workflow de la C.R.A. (sectores, cifras, pestañas en bloques, metodología, plan de manejo), transcrito de su visor
+  lib/workflowSeries.ts         series del workflow (extensión anual, dosel, agua, temperatura)
+  lib/workflowVivo.ts           capa en vivo: cifras, sectores y audios armados del resumen de la C.R.A. (con respaldo fijo)
   lib/cra.ts, useWorkflowCRA.ts lectura en vivo de /cra/data/core.json (ver «Datos de la C.R.A. en vivo»)
   lib/plataforma/               datos.ts, catalogos.ts, almacen.ts (store persistente), …
   layouts/                      BaseLayout.astro, PlataformaLayout.astro
@@ -102,11 +105,11 @@ La capa de manglar de INVEMAR 2020 se importa con `?url` desde `../datos/` (por 
 - **Estados de acción**: `propuesta → en_revision → (con_observaciones ↔ en_revision) → aprobada → en_ejecucion → cerrada`.
 - **Jornada** (base Innvita): actividad con fecha, punto de encuentro, cupos e inscritos, ligada a una acción.
 - **Reporte de monitoreo**: plántulas vivas (%), altura media (cm), fotografías ubicadas, observaciones.
-- **Sectores**: Mallorquín (Mallorquín – Bocas de Ceniza), Balboa (Puerto Colombia – Balboa – Puerto Velero), Manatíes (Tubará – Juan de Acosta; correspondencia por confirmar con la C.R.A.), Totumo (Totumo – Astilleros – Galerazamba).
+- **Sectores** (nombres de la C.R.A.; los ids no cambian): Mallorquín (`mallorquin`, Mallorquín – Bocas de Ceniza), Puerto Colombia (`balboa`, Puerto Colombia – Balboa – Puerto Velero), Tubará (`manaties`, Tubará – Juan de Acosta), Totumo (`totumo`, Totumo – Astilleros – Galerazamba). Ver `../handoff/11-contenido-cra.md`.
 
 ## Cifras del workflow (fuente: workflow de la C.R.A., manglarcra.netlify.app)
 
-775 ha de manglar probable en 2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Balboa 197, Manatíes (Tubará – Juan de Acosta) 148, Totumo 742 · pérdida −34,7 ha entre 2016 y 2025 · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
+775 ha de manglar probable en 2024–2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Puerto Colombia 197, Tubará 148, Totumo 742; manglar probable 348, 91, 45 y 291 · pérdida neta 34,7 ha entre 2016 y 2025 (36,6 perdidas y 1,9 ganadas) · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
 
 ## Cuentas de la comunidad (iniciar sesión y crear cuenta)
 
@@ -123,7 +126,8 @@ La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se
 - `scripts/copiar-cra.mjs` baja `data/core.json` y las imágenes y audios que nombra a `public/cra/` (ignorada en git). Solo baja lo que cambió (ETag), valida la forma de `core.json` y, si llega roto o el sitio no responde, conserva la última copia buena. Escribe `espejo.json` con la fecha de revisión.
 - Corre antes de `dev` y de `build` (con `--suave`: avisa pero no falla sin red), así que `dist/cra/` siempre lleva una copia.
 - En el VPS lo corre cada 15 minutos `mimanglar-cra.timer` (unidades en `scripts/vps/`, script en `~/mimanglar-cra/`) sobre `/var/www/mimanglar/cra`. Si un despliegue con `rsync --delete` la pisa, el temporizador la repone.
-- La web lee la copia con `cargarCRA()` (`src/lib/cra.ts`) y `useWorkflowCRA()`; `construirWorkflow()` arma cifras, sectores y pestañas. Si la copia no responde, se usan `RESPALDO_CRA` (cifras del 27-11-2026) y se dice en pantalla.
+- La web lee la copia con `cargarCRA()` (`src/lib/cra.ts`) y `useWorkflowCRA()`; `construirWorkflow()` (`lib/workflowVivo.ts`) arma cifras, sectores y audios. Si la copia no responde, se usan `RESPALDO_CRA` (cifras del 27-11-2026) y se dice en pantalla.
+- En `/workflow`, las pestañas muestran el contenido transcrito en `lib/workflow.ts`; de la copia en vivo salen la fecha de revisión y el audio de cada pestaña. El inicio de la plataforma toma sus cifras de la copia en vivo.
 - `/workflow` incrusta además el visor original de la C.R.A. (capas, vista 3D y audios) desde manglarcra.netlify.app.
 - Instalar o actualizar en el VPS: copiar `copiar-cra.mjs` a `~/mimanglar-cra/`, `sudo install -m 644 scripts/vps/mimanglar-cra.* /etc/systemd/system/`, `sudo systemctl daemon-reload && sudo systemctl enable --now mimanglar-cra.timer`. Registro: `journalctl -u mimanglar-cra.service`.
 

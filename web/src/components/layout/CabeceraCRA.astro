@@ -1,8 +1,10 @@
 ---
 // Barra de navegación flotante (píldora de vidrio) con el logo de la C.R.A., los menús
 // desplegables «Visores» y «Plataforma» y el botón de perfil. En el teléfono, un menú
-// con ícono abre una hoja con todos los enlaces.
+// con ícono abre una hoja con todos los enlaces. El botón «Reportar con Zanky» lleva su
+// avatar; es decorativo porque el texto ya lo nombra.
 import PanelCuenta from '../cuenta/PanelCuenta';
+import Zanky from '../marca/Zanky.astro';
 import MenuDesplegable from './MenuDesplegable.astro';
 import MenuMovil from './MenuMovil.astro';
 import { PLATAFORMA, VISORES } from '../../lib/navegacion';
@@ -32,7 +34,8 @@ const portada = { id: 'portada', href: '/', texto: 'Portada' };
        activo === 'portada' ? 'bg-white/12 text-texto' : 'text-suave hover:bg-white/8 hover:text-texto']}>Portada</a>
    <MenuDesplegable texto="Visores" items={VISORES} activo={visorActual} />
    <MenuDesplegable texto="Plataforma" items={PLATAFORMA} activo={plataformaActual} />
-   <a href="/#reportar" data-cuenta-reportar class="ml-1 inline-flex min-h-11 items-center rounded-full bg-dorado-500 px-5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">Reportar con Zanky</a>
+   <a href="/#reportar" data-cuenta-reportar class="group ml-1 inline-flex min-h-11 items-center gap-2 rounded-full bg-dorado-500 pr-5 pl-1.5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">
+    <span class="grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-cra-950/10"><Zanky animo="feliz" decorativo carga="eager" sizes="32px" class="size-8 drop-shadow-none transition-transform duration-300 group-hover:-rotate-6 group-hover:scale-110 motion-reduce:transition-none" /></span>Reportar con Zanky</a>
   </nav>
   <PanelCuenta client:load contexto="plataforma" />
   <MenuMovil class="md:hidden" activo={visorActual ?? plataformaActual ?? (activo === 'portada' ? 'portada' : undefined)}

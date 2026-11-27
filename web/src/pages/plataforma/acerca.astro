@@ -1,0 +1,136 @@
+---
+// «Acerca de la plataforma»: todo lo de manglarcra.netlify.app/plataforma más lo
+// que agregó el equipo. No usa PlataformaLayout para no marcar otra pestaña como activa.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CabeceraCRA from '../../components/layout/CabeceraCRA.astro';
+import { PLAN_MANEJO, CIFRAS } from '../../lib/workflow';
+import { ACCIONES_PLAN } from '../../lib/plataforma/catalogos';
+import { CONDICIONES_FASE_2, DEVUELVE_AL_WORKFLOW, FUENTE_ACERCA, LO_QUE_AGREGO_EL_EQUIPO, QUE_HARA_LA_PLATAFORMA, URL_ACERCA_CRA } from '../../lib/plataforma/acerca';
+
+const n = (v: number) => v.toLocaleString('es-CO');
+const segmentos = [
+  ...PLAN_MANEJO.acciones.map(a => ({ nombre: a.nombre, ha: a.manglar_ha, color: ACCIONES_PLAN[a.id].color })),
+  { nombre: 'Fuera de la zonificación', ha: PLAN_MANEJO.manglar_fuera_ha, color: ACCIONES_PLAN.fuera_zonificacion.color },
+];
+const totalManglar = CIFRAS.manglar_probable_ha;
+const maxPlan = Math.max(...PLAN_MANEJO.acciones.map(a => a.plan_ha));
+const resumenPlan = `La zonificación de prioridades de conservación de la Corporación asigna a cada polígono una acción y una prioridad. En los cuatro sectores del manglar cubre ${n(PLAN_MANEJO.ha_total)} hectáreas en ${n(PLAN_MANEJO.poligonos)} polígonos. De las ${n(totalManglar)} hectáreas de manglar probable, ${n(PLAN_MANEJO.manglar_con_accion_ha)} tienen acción asignada: ${PLAN_MANEJO.acciones.map(a => `${n(a.manglar_ha)} en ${a.nombre.toLocaleLowerCase('es-CO')}`).join(', ').replace(/, ([^,]*)$/, ' y $1')}; ${n(PLAN_MANEJO.manglar_fuera_ha)} hectáreas de manglar quedan fuera de la zonificación. Cada acción que se proponga en la plataforma se ubicará sobre este plano y heredará la acción y la prioridad del plan.`;
+---
+<BaseLayout title="Acerca de la plataforma · El manglar del Atlántico" description="Qué es la plataforma abierta del manglar del Atlántico, el plan de manejo de la C.R.A. que la ordena, lo que devuelve al workflow, las condiciones para la fase 2 y lo que agregó el equipo.">
+ <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 rounded-full bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
+ <CabeceraCRA activo="plataforma" pagina="acerca" />
+ <main id="contenido" class="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+  <header class="pt-10 pb-8 lg:pt-14">
+   <p class="rotulo text-dorado-300">Entrada 2 · Acerca de la plataforma</p>
+   <h1 class="titular mt-4 max-w-4xl text-4xl sm:text-5xl">Plataforma abierta para la <span class="resalte">restauración</span> y conservación del manglar</h1>
+   <p class="mt-5 max-w-3xl text-base leading-relaxed text-suave sm:text-lg">Comunidades, entidades, academia, empresas y ciudadanos proponen, ejecutan y monitorean acciones sobre el manglar, y la autoridad ambiental las revisa y acompaña desde un solo lugar.</p>
+   <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+    <a href="/plataforma" class="inline-flex min-h-12 items-center justify-center rounded-full bg-dorado-500 px-7 font-bold text-cra-950 hover:bg-dorado-300">Entrar a la plataforma <span aria-hidden="true" class="ml-2">→</span></a>
+    <a href={URL_ACERCA_CRA} target="_blank" rel="noopener" class="inline-flex min-h-12 items-center justify-center rounded-full border border-white/25 px-7 font-semibold hover:border-dorado-300 hover:text-dorado-300">Página original de la C.R.A. ↗</a>
+   </div>
+  </header>
+
+  <section aria-labelledby="titulo-plan" class="rounded-[2rem] border border-linea-suave bg-superficie p-5 sm:p-10">
+   <p class="rotulo text-dorado-300">Plan de manejo</p>
+   <h2 id="titulo-plan" class="titular mt-3 text-3xl sm:text-4xl">Plan de manejo de la Corporación sobre el manglar</h2>
+   <p class="mt-5 max-w-4xl leading-relaxed text-suave">{resumenPlan}</p>
+
+   <dl class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    {[
+     [n(PLAN_MANEJO.ha_total), 'ha', 'Cubre la zonificación en los cuatro sectores'],
+     [n(PLAN_MANEJO.poligonos), 'polígonos', 'Cada uno con acción y prioridad'],
+     [`${n(PLAN_MANEJO.manglar_con_accion_ha)} de ${n(totalManglar)}`, 'ha', 'De manglar probable con acción asignada'],
+     [n(PLAN_MANEJO.manglar_fuera_ha), 'ha', 'De manglar probable fuera de la zonificación'],
+    ].map(([valor, unidad, texto]) => (
+     <div class="rounded-3xl bg-fondo-alt/60 p-5">
+      <dt class="sr-only">{texto}</dt>
+      <dd><span class="titular block text-3xl">{valor} <span class="text-sm font-semibold text-dorado-300">{unidad}</span></span><span aria-hidden="true" class="mt-1 block text-sm text-suave">{texto}</span></dd>
+     </div>
+    ))}
+   </dl>
+
+   <figure class="mt-8">
+    <figcaption class="rotulo text-dorado-300">Las {n(totalManglar)} ha de manglar probable según la acción del plan</figcaption>
+    <div aria-hidden="true" class="mt-3 flex h-5 overflow-hidden rounded-full bg-white/10">
+     {segmentos.map(s => <span style={`width:${s.ha / totalManglar * 100}%;background:${s.color}`} title={`${s.nombre}: ${n(s.ha)} ha`}></span>)}
+    </div>
+    <ul class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-suave">
+     {segmentos.map(s => <li class="flex items-center gap-2"><span aria-hidden="true" class="h-3 w-3 rounded-full" style={`background:${s.color}`}></span>{s.nombre}: {n(s.ha)} ha</li>)}
+    </ul>
+   </figure>
+
+   <h3 id="tabla-plan" class="mt-8 font-semibold">Hectáreas por acción del plan en los cuatro sectores</h3>
+   <div class="mt-3 overflow-x-auto">
+    <table aria-labelledby="tabla-plan" class="w-full text-sm">
+     <thead><tr class="border-b border-linea text-xs text-suave">
+      <th scope="col" class="py-2 pr-3 text-left">Acción</th>
+      <th scope="col" class="px-2 py-2 text-right">Plan, ha</th>
+      <th scope="col" class="hidden w-1/4 px-3 py-2 sm:table-cell"><span class="sr-only">Proporción del plan</span></th>
+      <th scope="col" class="py-2 pl-2 text-right">Manglar probable dentro, ha</th>
+     </tr></thead>
+     <tbody>
+      {PLAN_MANEJO.acciones.map(a => (
+       <tr class="border-b border-linea-suave">
+        <th scope="row" class="whitespace-nowrap py-3 pr-3 text-left font-normal"><span aria-hidden="true" class="mr-2 inline-block h-2.5 w-2.5 rounded-full" style={`background:${ACCIONES_PLAN[a.id].color}`}></span>{a.nombre}</th>
+        <td class="whitespace-nowrap px-3 text-right tabular-nums">{n(a.plan_ha)}</td>
+        <td class="hidden px-3 sm:table-cell"><span aria-hidden="true" class="block h-1.5 rounded-full" style={`width:${a.plan_ha / maxPlan * 100}%;background:${ACCIONES_PLAN[a.id].color}`}></span></td>
+        <td class="py-3 pl-3 text-right tabular-nums">{n(a.manglar_ha)}</td>
+       </tr>
+      ))}
+      <tr class="border-b border-linea-suave"><th scope="row" class="py-3 pr-3 text-left font-normal">Fuera de la zonificación</th><td class="px-3 text-right">—</td><td class="hidden sm:table-cell"></td><td class="py-3 pl-3 text-right tabular-nums">{n(PLAN_MANEJO.manglar_fuera_ha)}</td></tr>
+     </tbody>
+    </table>
+   </div>
+   <p class="mt-5 text-sm leading-relaxed text-suave">{PLAN_MANEJO.nota_capa}</p>
+   <p class="mt-3 text-xs leading-relaxed text-tenue">Las hectáreas de manglar dentro del plan se redondean como en la C.R.A. (415,8; 70; 63,8 y 4,4 ha en sus datos). Fuente: {PLAN_MANEJO.fuente}. En esta web, la capa se dibuja en el <a href="/plataforma" class="text-dorado-300 underline underline-offset-4">mapa de la plataforma</a>; sus polígonos se superponen entre escenarios, así que no se suman áreas a partir de ella.</p>
+  </section>
+
+  <section aria-labelledby="titulo-hara" class="mt-14">
+   <p class="rotulo text-dorado-300">Funciones</p>
+   <h2 id="titulo-hara" class="titular mt-3 text-3xl sm:text-4xl">Qué hará la plataforma</h2>
+   <ol class="mt-8 grid gap-4 md:grid-cols-2">
+    {QUE_HARA_LA_PLATAFORMA.map((p, i) => (
+     <li class="flex gap-4 rounded-3xl border border-linea-suave bg-superficie p-5">
+      <span aria-hidden="true" class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-dorado-500 font-bold text-cra-950">{i + 1}</span>
+      <div class="min-w-0">
+       <h3 class="font-semibold">{p.titulo}</h3>
+       <p class="mt-1 text-sm leading-relaxed text-suave">{p.texto}</p>
+       {p.enlace && <a href={p.enlace} class="mt-2 inline-flex min-h-11 items-center text-sm text-dorado-300 underline underline-offset-4">Dónde está en esta web<span class="sr-only">: {p.titulo}</span></a>}
+      </div>
+     </li>
+    ))}
+   </ol>
+  </section>
+
+  <div class="mt-14 grid gap-5 lg:grid-cols-2">
+   <section aria-labelledby="titulo-devuelve" class="rounded-[2rem] border border-linea-suave bg-superficie p-6 sm:p-8">
+    <h2 id="titulo-devuelve" class="titular text-2xl sm:text-3xl">Lo que la plataforma devuelve al workflow</h2>
+    <p class="mt-4 leading-relaxed text-suave">{DEVUELVE_AL_WORKFLOW}</p>
+    <a href="/workflow#metodo" class="mt-4 inline-flex min-h-11 items-center text-sm text-dorado-300 underline underline-offset-4">Por qué el modelo necesita etiquetas independientes</a>
+   </section>
+   <section aria-labelledby="titulo-fase2" class="rounded-[2rem] border border-linea-suave bg-superficie p-6 sm:p-8">
+    <h2 id="titulo-fase2" class="titular text-2xl sm:text-3xl">Condiciones para la fase 2</h2>
+    <ul class="mt-4 list-disc space-y-2 pl-5 leading-relaxed text-suave">
+     {CONDICIONES_FASE_2.map(c => <li>{c}</li>)}
+    </ul>
+   </section>
+  </div>
+  <p class="mt-4 text-xs leading-relaxed text-tenue">Fuente de esta sección: {FUENTE_ACERCA}.</p>
+
+  <section aria-labelledby="titulo-equipo" class="mt-16 rounded-[2rem] bg-cra-900 p-6 sm:p-10">
+   <p class="rotulo text-dorado-300">ManglarHack Atlántico 2026 · SENTRALABS · UTB</p>
+   <h2 id="titulo-equipo" class="titular mt-3 text-3xl sm:text-4xl">Lo que agregó el equipo</h2>
+   <p class="mt-4 max-w-3xl leading-relaxed text-suave">Esta web conserva todo lo de la plataforma de la C.R.A. y le suma lo que llega de la ciudadanía con Zanky. Cada punto dice qué funciona hoy y qué falta.</p>
+   <ul class="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    {LO_QUE_AGREGO_EL_EQUIPO.map(p => (
+     <li class="flex flex-col rounded-3xl border border-linea-suave bg-fondo-alt/70 p-5">
+      <h3 class="font-semibold">{p.titulo}</h3>
+      <p class="mt-2 flex-1 text-sm leading-relaxed text-suave">{p.texto}</p>
+      <p class="mt-3 text-xs text-dorado-100">{p.estado}</p>
+      <a href={p.enlace} class="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-dorado-300 underline underline-offset-4">{p.textoEnlace}</a>
+     </li>
+    ))}
+   </ul>
+  </section>
+ </main>
+</BaseLayout>

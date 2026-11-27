@@ -7,6 +7,7 @@ import { inscribirseEnServidor } from '../../lib/plataforma/jornadasApi';
 import { ACCIONES_PLAN, ESTADOS_ACCION, LISTA_ESTADOS_ACCION, ROLES, SECTORES, TIPOS_ACCION, TIPOS_JORNADA } from '../../lib/plataforma/catalogos';
 import { copiarEnlace, descargarICS, enlaceInvitacionWhatsApp } from '../../lib/plataforma/calendario';
 import { cn } from '../../lib/utils';
+import AvisoZanky from '../marca/AvisoZanky';
 
 interface Props { acciones: Accion[]; actores: Actor[]; cambios: CambioAccion[]; jornadas: Jornada[]; monitoreos: ReporteMonitoreo[] }
 
@@ -82,7 +83,9 @@ function TarjetaJornada({ jornada, accion, resaltada, inscrito }: { jornada: Jor
           <button type="button" onClick={async () => { setCopiado(await copiarEnlace(url)); setTimeout(() => setCopiado(false), 2500); }} className="inline-flex min-h-11 items-center justify-center gap-1 border border-white/40 text-[11px] font-bold uppercase hover:border-dorado-300 hover:text-dorado-300"><Copy className="size-3.5" aria-hidden="true" />{copiado ? 'Copiado' : 'Enlace'}</button>
           <button type="button" onClick={() => descargarICS(jornada, url)} className="inline-flex min-h-11 items-center justify-center gap-1 border border-white/40 text-[11px] font-bold uppercase hover:border-dorado-300 hover:text-dorado-300" aria-label={`Añadir ${jornada.titulo} al calendario`}><CalendarPlus className="size-3.5" aria-hidden="true" />Calendario</button>
         </div>
-        <div aria-live="polite">{mensaje && <p className={cn('text-xs', mensaje.ok ? 'text-emerald-200' : 'text-alta-texto')}>{mensaje.texto}</p>}</div>
+        <div aria-live="polite">{mensaje && (mensaje.ok
+          ? <AvisoZanky animo="celebrando" titulo="¡Quedaste inscrito!" className="text-xs"><p className="text-suave">{mensaje.texto}</p></AvisoZanky>
+          : <p className="text-xs text-alta-texto">{mensaje.texto}</p>)}</div>
       </div>
     </article>
   );
@@ -138,7 +141,7 @@ export default function SeguimientoAcciones(props: Props) {
               return <button key={e} type="button" aria-pressed={filtro === e} onClick={() => setFiltro(e)} className={cn('min-h-11 shrink-0 px-3 text-[11px] font-black uppercase tracking-[0.08em]', filtro === e ? 'bg-dorado-500 text-cra-950' : 'border border-white/40 text-suave hover:text-texto')}>{e === 'todas' ? 'Todas' : ESTADOS_ACCION[e].etiqueta} · {n}</button>;
             })}
           </div>
-          {filtradas.length === 0 ? <p className="mt-4 text-suave">No hay acciones en este estado.</p> : (
+          {filtradas.length === 0 ? <AvisoZanky animo="curioso" className="mt-4 text-suave"><p>No hay acciones en este estado. Prueba con otro filtro.</p></AvisoZanky> : (
             <div className="mt-2 overflow-x-auto">
               <table className="w-full min-w-[640px] text-left text-[13px]">
                 <thead><tr className="border-b border-white text-[11px] font-bold uppercase tracking-[0.06em] text-suave"><th scope="col" className="py-2 pr-3">Acción</th><th scope="col" className="py-2 pr-3">Actor</th><th scope="col" className="py-2 pr-3">Plan</th><th scope="col" className="py-2 pr-3">Estado</th><th scope="col" className="py-2"><span className="sr-only">Detalle</span></th></tr></thead>
@@ -216,7 +219,7 @@ export default function SeguimientoAcciones(props: Props) {
           <h2 id="titulo-jornadas" className="rotulo">Próximas jornadas</h2>
           <p className="text-xs text-tenue">Siembras, limpiezas, recorridos de vigías y monitoreos ligados a las acciones. Invite por WhatsApp o con el enlace.</p>
         </div>
-        {proximas.length === 0 ? <p className="mt-4 text-suave">No hay jornadas programadas.</p> : (
+        {proximas.length === 0 ? <AvisoZanky animo="curioso" className="mt-4 text-suave"><p>No hay jornadas programadas. <a href="/plataforma/jornadas" className="font-semibold text-dorado-300 underline">Crea una</a> y convoca a tu comunidad.</p></AvisoZanky> : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {proximas.map((j) => (
               <TarjetaJornada key={j.id} jornada={j} accion={acciones.find((a) => a.id === j.accion_id)} resaltada={resaltada === j.id} inscrito={inscripciones.some((i) => i.jornada_id === j.id)} />

@@ -14,6 +14,7 @@ export const VISORES: EnlaceNav[] = [
 /** Secciones de la plataforma abierta (también son las pestañas de PlataformaLayout). */
 export const PLATAFORMA: EnlaceNav[] = [
   { id: 'inicio', href: '/plataforma', texto: 'Inicio' },
+  { id: 'acerca', href: '/plataforma/acerca', texto: 'Acerca de la plataforma' },
   { id: 'registro', href: '/plataforma/registro', texto: 'Registro de actor' },
   { id: 'proponer', href: '/plataforma/proponer', texto: 'Proponer acción' },
   { id: 'seguimiento', href: '/plataforma/seguimiento', texto: 'Seguimiento' },

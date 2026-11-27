@@ -17,10 +17,13 @@ export const PAPELES: Record<Papel, Opcion> = {
   monitorear_reportar: { etiqueta: 'Monitorear y reportar', icono: Eye, clase: 'text-cra-100' },
   financiar_cooperar: { etiqueta: 'Financiar o cooperar', icono: Wallet, clase: 'text-dorado-300' },
 };
+// Nombres de la C.R.A. (workflow y plataforma). Los ids se conservan porque ya los
+// usan los datos, la app y el backend: balboa = Puerto Colombia, manaties = Tubará
+// (equivalencia en handoff/11-contenido-cra.md).
 export const SECTORES: Record<SectorId, { nombre: string; largo: string; nota?: string }> = {
   mallorquin: { nombre: 'Mallorquín', largo: 'Mallorquín – Bocas de Ceniza' },
-  balboa: { nombre: 'Balboa', largo: 'Puerto Colombia – Balboa – Puerto Velero' },
-  manaties: { nombre: 'Manatíes', largo: 'Tubará – Juan de Acosta', nota: 'correspondencia con «Manatíes» por confirmar con la C.R.A.' },
+  balboa: { nombre: 'Puerto Colombia', largo: 'Puerto Colombia – Balboa – Puerto Velero' },
+  manaties: { nombre: 'Tubará', largo: 'Tubará – Juan de Acosta' },
   totumo: { nombre: 'Totumo', largo: 'Totumo – Astilleros – Galerazamba' },
 };
 export const TIPOS_ACCION: Record<TipoAccion, Opcion> = {

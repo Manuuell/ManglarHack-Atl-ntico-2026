@@ -1,16 +1,19 @@
 ---
+// Guardianes del manglar: ranking de colegios (datos de ejemplo) y pasaporte digital del turista
+// (propuesta), en un panel amplio con el estilo del diseño nuevo.
+// incrustada: dentro de un panel de la portada (GuardianesManglar), sin fondo, márgenes ni encabezado propios.
 import { Trophy, Medal, MapPin, BadgeCheck, Users, ShieldCheck, QrCode, MessageCircle, Stamp, Gift, Waves, Leaf, Shell } from 'lucide-react';
 import type { Colegio } from '../../types/manglar';
 import { cn } from '../../lib/utils';
 import Zanky from '../marca/Zanky.astro';
 import Card from '../ui/Card.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
-// incrustada: dentro de un panel de la portada, sin fondo, márgenes ni encabezado propios.
 interface Props { colegios: Colegio[]; incrustada?: boolean; }
 const { colegios, incrustada = false } = Astro.props;
 const ranking = [...colegios].sort((a, b) => b.puntos - a.puntos);
 const maximo = Math.max(1, ...ranking.map(colegio => colegio.puntos));
-const podio = ['bg-[#f4eedc] text-[#796323]', 'bg-[#edf0f2] text-[#596775]', 'bg-[#f2e8df] text-[#855d3e]'];
+// Podio: oro, plata y bronce con los tonos de la paleta (texto oscuro sobre fondo claro).
+const podio = ['bg-dorado-500 text-cra-950', 'bg-cra-100 text-cra-950', 'bg-dorado-100 text-cra-900'];
 const pasos = [
  { icono: QrCode, titulo: 'Escanea el QR en la playa', texto: 'Puerto Velero, Salgar, Santa Verónica y Playa Mendoza.' },
  { icono: MessageCircle, titulo: 'Zanky te recibe en WhatsApp', texto: 'Acepta un reto corto: identificar especies, recoger residuos o reportar un hallazgo.' },
@@ -19,36 +22,42 @@ const pasos = [
 ];
 const sellos = [Waves, Leaf, Shell];
 ---
-<section id={incrustada ? undefined : 'comunidad'} class={incrustada ? undefined : 'bg-superficie py-20 sm:py-24'}>
- <div class={incrustada ? undefined : 'mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'}>
-  {!incrustada && <SectionHeading eyebrow="Sostenibilidad y comunidad" titulo="Guardianes del manglar" descripcion="Colegios, viajeros y comunidades que transforman pequeños gestos en un futuro para el manglar." />}
-  <div class="grid items-start gap-10 lg:grid-cols-5">
-   <div class="min-w-0 lg:col-span-3">
-    <h3 class="mb-6 text-xl font-bold text-texto">Ranking de colegios del Atlántico <span class="rounded-full bg-white/10 px-3 py-1 text-xs text-cra-100">Datos de ejemplo</span></h3><p class="mb-5 text-sm text-suave">Los puntos salen de reportes verificados, no de la cantidad</p>
-    <ol class="space-y-4">{ranking.map((colegio, indice) => <li><Card class="p-5 sm:p-6"><div class="flex items-start gap-3 sm:gap-4">
-     <span class={cn('flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-sm text-xs font-bold', podio[indice] ?? 'bg-fondo-alt text-suave')} aria-label={`Posición ${indice + 1}`}>
-      {indice === 0 ? <Trophy size={18} aria-hidden="true" /> : indice < 3 ? <Medal size={18} aria-hidden="true" /> : null}{indice + 1}
+<section id={incrustada ? undefined : 'comunidad'} aria-label={incrustada ? undefined : 'Guardianes del manglar'}
+ class={incrustada ? undefined : 'mt-14 rounded-[2rem] border border-linea-suave bg-fondo-alt px-3 py-10 shadow-[var(--c-sombra)] sm:px-8 sm:py-14 lg:px-12'}>
+ {!incrustada && <SectionHeading eyebrow="Sostenibilidad y comunidad" titulo="Guardianes del manglar" descripcion="Colegios, viajeros y comunidades que transforman pequeños gestos en un futuro para el manglar." />}
+ <div class="grid items-start gap-10 lg:grid-cols-5">
+  <div class="min-w-0 lg:col-span-3">
+   <h3 class="flex flex-wrap items-center gap-2 font-[family-name:var(--font-titulo)] text-xl font-bold text-texto">Ranking de colegios del Atlántico <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-cra-100">Datos de ejemplo</span></h3>
+   <p class="mt-2 mb-5 text-sm text-suave">Los puntos salen de reportes verificados, no de la cantidad.</p>
+   {ranking.length === 0 ? (
+    <div class="flex flex-col items-center gap-3 rounded-3xl border border-dashed border-linea p-8 text-center">
+     <Zanky animo="curioso" decorativo sizes="96px" class="size-24" />
+     <p class="text-suave">Pronto conocerás a los colegios guardianes del manglar.</p>
+    </div>
+   ) : (
+    <ol class="space-y-4">{ranking.map((colegio, indice) => <li><Card class="p-4 sm:p-6"><div class="flex items-start gap-3 sm:gap-4">
+     <span class={cn('flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-full text-xs font-bold', podio[indice] ?? 'bg-white/10 text-suave')} aria-label={`Posición ${indice + 1}`}>
+      {indice === 0 ? <Trophy size={16} aria-hidden="true" /> : indice < 3 ? <Medal size={16} aria-hidden="true" /> : null}{indice + 1}
      </span>
      <div class="min-w-0 flex-1"><h4 class="font-semibold text-texto">{colegio.nombre}</h4><p class="mt-1 flex items-center gap-1 text-xs text-tenue"><MapPin size={13} aria-hidden="true" />{colegio.municipio}</p></div>
-     <div class="shrink-0 text-right"><p class="text-xl font-bold tabular-nums text-texto sm:text-2xl">{colegio.puntos.toLocaleString('es-CO')}</p><p class="text-xs text-tenue">puntos</p></div>
+     <div class="shrink-0 text-right"><p class="font-[family-name:var(--font-titulo)] text-xl font-extrabold tabular-nums text-texto sm:text-2xl">{colegio.puntos.toLocaleString('es-CO')}</p><p class="text-xs text-tenue">puntos</p></div>
     </div>
     <div class="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs text-suave"><span class="inline-flex items-center gap-1"><BadgeCheck size={14} className="text-cra-100" aria-hidden="true" />{colegio.reportes_validados} reportes verificados</span><span class="inline-flex items-center gap-1"><Users size={14} aria-hidden="true" />{colegio.estudiantes} estudiantes</span></div>
-    <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10" role="meter" aria-label={`Puntos de ${colegio.nombre}`} aria-valuemin={0} aria-valuemax={maximo} aria-valuenow={Math.max(0, colegio.puntos)}><div class="h-full rounded-full bg-dorado-400" style={`width: ${Math.max(0, colegio.puntos) / maximo * 100}%`}></div></div>
-    {colegio.guardian && <span class="mt-3 inline-flex items-center gap-1 rounded-full bg-dorado-500 text-cra-950 px-2.5 py-1 text-xs font-medium text-white"><ShieldCheck size={13} aria-hidden="true" />Guardián del Manglar</span>}
+    <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10" role="meter" aria-label={`Puntos de ${colegio.nombre}`} aria-valuemin={0} aria-valuemax={maximo} aria-valuenow={Math.max(0, colegio.puntos)}><div class="h-full rounded-full bg-dorado-400" style={`width: ${Math.max(0, colegio.puntos) / maximo * 100}%`}></div></div>
+    {colegio.guardian && <span class="mt-3 inline-flex items-center gap-1 rounded-full bg-dorado-500 px-3 py-1 text-xs font-bold text-cra-950"><ShieldCheck size={13} aria-hidden="true" />Guardián del Manglar</span>}
     </Card></li>)}</ol>
-    {ranking.length === 0 && <p class="rounded-sm bg-fondo p-6 text-suave">Pronto conocerás a los colegios guardianes del manglar.</p>}
-   </div>
-   <div class="min-w-0 lg:col-span-2">
-    <h3 class="mb-6 text-xl font-bold text-texto">Pasaporte Digital del Turista <span class="rounded-full bg-white/10 px-3 py-1 text-xs text-cra-100">Propuesta</span></h3>
-    <div class="pasaporte relative overflow-hidden rounded-sm bg-dorado-500 text-cra-950 p-6 text-white shadow-[var(--c-sombra-alta)] sm:p-8">
-     <div class="relative flex items-center justify-between gap-3 border-b border-white/20 pb-5"><div><p class="text-xs font-semibold uppercase tracking-[0.2em] text-cra-100">Explora · Cuida · Conecta</p><p class="mt-2 text-2xl font-bold tracking-tight">Tu viaje deja huella</p></div><Zanky animo="celebrando" class="h-20 w-20 shrink-0" /></div>
-     <ol class="relative mt-6 space-y-6">{pasos.map(({ icono: Icono, titulo, texto }) => <li class="flex gap-3"><span class="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/10 text-cra-100"><Icono size={18} aria-hidden="true" /></span><div><h4 class="text-sm font-semibold">{titulo}</h4><p class="mt-1 text-sm leading-relaxed text-suave">{texto}</p></div></li>)}</ol>
-     <div class="relative mt-8 border-t border-white/20 pt-6"><div class="flex justify-between gap-2" aria-label="Tres sellos conseguidos y dos por conseguir">{sellos.map((Icono, indice) => <span class="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-texto ring-2 ring-cra-300/40 ring-offset-2 ring-offset-manglar-900" title={`Sello ${indice + 1} conseguido`}><Icono size={21} aria-hidden="true" /></span>)}{[4, 5].map(numero => <span class="h-11 w-11 rounded-full border-2 border-dashed border-dorado-300/40" title={`Sello ${numero} por conseguir`}></span>)}</div><p class="mt-4 text-center text-sm font-medium text-cra-100">3 de 5 sellos</p><p class="mt-2 text-center text-xs text-suave">Vista de demostración del pasaporte</p></div>
-    </div>
+   )}
+  </div>
+  <div class="min-w-0 lg:col-span-2">
+   <h3 class="mb-5 flex flex-wrap items-center gap-2 font-[family-name:var(--font-titulo)] text-xl font-bold text-texto">Pasaporte Digital del Turista <span class="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-cra-100">Propuesta</span></h3>
+   <div class="pasaporte relative overflow-hidden rounded-[2rem] bg-dorado-500 p-5 text-cra-950 shadow-[var(--c-sombra-alta)] sm:p-8">
+    <div class="relative flex items-center justify-between gap-3 border-b border-cra-950/15 pb-5"><div><p class="rotulo text-cra-900">Explora · Cuida · Conecta</p><p class="titular mt-2 text-2xl">Tu viaje deja huella</p></div><Zanky animo="celebrando" decorativo sizes="88px" class="size-20 shrink-0 sm:size-22" /></div>
+    <ol class="relative mt-6 space-y-5">{pasos.map(({ icono: Icono, titulo, texto }) => <li class="flex gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-cra-950 text-dorado-300"><Icono size={18} aria-hidden="true" /></span><div><h4 class="text-sm font-bold">{titulo}</h4><p class="mt-1 text-sm leading-relaxed text-cra-900">{texto}</p></div></li>)}</ol>
+    <div class="relative mt-8 border-t border-cra-950/15 pt-6"><div class="flex justify-between gap-2" role="img" aria-label="Tres sellos conseguidos y dos por conseguir">{sellos.map((Icono, indice) => <span class="grid h-11 w-11 place-items-center rounded-full bg-cra-950 text-dorado-300 ring-2 ring-cra-950/20 ring-offset-2 ring-offset-dorado-500" title={`Sello ${indice + 1} conseguido`}><Icono size={21} aria-hidden="true" /></span>)}{[4, 5].map(numero => <span class="h-11 w-11 rounded-full border-2 border-dashed border-cra-950/40" title={`Sello ${numero} por conseguir`}></span>)}</div><p class="mt-4 text-center text-sm font-bold">3 de 5 sellos</p><p class="mt-1 text-center text-xs font-medium text-cra-900">Vista de demostración del pasaporte</p></div>
    </div>
   </div>
  </div>
 </section>
 <style>
- .pasaporte { background-image: radial-gradient(circle at 1px 1px, rgb(255 255 255 / .055) 1px, transparent 0); background-size: 18px 18px; }
+ .pasaporte { background-image: radial-gradient(circle at 1px 1px, rgb(5 36 58 / .08) 1px, transparent 0); background-size: 18px 18px; }
 </style>

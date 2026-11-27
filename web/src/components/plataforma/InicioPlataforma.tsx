@@ -12,6 +12,7 @@ import { fechaCRA } from '../../lib/cra';
 import { cn } from '../../lib/utils';
 import MapaPlataforma from './MapaPlataforma';
 import { enAreaDeReporte } from '../../lib/areaReporte';
+import AvisoZanky from '../marca/AvisoZanky';
 
 interface Props { zonas: ZonasManglar; acciones: Accion[]; reportes: ReportePublico[]; jornadas: Jornada[] }
 
@@ -61,12 +62,13 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
             ))}
           </dl>
           <p className="mt-3 text-xs text-tenue">Manglar probable, no confirmado: requiere verificación en campo. Fuente: {FUENTE_WORKFLOW}{estadoDatos === 'en_vivo' && espejo ? ` (datos revisados el ${fechaCRA(espejo.revisado_en)})` : estadoDatos === 'respaldo' ? ' (cifras del 27 de noviembre de 2026: no se pudo leer la copia en vivo)' : ''}.</p>
+          <a href="/plataforma/acerca" className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-dorado-300 underline underline-offset-4">Acerca de la plataforma: plan de manejo, qué hará y condiciones para la fase 2</a>
         </section>
 
         <section aria-labelledby="titulo-acciones">
           <Rotulo><span id="titulo-acciones">Acciones en curso</span></Rotulo>
           {enCurso.length === 0 ? (
-            <p className="mt-3 text-suave">No hay acciones en curso. <a className="text-dorado-300 underline" href="/plataforma/proponer">Proponga la primera</a>.</p>
+            <AvisoZanky animo="curioso" className="mt-3 text-suave"><p>No hay acciones en curso. <a className="text-dorado-300 underline" href="/plataforma/proponer">Proponga la primera</a>.</p></AvisoZanky>
           ) : (
             <table className="mt-2 w-full text-left text-[13px]">
               <thead>
@@ -106,7 +108,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
         <section aria-labelledby="titulo-jornadas">
           <Rotulo><span id="titulo-jornadas">Próximas jornadas</span></Rotulo>
           {proximas.length === 0 ? (
-            <p className="mt-3 text-suave">No hay jornadas programadas.</p>
+            <AvisoZanky animo="curioso" className="mt-3 text-suave"><p>No hay jornadas programadas. <a className="text-dorado-300 underline" href="/plataforma/jornadas">Crea una</a>.</p></AvisoZanky>
           ) : (
             <ul className="mt-3 grid gap-3">
               {proximas.map((j) => (

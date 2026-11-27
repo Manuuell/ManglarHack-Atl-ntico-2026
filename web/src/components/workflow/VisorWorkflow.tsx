@@ -5,10 +5,12 @@ import type { FeatureCollection, Geometry } from 'geojson';
 import { GeoJSON, MapContainer, Pane, Popup, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import { obtenerCapaManglarCRA } from '../../lib/datos';
 import { LIMITES_MANGLAR } from '../../lib/areaReporte';
-import { FUENTE_WORKFLOW } from '../../lib/workflow';
+import { FUENTE_WORKFLOW, PESTANAS_WORKFLOW, SECTORES_WORKFLOW, URL_WORKFLOW_CRA, VERSION_WORKFLOW } from '../../lib/workflow';
+import { BloqueWorkflow } from './BloquesWorkflow';
 import { useWorkflowCRA } from '../../lib/useWorkflowCRA';
 import { fechaCRA } from '../../lib/cra';
 import type { PropiedadesZona, ZonasManglar } from '../../types/manglar';
+import ZankyImg from '../marca/ZankyImg';
 import 'leaflet/dist/leaflet.css';
 import '../../styles/workflow.css';
 
@@ -59,17 +61,16 @@ function datoInvemar(p: PropiedadesZona, clave: 'area_invemar_ha' | 'poligonos_i
   return typeof valor === 'number' && Number.isFinite(valor) ? numero(valor) : 'No publicado';
 }
 
-const convenciones = [
-  ['bg-capa-manglar', 'Manglar probable'], ['bg-capa-dosel', 'Dosel'],
-  ['bg-capa-agua', 'Agua'], ['bg-capa-recuperacion', 'Recuperación'], ['bg-capa-riesgo', 'Riesgo muy alto'],
-] as const;
+const indiceDeHash = () => {
+  if (typeof window === 'undefined') return 0;
+  const i = PESTANAS_WORKFLOW.findIndex(p => `#${p.id}` === window.location.hash);
+  return i < 0 ? 0 : i;
+};
 
 export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
-  const { workflow, espejo, estado: estadoDatos } = useWorkflowCRA();
-  const PESTANAS_WORKFLOW = workflow.pestanas;
-  const SECTORES_WORKFLOW = workflow.sectores;
-  const totalSectores = SECTORES_WORKFLOW.reduce((t, s) => t + s.total_ha, 0);
-  const [indice, setIndice] = useState(0);
+  const [indice, setIndice] = useState(indiceDeHash);
+  // En pantallas estrechas la leyenda empieza plegada para no tapar el mapa.
+  const [leyendaAbierta] = useState(() => window.matchMedia('(min-width: 640px)').matches);
   const [capa, setCapa] = useState<Awaited<ReturnType<typeof obtenerCapaManglarCRA>> | null>(null);
   const [estadoCapa, setEstadoCapa] = useState<'cargando' | 'lista' | 'error'>('cargando');
   const [intento, setIntento] = useState(0);
@@ -82,7 +83,11 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   const contenido = useRef<HTMLDivElement>(null);
   const botones = useRef<(HTMLButtonElement | null)[]>([]);
   const pestana = PESTANAS_WORKFLOW[indice]!;
-  const etiquetas = pestana.id === 'sintesis' || pestana.id === 'extension';
+  const etiquetas = Boolean(pestana.rotuloSector);
+  const pendiente = pestana.bloques.find(b => b.tipo === 'pendiente');
+  // Copia en vivo de los datos de la C.R.A.: fecha de revisión y audio de cada pestaña.
+  const { workflow: vivo, espejo, estado: estadoDatos } = useWorkflowCRA();
+  const audio = vivo.pestanas.find(p => p.id === pestana.id)?.audio;
 
   useEffect(() => {
     let vigente = true;
@@ -108,6 +113,21 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   }, []);
 
   useEffect(() => {
+    // Con #pestaña en la URL, mostrar esa pestaña en la barra sin mover la página.
+    const boton = botones.current[indice];
+    const barra = boton?.parentElement;
+    // Posición del botón medida desde la barra (offsetLeft cuenta desde el visor entero, mapa incluido,
+    // y en pantallas anchas dejaba la pestaña activa fuera de la vista).
+    if (boton && barra) barra.scrollLeft = boton.getBoundingClientRect().left - barra.getBoundingClientRect().left + barra.scrollLeft - (barra.clientWidth - boton.clientWidth) / 2;
+    // Un enlace a otra pestaña del mismo visor (#carbono) cambia de pestaña.
+    const alCambiarHash = () => setIndice(indiceDeHash());
+    window.addEventListener('hashchange', alCambiarHash);
+    return () => window.removeEventListener('hashchange', alCambiarHash);
+    // Solo al montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     const ajustar = () => {
       if (raiz.current) raiz.current.style.setProperty('--workflow-offset', `${raiz.current.getBoundingClientRect().top + window.scrollY}px`);
     };
@@ -121,6 +141,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   function seleccionar(nuevo: number, enfocar = false) {
     const siguiente = (nuevo + PESTANAS_WORKFLOW.length) % PESTANAS_WORKFLOW.length;
     setIndice(siguiente);
+    try { history.replaceState(null, '', `#${PESTANAS_WORKFLOW[siguiente]!.id}`); } catch { /* sin historial: no pasa nada */ }
     contenido.current?.scrollTo({ top: 0 });
     if (enfocar) botones.current[siguiente]?.focus({ preventScroll: true });
     botones.current[siguiente]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -131,7 +152,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   }
 
   return <div ref={raiz} className="visor-workflow relative z-0 flex flex-col text-texto lg:flex-row">
-    <section className="workflow-mapa relative isolate min-w-0 flex-1" aria-label="Visor cartográfico">
+    <section className="workflow-mapa relative isolate min-w-0 flex-none lg:flex-1" aria-label="Visor cartográfico">
       <MapContainer maxBounds={LIMITES_MANGLAR} maxBoundsViscosity={1} minZoom={9} center={[10.95, -75.03]} zoom={10} zoomControl={false} scrollWheelZoom={false} className="h-full w-full">
         <Pane name="teselas-workflow" className="workflow-teselas" style={{ zIndex: 200 }}>
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© colaboradores de OpenStreetMap" eventHandlers={{ tileerror: () => setErrorTeselas(true) }} />
@@ -139,17 +160,17 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
         <AjustarMapa zonas={zonas} activar={() => setRueda(true)} />
         <ZoomControl position="bottomright" zoomInTitle="Acercar" zoomOutTitle="Alejar" />
         <Pane name="referencia-workflow" style={{ zIndex: 350 }}>
-          {capa && <GeoJSON data={capa} style={{ fillColor: '#d946ef', fillOpacity: pestana.capa === 'invemar' || etiquetas ? 0.55 : 0.18, color: '#f0abfc', weight: 0.8, opacity: pestana.capa === 'invemar' || etiquetas ? 1 : 0.4 }} />}
+          {capa && <GeoJSON data={capa} style={{ fillColor: '#d946ef', fillOpacity: pestana.capa === 'cra' ? 0.55 : 0.18, color: '#f0abfc', weight: 0.8, opacity: pestana.capa === 'cra' ? 1 : 0.4 }} />}
         </Pane>
         <Pane name="sectores-workflow" style={{ zIndex: 400 }}>
           {zonas.features.map(zona => {
             const sector = SECTORES_WORKFLOW.find(s => s.id === zona.properties.id);
             return <GeoJSON key={zona.properties.id} data={zona} style={{ color: 'white', dashArray: '6 5', weight: 1.3, fillColor: 'white', fillOpacity: 0.04, opacity: pestana.capa === 'sectores' || etiquetas ? 1 : 0.35 }}>
-              {etiquetas && <Tooltip permanent direction="center" className="workflow-sector">{sector ? `${sector.nombre.toLocaleUpperCase('es-CO')} · ${numero(sector.total_ha)} ha` : zona.properties.nombre}</Tooltip>}
-              <Popup><strong>{zona.properties.nombre}</strong>
-                {sector && <><p>Total probable + por revisar: {numero(sector.total_ha)} ha.</p>
-                  {sector.probable_ha !== null && <p>Manglar probable: {numero(sector.probable_ha)} ha.</p>}
-                  {sector.por_revisar_ha !== null && <p>Por revisar: {numero(sector.por_revisar_ha)} ha.</p>}</>}
+              {etiquetas && <Tooltip permanent direction="center" className="workflow-sector">{sector ? `${sector.nombre.toLocaleUpperCase('es-CO')} · ${numero(pestana.rotuloSector === 'total' ? sector.total_ha : sector.probable_ha)} ha` : zona.properties.nombre}</Tooltip>}
+              <Popup><strong>{sector?.nombre_largo ?? zona.properties.nombre}</strong>
+                {sector && <><p>Manglar probable: {numero(sector.probable_ha)} ha ({numero(sector.alta_ha)} con probabilidad alta y {numero(sector.media_ha)} media).</p>
+                  <p>Por revisar: {numero(sector.por_revisar_ha)} ha. Total probable + por revisar: {numero(sector.total_ha)} ha.</p>
+                  <p>Dosel claramente más seco en 2026: {numero(sector.dosel_seco_ha)} ha · riesgo medio {sector.riesgo_medio.toLocaleString('es-CO')} (0 a 1) · altura mediana {sector.altura_mediana_m.toLocaleString('es-CO')} m.</p></>}
                 <p>Polígonos INVEMAR: {datoInvemar(zona.properties, 'poligonos_invemar')}.<br />Área INVEMAR: {datoInvemar(zona.properties, 'area_invemar_ha')} ha.</p>
                 <p>Límite sectorial aproximado. Manglar probable, no confirmado: requiere verificación en campo.</p>
                 <p>Fuente: {FUENTE_WORKFLOW}; {zona.properties.fuente}.</p>
@@ -168,50 +189,50 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
       <div className="pointer-events-none absolute left-3 top-3 z-[500] max-w-[calc(100%-1.5rem)] space-y-2 text-sm" aria-live="polite">
         {!rueda && <p className="bg-fondo-alt/95 px-3 py-2">Haz clic para usar la rueda del ratón</p>}
         {estadoCapa === 'cargando' && <p className="bg-fondo-alt/95 px-3 py-2">Cargando la cobertura de manglar de la C.R.A.…</p>}
-        {estadoCapa === 'error' && <div className="pointer-events-auto bg-fondo-alt/95 px-3 py-2">No se pudo cargar la cobertura de manglar de la C.R.A. Los sectores siguen disponibles. <button className="min-h-11 underline text-dorado-300" onClick={() => setIntento(n => n + 1)}>Reintentar</button></div>}
+        {estadoCapa === 'error' && <div className="pointer-events-auto flex items-start gap-2 bg-fondo-alt/95 px-3 py-2"><ZankyImg animo="preocupado" decorativo sizes="28px" className="mt-1 size-8 shrink-0 drop-shadow-none" /><p>No se pudo cargar la cobertura de manglar de la C.R.A. Los sectores siguen disponibles. <button className="min-h-11 underline text-dorado-300" onClick={() => setIntento(n => n + 1)}>Reintentar</button></p></div>}
         {errorTeselas && <p className="bg-fondo-alt/95 px-3 py-2">No se pudieron cargar algunas teselas de OpenStreetMap.</p>}
         {errorCRA && <p className="bg-fondo-alt/95 px-3 py-2">No se pudieron leer las capas C.R.A. de este navegador.</p>}
         {capasCRA.length > 0 && <label className="pointer-events-auto flex min-h-11 items-center gap-2 bg-fondo-alt/95 px-3 py-2"><input type="checkbox" checked={mostrarCRA} onChange={e => setMostrarCRA(e.target.checked)} />Capas C.R.A. cargadas</label>}
       </div>
-      <details open className="workflow-leyenda absolute bottom-6 left-3 z-[500] max-h-[45%] w-[min(360px,calc(100%-4.5rem))] overflow-auto border border-linea bg-fondo-alt/90 p-3 text-xs">
+      <details open={leyendaAbierta} className="workflow-leyenda absolute bottom-6 left-3 z-[500] max-h-[45%] w-[min(360px,calc(100%-4.5rem))] overflow-auto border border-linea bg-fondo-alt/90 p-3 text-xs">
         <summary className="rotulo min-h-11 cursor-pointer text-dorado-300">Convenciones del workflow</summary>
         <ul className="space-y-2">
-          {convenciones.map(([color, nombre]) => <li key={nombre} className="flex items-center gap-2"><span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 ${color}`} />{nombre} · capa pendiente</li>)}
-          <li className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-5 shrink-0 border border-dashed border-white" />Sectores aproximados</li>
+          {pendiente?.tipo === 'pendiente' && <li className="space-y-1 border-b border-linea-suave pb-2"><p className="font-semibold">{pendiente.capas[0]}: capa de la C.R.A. pendiente de entrega</p>{pendiente.convenciones && <p className="text-tenue">{pendiente.convenciones.join(' · ')}</p>}</li>}
+          <li className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-5 shrink-0 border border-dashed border-white" />Sectores de la C.R.A. (límites aproximados)</li>
           <li className="flex items-start gap-2"><span aria-hidden="true" className="mt-1 h-2.5 w-2.5 shrink-0 bg-capa-manglar" /><span>Cobertura de manglar C.R.A. 1:5.000 (649,7 ha; Maxar 2021–2022, verificada en campo). La capa de manglar probable del workflow (775 ha) es otra: se cargará cuando la C.R.A. la entregue</span></li>
           {capasCRA.length > 0 && <li className="flex items-center gap-2"><span className="h-2.5 w-5 border border-dorado-500" />Capas C.R.A. cargadas</li>}
         </ul>
       </details>
     </section>
-    <aside className="workflow-panel flex min-w-0 flex-col border-l border-linea bg-fondo-alt lg:w-[440px] lg:shrink-0" aria-label="Análisis del workflow">
+    <aside className="workflow-panel flex min-w-0 flex-col border-l border-linea bg-fondo-alt lg:w-[480px] lg:shrink-0 xl:w-[560px]" aria-label="Análisis del workflow">
       <div className="shrink-0 border-b border-linea bg-fondo-alt p-4">
         <p className="rotulo text-dorado-300">Manglar probable, no confirmado</p>
-        <p className="mt-1 text-sm text-suave">Requiere verificación en campo.</p>
+        <p className="mt-1 text-sm text-suave">Requiere verificación en campo. {VERSION_WORKFLOW}.</p>
         <p className="mt-2 flex items-center gap-2 text-xs text-tenue" aria-live="polite">
           <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${estadoDatos === 'en_vivo' ? 'bg-baja' : estadoDatos === 'respaldo' ? 'bg-dorado-500' : 'bg-white/40'}`} />
           {estadoDatos === 'cargando' && 'Leyendo los datos de la C.R.A.…'}
-          {estadoDatos === 'en_vivo' && <>Datos del workflow de la C.R.A.{espejo ? ` (revisados el ${fechaCRA(espejo.revisado_en)})` : ''}. Se actualizan solos cuando la C.R.A. publica cambios.</>}
-          {estadoDatos === 'respaldo' && 'No se pudo leer la copia de los datos de la C.R.A.: se muestran las cifras del 27 de noviembre de 2026.'}
+          {estadoDatos === 'en_vivo' && <>Copia en vivo de los datos de la C.R.A.{espejo ? ` (revisados el ${fechaCRA(espejo.revisado_en)})` : ''}; las pestañas muestran lo transcrito de su visor el 27-11-2026.</>}
+          {estadoDatos === 'respaldo' && 'No se pudo leer la copia de los datos de la C.R.A.: se muestra lo transcrito de su visor el 27-11-2026.'}
         </p>
       </div>
       <div role="tablist" aria-label="Temas del workflow" className="flex shrink-0 overflow-x-auto border-b border-linea">
         {PESTANAS_WORKFLOW.map((p, i) => <button key={p.id} ref={el => { botones.current[i] = el; }} id={`tab-${p.id}`} role="tab" aria-selected={i === indice} aria-controls={`panel-${p.id}`} tabIndex={i === indice ? 0 : -1} onClick={() => seleccionar(i)} onKeyDown={e => teclado(e, i)} className={`rotulo min-h-11 shrink-0 border-b-[3px] px-4 py-3 text-white ${i === indice ? 'border-dorado-500' : 'border-transparent hover:bg-white/5'}`}>{p.etiqueta}</button>)}
       </div>
       <div ref={contenido} className="min-h-0 flex-1 overflow-y-auto">
-        <section role="tabpanel" id={`panel-${pestana.id}`} aria-labelledby={`tab-${pestana.id}`} tabIndex={0} className="space-y-6 p-5">
+        <section key={pestana.id} role="tabpanel" id={`panel-${pestana.id}`} aria-labelledby={`tab-${pestana.id}`} tabIndex={0} className="space-y-6 p-5">
           <h2 className="titular text-2xl">{pestana.titulo}</h2>
-          <p className="leading-relaxed text-suave">{pestana.resumen}</p>
-          {pestana.audio && <div className="space-y-2">
-            <p className="rotulo text-dorado-300">Escuchar esta sección · {Math.round(pestana.audio.dur)} s</p>
-            <audio key={pestana.audio.src} controls preload="none" src={pestana.audio.src} className="w-full" aria-label={`Audio de la sección ${pestana.etiqueta}`} />
-            <details className="text-sm text-suave"><summary className="min-h-11 cursor-pointer py-2 text-dorado-300">Leer el texto del audio</summary><p className="leading-relaxed">{pestana.audio.txt}</p></details>
+          {audio && <div className="space-y-2">
+            <p className="rotulo text-dorado-300">Escuchar esta sección · {Math.round(audio.dur)} s</p>
+            <audio key={audio.src} controls preload="none" src={audio.src} className="w-full" aria-label={`Audio de la sección ${pestana.etiqueta}`} />
           </div>}
-          {pestana.cifras.length > 0 && <dl className="grid grid-cols-2 gap-x-4 gap-y-6">{pestana.cifras.map(c => <div key={c.etiqueta} className="border-t border-linea pt-3"><dt className="rotulo text-suave">{c.etiqueta}</dt><dd className="mt-2"><span className="titular block text-4xl">{c.valor}</span><span className="rotulo mt-1 block text-dorado-300">{c.unidad}</span></dd></div>)}</dl>}
-          {pestana.id === 'sintesis' && <table className="w-full text-sm"><caption className="mb-3 text-left text-suave">Por sector · probable + por revisar</caption><thead><tr className="border-b border-linea"><th scope="col" className="py-2 text-left">Sector</th><th scope="col" className="text-right">Total ha</th><th scope="col"><span className="sr-only">Proporción del total</span></th></tr></thead><tbody>{SECTORES_WORKFLOW.map(s => <tr key={s.id} className="border-b border-linea-suave"><th scope="row" className="py-3 text-left font-normal">{s.nombre}<span className="block text-xs text-tenue">{s.nombre_cra}</span></th><td className="text-right tabular-nums">{numero(s.total_ha)}</td><td className="w-24 pl-3"><span aria-hidden="true" className="block h-1.5 bg-dorado-500" style={{ width: `${s.total_ha / totalSectores * 100}%` }} /></td></tr>)}</tbody></table>}
-          <ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-suave">{pestana.puntos.map(p => <li key={p}>{p}</li>)}</ul>
-          <p className="border-l-2 border-dorado-500 pl-3 text-sm">{pestana.capa === 'pendiente' ? 'Capa espacial pendiente del GeoJSON de la C.R.A.' : `Capa en el mapa: ${pestana.capa === 'invemar' ? 'cobertura de manglar de la C.R.A. (1:5.000)' : 'sectores aproximados'}.`}</p>
+          <details className="rounded-sm border border-linea-suave">
+            <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm text-dorado-300">Resumen de la sección (texto del audio de la C.R.A.)</summary>
+            <p className="px-3 pb-3 text-sm leading-relaxed text-suave">{pestana.narracion}</p>
+          </details>
+          {pestana.bloques.map((b, i) => <BloqueWorkflow key={`${pestana.id}-${i}`} bloque={b} />)}
+          <p className="border-l-2 border-dorado-500 pl-3 text-sm">Capa en el mapa de esta web: {pestana.capa === 'cra' ? 'cobertura de manglar de la C.R.A. (1:5.000) resaltada' : 'sectores de la C.R.A. con límites aproximados'}.</p>
           <p className="text-xs leading-relaxed text-tenue">Fuente: {pestana.fuente}.</p>
-          {pestana.id === 'fuentes' && <a href="https://manglarcra.netlify.app/workflow" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-sm text-dorado-300 underline">Ver el workflow original de la C.R.A. ↗</a>}
+          <a href={`${URL_WORKFLOW_CRA}`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-sm text-dorado-300 underline">Ver esta sección en el workflow original de la C.R.A. ↗</a>
         </section>
       </div>
       <nav aria-label="Recorrer pestañas" className="grid shrink-0 grid-cols-2 border-t border-linea">

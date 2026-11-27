@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { cargarCRA, type EspejoCRA } from './cra';
-import { construirWorkflow, RESPALDO_WORKFLOW, type Workflow } from './workflow';
+import { construirWorkflow, RESPALDO_WORKFLOW, type Workflow } from './workflowVivo';
 
 export type EstadoDatosCRA = 'cargando' | 'en_vivo' | 'respaldo';
 

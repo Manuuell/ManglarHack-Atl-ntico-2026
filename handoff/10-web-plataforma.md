@@ -28,7 +28,8 @@ fondo azul institucional, tarjetas azul intermedio, acentos dorados, Lato, titul
 | Ruta | Qué hace |
 |---|---|
 | `/` | Portada como la de la CRA: «EL MANGLAR DEL ATLÁNTICO» y dos entradas (Workflow y Plataforma). |
-| `/workflow` | Mapa 2D + panel con 10 pestañas (Síntesis… Fuentes) y las cifras del workflow de la CRA con su fuente. |
+| `/workflow` | Mapa 2D + panel con 11 pestañas (Síntesis… Fuentes y Metodología) con **todo** el contenido del workflow de la CRA, cada cifra con su fuente; ver `11-contenido-cra.md`. |
+| `/plataforma/acerca` | «Acerca de la plataforma» de la CRA (plan de manejo, qué hará, qué devuelve al workflow, fase 2) y lo que agregó el equipo. |
 | `/plataforma` | Inicio: mapa del manglar y de las acciones con el **plan de manejo real de la CRA**, estado del manglar, acciones en curso, últimos reportes de Zanky, próximas jornadas. |
 | `/plataforma/registro` | Registro de actor (Ley 1581; el correo nunca se publica). |
 | `/plataforma/proponer` | Proponer una acción marcando el sitio: hereda acción, prioridad, unidad hidrográfica y escenario **de la capa de prioridades de la CRA en ese punto**. |
@@ -46,8 +47,13 @@ fondo azul institucional, tarjetas azul intermedio, acentos dorados, Lato, titul
   `npm run capas:manglar` → `web/public/datos/manglar-cra.geojson`. **Cobertura de manglar 1:5.000: 886 polígonos, 649,7 ha,
   Maxar 2021–2022, verificada en campo.** Reemplaza a INVEMAR en los mapas. Para regenerar el GeoJSON desde la GDB hace falta
   GDAL (geopandas/pyogrio).
-- Los 4 sectores (`web/src/data/poligonosManglar.json`) son envolventes aproximadas de la capa de manglar: Mallorquín, Balboa,
-  Manatíes (Tubará – Juan de Acosta, correspondencia por confirmar con la CRA) y Totumo.
+- Los 4 sectores (`web/src/data/poligonosManglar.json`) son envolventes aproximadas de la capa de manglar. Desde la rama
+  `web-contenido-cra` llevan los **nombres de la CRA**: Mallorquín, Puerto Colombia (id `balboa`), Tubará (id `manaties`) y
+  Totumo, con 516, 197, 148 y 742 ha (probable + por revisar). Los ids no cambian. Detalle en `11-contenido-cra.md`.
+- **Discrepancia por resolver (Ángel):** la app guarda los sectores como «Mallorquín», «Balboa», «Manatíes» y «Totumo»
+  (`app/lib/datos/zonas.dart`, `sectorCra`) y muestra «Sector Balboa (Tubará)». La CRA llama a sus sectores Mallorquín,
+  Puerto Colombia, Tubará y Totumo; «Manatíes» es una de sus ciénagas, no un sector. Acordar si la app adopta los nombres
+  de la CRA (los ids pueden quedarse) y revisar que «Balboa (Tubará)» no mezcle dos sectores.
 
 ## Área de reporte: solo el manglar y su entorno
 
