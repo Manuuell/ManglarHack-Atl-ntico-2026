@@ -1,0 +1,21 @@
+{
+  "generado_en": "2026-11-27T19:40:00+00:00",
+  "desde": "2026-10-28T19:40:00+00:00",
+  "total": 14,
+  "por_estado": {"recibido": 3, "en_verificacion": 2, "verificado": 5, "alerta_oficial": 1, "en_atencion": 1, "cerrado": 1, "descartado": 1},
+  "por_tipo": {"tala": 4, "quema": 2, "relleno": 1, "vertimiento": 2, "basuras": 3, "cano_taponado": 1, "fauna": 1, "otro": 0},
+  "por_zona": [
+    {"zona": "tubara", "nombre": "Balboa", "municipio": "Tubará", "reportes": 2, "validados": 1},
+    {"zona": "juan_de_acosta", "nombre": "Manatíes", "municipio": "Juan de Acosta", "reportes": 1, "validados": 1},
+    {"zona": "mallorquin", "nombre": "Mallorquín", "municipio": "Barranquilla", "reportes": 9, "validados": 5},
+    {"zona": "piojo", "nombre": "Totumo", "municipio": "Piojó", "reportes": 2, "validados": 1}
+  ],
+  "por_prioridad": {"1": 1, "2": 3, "3": 5, "4": 3, "5": 2},
+  "por_prioridad_cra": {"alta": 6, "media": 3, "baja": 1, "sin_clasificar": 4},
+  "por_dia": [],
+  "validados": 8,
+  "pendientes": 5,
+  "descartados": 1,
+  "mediana_validacion_min": 42.5,
+  "pct_dentro_manglar": 71.4
+}

@@ -32,6 +32,7 @@ import '../guardian/editar_perfil.dart';
 import '../configuracion/pantalla_configuracion.dart';
 import '../comunidad/comunidad_inicio.dart';
 import '../sensores/sensores_compacto.dart';
+import '../visores/visores_compacto.dart';
 import 'que_hago_ya.dart';
 import 'secciones_rol.dart';
 import '../crecimiento/pantalla_mi_manglar.dart';
@@ -194,7 +195,8 @@ class _InicioState extends State<Inicio> {
         // Alertas oficiales del servidor (las de la web); el pronóstico local queda de respaldo sin red.
         return const ComunidadInicio();
       case SeccionInicio.sensores:
-        return const SensoresCompacto();
+        // Visores de la C.R.A. junto a los sensores: un único acceso a «Visores del manglar».
+        return const Column(children: [SensoresCompacto(), SizedBox(height: 12), VisoresCompacto()]);
       case SeccionInicio.sabiasQue:
         return _SabiasQue(hectareas: estado.manglar.areaTotalHa);
     }
