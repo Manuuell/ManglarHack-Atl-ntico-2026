@@ -318,6 +318,8 @@ body.portada {
 .reportar-dentro { align-items: start; }
 .reportar-zanky { width: 150px; margin-top: 26px; filter: drop-shadow(0 14px 20px rgba(0, 0, 0, .4)); }
 @media (max-width: 960px) { .reportar-zanky { display: none; } }
+/* En escritorio el texto acompaña al formulario al bajar (es más corto que él): así no queda un hueco vacío a su lado. */
+@media (min-width: 961px) { .reportar-dentro > .panel-texto { position: sticky; top: 120px; } }
 .reportar-card {
   display: grid; gap: 18px; padding: clamp(18px, 3vw, 26px); border-radius: 28px;
   background: var(--blanco); color: var(--tinta); box-shadow: 0 30px 70px -30px rgba(0, 0, 0, .6);
