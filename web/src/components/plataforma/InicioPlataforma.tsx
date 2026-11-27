@@ -6,7 +6,9 @@ import type { Accion, Jornada } from '../../types/plataforma';
 import { useAcciones, useJornadas } from '../../lib/plataforma/estado';
 import { ESTADOS_ACCION, SECTORES } from '../../lib/plataforma/catalogos';
 import { CANALES, ESTADOS, TIPOS } from '../../lib/catalogos';
-import { CIFRAS, FUENTE_WORKFLOW } from '../../lib/workflow';
+import { FUENTE_WORKFLOW } from '../../lib/workflow';
+import { useWorkflowCRA } from '../../lib/useWorkflowCRA';
+import { fechaCRA } from '../../lib/cra';
 import { cn } from '../../lib/utils';
 import MapaPlataforma from './MapaPlataforma';
 import { enAreaDeReporte } from '../../lib/areaReporte';
@@ -24,6 +26,7 @@ function Rotulo({ children, className }: { children: React.ReactNode; className?
 
 export default function InicioPlataforma({ zonas, acciones: accionesIniciales, reportes, jornadas: jornadasIniciales }: Props) {
   const acciones = useAcciones(accionesIniciales);
+  const { workflow: { cifras: CIFRAS }, espejo, estado: estadoDatos } = useWorkflowCRA();
   const jornadas = useJornadas(jornadasIniciales);
   const enCurso = acciones.filter((a) => a.estado !== 'cerrada');
   const recientes = reportes.filter(enAreaDeReporte).sort((a, b) => b.capturado_en.localeCompare(a.capturado_en)).slice(0, 3);
@@ -57,7 +60,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
               </div>
             ))}
           </dl>
-          <p className="mt-3 text-xs text-tenue">Manglar probable, no confirmado: requiere verificación en campo. Fuente: {FUENTE_WORKFLOW}.</p>
+          <p className="mt-3 text-xs text-tenue">Manglar probable, no confirmado: requiere verificación en campo. Fuente: {FUENTE_WORKFLOW}{estadoDatos === 'en_vivo' && espejo ? `; datos revisados el ${fechaCRA(espejo.revisado_en)}` : estadoDatos === 'respaldo' ? '; cifras del 27 de noviembre de 2026 (no se pudo leer la copia en vivo)' : ''}.</p>
         </section>
 
         <section aria-labelledby="titulo-acciones">

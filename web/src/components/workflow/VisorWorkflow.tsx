@@ -5,7 +5,9 @@ import type { FeatureCollection, Geometry } from 'geojson';
 import { GeoJSON, MapContainer, Pane, Popup, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import { obtenerCapaManglarCRA } from '../../lib/datos';
 import { LIMITES_MANGLAR } from '../../lib/areaReporte';
-import { FUENTE_WORKFLOW, PESTANAS_WORKFLOW, SECTORES_WORKFLOW } from '../../lib/workflow';
+import { FUENTE_WORKFLOW } from '../../lib/workflow';
+import { useWorkflowCRA } from '../../lib/useWorkflowCRA';
+import { fechaCRA } from '../../lib/cra';
 import type { PropiedadesZona, ZonasManglar } from '../../types/manglar';
 import 'leaflet/dist/leaflet.css';
 import '../../styles/workflow.css';
@@ -63,6 +65,10 @@ const convenciones = [
 ] as const;
 
 export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
+  const { workflow, espejo, estado: estadoDatos } = useWorkflowCRA();
+  const PESTANAS_WORKFLOW = workflow.pestanas;
+  const SECTORES_WORKFLOW = workflow.sectores;
+  const totalSectores = SECTORES_WORKFLOW.reduce((t, s) => t + s.total_ha, 0);
   const [indice, setIndice] = useState(0);
   const [capa, setCapa] = useState<Awaited<ReturnType<typeof obtenerCapaManglarCRA>> | null>(null);
   const [estadoCapa, setEstadoCapa] = useState<'cargando' | 'lista' | 'error'>('cargando');
@@ -181,6 +187,12 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
       <div className="shrink-0 border-b border-linea bg-fondo-alt p-4">
         <p className="rotulo text-dorado-300">Manglar probable, no confirmado</p>
         <p className="mt-1 text-sm text-suave">Requiere verificación en campo.</p>
+        <p className="mt-2 flex items-center gap-2 text-xs text-tenue" aria-live="polite">
+          <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${estadoDatos === 'en_vivo' ? 'bg-baja' : estadoDatos === 'respaldo' ? 'bg-dorado-500' : 'bg-white/40'}`} />
+          {estadoDatos === 'cargando' && 'Leyendo los datos de la C.R.A.…'}
+          {estadoDatos === 'en_vivo' && <>Datos del workflow de la C.R.A.{espejo ? `, revisados el ${fechaCRA(espejo.revisado_en)}` : ''}. Se actualizan solos cuando la C.R.A. publica cambios.</>}
+          {estadoDatos === 'respaldo' && 'No se pudo leer la copia de los datos de la C.R.A.: se muestran las cifras del 27 de noviembre de 2026.'}
+        </p>
       </div>
       <div role="tablist" aria-label="Temas del workflow" className="flex shrink-0 overflow-x-auto border-b border-linea">
         {PESTANAS_WORKFLOW.map((p, i) => <button key={p.id} ref={el => { botones.current[i] = el; }} id={`tab-${p.id}`} role="tab" aria-selected={i === indice} aria-controls={`panel-${p.id}`} tabIndex={i === indice ? 0 : -1} onClick={() => seleccionar(i)} onKeyDown={e => teclado(e, i)} className={`rotulo min-h-11 shrink-0 border-b-[3px] px-4 py-3 text-white ${i === indice ? 'border-dorado-500' : 'border-transparent hover:bg-white/5'}`}>{p.etiqueta}</button>)}
@@ -189,8 +201,13 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
         <section role="tabpanel" id={`panel-${pestana.id}`} aria-labelledby={`tab-${pestana.id}`} tabIndex={0} className="space-y-6 p-5">
           <h2 className="titular text-2xl">{pestana.titulo}</h2>
           <p className="leading-relaxed text-suave">{pestana.resumen}</p>
+          {pestana.audio && <div className="space-y-2">
+            <p className="rotulo text-dorado-300">Escuchar esta sección · {Math.round(pestana.audio.dur)} s</p>
+            <audio key={pestana.audio.src} controls preload="none" src={pestana.audio.src} className="w-full" aria-label={`Audio de la sección ${pestana.etiqueta}`} />
+            <details className="text-sm text-suave"><summary className="min-h-11 cursor-pointer py-2 text-dorado-300">Leer el texto del audio</summary><p className="leading-relaxed">{pestana.audio.txt}</p></details>
+          </div>}
           {pestana.cifras.length > 0 && <dl className="grid grid-cols-2 gap-x-4 gap-y-6">{pestana.cifras.map(c => <div key={c.etiqueta} className="border-t border-linea pt-3"><dt className="rotulo text-suave">{c.etiqueta}</dt><dd className="mt-2"><span className="titular block text-4xl">{c.valor}</span><span className="rotulo mt-1 block text-dorado-300">{c.unidad}</span></dd></div>)}</dl>}
-          {pestana.id === 'sintesis' && <table className="w-full text-sm"><caption className="mb-3 text-left text-suave">Por sector · probable + por revisar</caption><thead><tr className="border-b border-linea"><th scope="col" className="py-2 text-left">Sector</th><th scope="col" className="text-right">Total ha</th><th scope="col"><span className="sr-only">Proporción del total</span></th></tr></thead><tbody>{SECTORES_WORKFLOW.map(s => <tr key={s.id} className="border-b border-linea-suave"><th scope="row" className="py-3 text-left font-normal">{s.nombre}</th><td className="text-right tabular-nums">{numero(s.total_ha)}</td><td className="w-24 pl-3"><span aria-hidden="true" className="block h-1.5 bg-dorado-500" style={{ width: `${s.total_ha / 1603 * 100}%` }} /></td></tr>)}</tbody></table>}
+          {pestana.id === 'sintesis' && <table className="w-full text-sm"><caption className="mb-3 text-left text-suave">Por sector · probable + por revisar</caption><thead><tr className="border-b border-linea"><th scope="col" className="py-2 text-left">Sector</th><th scope="col" className="text-right">Total ha</th><th scope="col"><span className="sr-only">Proporción del total</span></th></tr></thead><tbody>{SECTORES_WORKFLOW.map(s => <tr key={s.id} className="border-b border-linea-suave"><th scope="row" className="py-3 text-left font-normal">{s.nombre}<span className="block text-xs text-tenue">{s.nombre_cra}</span></th><td className="text-right tabular-nums">{numero(s.total_ha)}</td><td className="w-24 pl-3"><span aria-hidden="true" className="block h-1.5 bg-dorado-500" style={{ width: `${s.total_ha / totalSectores * 100}%` }} /></td></tr>)}</tbody></table>}
           <ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-suave">{pestana.puntos.map(p => <li key={p}>{p}</li>)}</ul>
           <p className="border-l-2 border-dorado-500 pl-3 text-sm">{pestana.capa === 'pendiente' ? 'Capa espacial pendiente del GeoJSON de la C.R.A.' : `Capa en el mapa: ${pestana.capa === 'invemar' ? 'cobertura de manglar de la C.R.A. (1:5.000)' : 'sectores aproximados'}.`}</p>
           <p className="text-xs leading-relaxed text-tenue">Fuente: {pestana.fuente}.</p>
