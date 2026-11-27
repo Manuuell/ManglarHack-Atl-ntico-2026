@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart' show CustomSemanticsAction;
 
 import '../../datos/estado.dart';
 import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/esqueleto.dart';
-import '../../nucleo/kit/aviso.dart';
-import '../../nucleo/kit/confirmar.dart';
+import '../../nucleo/kit/fila_deslizable.dart';
+import '../../nucleo/kit/menu_mantenido.dart';
+import '../../nucleo/kit/tirar_actualizar.dart';
+import 'detalle_reporte.dart';
 import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/segmentado.dart';
 import '../../nucleo/presionable.dart';
@@ -15,7 +16,7 @@ import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
-import 'detalle_reporte.dart';
+import 'gestos_reporte.dart';
 import 'tarjeta_reporte.dart';
 
 enum _Filtro { todos, pendientes, validados }
@@ -108,10 +109,8 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
               ),
             ),
           Expanded(
-            child: RefreshIndicator(
-              color: Zc.hoja,
-              backgroundColor: Zc.superficie,
-              onRefresh: _actualizar,
+            child: TirarActualizar(
+              alActualizar: _actualizar,
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
@@ -141,32 +140,30 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
     );
   }
 
-  /// Mantener pulsada una tarjeta del teléfono: confirmar en hoja y dejar «Deshacer».
-  Future<void> _quitarMantenido(BuildContext context, Reporte r) {
-    final estado = Zanky.leer(context);
-    return accionConDeshacer(
-      context,
-      titulo: '¿Quitar este reporte?',
-      texto: 'Solo se quita de este teléfono: todavía no salió hacia la CRA. Puedes deshacerlo unos segundos.',
-      textoConfirmar: 'Quitar del teléfono',
-      avisoHecho: 'Reporte quitado',
-      hacer: () => estado.quitarReporte(r),
-      deshacer: () => estado.restaurarReporte(r),
-    );
-  }
-
   Widget _fila(BuildContext context, Object fila, int i) {
     final Widget w;
     if (fila is Reporte) {
+      final acc = AccionesReporte(context, fila);
+      final quitable = EstadoZanky.sePuedeQuitar(fila);
       final tarjeta = TarjetaReporte(
         reporte: fila,
         alTocar: () => abrirDetalleReporte(context, fila),
-        alMantener: EstadoZanky.sePuedeQuitar(fila) ? () => _quitarMantenido(context, fila) : null,
       );
+      // Deslizar: derecha compartir, izquierda quitar. Mantener o clic derecho: menú con vista previa.
       w = Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: RepaintBoundary(
-          child: EstadoZanky.sePuedeQuitar(fila) ? _Deslizable(reporte: fila, child: tarjeta) : tarjeta,
+          child: MenuMantenido(
+            etiqueta: '${fila.tipo.nombre}, caso ${fila.caso}',
+            vistaPrevia: (_) => VistaPreviaReporte(reporte: fila),
+            acciones: [acc.abrir, acc.compartir, if (quitable) acc.quitar],
+            child: FilaDeslizable(
+              radio: BorderRadius.circular(Zr.l),
+              accionesInicio: [acc.compartir],
+              accionesFin: [if (quitable) acc.quitar],
+              hijo: tarjeta,
+            ),
+          ),
         ),
       );
     } else {
@@ -331,58 +328,4 @@ class _EsqueletosLista extends StatelessWidget {
             ),
         ],
       );
-}
-
-/// Desliza hacia la izquierda para quitar del teléfono: confirma en una hoja y, si
-/// se confirma, la tarjeta se va y queda «Deshacer» en un aviso.
-class _Deslizable extends StatelessWidget {
-  const _Deslizable({required this.reporte, required this.child});
-  final Reporte reporte;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final estado = Zanky.leer(context);
-    // La tarjeta se va del árbol al quitarla: el aviso sale del contexto de la pantalla, que sigue.
-    final raiz = context.findAncestorStateOfType<_PantallaMisReportesState>()!.context;
-    final rojo = Zc.dePrioridad(5);
-    return Semantics(
-      customSemanticsActions: {
-        const CustomSemanticsAction(label: 'Quitar del teléfono'): () {
-          final s = context.findAncestorStateOfType<_PantallaMisReportesState>();
-          s?._quitarMantenido(context, reporte);
-        },
-      },
-      child: Dismissible(
-        key: ValueKey('quitar-${reporte.id}'),
-        direction: DismissDirection.endToStart,
-        dismissThresholds: const {DismissDirection.endToStart: 0.35},
-        confirmDismiss: (_) => confirmarEnHoja(
-          context,
-          titulo: '¿Quitar este reporte?',
-          texto: 'Solo se quita de este teléfono: todavía no salió hacia la CRA. Puedes deshacerlo unos segundos.',
-          textoConfirmar: 'Quitar del teléfono',
-          destructivo: true,
-        ),
-        onDismissed: (_) async {
-          // La memoria cambia al instante; el disco termina después (no se espera para avisar).
-          final guardado = estado.quitarReporte(reporte);
-          if (!raiz.mounted) return;
-          avisar(
-            raiz,
-            'Reporte quitado',
-            accion: AccionAviso('Deshacer', () => estado.restaurarReporte(reporte)),
-          );
-          await guardado;
-        },
-        background: Container(
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.only(right: 24),
-          decoration: BoxDecoration(color: rojo.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(Zr.l)),
-          child: Icon(Icons.delete_outline_rounded, color: rojo, size: 26),
-        ),
-        child: child,
-      ),
-    );
-  }
 }

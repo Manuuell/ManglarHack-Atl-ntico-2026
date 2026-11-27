@@ -1,3 +1,4 @@
+import '../../nucleo/kit/ruta_borde.dart';
 import 'package:flutter/material.dart';
 
 import '../../datos/experiencia/jornada.dart';
@@ -9,7 +10,8 @@ import '../comun/zanky_mascota.dart';
 import 'piezas.dart';
 
 Future<void> abrirRetoZanky(BuildContext context, EventoZanky evento) => Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      RutaBorde<void>(
+        sinMovimiento: MediaQuery.disableAnimationsOf(context),
         settings: const RouteSettings(name: 'reto_zanky'),
         builder: (_) => RetoZanky(evento: evento),
       ),

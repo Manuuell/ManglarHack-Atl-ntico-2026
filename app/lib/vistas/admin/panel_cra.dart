@@ -1,3 +1,4 @@
+import '../../nucleo/kit/ruta_borde.dart';
 import 'package:flutter/material.dart';
 
 import '../../datos/admin/controlador_admin.dart';
@@ -14,7 +15,8 @@ import 'resumen_admin.dart';
 Future<void> abrirPanelCra(BuildContext context) {
   final c = AdminScope.leer(context);
   return Navigator.of(context).push(
-    MaterialPageRoute<void>(
+    RutaBorde<void>(
+      sinMovimiento: MediaQuery.disableAnimationsOf(context),
       settings: const RouteSettings(name: 'panel_cra'),
       builder: (_) => AdminScope(controlador: c, child: const PanelCra()),
     ),

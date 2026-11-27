@@ -1,9 +1,21 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../datos/admin/controlador_admin.dart';
 import '../../datos/admin/reporte_admin.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/esqueleto.dart';
+import '../../nucleo/base/hoja.dart';
+import '../../nucleo/kit/accion_gesto.dart';
+import '../../nucleo/kit/bandeja_acciones.dart';
+import '../../nucleo/kit/fila_deslizable.dart';
+import '../../nucleo/kit/haptica.dart';
+import '../../nucleo/kit/menu_mantenido.dart';
+import '../../nucleo/kit/ruta_borde.dart';
+import '../../nucleo/kit/tirar_actualizar.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
@@ -23,6 +35,46 @@ class BandejaAdmin extends StatefulWidget {
 
 class _BandejaAdminState extends State<BandejaAdmin> {
   ControladorAdmin get _c => widget.controlador;
+
+  /// Atajos de teclado (web y escritorio): j/k mueven, a aprueba, r rechaza.
+  String? _sel;
+  final Map<String, GlobalKey> _claves = {};
+
+  List<ReporteAdmin> get _lista => _c.visibles;
+
+  void _mover(int paso) {
+    final l = _lista;
+    if (l.isEmpty) return;
+    final i = l.indexWhere((r) => r.id == _sel);
+    final n = i < 0 ? (paso > 0 ? 0 : l.length - 1) : (i + paso).clamp(0, l.length - 1);
+    setState(() => _sel = l[n].id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _claves[_sel]?.currentContext;
+      if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 160), alignment: 0.3);
+    });
+  }
+
+  KeyEventResult _tecla(FocusNode nodo, KeyEvent e) {
+    if (e is! KeyDownEvent) return KeyEventResult.ignored;
+    final t = HardwareKeyboard.instance;
+    if (t.isControlPressed || t.isMetaPressed || t.isAltPressed) return KeyEventResult.ignored;
+    // Escribiendo en un campo: las letras son letras.
+    if (FocusManager.instance.primaryFocus?.context?.widget is EditableText) return KeyEventResult.ignored;
+    final k = e.logicalKey;
+    final sel = _lista.where((r) => r.id == _sel).firstOrNull;
+    if (k == LogicalKeyboardKey.keyJ) {
+      _mover(1);
+    } else if (k == LogicalKeyboardKey.keyK) {
+      _mover(-1);
+    } else if (k == LogicalKeyboardKey.keyA && sel != null && sel.pendiente) {
+      unawaited(aprobarConDeshacer(context, _c, sel));
+    } else if (k == LogicalKeyboardKey.keyR && sel != null && sel.pendiente) {
+      unawaited(rechazarConMotivo(context, _c, sel));
+    } else {
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
+  }
 
   @override
   void initState() {
@@ -47,7 +99,10 @@ class _BandejaAdminState extends State<BandejaAdmin> {
     final c = _c;
     final conteos = c.conteos;
     final lista = c.visibles;
-    return Column(
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _tecla,
+      child: Column(
       children: [
         SegmentosZ<FiltroBandeja>(
           valores: FiltroBandeja.values,
@@ -57,13 +112,13 @@ class _BandejaAdminState extends State<BandejaAdmin> {
           alCambiar: c.cambiarFiltro,
         ),
         Expanded(
-          child: RefreshIndicator(
-            color: Zc.hoja,
-            onRefresh: () => c.actualizar(),
-            child: _Cuerpo(controlador: c, lista: lista),
+          child: TirarActualizar(
+            alActualizar: () => c.actualizar(),
+            child: _Cuerpo(controlador: c, lista: lista, seleccion: _sel, claves: _claves),
           ),
         ),
       ],
+      ),
     );
   }
 }
@@ -134,9 +189,11 @@ class _AvisosNavegador extends StatelessWidget {
 }
 
 class _Cuerpo extends StatelessWidget {
-  const _Cuerpo({required this.controlador, required this.lista});
+  const _Cuerpo({required this.controlador, required this.lista, this.seleccion, this.claves = const {}});
   final ControladorAdmin controlador;
   final List<ReporteAdmin> lista;
+  final String? seleccion;
+  final Map<String, GlobalKey> claves;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +205,7 @@ class _Cuerpo extends StatelessWidget {
     final cabecera = <Widget>[
       if (c.demostracion) FranjaDemo(controlador: c),
       _Estado(controlador: c),
+      if (_hayTeclado(context) && lista.any((r) => r.pendiente)) const _AyudaAtajos(),
     ];
     if (!c.cargado) {
       return ListView(
@@ -179,9 +237,12 @@ class _Cuerpo extends StatelessWidget {
         if (i < cabecera.length) return cabecera[i];
         final r = lista[i - cabecera.length];
         return Padding(
-          key: ValueKey(r.id),
+          key: claves.putIfAbsent(r.id, GlobalKey.new),
           padding: EdgeInsets.fromLTRB(16, i == cabecera.length ? 10 : 0, 16, 10),
-          child: EntradaEscalonada(index: i - cabecera.length, child: TarjetaAdmin(reporte: r, alTocar: () => abrirDetalleAdmin(context, r.id))),
+          child: EntradaEscalonada(
+            index: i - cabecera.length,
+            child: TarjetaAdminConGestos(controlador: c, reporte: r, resaltada: r.id == seleccion),
+          ),
         );
       },
     );
@@ -190,9 +251,12 @@ class _Cuerpo extends StatelessWidget {
 
 /// Una fila de la bandeja: lo que decide si abrirla ya o después.
 class TarjetaAdmin extends StatelessWidget {
-  const TarjetaAdmin({super.key, required this.reporte, required this.alTocar});
+  const TarjetaAdmin({super.key, required this.reporte, required this.alTocar, this.resaltada = false});
   final ReporteAdmin reporte;
   final VoidCallback alTocar;
+
+  /// La que tiene el cursor de los atajos de teclado (j/k).
+  final bool resaltada;
 
   @override
   Widget build(BuildContext context) {
@@ -212,7 +276,7 @@ class TarjetaAdmin extends StatelessWidget {
         decoration: BoxDecoration(
           color: Zc.superficie,
           borderRadius: BorderRadius.circular(Zr.l),
-          border: Border.all(color: r.pendiente && r.prioridad >= 4 ? Zc.dePrioridad(r.prioridad).withValues(alpha: 0.5) : Zc.linea.withValues(alpha: 0.7)),
+          border: Border.all(width: resaltada ? 2.5 : 1, color: resaltada ? Zc.cienaga : r.pendiente && r.prioridad >= 4 ? Zc.dePrioridad(r.prioridad).withValues(alpha: 0.5) : Zc.linea.withValues(alpha: 0.7)),
           boxShadow: const [BoxShadow(color: Color(0x0F0B2E24), blurRadius: 20, offset: Offset(0, 8))],
         ),
         child: Row(
@@ -286,9 +350,160 @@ class _Dato extends StatelessWidget {
 Future<void> abrirDetalleAdmin(BuildContext context, String id) {
   final c = AdminScope.leer(context);
   return Navigator.of(context).push(
-    MaterialPageRoute<void>(
+    RutaBorde<void>(
+      sinMovimiento: MediaQuery.disableAnimationsOf(context),
       settings: const RouteSettings(name: 'panel_cra/detalle'),
       builder: (_) => AdminScope(controlador: c, child: DetalleAdmin(id: id)),
     ),
   );
+}
+
+/// ¿Hay teclado de verdad? Web y escritorio (en el teléfono no se muestran atajos).
+bool _hayTeclado(BuildContext context) {
+  if (kIsWeb) return true;
+  return switch (defaultTargetPlatform) {
+    TargetPlatform.android || TargetPlatform.iOS || TargetPlatform.fuchsia => false,
+    _ => true,
+  };
+}
+
+class _AyudaAtajos extends StatelessWidget {
+  const _AyudaAtajos();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+        child: Text('Atajos: J / K moverse · A aprobar · R rechazar',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Zc.textoTenue)),
+      );
+}
+
+/// Aprobar sin pedir confirmación: la barra «Deshacer» del panel da 6 segundos.
+Future<void> aprobarConDeshacer(BuildContext context, ControladorAdmin c, ReporteAdmin r) async {
+  vibrarExito();
+  await c.decidir(AccionAdmin.aprobar, r);
+}
+
+/// Rechazar exige el motivo (lo lee quien reportó): abre la misma hoja del detalle y, al
+/// decidir, queda «Deshacer».
+Future<void> rechazarConMotivo(BuildContext context, ControladorAdmin c, ReporteAdmin r) async {
+  final texto = await mostrarHojaZ<String>(
+    context,
+    nombre: 'panel_cra/${AccionAdmin.rechazar.name}',
+    contenido: (_) => HojaDecision(accion: AccionAdmin.rechazar, reporte: r),
+  );
+  if (texto == null || !context.mounted) return;
+  vibrarExito();
+  await c.decidir(AccionAdmin.rechazar, r, texto: texto.isEmpty ? null : texto);
+}
+
+/// Una tarjeta de la bandeja con todos sus caminos: tocar abre; deslizar a la derecha
+/// aprueba y a la izquierda rechaza; mantener (o clic derecho) abre un menú con la foto;
+/// en pantallas anchas hay además botones a la vista. Solo lo pendiente se decide.
+class TarjetaAdminConGestos extends StatelessWidget {
+  const TarjetaAdminConGestos({super.key, required this.controlador, required this.reporte, this.resaltada = false});
+  final ControladorAdmin controlador;
+  final ReporteAdmin reporte;
+  final bool resaltada;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reporte;
+    final c = controlador;
+    final abrir = AccionGesto(
+      etiqueta: 'Abrir detalle',
+      icono: Icons.open_in_new_rounded,
+      alEjecutar: () => abrirDetalleAdmin(context, r.id),
+    );
+    final aprobar = AccionGesto(
+      etiqueta: 'Aprobar',
+      icono: Icons.verified_rounded,
+      color: Zc.hoja,
+      alEjecutar: () => aprobarConDeshacer(context, c, r),
+    );
+    final rechazar = AccionGesto(
+      etiqueta: 'Rechazar',
+      icono: Icons.do_not_disturb_on_rounded,
+      color: Zc.dePrioridad(5),
+      alEjecutar: () => rechazarConMotivo(context, c, r),
+    );
+    final tarjeta = TarjetaAdmin(reporte: r, alTocar: () => abrirDetalleAdmin(context, r.id), resaltada: resaltada);
+    final ancha = MediaQuery.sizeOf(context).width >= 700;
+    final conBotones = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        tarjeta,
+        if (r.pendiente && ancha) ...[
+          const SizedBox(height: 8),
+          BandejaAcciones(acciones: [aprobar, rechazar], etiqueta: 'Decidir ${r.tipo.nombre}'),
+        ],
+      ],
+    );
+    return MenuMantenido(
+      etiqueta: '${r.tipo.nombre}, ${r.zona}',
+      vistaPrevia: (_) => _VistaPreviaAdmin(controlador: c, reporte: r),
+      acciones: [abrir, if (r.pendiente) ...[aprobar, rechazar]],
+      child: FilaDeslizable(
+        radio: BorderRadius.circular(Zr.l),
+        accionesInicio: [if (r.pendiente) aprobar],
+        accionesFin: [if (r.pendiente) rechazar],
+        hijo: conBotones,
+      ),
+    );
+  }
+}
+
+class _VistaPreviaAdmin extends StatelessWidget {
+  const _VistaPreviaAdmin({required this.controlador, required this.reporte});
+  final ControladorAdmin controlador;
+  final ReporteAdmin reporte;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = reporte;
+    final tt = Theme.of(context).textTheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 170,
+          width: double.infinity,
+          child: r.tieneFoto
+              ? FutureBuilder<Uint8List?>(
+                  future: controlador.foto(r),
+                  builder: (_, s) => s.data != null
+                      ? Image.memory(s.data!, fit: BoxFit.cover, gaplessPlayback: true)
+                      : Container(
+                          color: Zc.hojaClara,
+                          alignment: Alignment.center,
+                          child: s.connectionState == ConnectionState.done
+                              ? Text(controlador.demostracion ? 'La demostración no trae fotos' : 'Sin foto disponible',
+                                  style: tt.bodySmall)
+                              : const SizedBox.square(
+                                  dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Zc.hoja)),
+                        ),
+                )
+              : Container(
+                  color: Zc.hojaClara,
+                  alignment: Alignment.center,
+                  child: Text('Este reporte no trae foto', style: tt.bodySmall),
+                ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(r.tipo.nombre, style: tt.titleMedium),
+              const SizedBox(height: 2),
+              Text('${r.zona} · ${haceCuanto(r.llegadaEn)}', style: tt.bodySmall),
+              const SizedBox(height: 8),
+              Wrap(spacing: 6, runSpacing: 6, children: [PildoraPrioridad(r.prioridad, compacta: true), EtiquetaEstado(r.estado)]),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

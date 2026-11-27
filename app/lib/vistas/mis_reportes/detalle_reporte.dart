@@ -1,3 +1,4 @@
+import '../../nucleo/kit/ruta_borde.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -21,7 +22,8 @@ import 'mapa_detalle.dart';
 /// La usan «Mis reportes» y el mapa.
 Future<void> abrirDetalleReporte(BuildContext context, Reporte reporte) {
   return Navigator.of(context).push<void>(
-    MaterialPageRoute<void>(
+    RutaBorde<void>(
+      sinMovimiento: MediaQuery.disableAnimationsOf(context),
       settings: RouteSettings(name: 'reporte/${reporte.id}'),
       builder: (_) => PantallaDetalleReporte(reporte: reporte),
     ),

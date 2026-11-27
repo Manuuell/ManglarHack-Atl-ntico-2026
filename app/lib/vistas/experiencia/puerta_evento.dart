@@ -1,3 +1,4 @@
+import '../../nucleo/kit/ruta_borde.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -79,7 +80,8 @@ Future<void> abrirEvento(
   if (c == null) return Future.value();
   PuertaEvento._abiertos.add(c);
   return Navigator.of(context).push(
-    MaterialPageRoute<void>(
+    RutaBorde<void>(
+      sinMovimiento: MediaQuery.disableAnimationsOf(context),
       settings: const RouteSettings(name: 'evento'),
       builder: (_) =>
           PantallaEvento(codigo: c, abrirAsistenciaAlEntrar: asistencia),
