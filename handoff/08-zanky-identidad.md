@@ -1,4 +1,4 @@
-# 06 · Identidad de Zanqui: prompts de diseño y video
+# 08 · Identidad de Zanky: prompts de diseño y video
 
 Los prompts están en inglés porque los generadores de imagen y video los siguen mejor.
 
