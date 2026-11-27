@@ -14,6 +14,7 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../admin/panel_cra.dart';
 import '../admin/piezas_admin.dart';
+import '../comun/zanky_mascota.dart';
 import 'pantalla_configuracion.dart';
 import 'piezas_configuracion.dart';
 
@@ -174,19 +175,19 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  const _Circulo(tamano: 48, child: Icon(Icons.person_rounded, color: Colors.white, size: 26)),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Semantics(
-                      header: true,
-                      child: Text('Entra con tu cuenta de Zanky', style: tt.headlineSmall),
-                    ),
-                  ),
-                ],
+              const Center(child: ZankyMascota(tamano: 84, animo: Animo.feliz)),
+              const SizedBox(height: 8),
+              Semantics(
+                header: true,
+                child: Text('Entra con tu cuenta de Zanky', textAlign: TextAlign.center, style: tt.headlineSmall),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 4),
+              Text(
+                'Es la misma de la web.',
+                textAlign: TextAlign.center,
+                style: tt.bodyMedium?.copyWith(color: Zc.textoSuave),
+              ),
+              const SizedBox(height: 16),
               campos,
             ],
           );
