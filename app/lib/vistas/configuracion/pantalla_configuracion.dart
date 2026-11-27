@@ -91,7 +91,6 @@ class PantallaConfiguracion extends StatelessWidget {
         children: [
           if (cuenta != null) _BloqueCuenta(cuenta: cuenta),
           const SeccionGestion(),
-          const SeccionPreferenciasAvisos(),
           GrupoAjustes(
             titulo: 'En este teléfono',
             nota:
@@ -145,6 +144,7 @@ class PantallaConfiguracion extends StatelessWidget {
               ),
             ],
           ),
+          const SeccionPreferenciasAvisos(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(

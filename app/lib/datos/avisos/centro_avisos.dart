@@ -49,7 +49,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
   final nuevo = ValueNotifier<AvisoApp?>(null);
 
   EstadoZanky? _estado;
-  Timer? _temporizador;
+  Timer? _temporizador, _primera;
   DateTime? _ultimaRevision;
   bool _revisando = false;
   bool cargado = false;
@@ -64,9 +64,22 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
     estado.novedades.addListener(_alNovedad);
     WidgetsBinding.instance.addObserver(this);
     await cargar();
+    if (_estado != estado) return; // se desconectó mientras cargaba
     _temporizador = Timer.periodic(cadaCuanto, (_) => unawaited(revisar()));
     // Después del primer cuadro: lo primero es que la app pinte.
-    Future<void>.delayed(const Duration(seconds: 3), () => unawaited(revisar()));
+    _primera = Timer(const Duration(seconds: 3), () => unawaited(revisar()));
+  }
+
+  /// La raíz se cierra: se sueltan el temporizador y los oyentes (la bandeja queda guardada).
+  void desconectar() {
+    _temporizador?.cancel();
+    _primera?.cancel();
+    _temporizador = _primera = null;
+    final e = _estado;
+    if (e == null) return;
+    e.novedades.removeListener(_alNovedad);
+    WidgetsBinding.instance.removeObserver(this);
+    _estado = null;
   }
 
   @visibleForTesting
@@ -222,9 +235,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    _temporizador?.cancel();
-    _estado?.novedades.removeListener(_alNovedad);
-    if (_estado != null) WidgetsBinding.instance.removeObserver(this);
+    desconectar();
     nuevo.dispose();
     super.dispose();
   }

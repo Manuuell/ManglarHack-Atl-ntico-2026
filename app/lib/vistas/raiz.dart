@@ -75,6 +75,7 @@ class _RaizState extends State<Raiz> {
   @override
   void dispose() {
     Raiz._pedida.removeListener(_atenderPedido);
+    CentroAvisos.compartido.desconectar();
     _cuenta?.dispose();
     _admin?.dispose();
     super.dispose();

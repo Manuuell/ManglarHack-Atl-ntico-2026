@@ -511,7 +511,11 @@ class SeccionPreferenciasAvisos extends StatelessWidget {
         FilaAjustes fila(TipoAvisoApp t, IconData icono, Color color, String detalle) => FilaAjustes(
               icono: icono,
               color: color,
-              titulo: t.nombre,
+              titulo: switch (t) {
+                TipoAvisoApp.alerta => 'Alertas naranja y roja',
+                TipoAvisoApp.jornada => 'Recordatorios de mis jornadas',
+                TipoAvisoApp.reporte => 'Novedades de mis reportes',
+              },
               detalle: detalle,
               fin: InterruptorIos(
                 etiqueta: 'Avisos de ${t.nombre.toLowerCase()}',
