@@ -49,10 +49,14 @@ const colas = new Map<string, Promise<void>>();
 /** Procesa los mensajes de una misma persona en orden, uno detrás de otro. */
 function encolar(m: MensajeEntrante): void {
   const anterior = colas.get(m.de) ?? Promise.resolve();
+  // En el log solo va un prefijo del hash de la persona y el tipo de mensaje, nunca el contenido.
+  const quien = almacen.hashDe(m.de).slice(0, 8);
   const siguiente = anterior
     .then(async () => {
-      await whatsapp.marcarLeido(m.messageId).catch(() => {});
+      console.log(`[entrante] ${quien} ${m.entrada.tipo}`);
+      await whatsapp.marcarLeido(m.messageId).catch(err => console.warn(`[leido] ${(err as Error).message}`));
       await atender(m);
+      console.log(`[respondido] ${quien}`);
     })
     .catch(err => console.error(`[flujo] error atendiendo ${m.messageId}:`, (err as Error).message))
     .finally(() => {
@@ -72,7 +76,10 @@ app.post('/webhook', (req: ConCuerpoCrudo, res: Response) => {
   for (const [id, t] of vistos) if (ahora - t > 3600_000) vistos.delete(id);
   for (const m of parsearWebhook(req.body)) {
     // El número puede compartir cuenta con otros bots: solo se atiende el de Zanqui.
-    if (config.phoneNumberId && m.phoneNumberId !== config.phoneNumberId) continue;
+    if (config.phoneNumberId && m.phoneNumberId !== config.phoneNumberId) {
+      console.warn(`[webhook] mensaje para otro número (${m.phoneNumberId}), ignorado`);
+      continue;
+    }
     if (vistos.has(m.messageId)) continue;
     vistos.set(m.messageId, ahora);
     encolar(m);
