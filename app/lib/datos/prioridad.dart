@@ -1,6 +1,7 @@
 import 'package:latlong2/latlong.dart';
 
 import 'reporte.dart';
+import 'servidor.dart';
 import 'tipos.dart';
 import 'zonas.dart';
 
@@ -28,9 +29,15 @@ class Prioridad {
     var p = tipo.gravedad.toDouble();
     final m = <String>['${tipo.corto}: gravedad base ${tipo.gravedad} de 5'];
 
-    if (ubicacion.dentro && ubicacion.zona.prioridadConservacion >= 5) {
-      p += 1;
-      m.add('Dentro de ${ubicacion.zona.nombre}, zona de conservación prioritaria');
+    // Prioridad de conservación oficial de la CRA (Alta/Media/Baja): suma solo si es Alta y
+    // el punto está dentro del manglar. Fuera de la zonificación no se inventa nada.
+    final plan = ubicacion.plan;
+    if (ubicacion.dentro && plan != null) {
+      if (plan.prioridad == PrioridadCRA.alta) p += 1;
+      m.add('Prioridad de conservación CRA: ${plan.resumen}');
+    } else if (ubicacion.dentro && ubicacion.fueraZonificacion) {
+      m.add('Dentro del manglar de ${ubicacion.zona.municipio}');
+      m.add('Fuera de la zonificación de la CRA');
     } else if (ubicacion.dentro) {
       m.add('Dentro del manglar de ${ubicacion.zona.municipio}');
     } else if (ubicacion.enInfluencia) {
@@ -115,21 +122,45 @@ class Solidez {
   }
 }
 
-/// Reportes del mismo tipo a menos de 1 km en las últimas 3 horas (corroboración).
-/// Con los reportes que ve el teléfono (los propios y los públicos del servidor).
+/// Reportes del mismo tipo a menos de 1 km y con ±3 h de diferencia (corroboración), con la
+/// MISMA regla que el trigger del servidor (backend/supabase/schema.sql, reportes_antes_insert):
+///
+/// - no cuentan los descartados;
+/// - no cuentan los del mismo reportante: si el reporte nuevo va con nombre
+///   ([reportanteId] no nulo), se excluyen los propios que también fueron con ese nombre.
+///   Los propios anónimos llegan al servidor sin reportante y él sí los cuenta; y si el
+///   nuevo es anónimo, el servidor no sabe de quién es y los cuenta todos. Aquí igual.
+///
+/// [otros] son los del teléfono y [publicos] los del mapa público (sin los propios, que se
+/// reconocen por [Reporte.idPublico]). Los rechazados por el servidor no cuentan: nunca
+/// llegaron. La hora de los públicos viene redondeada a la hora en punto, así que en el
+/// borde de las 3 h la app puede diferir del servidor; la que manda es la del servidor.
 int contarCorroboraciones({
   required TipoAmenaza tipo,
   required LatLng punto,
   required DateTime cuando,
   required Iterable<Reporte> otros,
+  Iterable<ReportePublico> publicos = const [],
   String? excluirId,
+  String? reportanteId,
 }) {
   const metros = Distance();
+  const ventana = Duration(hours: 3);
+  bool cerca(LatLng p, DateTime t) => cuando.difference(t).abs() <= ventana && metros(punto, p) <= 1000;
+
   var n = 0;
+  final propios = <String>{};
   for (final r in otros) {
+    propios.add(r.id);
+    if (r.idPublico != null) propios.add(r.idPublico!);
     if (r.id == excluirId || r.tipo != tipo) continue;
-    if (cuando.difference(r.capturadoEn).inMinutes.abs() > 180) continue;
-    if (metros(punto, r.punto) <= 1000) n++;
+    if (r.estado == EstadoReporte.descartado || r.envio == Envio.rechazado) continue;
+    if (reportanteId != null && !r.anonimo && r.reportanteId == reportanteId) continue;
+    if (cerca(r.punto, r.capturadoEn)) n++;
+  }
+  for (final p in publicos) {
+    if (p.tipo != tipo || p.estado == EstadoReporte.descartado || propios.contains(p.id)) continue;
+    if (cerca(p.punto, p.capturadoEn)) n++;
   }
   return n;
 }
