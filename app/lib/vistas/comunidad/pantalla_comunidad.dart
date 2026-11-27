@@ -1,0 +1,727 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+import '../../datos/comunidad/comunidad.dart';
+import '../../datos/crecimiento/ranking_colegios.dart';
+import '../../datos/estado.dart';
+import '../../datos/experiencia/jornada.dart';
+import '../../datos/servidor.dart';
+import '../../nucleo/base/entrada_escalonada.dart';
+import '../../nucleo/base/esqueleto.dart';
+import '../../nucleo/base/hoja.dart';
+import '../../nucleo/identidad.dart';
+import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/estado_vacio.dart';
+import '../../nucleo/kit/ruta_borde.dart';
+import '../../nucleo/kit/tirar_actualizar.dart';
+import '../../nucleo/presionable.dart';
+import '../../nucleo/tema.dart';
+import '../comun/zanky_mascota.dart';
+import '../mapa/marcadores.dart' show tintaSobre;
+import '../raiz.dart';
+import 'piezas_comunidad.dart';
+
+/// Abre «Comunidad» (desde la tarjeta de Inicio).
+Future<void> abrirComunidad(BuildContext context) =>
+    abrirConBorde<void>(context, (_) => const PantallaComunidad(), settings: const RouteSettings(name: 'comunidad'));
+
+/// Colegio del ranking de la web (`web/src/data/colegios.json`), que allí se rotula «Datos de ejemplo».
+class ColegioWeb {
+  const ColegioWeb(this.nombre, this.municipio, this.puntos, this.validados, this.estudiantes);
+  final String nombre, municipio;
+  final int puntos, validados, estudiantes;
+}
+
+Future<List<ColegioWeb>> Function() cargaColegiosWeb = () async {
+  final t = await rootBundle.loadString('assets/datos/colegios_web.json');
+  final lista = [
+    for (final c in jsonDecode(t) as List)
+      ColegioWeb('${c['nombre']}', '${c['municipio']}', (c['puntos'] as num).toInt(),
+          (c['reportes_validados'] as num).toInt(), (c['estudiantes'] as num).toInt()),
+  ]..sort((a, b) => b.puntos.compareTo(a.puntos));
+  return lista;
+};
+
+/// Lo que se ve en Comunidad, en el orden de la portada de la web: alertas, reportes de la comunidad,
+/// jornadas, Guardianes del manglar, noticias y datos abiertos.
+class PantallaComunidad extends StatefulWidget {
+  const PantallaComunidad({super.key, this.fuente, this.jornadas});
+  final FuenteComunidad? fuente;
+  final FuenteJornadas? jornadas;
+
+  @override
+  State<PantallaComunidad> createState() => _PantallaComunidadState();
+}
+
+class _PantallaComunidadState extends State<PantallaComunidad> {
+  late final FuenteComunidad _fuente = widget.fuente ?? FuenteComunidad.compartida;
+  late final FuenteJornadas _fuenteJornadas = widget.jornadas ?? FuenteJornadas();
+
+  Lote<ResultadoAlertas>? _alertas;
+  Lote<List<ReporteComunidad>>? _reportes;
+  Lote<List<NoticiaManglar>>? _noticias;
+  List<Jornada>? _jornadas;
+  List<ColegioEnRanking>? _ranking;
+  List<ColegioWeb>? _colegiosWeb;
+  bool _rankingFallo = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarLocal();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+  }
+
+  Future<void> _cargarLocal() async {
+    try {
+      final j = await _fuenteJornadas.cargarLocal();
+      if (mounted && _jornadas == null) setState(() => _jornadas = j);
+    } catch (_) {}
+  }
+
+  Future<void> _cargar() async {
+    final servidor = Zanky.leer(context).servidor;
+    await Future.wait([
+      _fuente.alertas().then((v) => mounted ? setState(() => _alertas = v) : null),
+      _fuente.reportes().then((v) => mounted ? setState(() => _reportes = v) : null),
+      _fuente.noticias().then((v) => mounted ? setState(() => _noticias = v) : null),
+      _fuenteJornadas.cargar().then((v) => mounted ? setState(() => _jornadas = v) : null).catchError((_) => null),
+      _cargarRanking(servidor),
+    ]);
+  }
+
+  Future<void> _cargarRanking(Servidor servidor) async {
+    try {
+      final r = await RankingColegios(servidor).cargar();
+      List<ColegioWeb>? web;
+      if (r.isEmpty) web = await cargaColegiosWeb();
+      if (mounted) {
+        setState(() {
+          _ranking = r;
+          _colegiosWeb = web;
+          _rankingFallo = false;
+        });
+      }
+    } catch (_) {
+      final web = await cargaColegiosWeb().catchError((_) => const <ColegioWeb>[]);
+      if (mounted) {
+        setState(() {
+          _ranking = const [];
+          _colegiosWeb = web;
+          _rankingFallo = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final arriba = MediaQuery.paddingOf(context).top;
+    final estado = Zanky.de(context);
+    final tt = Theme.of(context).textTheme;
+    var i = 0;
+    Widget entra(Widget w) => EntradaEscalonada(index: i++, child: w);
+    return Scaffold(
+      backgroundColor: Zc.arena,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 820),
+          child: TirarActualizar(
+            alActualizar: _cargar,
+            child: ListView(
+              padding: EdgeInsets.fromLTRB(0, arriba + 6, 0, 120),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 20, 4),
+                  child: Row(children: [
+                    Presionable(
+                      etiqueta: 'Volver',
+                      onTap: () => Navigator.of(context).maybePop(),
+                      child: const SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: Zc.cienaga),
+                      ),
+                    ),
+                    const Spacer(),
+                    const ZankyMascota(tamano: 54, animo: Animo.feliz),
+                  ]),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 18),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text('COMUNIDAD', style: tt.seccion.copyWith(color: Cra.azul)),
+                    const SizedBox(height: 2),
+                    Text('Lo que pasa en el manglar, en vivo.', style: tt.headlineMedium?.copyWith(color: Zc.texto)),
+                    const SizedBox(height: 6),
+                    Text('Lo mismo que ves en mimanglar.sentralabs.co: alertas, reportes, jornadas, colegios y noticias.',
+                        style: tt.bodyMedium?.copyWith(color: Zc.textoSuave)),
+                  ]),
+                ),
+                entra(_SeccionAlertas(lote: _alertas)),
+                const SizedBox(height: 26),
+                entra(SeccionNoticias(lote: _noticias)),
+                const SizedBox(height: 26),
+                entra(_SeccionReportes(lote: _reportes, supabase: estado.publicos)),
+                const SizedBox(height: 26),
+                entra(_SeccionJornadas(jornadas: _jornadas, fuente: _fuente, alCambiar: _cargar)),
+                const SizedBox(height: 26),
+                entra(_SeccionGuardianes(ranking: _ranking, web: _colegiosWeb, fallo: _rankingFallo)),
+                const SizedBox(height: 26),
+                entra(_DatosAbiertos(base: _fuente.base, cantidad: _reportes?.origen == OrigenDato.nada ? null : _reportes?.datos.length)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ------------------------------------------------------------------ alertas
+
+class _SeccionAlertas extends StatelessWidget {
+  const _SeccionAlertas({required this.lote});
+  final Lote<ResultadoAlertas>? lote;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final l = lote;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const TituloSeccion(antetitulo: 'Alertas', titulo: '¿Qué viene para el manglar?', tono: 'Te avisamos.'),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+        child: Text(
+          'Cada 10 minutos se cruzan las estaciones del IDEAM, el pronóstico y las mareas de DIMAR, '
+          'los focos de calor de la C.R.A. y lo que reporta la comunidad.',
+          style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.4),
+        ),
+      ),
+      if (l == null)
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Column(children: [Esqueleto.tarjeta(), SizedBox(height: 10), Esqueleto.tarjeta()]),
+        )
+      else ...[
+        NotaOrigen(origen: l.origen, cuando: l.cuando),
+        if (l.datos.ahora.isNotEmpty)
+          SizedBox(
+            height: 104,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              itemCount: l.datos.ahora.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (_, k) => CifraOficial(c: l.datos.ahora[k]),
+            ),
+          ),
+        const SizedBox(height: 12),
+        if (l.origen == OrigenDato.nada)
+          const EstadoVacio(
+            titulo: 'No pudimos leer las alertas',
+            texto: 'Tira hacia abajo para intentarlo de nuevo cuando tengas señal.',
+            animo: Animo.preocupado,
+            tamanoZanky: 96,
+            relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
+          )
+        else if (l.datos.alertas.isEmpty)
+          const EstadoVacio(
+            titulo: 'Todo en calma',
+            texto: 'No hay mar de leva, aguaceros, vientos fuertes ni riesgo de incendio a la vista.',
+            animo: Animo.feliz,
+            tamanoZanky: 96,
+            relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
+          )
+        else
+          for (final (a, extra) in l.datos.porLugar)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+              child: TarjetaAlerta(alerta: a, extra: extra),
+            ),
+        if (l.datos.generado != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
+            child: Text(
+              'Actualizado ${haceCuanto(l.datos.generado!)} · '
+              '${l.datos.fuentes.map((f) => '${f.ok ? '●' : '○'} ${f.nombre}').join(' · ')}\n'
+              '${l.datos.nota} Si hay peligro para las personas, llama al 123.',
+              style: tt.labelSmall?.copyWith(color: Zc.textoSuave, height: 1.4),
+            ),
+          ),
+      ],
+    ]);
+  }
+}
+
+// ------------------------------------------------------------------ reportes
+
+class _SeccionReportes extends StatelessWidget {
+  const _SeccionReportes({required this.lote, required this.supabase});
+  final Lote<List<ReporteComunidad>>? lote;
+  final List<ReportePublico> supabase;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final l = lote;
+    final canal = {for (final r in l?.datos ?? const <ReporteComunidad>[]) r.publico.id: r.canal};
+    final todos = sumarSinDuplicar([for (final r in l?.datos ?? const <ReporteComunidad>[]) r.publico], supabase)
+      ..sort((a, b) => b.capturadoEn.compareTo(a.capturadoEn));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      TituloSeccion(
+        antetitulo: 'Mapa en vivo',
+        titulo: 'Reportes de',
+        tono: 'la comunidad.',
+        accion: 'Ver mapa',
+        alAccion: () {
+          Navigator.of(context).popUntil((r) => r.isFirst);
+          Raiz.irA(context, 1);
+        },
+      ),
+      if (l == null)
+        const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.fila())
+      else ...[
+        NotaOrigen(origen: l.origen, cuando: l.cuando),
+        if (todos.isEmpty)
+          const EstadoVacio(
+            titulo: 'Aún no hay reportes públicos',
+            texto: 'Cuando alguien reporte por la app, la web o WhatsApp, aparecerá aquí.',
+            tamanoZanky: 90,
+            relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
+          )
+        else
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(color: Zc.superficie, borderRadius: BorderRadius.circular(Zr.m)),
+            child: Column(children: [
+              for (final (k, r) in todos.take(8).indexed) ...[
+                if (k > 0) const Divider(height: 1, indent: 60, color: Zc.linea),
+                Semantics(
+                  label: '${r.tipo.nombre}, ${r.estado.nombre}, ${haceCuanto(r.capturadoEn)}',
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    child: Row(children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(color: r.tipo.color.withValues(alpha: 0.16), shape: BoxShape.circle),
+                        child: Icon(r.tipo.icono, size: 18, color: r.tipo.color),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(r.tipo.nombre, style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w700)),
+                          Text(
+                            '${r.estado.nombre} · ${haceCuanto(r.capturadoEn)}'
+                            '${canal[r.id] == 'whatsapp' ? ' · por WhatsApp' : ''}',
+                            style: tt.labelMedium?.copyWith(color: Zc.textoSuave),
+                          ),
+                        ]),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: Zc.dePrioridad(r.prioridad), borderRadius: BorderRadius.circular(99)),
+                        child: Text('P${r.prioridad}', style: tt.labelSmall?.copyWith(color: tintaSobre(Zc.dePrioridad(r.prioridad)))),
+                      ),
+                    ]),
+                  ),
+                ),
+              ],
+            ]),
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Text('La ubicación sale redondeada (~100 m) y sin nombre, para proteger a quien denuncia.',
+              style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
+        ),
+      ],
+    ]);
+  }
+}
+
+// ------------------------------------------------------------------ jornadas
+
+class _SeccionJornadas extends StatelessWidget {
+  const _SeccionJornadas({required this.jornadas, required this.fuente, required this.alCambiar});
+  final List<Jornada>? jornadas;
+  final FuenteComunidad fuente;
+  final Future<void> Function() alCambiar;
+
+  @override
+  Widget build(BuildContext context) {
+    final ahora = DateTime.now();
+    final proximas = [
+      for (final j in jornadas ?? const <Jornada>[])
+        if (j.fin.isAfter(ahora) && !j.cancelada) j,
+    ]..sort((a, b) => a.inicio.compareTo(b.inicio));
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const TituloSeccion(antetitulo: 'Cartelera', titulo: 'Jornadas', tono: 'para sumarte.'),
+      if (jornadas == null)
+        const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.tarjeta())
+      else if (proximas.isEmpty)
+        const EstadoVacio(
+          titulo: 'No hay jornadas programadas',
+          texto: 'Cuando la C.R.A. o un organizador publique una, aparecerá aquí.',
+          tamanoZanky: 90,
+          relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
+        )
+      else
+        for (final j in proximas.take(4))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+            child: _TarjetaJornada(j: j, fuente: fuente, alCambiar: alCambiar),
+          ),
+    ]);
+  }
+}
+
+class _TarjetaJornada extends StatelessWidget {
+  const _TarjetaJornada({required this.j, required this.fuente, required this.alCambiar});
+  final Jornada j;
+  final FuenteComunidad fuente;
+  final Future<void> Function() alCambiar;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final libres = j.cuposLibres;
+    return TarjetaZ(
+      padding: const EdgeInsets.all(16),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Text(j.tipoLegible.toUpperCase(), style: tt.seccion.copyWith(color: Zc.cienaga)),
+          const Spacer(),
+          if (j.ejemplo) Text('Ejemplo', style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
+        ]),
+        const SizedBox(height: 4),
+        Text(j.titulo, style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 6),
+        Text('${cuandoTexto(j.inicio.toLocal())} · ${j.puntoEncuentro}', style: tt.bodySmall?.copyWith(color: Zc.textoSuave)),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: LinearProgressIndicator(
+            value: j.cupos == 0 ? 0 : j.inscritos / j.cupos,
+            minHeight: 6,
+            backgroundColor: Zc.linea,
+            color: Zc.hoja,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text('${j.inscritos} de ${j.cupos} cupos · ${libres == 0 ? 'sin cupos' : '$libres libres'}',
+            style: tt.labelMedium?.copyWith(color: Zc.textoSuave)),
+        const SizedBox(height: 12),
+        BotonZ(
+          texto: libres == 0 ? 'Sin cupos' : 'Inscribirme',
+          icono: Icons.how_to_reg_rounded,
+          onTap: libres == 0
+              ? null
+              : () async {
+                  final ok = await abrirInscripcion(context, j, fuente);
+                  if (ok == true) await alCambiar();
+                },
+        ),
+      ]),
+    );
+  }
+}
+
+/// Hoja de inscripción: nombre, celular opcional, consentimiento obligatorio y confirmación.
+Future<bool?> abrirInscripcion(BuildContext context, Jornada j, FuenteComunidad fuente) {
+  final nombre = Zanky.leer(context).perfil?.nombre.trim() ?? '';
+  return mostrarHojaZ<bool>(context, nombre: 'inscripcion', contenido: (c) => _Inscripcion(j: j, fuente: fuente, nombre: nombre));
+}
+
+class _Inscripcion extends StatefulWidget {
+  const _Inscripcion({required this.j, required this.fuente, required this.nombre});
+  final Jornada j;
+  final FuenteComunidad fuente;
+  final String nombre;
+  @override
+  State<_Inscripcion> createState() => _InscripcionState();
+}
+
+class _InscripcionState extends State<_Inscripcion> {
+  late final _nombre = TextEditingController(text: widget.nombre);
+  final _cel = TextEditingController();
+  bool _datos = false, _whatsapp = false, _enviando = false;
+  String _error = '';
+
+  @override
+  void dispose() {
+    _nombre.dispose();
+    _cel.dispose();
+    super.dispose();
+  }
+
+  Future<void> _enviar() async {
+    if (_nombre.text.trim().length < 2) return setState(() => _error = 'Escribe tu nombre.');
+    if (!_datos) return setState(() => _error = 'Para inscribirte, acepta el tratamiento de tus datos (Ley 1581).');
+    setState(() {
+      _enviando = true;
+      _error = '';
+    });
+    final r = await widget.fuente.inscribirse(widget.j.id,
+        nombre: _nombre.text, telefono: _cel.text, aceptaDatos: _datos, aceptaWhatsapp: _whatsapp && _cel.text.trim().isNotEmpty);
+    if (!mounted) return;
+    if (r.ok) {
+      vibrar(Vibracion.media);
+      Navigator.of(context).pop(true);
+      avisar(context, '¡Listo! Quedaste en la lista. Te esperamos.', tipo: TipoAviso.exito);
+    } else {
+      setState(() {
+        _enviando = false;
+        _error = r.mensaje;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      Text('Inscribirme', style: tt.headlineSmall?.copyWith(color: Zc.texto)),
+      const SizedBox(height: 4),
+      Text(widget.j.titulo, style: tt.bodyMedium?.copyWith(color: Zc.textoSuave)),
+      const SizedBox(height: 16),
+      TextField(
+        controller: _nombre,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(labelText: 'Tu nombre', hintText: 'Como quieres aparecer en la lista'),
+      ),
+      const SizedBox(height: 10),
+      TextField(
+        controller: _cel,
+        keyboardType: TextInputType.phone,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+        decoration: const InputDecoration(labelText: 'Celular (WhatsApp, opcional)', hintText: '300 123 4567'),
+        onChanged: (_) => setState(() {}),
+      ),
+      const SizedBox(height: 8),
+      CheckboxListTile(
+        value: _datos,
+        onChanged: (v) => setState(() => _datos = v ?? false),
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.leading,
+        title: Text('Acepto que la organización use mi nombre (y mi celular, si lo dejo) solo para la lista de esta jornada, según la Ley 1581 de 2012. No se publica.', style: tt.bodyMedium),
+      ),
+      if (_cel.text.trim().isNotEmpty)
+        CheckboxListTile(
+          value: _whatsapp,
+          onChanged: (v) => setState(() => _whatsapp = v ?? false),
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: Text('Acepto recibir por WhatsApp recordatorios de esta jornada e invitaciones a otras.', style: tt.bodyMedium),
+        ),
+      AnimatedSwitcher(
+        duration: Zm.corto,
+        child: _error.isEmpty
+            ? const SizedBox(width: double.infinity)
+            : Padding(
+                key: ValueKey(_error),
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(_error, style: tt.bodyMedium?.copyWith(color: Cra.riesgoMuyAlto)),
+              ),
+      ),
+      const SizedBox(height: 14),
+      BotonZ(texto: 'Confirmar asistencia', icono: Icons.check_rounded, cargando: _enviando, onTap: _enviando ? null : _enviar),
+    ]);
+  }
+}
+
+// ------------------------------------------------------------------ guardianes
+
+class _SeccionGuardianes extends StatelessWidget {
+  const _SeccionGuardianes({required this.ranking, required this.web, required this.fallo});
+  final List<ColegioEnRanking>? ranking;
+  final List<ColegioWeb>? web;
+  final bool fallo;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final real = ranking ?? const [];
+    final filas = real.isNotEmpty
+        ? [for (final c in real.take(5)) (c.puesto, c.nombre, '${c.validados} reportes validados')]
+        : [
+            for (final (k, c) in (web ?? const <ColegioWeb>[]).take(5).indexed)
+              (k + 1, c.nombre, '${c.municipio} · ${c.puntos} puntos · ${c.validados} validados'),
+          ];
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      const TituloSeccion(antetitulo: 'Sostenibilidad y comunidad', titulo: 'Guardianes', tono: 'del manglar.'),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+        child: Row(children: [
+          Expanded(
+            child: Text('Los puntos salen de reportes verificados, no de la cantidad.',
+                style: tt.bodyMedium?.copyWith(color: Zc.textoSuave)),
+          ),
+          if (ranking != null && real.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: Zc.solClaro, borderRadius: BorderRadius.circular(99)),
+              child: Text('Datos de ejemplo', style: tt.labelSmall?.copyWith(color: Zc.texto)),
+            ),
+        ]),
+      ),
+      if (ranking == null)
+        const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.fila())
+      else if (filas.isEmpty)
+        const EstadoVacio(
+          titulo: 'Pronto conocerás a los colegios guardianes',
+          texto: 'Cuando la C.R.A. valide reportes de un colegio, sube aquí.',
+          tamanoZanky: 90,
+          relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
+        )
+      else
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(color: Zc.superficie, borderRadius: BorderRadius.circular(Zr.m)),
+          child: Column(children: [
+            for (final (k, f) in filas.indexed) ...[
+              if (k > 0) const Divider(height: 1, indent: 60, color: Zc.linea),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Row(children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: f.$1 == 1 ? Cra.dorado : Zc.cienagaClara, shape: BoxShape.circle),
+                    child: Text('${f.$1}', style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w900)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(f.$2, maxLines: 2, overflow: TextOverflow.ellipsis, style: tt.titleSmall?.copyWith(color: Zc.texto)),
+                      Text(f.$3, style: tt.labelMedium?.copyWith(color: Zc.textoSuave)),
+                    ]),
+                  ),
+                ]),
+              ),
+            ],
+          ]),
+        ),
+      if (fallo)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+          child: Text('No se pudo leer el ranking real; se muestra el de la web.', style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
+        ),
+    ]);
+  }
+}
+
+// ------------------------------------------------------------------ noticias
+
+/// Noticias del manglar: una destacada y el resto en un carrusel (también lo usa Inicio).
+class SeccionNoticias extends StatelessWidget {
+  const SeccionNoticias({super.key, required this.lote});
+  final Lote<List<NoticiaManglar>>? lote;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = lote;
+    return LayoutBuilder(builder: (context, caja) {
+      final ancho = caja.maxWidth;
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        const TituloSeccion(antetitulo: 'Desde la C.R.A.', titulo: 'La C.R.A.', tono: 'en el manglar'),
+        if (l == null)
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.cabecera())
+        else ...[
+          NotaOrigen(origen: l.origen, cuando: l.cuando),
+          if (l.datos.isEmpty)
+            const EstadoVacio(
+              titulo: 'Sin noticias por ahora',
+              texto: 'Tira hacia abajo para buscar las más recientes de la C.R.A.',
+              tamanoZanky: 90,
+              relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
+            )
+          else ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TarjetaNoticia(noticia: l.datos.first, destacada: true),
+            ),
+            if (l.datos.length > 1) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 236,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: l.datos.length - 1,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (_, k) => TarjetaNoticia(noticia: l.datos[k + 1], ancho: ancho < 600 ? 230 : 260),
+                ),
+              ),
+            ],
+          ],
+        ],
+      ]);
+    });
+  }
+}
+
+// ------------------------------------------------------------------ datos abiertos
+
+class _DatosAbiertos extends StatelessWidget {
+  const _DatosAbiertos({required this.base, this.cantidad});
+  final String base;
+
+  /// Cuántos reportes abiertos hay ahora (null: todavía no se sabe).
+  final int? cantidad;
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: Cra.azul, borderRadius: BorderRadius.circular(Zr.m)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('DATOS ABIERTOS', style: tt.seccion.copyWith(color: Cra.dorado)),
+          const SizedBox(height: 4),
+          Text('Los reportes de la comunidad, libres (CC BY 4.0)',
+              style: tt.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
+          if (cantidad != null) ...[
+            const SizedBox(height: 8),
+            Semantics(
+              label: '$cantidad reportes abiertos',
+              excludeSemantics: true,
+              child: Text.rich(TextSpan(children: [
+                TextSpan(text: '$cantidad', style: tt.headlineSmall?.copyWith(color: Cra.dorado, fontWeight: FontWeight.w900)),
+                TextSpan(text: cantidad == 1 ? '  reporte abierto' : '  reportes abiertos', style: tt.bodyMedium?.copyWith(color: Colors.white)),
+              ])),
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text('Sin nombres, fotos ni descripciones; coordenadas a ~110 m. Toca un formato para copiar su enlace.',
+              style: tt.bodySmall?.copyWith(color: Cra.textoSuave)),
+          const SizedBox(height: 12),
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            for (final f in ['geojson', 'csv', 'kml'])
+              Presionable(
+                etiqueta: 'Copiar enlace ${f.toUpperCase()}',
+                onTap: () async {
+                  await Clipboard.setData(ClipboardData(text: '$base/datos-abiertos/reportes.$f'));
+                  if (context.mounted) avisar(context, 'Enlace ${f.toUpperCase()} copiado');
+                },
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Cra.borde),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(f.toUpperCase(), style: tt.labelLarge?.copyWith(color: Colors.white)),
+                ),
+              ),
+          ]),
+        ]),
+      ),
+    );
+  }
+}

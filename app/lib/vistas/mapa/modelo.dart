@@ -56,20 +56,24 @@ class PuntoMapa {
 }
 
 /// Los míos primero (con sus datos completos); los públicos que ya son míos no se repiten.
-List<PuntoMapa> construirPuntos(EstadoZanky e) {
-  final propios = {for (final r in e.reportes) r.id};
+/// [comunidad]: los reportes que la web también muestra (datos abiertos del servidor de Zanky,
+/// WhatsApp incluido). Se suman a los de Supabase sin repetir ninguno por id.
+List<PuntoMapa> construirPuntos(EstadoZanky e, {List<ReportePublico> comunidad = const []}) {
+  final propios = {for (final r in e.reportes) ...[r.id, ?r.idPublico]};
+  final vistos = <String>{};
   return [
     for (final r in e.reportes) PuntoMapa.mio(r),
-    for (final p in e.publicos)
-      if (!propios.contains(p.id)) PuntoMapa.publico(p),
+    for (final p in [...e.publicos, ...comunidad])
+      if (!propios.contains(p.id) && vistos.add(p.id)) PuntoMapa.publico(p),
   ];
 }
 
 /// Firma barata de lo que dibuja el mapa: si no cambia, no se recalcula nada.
-int firmaPuntos(EstadoZanky e) => Object.hash(
+int firmaPuntos(EstadoZanky e, {List<ReportePublico> comunidad = const []}) => Object.hash(
       Object.hashAll([for (final r in e.reportes) Object.hash(r.id, r.envio, r.prioridad, r.estado)]),
       e.publicos.length,
       identityHashCode(e.publicos),
+      identityHashCode(comunidad),
     );
 
 enum FiltroTiempo { todas, ultimas24h, mias }

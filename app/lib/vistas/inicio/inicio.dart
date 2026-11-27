@@ -30,7 +30,7 @@ import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../guardian/editar_perfil.dart';
 import '../configuracion/pantalla_configuracion.dart';
-import 'pronostico_compacto.dart';
+import '../comunidad/comunidad_inicio.dart';
 import '../sensores/sensores_compacto.dart';
 import 'que_hago_ya.dart';
 import 'secciones_rol.dart';
@@ -191,7 +191,8 @@ class _InicioState extends State<Inicio> {
       case SeccionInicio.clima:
         return _TarjetaClima(estado: estado);
       case SeccionInicio.pronostico:
-        return const PronosticoCompacto();
+        // Alertas oficiales del servidor (las de la web); el pronóstico local queda de respaldo sin red.
+        return const ComunidadInicio();
       case SeccionInicio.sensores:
         return const SensoresCompacto();
       case SeccionInicio.sabiasQue:

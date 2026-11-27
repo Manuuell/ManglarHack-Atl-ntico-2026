@@ -8,7 +8,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../datos/comunidad/comunidad.dart';
 import '../../datos/estado.dart';
+import '../../datos/servidor.dart' show ReportePublico;
 import '../../datos/zonas.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/base/movimiento.dart';
@@ -16,6 +18,7 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../../nucleo/base/transicion_pestanas.dart';
+import '../comunidad/piezas_comunidad.dart';
 import '../mis_reportes/detalle_reporte.dart';
 import '../reporte/flujo_reporte.dart';
 import 'capa_prioridad.dart';
@@ -106,6 +109,21 @@ class _PantallaMapaState extends State<PantallaMapa>
   bool _falloPrioridad = false;
   PoligonoPrioridad? _prioridadSel;
 
+  // Lo de la comunidad que también muestra la web: reportes de datos abiertos (WhatsApp incluido)
+  // y alertas oficiales del servidor, con caché sin señal.
+  List<ReportePublico> _comunidad = const [];
+  ResultadoAlertas _alertasOf = ResultadoAlertas.vacio;
+
+  Future<void> _cargarComunidad() async {
+    final f = FuenteComunidad.compartida;
+    final [r, a] = await Future.wait<Object>([f.reportes(), f.alertas()]);
+    if (!mounted) return;
+    setState(() {
+      _comunidad = [for (final x in (r as Lote<List<ReporteComunidad>>).datos) x.publico];
+      _alertasOf = (a as Lote<ResultadoAlertas>).datos;
+    });
+  }
+
   // Datos del mapa.
   int _firma = 0;
   int _versionPuntos = 0;
@@ -128,6 +146,7 @@ class _PantallaMapaState extends State<PantallaMapa>
   @override
   void initState() {
     super.initState();
+    _cargarComunidad();
     // Cada minuto se revisa qué reportes dejan de ser «recientes».
     _relojMinuto = Timer.periodic(const Duration(minutes: 1), (_) {
       if (mounted) setState(() => _tic++);
@@ -311,10 +330,10 @@ class _PantallaMapaState extends State<PantallaMapa>
     }
     _enLineaAntes = e.enLinea;
 
-    final firma = firmaPuntos(e);
+    final firma = firmaPuntos(e, comunidad: _comunidad);
     if (firma != _firma) {
       _firma = firma;
-      _puntos = construirPuntos(e);
+      _puntos = construirPuntos(e, comunidad: _comunidad);
       _versionPuntos++;
     }
     final clave = '$_versionPuntos/$_versionFiltro/$_tic';
@@ -774,6 +793,37 @@ class _PantallaMapaState extends State<PantallaMapa>
                             ),
                         ],
                 ),
+              ),
+              // Alertas oficiales del servidor: un círculo del color del nivel por lugar (la más alta).
+              CircleLayer(
+                circles: [
+                  for (final (a, _) in _alertasOf.porLugar)
+                    if (a.punto != null)
+                      CircleMarker(
+                        point: a.punto!,
+                        radius: 1500,
+                        useRadiusInMeter: true,
+                        color: colorNivel(a.nivel).withValues(alpha: 0.16),
+                        borderColor: colorNivel(a.nivel).withValues(alpha: 0.7),
+                        borderStrokeWidth: 2,
+                      ),
+                ],
+              ),
+              MarkerLayer(
+                markers: [
+                  for (final (a, extra) in _alertasOf.porLugar)
+                    if (a.punto != null)
+                      Marker(
+                        key: ValueKey('alerta-${a.id}'),
+                        point: a.punto!,
+                        width: 48,
+                        height: 48,
+                        child: MarcadorAlerta(
+                          alerta: a,
+                          alTocar: () => abrirHojaAlerta(context, a, extra: extra, generado: _alertasOf.generado),
+                        ),
+                      ),
+                ],
               ),
               CircleLayer(
                 circles: [
