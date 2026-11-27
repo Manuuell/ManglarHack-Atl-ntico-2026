@@ -1,13 +1,13 @@
 import { Boton, Fila } from '../whatsapp/cloudApi';
 import { CUANDO, ESTADOS, MUNICIPIOS, MunicipioId, ROLES, Reporte, RolId, TIPOS, TipoId } from '../reportes/modelo';
 
-export const ENCABEZADO = 'Zanqui BOT 🌿';
+export const ENCABEZADO = 'Zanky BOT 🌿';
 
 // --- Registro de vigías -----------------------------------------------------
 
 export const BIENVENIDA = {
   cuerpo:
-    '¡Ajá! Soy *Zanqui* 🌿, el vigía del manglar del Atlántico.\n\n' +
+    '¡Ajá! Soy *Zanky* 🌿, el vigía del manglar del Atlántico.\n\n' +
     'Aquí puedes avisarle a la CRA cuando algo amenaza el manglar: tala, quemas, basura, vertimientos o un caño tapado.\n\n' +
     '¿Te registras como *vigía del manglar*? Toma menos de un minuto.\n\n' +
     '🔒 Tus datos se tratan según la Ley 1581 de 2012 y nunca se publican tu nombre ni tu número.',
@@ -48,7 +48,7 @@ export function saludoMenu(nombre?: string): string {
 
 export const MENU = {
   cuerpo:
-    '¡Ajá! Soy *Zanqui*, el vigía del manglar del Atlántico.\n\n' +
+    '¡Ajá! Soy *Zanky*, el vigía del manglar del Atlántico.\n\n' +
     'Si ves algo que le hace daño al manglar (tala, quemas, basura, vertimientos o un caño tapado), ' +
     'cuéntamelo aquí y le llega a la CRA para que actúe a tiempo.',
   botones: [

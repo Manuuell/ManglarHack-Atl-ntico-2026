@@ -51,7 +51,7 @@ export interface CambioEstado {
 export interface Reporte {
   /** UUID del reporte (contrato común). Se deriva del mensaje de WhatsApp, así un reintento no lo duplica. */
   id: string;
-  /** Código corto para la persona y la CRA, ej. ZQ-0001. */
+  /** Código corto para la persona y la CRA, ej. ZK-0001. */
   codigo: string;
   canal: 'whatsapp';
   tipo: TipoId;

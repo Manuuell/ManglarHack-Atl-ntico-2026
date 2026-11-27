@@ -1,16 +1,16 @@
-# 03 · La solución: Zanqui
+# 03 · La solución: Zanky
 
 **Lo decidido:**
-- La mascota es **Zanqui**.
+- La mascota es **Zanky**.
 - Hay tres piezas: **app móvil en Flutter**, **aplicación web** y **bot de WhatsApp**.
 
 Lo demás de este documento es una **propuesta para alinearnos**. Se ajusta con los mentores durante el día.
 
 ## La mascota
 
-**Zanqui** viene de las **raíces en zancos del mangle rojo** (*Rhizophora mangle*), que parecen patas largas sobre el agua, y de los **zanqueros del Carnaval** de Barranquilla.
+**Zanky** viene de las **raíces en zancos del mangle rojo** (*Rhizophora mangle*), que parecen patas largas sobre el agua, y de los **zanqueros del Carnaval** de Barranquilla.
 - **Personalidad:** alegre y costeño. Es quien guía al ciudadano al reportar: «¡Ajá! ¿Qué viste en el manglar?».
-- **Dónde aparece:** en la app, el bot («Hola, soy Zanqui»), el panel público, los stickers y los letreros QR en el territorio.
+- **Dónde aparece:** en la app, el bot («Hola, soy Zanky»), el panel público, los stickers y los letreros QR en el territorio.
 - **Pendiente:** validar el nombre con los mentores comunitarios y revisar que no choque con una marca registrada.
 
 ## Las tres piezas
@@ -27,7 +27,7 @@ Lo demás de este documento es una **propuesta para alinearnos**. Se ajusta con 
 
 | Pieza | Para quién | Qué hace |
 |---|---|---|
-| **App móvil (Flutter)** | Ciudadanos frecuentes, vigías comunitarios, colegios | Reporta con foto, tipo, descripción y GPS, **sin conexión** (guarda en cola y sincroniza después). También tiene mapa de reportes, «mis reportes» con su estado, y Zanqui con insignias. |
+| **App móvil (Flutter)** | Ciudadanos frecuentes, vigías comunitarios, colegios | Reporta con foto, tipo, descripción y GPS, **sin conexión** (guarda en cola y sincroniza después). También tiene mapa de reportes, «mis reportes» con su estado, y Zanky con insignias. |
 | **Bot de WhatsApp** | Pescadores, comunidad y turistas que no quieren instalar nada | Guía el reporte: tipo → compartir ubicación → foto → descripción → **número de caso**. Permite consultar el estado del caso y avisa cuando cambia. |
 | **Aplicación web** | La CRA (panel) y el público | **Panel de la CRA:** mapa en vivo, filtros, cola de validación, cambio de estado y exportación. **Vista pública:** mapa con datos anonimizados, descarga de datos abiertos y un formulario ligero para turistas que entran por QR. |
 | **Backend común** | Las tres piezas | API, base de datos con soporte geográfico, validación, clasificación con IA y auditoría. |
@@ -82,12 +82,12 @@ Cada cambio de estado queda en un **registro de auditoría**: quién, cuándo y 
 - **Colegios:**
   - El monitoreo validado puede contar como **horas de servicio social estudiantil** (obligatorio en bachillerato) y conectarse con el **PRAE** (Proyecto Ambiental Escolar).
   - Ranking de colegios «Guardianes del manglar».
-  - Misiones mensuales de Zanqui, por ejemplo «revisa el caño X» o «cuenta residuos en la playa Y».
+  - Misiones mensuales de Zanky, por ejemplo «revisa el caño X» o «cuenta residuos en la playa Y».
 - **Turistas:**
   - **Letreros con QR o NFC** en el Ecoparque Mallorquín, Puerto Colombia y las playas. Escanean y reportan desde la web o WhatsApp, sin instalar nada.
-  - Zanqui como recuerdo digital (insignia o sticker).
+  - Zanky como recuerdo digital (insignia o sticker).
 - **Gamificación con sentido:**
-  - Zanqui crece con los reportes **validados**, no con la cantidad. Así no se premia el spam.
+  - Zanky crece con los reportes **validados**, no con la cantidad. Así no se premia el spam.
   - Insignias por tipo de aporte.
 - **Alianzas:** empresas que ya hacen RSE en el manglar patrocinan premios o reconocimientos. Los operadores turísticos y las asociaciones de pescadores actúan como vigías.
 - **Transparencia:** los datos abiertos y el mapa público muestran que la herramienta sirve.
@@ -141,7 +141,7 @@ zona:    id, nombre, municipio, prioridad_conservacion, geometria
 
 | Persona | Pieza | Hito a las 12:00 | Hito a las 14:30 | Hito a las 16:00 |
 |---|---|---|---|---|
-| A | App Flutter | Reporte con GPS y foto, guardado sin conexión | Sincronización con el backend y mapa | Zanqui e insignias, pulido |
+| A | App Flutter | Reporte con GPS y foto, guardado sin conexión | Sincronización con el backend y mapa | Zanky e insignias, pulido |
 | B | Web: panel y vista pública | Mapa con reportes en vivo | Validación, estados y prioridad | Exportación GeoJSON/CSV/KML y vista pública |
 | C | Backend, bot de WhatsApp e IA | API y base de datos con polígonos cargados | Bot funcionando de punta a punta | Clasificación con IA y puntaje de confianza |
 

@@ -15,7 +15,7 @@ export const config = {
   /** Sin token no se envía nada a Meta: los mensajes salen por consola. */
   dryRun: token === '',
   panelApiKey: env.PANEL_API_KEY ?? '',
-  hashSalt: env.HASH_SALT ?? 'zanqui-dev-salt',
+  hashSalt: env.HASH_SALT ?? 'zanky-dev-salt',
   dataDir: path.resolve(env.DATA_DIR ?? './data'),
   zonasGeojson: path.resolve(env.ZONAS_GEOJSON ?? '../datos/manglares_atlantico_invemar_2020.geojson'),
   radioInfluenciaM: Number(env.RADIO_INFLUENCIA_M ?? 500),

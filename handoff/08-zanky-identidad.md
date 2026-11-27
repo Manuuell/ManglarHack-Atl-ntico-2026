@@ -28,7 +28,7 @@ Los prompts están en inglés porque los generadores de imagen y video los sigue
 ## Bloque BASE (pegarlo siempre)
 
 ```
-Zanqui, a cute friendly mascot: an anthropomorphic young red mangrove tree (Rhizophora mangle) from the Caribbean coast of Colombia. Small rounded trunk-shaped body with smooth reddish-brown bark; a fluffy crown of glossy, leathery, oval dark-green mangrove leaves on top like hair; big expressive dark eyes with white highlights, a wide joyful smile, small leaf-shaped eyebrows. Instead of legs it stands tall on four long arched stilt roots (mangrove prop roots), like a carnival stilt-walker, each root wrapped with thin striped ribbons in red, yellow and green (Barranquilla carnival colors). Two thin branch arms with little leaf hands. One long slender green propagule (mangrove seed pod) hangs from its leafy crown like a cute antenna. Cheerful, curious, warm Caribbean personality. Not a generic oak or palm tree, no fruit, does not resemble any existing cartoon character.
+Zanky, a cute friendly mascot: an anthropomorphic young red mangrove tree (Rhizophora mangle) from the Caribbean coast of Colombia. Small rounded trunk-shaped body with smooth reddish-brown bark; a fluffy crown of glossy, leathery, oval dark-green mangrove leaves on top like hair; big expressive dark eyes with white highlights, a wide joyful smile, small leaf-shaped eyebrows. Instead of legs it stands tall on four long arched stilt roots (mangrove prop roots), like a carnival stilt-walker, each root wrapped with thin striped ribbons in red, yellow and green (Barranquilla carnival colors). Two thin branch arms with little leaf hands. One long slender green propagule (mangrove seed pod) hangs from its leafy crown like a cute antenna. Cheerful, curious, warm Caribbean personality. Not a generic oak or palm tree, no fruit, does not resemble any existing cartoon character.
 ```
 
 Estilos para agregar al final:
@@ -52,10 +52,10 @@ Estilos para agregar al final:
    - **Celebración:** `[BASE] dancing cumbia with its carnival ribbons flying, confetti around.`
 
 4. **Etapas de crecimiento** (para la gamificación)
-   `[BASE] Growth stages of the character, five figures from left to right on a white background: 1) a green mangrove propagule seed pod with tiny eyes, 2) a small seedling with two leaves and tiny roots, 3) a young sapling version of Zanqui, 4) the full Zanqui on tall stilt roots, 5) "guardian" Zanqui wearing a small carnival paper-flower crown and a sash, proud pose. Consistent design, flat vector illustration. No text.`
+   `[BASE] Growth stages of the character, five figures from left to right on a white background: 1) a green mangrove propagule seed pod with tiny eyes, 2) a small seedling with two leaves and tiny roots, 3) a young sapling version of Zanky, 4) the full Zanky on tall stilt roots, 5) "guardian" Zanky wearing a small carnival paper-flower crown and a sash, proud pose. Consistent design, flat vector illustration. No text.`
 
 5. **Ícono de la app**
-   `App icon, rounded square: Zanqui's face and leafy crown peeking from behind a white map location pin, teal water background with one simple wave. Bold simple shapes, readable at 48 px, flat vector. No text.`
+   `App icon, rounded square: Zanky's face and leafy crown peeking from behind a white map location pin, teal water background with one simple wave. Bold simple shapes, readable at 48 px, flat vector. No text.`
 
 6. **Avatar del bot de WhatsApp**
    `[BASE] circular profile picture, bust shot, waving, solid teal background, high contrast, flat vector. No text.`
@@ -65,7 +65,7 @@ Estilos para agregar al final:
    - Versión con texto (Ideogram): agregar `with the caption "¡Ajá!"` y repetir con «¡Reportado!», «Ojo al manglar», «¡Gracias, vigía!» y «¡Eche, qué bacano!».
 
 8. **Letrero con QR para el territorio**
-   `Vertical outdoor sign for a mangrove boardwalk. [BASE] pointing at an empty white square (space for a QR code). Headline text: "¿Viste algo raro en el manglar? ¡Repórtalo!". Subtitle: "Escanea o escríbele a Zanqui por WhatsApp". Mangrove lagoon background, flat vector, high contrast.`
+   `Vertical outdoor sign for a mangrove boardwalk. [BASE] pointing at an empty white square (space for a QR code). Headline text: "¿Viste algo raro en el manglar? ¡Repórtalo!". Subtitle: "Escanea o escríbele a Zanky por WhatsApp". Mangrove lagoon background, flat vector, high contrast.`
    - El QR real se pega después en el cuadro blanco.
 
 9. **Portada del pitch o banner 16:9**
@@ -77,13 +77,13 @@ Usar *image-to-video* partiendo de la hoja de personaje. Son clips de 8 a 10 seg
 
 | # | Escena | Prompt |
 |---|---|---|
-| V1 | Intro | `Zanqui walks toward the camera on its long stilt roots through shallow lagoon water among mangroves at sunrise, ripples under each step, white egrets take off in the background; it stops, waves and smiles at the camera. Slow dolly-in, warm light, 3D animation, 8 seconds.` |
-| V2 | Alerta | `Zanqui stands at the edge of the mangrove forest, notices smoke rising in the distance, its leaves shiver and its expression turns worried; it pulls out a smartphone and takes a photo, and a red location pin pops up above the phone. Medium shot, 3D animation, 8 seconds.` |
-| V3 | Sin señal | `Close-up of a phone screen showing a "no signal" icon; Zanqui calmly taps a button and the report turns into a small glowing envelope that tucks into its leafy crown. Cut to Zanqui walking toward a fishing village, signal bars fill up, and the envelope flies off toward the city skyline. 3D animation, 10 seconds.` |
+| V1 | Intro | `Zanky walks toward the camera on its long stilt roots through shallow lagoon water among mangroves at sunrise, ripples under each step, white egrets take off in the background; it stops, waves and smiles at the camera. Slow dolly-in, warm light, 3D animation, 8 seconds.` |
+| V2 | Alerta | `Zanky stands at the edge of the mangrove forest, notices smoke rising in the distance, its leaves shiver and its expression turns worried; it pulls out a smartphone and takes a photo, and a red location pin pops up above the phone. Medium shot, 3D animation, 8 seconds.` |
+| V3 | Sin señal | `Close-up of a phone screen showing a "no signal" icon; Zanky calmly taps a button and the report turns into a small glowing envelope that tucks into its leafy crown. Cut to Zanky walking toward a fishing village, signal bars fill up, and the envelope flies off toward the city skyline. 3D animation, 10 seconds.` |
 | V4 | Llega a la CRA | `A small glowing envelope lands on a large digital map of a Caribbean coastline on a dashboard screen; a red pin blinks with a priority badge, then turns green with a check mark. Clean motion graphics, 8 seconds.` |
-| V5 | Participación | `Zanqui dances cumbia on a Caribbean beach with a group of school children in uniforms holding phones, the carnival ribbons on its stilt roots flutter, confetti, golden hour, 3D animation, 8 seconds.` |
-| V6 | Loop de inicio | `Seamless 3-second loop: Zanqui bounces gently on its stilt roots and blinks, plain teal background, flat 2D animation.` |
+| V5 | Participación | `Zanky dances cumbia on a Caribbean beach with a group of school children in uniforms holding phones, the carnival ribbons on its stilt roots flutter, confetti, golden hour, 3D animation, 8 seconds.` |
+| V6 | Loop de inicio | `Seamless 3-second loop: Zanky bounces gently on its stilt roots and blinks, plain teal background, flat 2D animation.` |
 
-**Frase de voz para el video:** «¡Ajá! Yo soy Zanqui. Si ves que algo le pasa al manglar, repórtalo… ¡aunque no tengas señal!».
+**Frase de voz para el video:** «¡Ajá! Yo soy Zanky. Si ves que algo le pasa al manglar, repórtalo… ¡aunque no tengas señal!».
 
 **Para la demo del pitch:** el jurado pide un prototipo funcional, así que conviene usar **grabación de pantalla del prototipo real**. Los clips de IA quedan para la intro y el cierre; V4 se reemplaza por el panel real.

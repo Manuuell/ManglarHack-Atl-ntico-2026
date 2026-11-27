@@ -1,8 +1,8 @@
 {
-  "name": "zanqui-bot",
+  "name": "zanky-bot",
   "version": "0.1.0",
   "private": true,
-  "description": "Zanqui BOT: reportes ciudadanos de amenazas al manglar del Atlántico por WhatsApp",
+  "description": "Zanky BOT: reportes ciudadanos de amenazas al manglar del Atlántico por WhatsApp",
   "license": "MIT",
   "type": "commonjs",
   "engines": {

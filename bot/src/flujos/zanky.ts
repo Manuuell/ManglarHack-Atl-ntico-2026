@@ -73,7 +73,7 @@ function ir(s: Sesion, paso: Paso): void {
 const normalizar = (t: string) =>
   t.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
 
-const COMANDOS_MENU = new Set(['menu', 'inicio', 'hola', 'buenas', 'buenos dias', 'buenas tardes', 'zanqui', 'empezar', 'start']);
+const COMANDOS_MENU = new Set(['menu', 'inicio', 'hola', 'buenas', 'buenos dias', 'buenas tardes', 'zanky', 'zanqui', 'empezar', 'start']);
 
 async function enviarMenu(de: string, s: Sesion): Promise<void> {
   ir(s, 'menu');
@@ -193,7 +193,7 @@ async function enviarResumen(de: string, s: Sesion): Promise<void> {
 
 /** UUID estable a partir del id del mensaje de WhatsApp que confirmó el envío. */
 function uuidDesde(messageId: string): string {
-  const h = createHash('sha256').update(`zanqui:${messageId}`).digest('hex');
+  const h = createHash('sha256').update(`zanky:${messageId}`).digest('hex');
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${((parseInt(h[16], 16) & 0x3) | 0x8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 
@@ -246,7 +246,7 @@ async function guardarReporte(de: string, s: Sesion, messageId: string): Promise
     foto: b.foto,
     reportanteHash: hash,
     ...(u?.consentimiento === 'identificado' ? { contacto: de } : {}),
-    historial: [{ estado: 'recibido', fecha: ahora, por: 'zanqui-bot' }],
+    historial: [{ estado: 'recibido', fecha: ahora, por: 'zanky-bot' }],
   });
   console.log(`[reporte] ${reporte.codigo} ${reporte.tipo} prioridad ${reporte.prioridad} confianza ${reporte.confianza}`);
   ir(s, 'menu');

@@ -19,7 +19,7 @@ let archivo = '';
 
 export function iniciarAlmacen(): void {
   fs.mkdirSync(path.join(config.dataDir, 'fotos'), { recursive: true });
-  archivo = path.join(config.dataDir, 'zanqui.json');
+  archivo = path.join(config.dataDir, 'zanky.json');
   if (fs.existsSync(archivo)) datos = JSON.parse(fs.readFileSync(archivo, 'utf8'));
 }
 
@@ -52,7 +52,7 @@ export function vigias(): Usuario[] {
 }
 
 export function siguienteCodigo(): string {
-  return `ZQ-${String(datos.reportes.length + 1).padStart(4, '0')}`;
+  return `ZK-${String(datos.reportes.length + 1).padStart(4, '0')}`;
 }
 
 export function crearReporte(r: Reporte): Reporte {

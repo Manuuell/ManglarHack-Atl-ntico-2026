@@ -1,5 +1,5 @@
 /**
- * Simula una conversación completa con Zanqui BOT sin enviar nada a WhatsApp.
+ * Simula una conversación completa con Zanky BOT sin enviar nada a WhatsApp.
  * Uso: npm run simular
  */
 import fs from 'fs';
@@ -7,13 +7,13 @@ import os from 'os';
 import path from 'path';
 
 process.env.WHATSAPP_TOKEN = '';
-process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'zanqui-sim-'));
+process.env.DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'zanky-sim-'));
 process.env.HASH_SALT = 'simulacion';
 
 async function main() {
   const { bandejaSimulada } = await import('../src/whatsapp/cloudApi');
   const { parsearWebhook } = await import('../src/whatsapp/parser');
-  const { atender } = await import('../src/flujos/zanqui');
+  const { atender } = await import('../src/flujos/zanky');
   const almacen = await import('../src/reportes/almacen');
   const { cargarZonas } = await import('../src/geo/zonas');
   const { aCSV } = await import('../src/reportes/datosAbiertos');
@@ -57,7 +57,7 @@ async function main() {
       const cuerpo = s.text?.body ?? s.interactive?.body?.text ?? '';
       const opciones = s.interactive?.action?.buttons?.map((b: any) => b.reply.title) ?? s.interactive?.action?.sections?.[0]?.rows?.map((r: any) => r.title);
       const tipo = s.interactive?.type === 'location_request_message' ? ' [botón: Enviar ubicación]' : '';
-      console.log(`🌿 Zanqui: ${cuerpo.replace(/\n/g, '\n           ')}${tipo}`);
+      console.log(`🌿 Zanky: ${cuerpo.replace(/\n/g, '\n           ')}${tipo}`);
       if (opciones) console.log(`           [${opciones.join(' | ')}]`);
     }
   }

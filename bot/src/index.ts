@@ -8,7 +8,7 @@ import { cargarZonas } from './geo/zonas';
 import * as almacen from './reportes/almacen';
 import { aCSV, aGeoJSON, aKML } from './reportes/datosAbiertos';
 import { esEstado } from './reportes/modelo';
-import { atender, avisarCambio } from './flujos/zanqui';
+import { atender, avisarCambio } from './flujos/zanky';
 
 type ConCuerpoCrudo = Request & { cuerpoCrudo?: Buffer };
 
@@ -75,7 +75,7 @@ app.post('/webhook', (req: ConCuerpoCrudo, res: Response) => {
   const ahora = Date.now();
   for (const [id, t] of vistos) if (ahora - t > 3600_000) vistos.delete(id);
   for (const m of parsearWebhook(req.body)) {
-    // El número puede compartir cuenta con otros bots: solo se atiende el de Zanqui.
+    // El número puede compartir cuenta con otros bots: solo se atiende el de Zanky.
     if (config.phoneNumberId && m.phoneNumberId !== config.phoneNumberId) {
       console.warn(`[webhook] mensaje para otro número (${m.phoneNumberId}), ignorado`);
       continue;
@@ -151,7 +151,7 @@ export function iniciar(): void {
   const n = cargarZonas(config.zonasGeojson);
   for (const aviso of avisosDeConfiguracion()) console.warn(`[config] ${aviso}`);
   app.listen(config.port, () => {
-    console.log(`Zanqui BOT escuchando en el puerto ${config.port} · ${n} polígonos de manglar cargados`);
+    console.log(`Zanky BOT escuchando en el puerto ${config.port} · ${n} polígonos de manglar cargados`);
   });
 }
 

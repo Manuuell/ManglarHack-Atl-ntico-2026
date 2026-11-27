@@ -57,7 +57,7 @@ Hay que irla llenando durante el día.
 
 | Tiempo | Qué contar |
 |---|---|
-| 0:00–1:00 | El problema, con la historia de la tala en Juan de Acosta que se supo tarde. Presentar a Zanqui. |
+| 0:00–1:00 | El problema, con la historia de la tala en Juan de Acosta que se supo tarde. Presentar a Zanky. |
 | 1:00–4:00 | **Demo en vivo:** un ciudadano reporta sin internet → se sincroniza → aparece en el panel con prioridad → la CRA lo valida → se exportan los datos abiertos. Mostrar también el reporte por WhatsApp. |
 | 4:00–6:00 | **Las 3 preguntas**, una por una (ver [03-solucion-zanqui.md](03-solucion-zanqui.md)). |
 | 6:00–7:00 | Sostenibilidad, seguridad y protección del denunciante, y los siguientes pasos con la CRA. |

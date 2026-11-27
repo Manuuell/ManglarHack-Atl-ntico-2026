@@ -1,6 +1,6 @@
-# Zanqui BOT
+# Zanky BOT
 
-El canal de WhatsApp de Zanqui. Lo usan pescadores, habitantes y turistas para reportar amenazas al manglar del Atlántico sin instalar nada.
+El canal de WhatsApp de Zanky. Lo usan pescadores, habitantes y turistas para reportar amenazas al manglar del Atlántico sin instalar nada.
 
 Funciona sobre la **API oficial de WhatsApp Cloud (Meta)** con Node.js 20+, TypeScript y Express.
 
@@ -16,7 +16,7 @@ hola → menú (🚨 Reportar · 📋 Mis reportes · ℹ️ Cómo funciona)
     → foto tomada en el momento (o "Sin foto")
     → descripción corta (o "Omitir")
     → ¿cuándo? ahora mismo / hoy / hace días
-    → resumen → ✅ Enviar → número de caso ZQ-0001
+    → resumen → ✅ Enviar → número de caso ZK-0001
 ```
 
 - **Cualquier paso:** `menu` vuelve al inicio y `cancelar` descarta el reporte.
@@ -61,9 +61,9 @@ Sin `WHATSAPP_TOKEN`, el bot arranca en **modo simulación** y no envía nada a 
 ## Conectarlo a WhatsApp (Meta)
 
 1. **Perfil del número:** en WhatsApp Manager → Números de teléfono → el número del bot → Perfil:
-   - foto de Zanqui;
+   - foto de Zanky;
    - descripción: «Reporta amenazas al manglar del Atlántico»;
-   - nombre visible **Zanqui BOT**. El cambio de nombre pasa por revisión de Meta y puede tardar.
+   - nombre visible **Zanky BOT**. El cambio de nombre pasa por revisión de Meta y puede tardar.
 2. **Token permanente:** Configuración del negocio → Usuarios del sistema → Generar token.
    - Permisos: `whatsapp_business_messaging` y `whatsapp_business_management`.
    - Asignarle la cuenta de WhatsApp.
@@ -76,7 +76,7 @@ Sin `WHATSAPP_TOKEN`, el bot arranca en **modo simulación** y no envía nada a 
      ```
      Este comando da una URL `https://….trycloudflare.com` que cambia cada vez que se corre.
    - Para algo estable, un servidor con dominio.
-5. **Dirigir a Zanqui solo los mensajes de este número** (*webhook override*), sin tocar otros números de la misma cuenta. El bot tiene que estar corriendo, porque Meta verifica la URL con `WHATSAPP_VERIFY_TOKEN`:
+5. **Dirigir a Zanky solo los mensajes de este número** (*webhook override*), sin tocar otros números de la misma cuenta. El bot tiene que estar corriendo, porque Meta verifica la URL con `WHATSAPP_VERIFY_TOKEN`:
    ```bash
    source .env
    curl -X POST "https://graph.facebook.com/$GRAPH_API_VERSION/$WHATSAPP_PHONE_NUMBER_ID" \
