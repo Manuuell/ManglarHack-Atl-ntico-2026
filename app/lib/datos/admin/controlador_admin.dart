@@ -127,11 +127,23 @@ class ControladorAdmin extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  /// Entra con una sesión que ya abrió la cuenta (Configuración): no vuelve a pedir la clave.
+  /// [rolConfirmado] es el que devolvió `mi_rol()`.
+  void entrarConSesion(SesionAdmin sesion, String rolConfirmado) {
+    if (!configurado) return;
+    _sesion = sesion;
+    rol = rolConfirmado;
+    correo = sesion.correo;
+    error = null;
+    _repo = RepositorioRemoto(servidor, sesion);
+    _abrir();
+  }
+
   /// Demostración: datos locales, sin servidor. Es la única entrada sin servidor.
-  void entrarDemo({List<ReporteAdmin>? semilla}) {
+  void entrarDemo({List<ReporteAdmin>? semilla, String rolDemo = 'moderador_cra'}) {
     _repo = RepositorioDemo(reloj, semilla: semilla);
     _sesion = null;
-    rol = 'moderador_cra';
+    rol = rolDemo;
     correo = null;
     error = null;
     _abrir();

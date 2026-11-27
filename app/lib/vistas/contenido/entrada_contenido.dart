@@ -12,15 +12,18 @@ final RegExp _ambitoValido = RegExp(r'^(global|(evento|punto):[A-Za-z0-9_-]{1,10
 bool ambitoContenidoValido(String ambito) => _ambitoValido.hasMatch(ambito);
 
 /// Pocos toques: Portada de la app o el evento por su código. Abre el editor
-/// con la sesión del panel; quien manda sobre los permisos es la base (RLS).
-Future<void> abrirEditorContenido(BuildContext context, ControladorAdmin panel) {
+/// con la sesión del panel o, desde Configuración, con el token de la cuenta ([tokenEditor]);
+/// quien manda sobre los permisos es la base (RLS).
+Future<void> abrirEditorContenido(BuildContext context, ControladorAdmin? panel,
+    {Future<String?> Function()? tokenEditor}) {
   return mostrarHojaZ<void>(context, nombre: 'editar_contenido',
-    contenido: (c) => _HojaContenido(panel: panel, raiz: context));
+    contenido: (c) => _HojaContenido(panel: panel, raiz: context, tokenEditor: tokenEditor));
 }
 
 class _HojaContenido extends StatefulWidget {
-  const _HojaContenido({required this.panel, required this.raiz});
-  final ControladorAdmin panel;
+  const _HojaContenido({required this.panel, required this.raiz, this.tokenEditor});
+  final ControladorAdmin? panel;
+  final Future<String?> Function()? tokenEditor;
   final BuildContext raiz;
   @override State<_HojaContenido> createState() => _HojaContenidoState();
 }
@@ -30,10 +33,10 @@ class _HojaContenidoState extends State<_HojaContenido> {
   @override void dispose() { _codigo.dispose(); super.dispose(); }
 
   void _abrir(String ambito) {
-    final raiz = widget.raiz, panel = widget.panel;
+    final raiz = widget.raiz, panel = widget.panel, token = widget.tokenEditor;
     Navigator.of(context).pop();
     Navigator.of(raiz).push(MaterialPageRoute<void>(builder: (_) => EditorContenido(
-      ambito: ambito, repositorio: RepositorioContenido(panel: panel))));
+      ambito: ambito, repositorio: RepositorioContenido(panel: panel, tokenEditor: token))));
   }
 
   @override Widget build(BuildContext context) {

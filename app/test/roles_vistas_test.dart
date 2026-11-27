@@ -1,5 +1,5 @@
-// Inicio por cada rol, la elección de rol en la bienvenida y el cambio en Guardián, a 360x800 y
-// 390x844 con letra x1 y x1,3. Falla ante cualquier excepción (incluido un desborde).
+// Inicio igual para todos (sin rol ciudadano), la página de rol que aún vive en la bienvenida y
+// Guardián sin «TU ROL», a 360x800, 390x844 y 1280x800 con letra x1 y x1,3. Falla ante cualquier excepción (incluido un desborde).
 import 'dart:convert';
 import 'dart:io';
 
@@ -168,21 +168,33 @@ void main() {
         () => ServicioPronostico(cliente: MockClient((_) async => http.Response('', 500)));
   });
 
-  group('Inicio por rol', () {
-    _tamanosYLetras('Ciudadano', (t, tam, letra, errores) async {
-      await _montar(t, _estado(RolUsuario.ciudadano), const Inicio(), tam, letra);
+  group('Inicio para todos', () {
+    _tamanosYLetras('Cualquier perfil ve todo lo ciudadano, sin chip de rol', (t, tam, letra, errores) async {
+      await _montar(t, _estado(RolUsuario.organizador), const Inicio(), tam, letra);
       expect(find.text('¿QUÉ HAGO YA?'), findsOneWidget);
-      expect(find.text('Vecino o vecina'), findsOneWidget);
-      await _ver(t, 'Estado de mis reportes');
-      expect(find.text('Validados'), findsOneWidget);
+      for (final r in RolUsuario.values) {
+        expect(find.text(r.nombre), findsNothing);
+      }
+      // En el orden de Inicio: actuar, lo tuyo, el manglar hoy, participar y aprender.
       await _ver(t, 'Reporte rápido');
+      await _ver(t, 'Zanky está creciendo');
+      await _ver(t, 'Estado de mis reportes');
       await _ver(t, 'PRONÓSTICO DEL MANGLAR');
+      await _ver(t, 'Próximas jornadas');
+      await _ver(t, 'RETO DEL MANGLAR');
+      await _ver(t, 'Ranking de tu colegio');
+      await _ver(t, 'Qué ver');
+      await _ver(t, 'Qué no hacer');
+      // Las herramientas de quien organiza ya no salen en Inicio.
+      expect(find.text('QR del evento'), findsNothing);
+      expect(find.text('Asistentes'), findsNothing);
       if (letra == 1.0) _tocables(t, errores);
       await _cerrar(t);
     });
 
     for (final (tn, tam) in _tamanos) {
-      testWidgets('Ciudadano: mantener una tarjeta ofrece reportar, compartir y ocultar; ocultar se deshace · $tn', (t) async {
+      testWidgets('Mantener una tarjeta ofrece reportar, compartir y ocultar; ocultar se deshace · $tn', (t) async {
+        SharedPreferences.setMockInitialValues({});
         await _montar(t, _estado(RolUsuario.ciudadano), const Inicio(), tam, 1.0);
         await _ver(t, 'Estado de mis reportes');
         await t.longPress(find.text('Estado de mis reportes'));
@@ -200,59 +212,19 @@ void main() {
       });
     }
 
-    _tamanosYLetras('Ciudadano sin reportes: estado vacío con Zanky', (t, tam, letra, errores) async {
+    _tamanosYLetras('Sin reportes: un solo llamado a reportar (el héroe), sin repetirlo', (t, tam, letra, errores) async {
       await _montar(t, _estado(RolUsuario.ciudadano, conReportes: false), const Inicio(), tam, letra);
-      await _ver(t, 'Aún no has reportado');
-      expect(find.text('Hacer mi primer reporte'), findsOneWidget);
+      expect(find.text('¿Viste algo en el manglar?'), findsOneWidget);
+      expect(find.text('Haz tu primer reporte'), findsNothing);
+      expect(find.text('Hacer mi primer reporte'), findsNothing);
+      expect(find.text('Aún no has reportado'), findsNothing);
       await _cerrar(t);
     });
 
-    _tamanosYLetras('Estudiante', (t, tam, letra, errores) async {
-      await _montar(t, _estado(RolUsuario.estudiante), const Inicio(), tam, letra);
-      expect(find.text('¿QUÉ HAGO YA?'), findsOneWidget);
-      await _ver(t, 'RETO DEL MANGLAR');
-      await _ver(t, 'Ranking de tu colegio');
-      expect(find.text('Colegio Ciénaga de Mallorquín'), findsWidgets);
-      await _ver(t, 'MISIÓN DE LA SEMANA');
-      if (letra == 1.0) _tocables(t, errores);
-      await _cerrar(t);
-    });
-
-    _tamanosYLetras('Estudiante sin colegio pide agregarlo', (t, tam, letra, errores) async {
-      await _montar(t, _estado(RolUsuario.estudiante, colegio: ''), const Inicio(), tam, letra);
-      expect(find.text('Agrega tu colegio'), findsOneWidget);
+    _tamanosYLetras('Sin colegio lo sugiere a cualquiera', (t, tam, letra, errores) async {
+      await _montar(t, _estado(RolUsuario.ciudadano, colegio: ''), const Inicio(), tam, letra);
+      expect(find.text('¿Estudias? Agrega tu colegio'), findsOneWidget);
       await _ver(t, 'Falta tu colegio');
-      await _cerrar(t);
-    });
-
-    _tamanosYLetras('Visitante', (t, tam, letra, errores) async {
-      await _montar(t, _estado(RolUsuario.turista), const Inicio(), tam, letra);
-      expect(find.text('¿QUÉ HAGO YA?'), findsOneWidget);
-      await _ver(t, 'PRONÓSTICO DEL MANGLAR');
-      await _ver(t, 'Qué ver');
-      await _ver(t, 'Qué no hacer');
-      await _ver(t, 'Próximas jornadas');
-      await _ver(t, 'Siembra en el caño uno');
-      if (letra == 1.0) _tocables(t, errores);
-      await _cerrar(t);
-    });
-
-    _tamanosYLetras('Organizador', (t, tam, letra, errores) async {
-      await _montar(t, _estado(RolUsuario.organizador), const Inicio(), tam, letra);
-      expect(find.text('¿QUÉ HAGO YA?'), findsOneWidget);
-      await _ver(t, 'Mis jornadas');
-      await _ver(t, 'QR del evento');
-      expect(find.text('Para organizadores'), findsOneWidget);
-      await _ver(t, 'Asistentes');
-      expect(find.text('23'), findsOneWidget);
-      if (letra == 1.0) _tocables(t, errores);
-      await _cerrar(t);
-    });
-
-    _tamanosYLetras('Organizador sin jornadas', (t, tam, letra, errores) async {
-      cargaJornadasInicio = () async => const [];
-      await _montar(t, _estado(RolUsuario.organizador), const Inicio(), tam, letra);
-      await _ver(t, 'Sin jornadas próximas');
       await _cerrar(t);
     });
 
@@ -267,16 +239,17 @@ void main() {
       await _cerrar(t);
     });
 
-    testWidgets('«¿Qué hago ya?» cambia al cambiar el rol', (t) async {
+    testWidgets('El rol guardado en el perfil ya no cambia lo que se ve', (t) async {
       SharedPreferences.setMockInitialValues({});
       await _sinErrores(t, (_) async {
-        final estado = _estado(RolUsuario.ciudadano, conReportes: false);
+        final estado = _estado(RolUsuario.ciudadano);
         await _montar(t, estado, const Inicio(), _tamanos[0].$2, 1.0);
-        expect(find.text('Haz tu primer reporte'), findsOneWidget);
+        final antes = find.text('¿QUÉ HAGO YA?').evaluate().length;
         estado.perfil!.rol = RolUsuario.organizador;
         estado.guardarPerfil(estado.perfil!);
         await _avanzar(t, veces: 4);
-        expect(find.text('Prepara tu próxima jornada'), findsOneWidget);
+        expect(find.text('¿QUÉ HAGO YA?').evaluate().length, antes);
+        expect(find.text('Prepara tu próxima jornada'), findsNothing);
         await _cerrar(t);
       });
     });
@@ -336,22 +309,17 @@ void main() {
       });
     });
 
-    testWidgets('en Guardián: la tarjeta de rol abre la hoja y cambiar guarda el rol', (t) async {
+    testWidgets('en Guardián ya no hay «TU ROL» ni el nombre del rol', (t) async {
       SharedPreferences.setMockInitialValues({});
       await _sinErrores(t, (_) async {
-        final estado = _estado(RolUsuario.ciudadano);
+        final estado = _estado(RolUsuario.estudiante);
         await _montar(t, estado, const PantallaGuardian(), _tamanos[0].$2, 1.0);
-        await t.scrollUntilVisible(find.text('TU ROL'), 200, scrollable: find.byType(Scrollable).first);
-        expect(find.text('Vecino o vecina'), findsWidgets);
-        // El toque de la tarjeta abre esta misma hoja.
-        mostrarCambiarRol(t.element(find.byType(PantallaGuardian)));
-        await _avanzar(t, veces: 8);
-        expect(find.text('¿Cómo participas?'), findsOneWidget);
-        await t.tap(find.text('Organizador de jornadas').last);
-        await _avanzar(t, veces: 10);
-        expect(estado.perfil?.rol, RolUsuario.organizador);
-        // El resto del perfil no se toca.
-        expect(estado.perfil?.nombre, 'Ana Pérez');
+        for (var i = 0; i < 10; i++) {
+          expect(find.text('TU ROL'), findsNothing);
+          expect(find.text('Estudiante'), findsNothing);
+          await t.drag(find.byType(Scrollable).first, const Offset(0, -400));
+          await _avanzar(t, veces: 2);
+        }
         await _cerrar(t);
       });
     });

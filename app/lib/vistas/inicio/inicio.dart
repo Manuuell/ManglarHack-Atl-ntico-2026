@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../datos/admin/controlador_admin.dart';
 import '../../datos/estado.dart';
 import '../../datos/experiencia/entrada_evento.dart' hide EntradaEvento;
 import '../../datos/resumen_reportes.dart';
@@ -28,7 +29,7 @@ import '../contenido/bloques_contenido.dart';
 import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../guardian/editar_perfil.dart';
-import '../roles/selector_rol.dart';
+import '../configuracion/pantalla_configuracion.dart';
 import 'pronostico_compacto.dart';
 import '../sensores/sensores_compacto.dart';
 import 'que_hago_ya.dart';
@@ -141,22 +142,15 @@ class _InicioState extends State<Inicio> {
         final admin = AdminScope.maybeDe(context);
         final enPanel = admin != null && admin.dentro;
         return QueHagoYa(
-          accion: queHagoYa(ContextoYa(
-            rol: perfil?.rol ?? RolUsuario.ciudadano,
-            hora: DateTime.now().hour,
-            rolPanel: enPanel ? admin.rol : null,
-            sinVerPanel: enPanel ? admin.sinVer : 0,
-            porEnviar: estado.pendientes,
-            rechazados: estado.rechazados,
-            enLinea: estado.enLinea,
-            enviados: progreso.enviados,
-            tieneColegio: (perfil?.colegio.trim() ?? '').isNotEmpty,
-            eventoAbierto: entradaEvento.value != null,
-          )),
+          accion: _accionYa(context, estado, progreso, admin != null && enPanel ? admin : null),
           alTocar: (d) => _ir(context, d),
         );
       case SeccionInicio.reportar:
-        return const _TarjetaReportar();
+        // El único llamado a reportar de Inicio: la tarjeta héroe con el reporte rápido debajo.
+        return const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [_TarjetaReportar(), SizedBox(height: 14), _Rapidos()],
+        );
       case SeccionInicio.reporteRapido:
         return const _Rapidos();
       case SeccionInicio.estadoReportes:
@@ -205,6 +199,33 @@ class _InicioState extends State<Inicio> {
     }
   }
 
+  AccionYa _accionYa(BuildContext context, EstadoZanky estado, Progreso progreso, ControladorAdmin? admin) {
+    final perfil = estado.perfil;
+    return queHagoYa(ContextoYa(
+      hora: DateTime.now().hour,
+      rolPanel: admin?.rol,
+      sinVerPanel: admin?.sinVer ?? 0,
+      porEnviar: estado.pendientes,
+      rechazados: estado.rechazados,
+      enLinea: estado.enLinea,
+      enviados: progreso.enviados,
+      tieneColegio: (perfil?.colegio.trim() ?? '').isNotEmpty,
+      eventoAbierto: entradaEvento.value != null,
+    ));
+  }
+
+  /// ¿Sobra la sección? «¿Qué hago ya?» no repite «reportar» (ya lo dice el héroe) y el
+  /// estado de tus reportes no sale vacío (su botón repetiría el héroe).
+  bool _sobra(BuildContext context, SeccionInicio s, EstadoZanky estado, Progreso progreso, ResumenReportes resumen) {
+    if (s == SeccionInicio.estadoReportes) return resumen.vacio;
+    if (s == SeccionInicio.queHagoYa) {
+      final admin = AdminScope.maybeDe(context);
+      return _accionYa(context, estado, progreso, admin != null && admin.dentro ? admin : null).destino ==
+          DestinoYa.reportar;
+    }
+    return false;
+  }
+
   /// A dónde lleva la sugerencia de «¿Qué hago ya?».
   Future<void> _ir(BuildContext context, DestinoYa d) async {
     switch (d) {
@@ -242,13 +263,13 @@ class _InicioState extends State<Inicio> {
     final tt = Theme.of(context).textTheme;
     final nombre = estado.perfil?.nombre.trim().split(' ').first ?? '';
     final arriba = MediaQuery.paddingOf(context).top;
-    final perfil = estado.perfil;
-    final rol = perfil?.rol ?? RolUsuario.ciudadano;
     final admin = AdminScope.maybeDe(context);
     final rolPanel = (admin != null && admin.dentro) ? admin.rol : null;
     final progreso = estado.progreso;
     final resumen = ResumenReportes.de(estado.reportes);
-    final secciones = seccionesDeInicio(rol, rolPanel: rolPanel).where((s) => !_ocultas.contains(s)).toList();
+    final secciones = seccionesDeInicio(rolPanel: rolPanel)
+        .where((s) => !_ocultas.contains(s) && !_sobra(context, s, estado, progreso, resumen))
+        .toList();
     var i = 0;
     return TirarActualizar(
       alActualizar: () async {
@@ -271,10 +292,11 @@ class _InicioState extends State<Inicio> {
                       Text(_saludo().toUpperCase(), style: tt.seccion.copyWith(color: Cra.azul)),
                       const SizedBox(height: 2),
                       Text(nombre.isEmpty ? 'Guardián del manglar' : nombre, style: tt.headlineMedium),
-                      if (perfil != null) _PildoraRol(rol: rol),
                     ],
                   ),
                 ),
+                const BotonConfiguracion(),
+                const SizedBox(width: 4),
                 ZankyMascota(
                   tamano: 74,
                   animo: _dato < 0 ? Animo.feliz : Animo.curioso,
@@ -321,48 +343,6 @@ class _InicioState extends State<Inicio> {
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-/// El rol de quien mira, en una píldora que lo cambia con un toque (también en Guardián).
-class _PildoraRol extends StatelessWidget {
-  const _PildoraRol({required this.rol});
-  final RolUsuario rol;
-
-  @override
-  Widget build(BuildContext context) {
-    return Presionable(
-      etiqueta: 'Tu rol: ${rol.nombre}. Toca para cambiarlo',
-      onTap: () => mostrarCambiarRol(context),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 44),
-        child: Align(
-          alignment: Alignment.centerLeft,
-          widthFactor: 1,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: rol.color.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(99),
-            ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(rol.icono, size: 16, color: rol.color),
-              const SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  rol.nombre,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Zc.texto),
-                ),
-              ),
-              const SizedBox(width: 2),
-              const Icon(Icons.expand_more_rounded, size: 16, color: Zc.textoSuave),
-            ]),
-          ),
-        ),
       ),
     );
   }

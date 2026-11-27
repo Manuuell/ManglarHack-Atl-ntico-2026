@@ -8,15 +8,18 @@ import '../servidor.dart';
 import '../tipos.dart';
 import 'reporte_admin.dart';
 
-/// Una sesión de Supabase Auth del equipo (correo y contraseña). Vive solo en memoria:
-/// al cerrar la app hay que entrar de nuevo, para no dejar un token de moderador en un
-/// teléfono o navegador prestado.
+/// Una sesión de Supabase Auth (correo y contraseña). La del panel por su cuenta vive solo en
+/// memoria; la de Configuración (`ControladorCuenta`) se guarda en el teléfono para no pedir la
+/// clave cada vez, y [alRenovar] le avisa cuando cambian los tokens para guardar los nuevos.
 class SesionAdmin {
   SesionAdmin({required this.token, required this.refresco, required this.vence, required this.correo});
   String token;
   String refresco;
   DateTime vence;
   final String correo;
+
+  /// Se llama cada vez que [RepositorioRemoto.refrescar] cambia los tokens.
+  void Function()? alRenovar;
 
   bool porVencer(DateTime ahora) => ahora.isAfter(vence.subtract(const Duration(seconds: 90)));
 }
@@ -288,6 +291,7 @@ class RepositorioRemoto implements RepositorioAdmin {
       ..token = nueva.token
       ..refresco = nueva.refresco
       ..vence = nueva.vence;
+    sesion.alRenovar?.call();
   }
 
   /// El rol que el servidor confirma en `panel_roles` (nulo si no tiene o se lo quitaron).

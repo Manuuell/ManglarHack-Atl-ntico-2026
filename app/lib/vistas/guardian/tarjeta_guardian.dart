@@ -294,7 +294,7 @@ class _Frente extends StatelessWidget {
                         ajustado('Guardián del manglar del Atlántico',
                             tt.labelMedium?.copyWith(color: blanco.withValues(alpha: 0.82))),
                         ajustado(
-                          colegio.isEmpty ? perfil.rol.nombre : '${perfil.rol.nombre} · $colegio',
+                          colegio.isEmpty ? 'Guardián del manglar' : 'Guardián · $colegio',
                           tt.bodySmall?.copyWith(color: blanco.withValues(alpha: 0.92)),
                         ),
                       ],
@@ -319,7 +319,7 @@ class _Frente extends StatelessWidget {
                     border: Border.all(color: blanco.withValues(alpha: 0.5)),
                   ),
                   child: inicialesDe(perfil.nombre).isEmpty
-                      ? Icon(perfil.rol.icono, size: ancho * 0.05, color: blanco)
+                      ? Icon(Icons.eco_rounded, size: ancho * 0.05, color: blanco)
                       : Text(inicialesDe(perfil.nombre),
                           style: tt.labelMedium?.copyWith(color: blanco, fontSize: ancho * 0.04)),
                 ),
@@ -414,7 +414,7 @@ class _Reverso extends StatelessWidget {
                   Text(perfil.codigo,
                       style: tt.titleMedium?.copyWith(
                           color: blanco, letterSpacing: 1.4, fontFeatures: const [FontFeature.tabularFigures()])),
-                  Text(perfil.rol.nombre, style: tt.labelSmall?.copyWith(color: blanco.withValues(alpha: 0.82))),
+                  Text('Guardián del manglar', style: tt.labelSmall?.copyWith(color: blanco.withValues(alpha: 0.82))),
                   const SizedBox(height: 8),
                   Row(
                     children: [

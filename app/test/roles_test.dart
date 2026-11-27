@@ -1,5 +1,6 @@
-// La lógica de roles y secciones, sin pantallas: qué rol se guarda, en qué orden sale cada
-// sección y qué sugiere «¿Qué hago ya?» según el rol y el momento.
+// La lógica de secciones, sin pantallas: ya no hay rol ciudadano que cambie lo que se ve; el
+// perfil viejo se sigue leyendo, Inicio y Guardián son iguales para todos y «¿Qué hago ya?»
+// depende solo del momento y de los reportes.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zanky/datos/experiencia/jornada.dart';
 import 'package:zanky/datos/guardian.dart';
@@ -50,7 +51,7 @@ void main() {
       expect(Perfil.fromJson(viejo).rol, RolUsuario.ciudadano);
     });
 
-    test('los roles del servidor tienen etiqueta y solo los cuatro del panel se conocen', () {
+    test('los roles del servidor tienen etiqueta y un rol ciudadano no es del servidor', () {
       for (final r in RolPanel.todos) {
         expect(RolPanel.esConocido(r), isTrue);
         expect(RolPanel.etiqueta(r), isNot('Equipo'));
@@ -61,64 +62,59 @@ void main() {
   });
 
   group('Secciones de Inicio', () {
-    test('cada rol empieza por «¿Qué hago ya?» y no repite secciones', () {
-      for (final r in RolUsuario.values) {
-        final s = seccionesDeInicio(r);
-        expect(s.first, SeccionInicio.queHagoYa, reason: r.id);
-        expect(s.toSet().length, s.length, reason: r.id);
-        expect(s, isNot(contains(SeccionInicio.panel)), reason: r.id);
+    test('todos ven lo mismo: empieza por «¿Qué hago ya?» y el héroe de reportar, sin repetir', () {
+      final s = seccionesDeInicio();
+      expect(s.first, SeccionInicio.queHagoYa);
+      expect(s[1], SeccionInicio.reportar);
+      expect(s.toSet().length, s.length);
+      expect(s, isNot(contains(SeccionInicio.panel)));
+    });
+
+    test('lo ciudadano está todo: ver, no hacer, jornadas, evento, reto, ranking, progreso, clima', () {
+      expect(seccionesDeInicio(), containsAll([
+        SeccionInicio.queVer, SeccionInicio.queNoHacer, SeccionInicio.jornadasCerca, SeccionInicio.evento,
+        SeccionInicio.retoManglar, SeccionInicio.rankingColegio, SeccionInicio.progreso, SeccionInicio.clima,
+        SeccionInicio.pronostico, SeccionInicio.sensores, SeccionInicio.estadoReportes, SeccionInicio.mision,
+      ]));
+    });
+
+    test('un solo llamado a reportar: el reporte rápido no sale suelto (va dentro del héroe)', () {
+      expect(seccionesDeInicio(), isNot(contains(SeccionInicio.reporteRapido)));
+    });
+
+    test('las herramientas de quien organiza no salen en Inicio (van en Gestión)', () {
+      final s = seccionesDeInicio(rolPanel: 'admin');
+      for (final x in [SeccionInicio.misJornadas, SeccionInicio.qrEvento, SeccionInicio.asistentes]) {
+        expect(s, isNot(contains(x)));
       }
     });
 
-    test('con sesión del equipo la bandeja del panel va primero, sea cual sea el rol elegido', () {
-      for (final rol in RolUsuario.values) {
-        for (final panel in RolPanel.todos) {
-          expect(seccionesDeInicio(rol, rolPanel: panel).first, SeccionInicio.panel);
-        }
+    test('orden por bloques: actuar, lo tuyo, el manglar hoy (con hueco para Comunidad), participar', () {
+      final s = seccionesDeInicio();
+      expect(s.sublist(0, 5), [
+        SeccionInicio.queHagoYa,
+        SeccionInicio.reportar,
+        SeccionInicio.progreso,
+        SeccionInicio.estadoReportes,
+        SeccionInicio.mision,
+      ]);
+      expect(s.indexOf(SeccionInicio.pronostico), s.indexOf(SeccionInicio.sensores) + 1);
+      // «Comunidad» entra entre el clima y las jornadas: deben quedar seguidas.
+      expect(s.indexOf(SeccionInicio.jornadasCerca), s.indexOf(SeccionInicio.clima) + 1);
+      expect(s.last, SeccionInicio.sabiasQue);
+    });
+
+    test('con sesión del equipo que modera, la bandeja del panel va primero', () {
+      for (final panel in RolPanel.todos) {
+        expect(seccionesDeInicio(rolPanel: panel).first, SeccionInicio.panel);
       }
-      expect(seccionesDeInicio(RolUsuario.turista, rolPanel: 'otro'), isNot(contains(SeccionInicio.panel)));
-    });
-
-    test('el estudiante ve el reto y el ranking de su colegio antes que reportar', () {
-      final s = seccionesDeInicio(RolUsuario.estudiante);
-      expect(s.indexOf(SeccionInicio.retoManglar), lessThan(s.indexOf(SeccionInicio.reportar)));
-      expect(s.indexOf(SeccionInicio.rankingColegio), lessThan(s.indexOf(SeccionInicio.reportar)));
-      expect(s, contains(SeccionInicio.mision));
-    });
-
-    test('el visitante ve qué ver, qué no hacer y jornadas; no ve ranking ni progreso', () {
-      final s = seccionesDeInicio(RolUsuario.turista);
-      expect(s, containsAll([SeccionInicio.queVer, SeccionInicio.queNoHacer, SeccionInicio.jornadasCerca]));
-      expect(s, isNot(contains(SeccionInicio.rankingColegio)));
-      expect(s, isNot(contains(SeccionInicio.progreso)));
-      expect(s, contains(SeccionInicio.reporteRapido));
-    });
-
-    test('el organizador ve sus jornadas, el QR y los asistentes arriba', () {
-      final s = seccionesDeInicio(RolUsuario.organizador);
-      expect(s.sublist(2, 5), [SeccionInicio.misJornadas, SeccionInicio.qrEvento, SeccionInicio.asistentes]);
-    });
-
-    test('el pronóstico va arriba para organizador y visitante, y más abajo para los demás', () {
-      expect(seccionesDeInicio(RolUsuario.organizador)[1], SeccionInicio.pronostico);
-      expect(seccionesDeInicio(RolUsuario.turista)[1], SeccionInicio.pronostico);
-      for (final r in [RolUsuario.ciudadano, RolUsuario.estudiante]) {
-        final s = seccionesDeInicio(r);
-        expect(s.indexOf(SeccionInicio.pronostico), greaterThan(4), reason: r.id);
-      }
-    });
-
-    test('el ciudadano ve el estado de sus reportes y el clima', () {
-      final s = seccionesDeInicio(RolUsuario.ciudadano);
-      expect(s, containsAll([SeccionInicio.reportar, SeccionInicio.estadoReportes, SeccionInicio.clima]));
-      expect(s.indexOf(SeccionInicio.reportar), lessThan(s.indexOf(SeccionInicio.estadoReportes)));
+      expect(seccionesDeInicio(rolPanel: 'otro'), isNot(contains(SeccionInicio.panel)));
     });
   });
 
   group('¿Qué hago ya?', () {
-    AccionYa cual(RolUsuario rol, {int hora = 10, String? panel, int sinVer = 0, int porEnviar = 0, int rechazados = 0, bool enLinea = true, int enviados = 3, bool colegio = true, bool evento = false}) =>
+    AccionYa cual({int hora = 10, String? panel, int sinVer = 0, int porEnviar = 0, int rechazados = 0, bool enLinea = true, int enviados = 3, bool colegio = true, bool evento = false}) =>
         queHagoYa(ContextoYa(
-          rol: rol,
           hora: hora,
           rolPanel: panel,
           sinVerPanel: sinVer,
@@ -131,69 +127,52 @@ void main() {
         ));
 
     test('lo del equipo gana a todo: reportes por revisar llevan al panel', () {
-      final a = cual(RolUsuario.estudiante, panel: 'vigia', sinVer: 3, porEnviar: 2, rechazados: 1);
+      final a = cual(panel: 'vigia', sinVer: 3, porEnviar: 2, rechazados: 1);
       expect(a.destino, DestinoYa.panel);
       expect(a.tono, TonoYa.urgente);
       expect(a.titulo, '3 reportes nuevos por revisar');
-      expect(cual(RolUsuario.ciudadano, panel: 'admin', sinVer: 1).titulo, '1 reporte nuevo por revisar');
+      expect(cual(panel: 'admin', sinVer: 1).titulo, '1 reporte nuevo por revisar');
     });
 
-    test('con sesión del equipo pero sin nada nuevo, sigue lo propio del rol', () {
-      expect(cual(RolUsuario.organizador, panel: 'admin', sinVer: 0).destino, DestinoYa.evento);
+    test('con sesión del equipo pero sin nada nuevo, sigue lo de todos', () {
+      expect(cual(panel: 'admin', sinVer: 0, evento: true).destino, DestinoYa.evento);
     });
 
     test('un reporte rechazado va antes que uno que espera señal', () {
-      final a = cual(RolUsuario.turista, rechazados: 2, porEnviar: 1);
+      final a = cual(rechazados: 2, porEnviar: 1);
       expect(a.destino, DestinoYa.misReportes);
       expect(a.tono, TonoYa.urgente);
       expect(a.titulo, '2 reportes rechazados');
     });
 
     test('sin señal lo guardado se explica; con señal se dice que ya sale', () {
-      final sin = cual(RolUsuario.ciudadano, porEnviar: 1, enLinea: false);
+      final sin = cual(porEnviar: 1, enLinea: false);
       expect(sin.clave, 'sin_senal');
       expect(sin.titulo, '1 reporte espera señal');
-      final con = cual(RolUsuario.ciudadano, porEnviar: 2);
+      final con = cual(porEnviar: 2);
       expect(con.clave, 'enviando');
       expect(con.tono, TonoYa.suave);
     });
 
-    test('estudiante: primero el colegio, luego el primer reporte, luego la misión', () {
-      expect(cual(RolUsuario.estudiante, colegio: false, enviados: 0).destino, DestinoYa.perfil);
-      expect(cual(RolUsuario.estudiante, enviados: 0).clave, 'est_primero');
-      expect(cual(RolUsuario.estudiante, enviados: 2).clave, 'est_mision');
-    });
-
-    test('visitante: de día a reportar con cuidado, de noche a planear con el mapa', () {
-      expect(cual(RolUsuario.turista, hora: 9).destino, DestinoYa.reportar);
-      expect(cual(RolUsuario.turista, hora: 18).destino, DestinoYa.mapa);
-      expect(cual(RolUsuario.turista, hora: 3).destino, DestinoYa.mapa);
-      expect(cual(RolUsuario.turista, hora: 17).destino, DestinoYa.reportar);
-    });
-
-    test('organizador: abre el evento, y dice si ya hay uno abierto', () {
-      expect(cual(RolUsuario.organizador).clave, 'org_preparar');
-      expect(cual(RolUsuario.organizador, evento: true).clave, 'org_abierto');
-    });
-
-    test('ciudadano: primer reporte, madrugada o el mapa', () {
-      expect(cual(RolUsuario.ciudadano, enviados: 0).clave, 'ciu_primero');
-      expect(cual(RolUsuario.ciudadano, hora: 5).clave, 'ciu_madrugada');
-      expect(cual(RolUsuario.ciudadano, hora: 6).clave, 'ciu_madrugada');
-      expect(cual(RolUsuario.ciudadano, hora: 7).clave, 'ciu_mapa');
+    test('jornada abierta, luego primer reporte, noche, madrugada, colegio y mapa', () {
+      expect(cual(evento: true, enviados: 0).clave, 'evento_abierto');
+      expect(cual(enviados: 0).clave, 'primero');
+      expect(cual(hora: 20).clave, 'noche');
+      expect(cual(hora: 3).clave, 'noche');
+      expect(cual(hora: 6).clave, 'madrugada');
+      expect(cual(colegio: false, enviados: 1).destino, DestinoYa.perfil);
+      expect(cual(hora: 12).clave, 'mapa');
     });
 
     test('toda combinación da una acción completa (sin textos vacíos)', () {
-      for (final rol in RolUsuario.values) {
-        for (final hora in [0, 6, 12, 18, 23]) {
-          for (final panel in [null, 'moderador_cra']) {
-            for (final n in [0, 1]) {
-              final a = cual(rol, hora: hora, panel: panel, sinVer: n, porEnviar: n, rechazados: n, enviados: n, colegio: n == 1);
-              expect(a.titulo, isNotEmpty);
-              expect(a.detalle, isNotEmpty);
-              expect(a.boton, isNotEmpty);
-              expect(a.clave, isNotEmpty);
-            }
+      for (final hora in [0, 6, 12, 18, 23]) {
+        for (final panel in [null, 'moderador_cra']) {
+          for (final n in [0, 1]) {
+            final a = cual(hora: hora, panel: panel, sinVer: n, porEnviar: n, rechazados: n, enviados: n, colegio: n == 1, evento: n == 1);
+            expect(a.titulo, isNotEmpty);
+            expect(a.detalle, isNotEmpty);
+            expect(a.boton, isNotEmpty);
+            expect(a.clave, isNotEmpty);
           }
         }
       }
@@ -201,23 +180,19 @@ void main() {
   });
 
   group('Secciones de Guardián', () {
-    test('la tarjeta va primero, el rol justo debajo y el panel al final', () {
-      for (final r in RolUsuario.values) {
-        final s = seccionesDeGuardian(r);
+    test('sin rol que elegir: la tarjeta primero y nunca la sección «TU ROL»', () {
+      for (final g in [true, false]) {
+        final s = seccionesDeGuardian(conGestion: g);
         expect(s.first, SeccionGuardian.tarjeta);
-        expect(s[1], SeccionGuardian.rol);
-        expect(s.last, SeccionGuardian.panel);
+        expect(s, isNot(contains(SeccionGuardian.rol)));
         expect(s.toSet().length, s.length);
+        expect(s, contains(SeccionGuardian.colegios));
       }
     });
 
-    test('sin perfil no hay rol que cambiar', () {
-      expect(seccionesDeGuardian(RolUsuario.ciudadano, conPerfil: false), isNot(contains(SeccionGuardian.rol)));
-    });
-
-    test('el estudiante ve su colegio justo después de la tarjeta; el visitante no ve colegios', () {
-      expect(seccionesDeGuardian(RolUsuario.estudiante)[2], SeccionGuardian.colegios);
-      expect(seccionesDeGuardian(RolUsuario.turista), isNot(contains(SeccionGuardian.colegios)));
+    test('«Gestión» solo con una cuenta del equipo, justo bajo la tarjeta', () {
+      expect(seccionesDeGuardian(), isNot(contains(SeccionGuardian.panel)));
+      expect(seccionesDeGuardian(conGestion: true)[1], SeccionGuardian.panel);
     });
   });
 

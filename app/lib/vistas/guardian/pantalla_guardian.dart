@@ -10,16 +10,15 @@ import '../../nucleo/base/transicion_pestanas.dart';
 import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/celebracion.dart';
 import '../../nucleo/presionable.dart';
-import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
-import '../admin/entrada_panel.dart';
-import '../gestion/entrada_gestor.dart';
 import '../admin/panel_cra.dart';
 import '../admin/piezas_admin.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
-import '../roles/selector_rol.dart';
+import '../configuracion/pantalla_configuracion.dart';
+import '../configuracion/piezas_configuracion.dart';
+import '../configuracion/seccion_gestion.dart';
 import 'editar_perfil.dart';
 import 'insignias_guardian.dart';
 import '../experiencia/widgets_evento.dart' show ResumenParticipacion;
@@ -114,13 +113,13 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
     final estado = Zanky.de(context);
     final perfil = estado.perfil;
     final progreso = estado.progreso;
-    final rol = perfil?.rol ?? RolUsuario.ciudadano;
+    final cuenta = CuentaScope.maybeDe(context);
     final secciones = [
-      for (final sec in seccionesDeGuardian(rol, conPerfil: perfil != null))
+      for (final sec in seccionesDeGuardian(conGestion: cuenta != null && cuenta.gestiones.isNotEmpty))
         switch (sec) {
           SeccionGuardian.tarjeta =>
             perfil != null ? SeccionTarjeta(perfil: perfil, progreso: progreso) : const _SinPerfil(),
-          SeccionGuardian.rol => _SeccionRol(rol: rol),
+          SeccionGuardian.rol => const SizedBox.shrink(),
           SeccionGuardian.nivel => Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -140,9 +139,8 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
               colegio: perfil?.colegio.trim() ?? '',
               servidorConectado: estado.servidor.configurado,
             ),
-          SeccionGuardian.panel => const Column(
-            children: [EntradaPanelCra(), SizedBox(height: 10), EntradaGestor()],
-          ),
+          // «Gestión»: solo con una cuenta del equipo (Configuración › Entrar con tu cuenta).
+          SeccionGuardian.panel => const SeccionGestion(conNota: false),
         },
     ];
     return SafeArea(
@@ -166,6 +164,8 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
                   ),
                   const SizedBox(width: 8),
                 ],
+                const BotonConfiguracion(),
+                const SizedBox(width: 8),
                 Presionable(
                   etiqueta: 'Editar mi perfil',
                   onTap: () => mostrarEditarPerfil(context),
@@ -190,46 +190,6 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
             ),
           const EntradaVoluntario(),
         ],
-      ),
-    );
-  }
-}
-
-/// Cómo participas: el rol de la bienvenida, con su ilustración y un toque para cambiarlo.
-class _SeccionRol extends StatelessWidget {
-  const _SeccionRol({required this.rol});
-  final RolUsuario rol;
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: TarjetaZ(
-        onTap: () => mostrarCambiarRol(context),
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            IlustracionRol(rol, tamano: 56),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('TU ROL', style: tt.seccion.copyWith(color: rol.color)),
-                  Text(rol.nombre, style: tt.titleMedium),
-                  Text(rol.lema, style: tt.bodySmall),
-                ],
-              ),
-            ),
-            const SizedBox(width: 6),
-            Semantics(
-              label: 'Cambiar mi rol',
-              excludeSemantics: true,
-              child: Text('Cambiar', style: tt.labelMedium?.copyWith(color: Zc.hoja)),
-            ),
-          ],
-        ),
       ),
     );
   }

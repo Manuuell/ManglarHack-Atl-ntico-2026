@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Quién eres en el manglar. Se elige en la bienvenida, vive en el perfil del teléfono y se
-/// puede cambiar en Guardián. NO da ningún permiso: los permisos del equipo (vigía, moderador,
-/// administrador, aliado) los confirma el servidor al entrar al panel, nunca esta elección.
+import 'cuenta/permisos.dart';
+
+export 'cuenta/permisos.dart' show Gestion, gestionesDe, permisosConfigurados, permisosPorDefecto, rolesQueModeran;
+
+/// Perfil heredado de versiones anteriores, cuando la bienvenida pedía elegir «Vecino»,
+/// «Estudiante», «Visitante» u «Organizador». Ya NO cambia nada de lo que se ve: una persona
+/// puede ser todo eso a la vez, así que Inicio y Guardián muestran lo mismo a todos. Se conserva
+/// solo para leer perfiles guardados sin romperlos. Los permisos del equipo los da el servidor
+/// (`panel_roles`) al entrar con la cuenta en Configuración.
 enum RolUsuario {
   ciudadano('ciudadano', 'Vecino o vecina', 'Vivo o trabajo cerca del manglar', Icons.home_work_rounded,
       Color(0xFF2E9E6A)),
@@ -24,22 +30,33 @@ enum RolUsuario {
   static RolUsuario deId(Object? id) => values.firstWhere((r) => r.id == id, orElse: () => ciudadano);
 }
 
-/// Los roles del servidor que resuelve el panel (`panel_roles`): se leen de la sesión, no se eligen.
+/// Los roles del servidor (`panel_roles`): se leen de la sesión, no se eligen.
 abstract final class RolPanel {
-  static const todos = ['admin', 'moderador_cra', 'vigia', 'aliado'];
+  static const todos = ['admin', 'moderador_cra', 'vigia', 'aliado', 'investigador', 'organizador'];
 
   static bool esConocido(String? rol) => rol != null && todos.contains(rol);
+
+  /// Lo que [rol] puede gestionar (vacío sin rol). Ver `cuenta/permisos.dart`: la tabla se
+  /// puede reemplazar con `permisosConfigurados` cuando llegue la del panel de administración.
+  static List<Gestion> permisos(String? rol) => gestionesDe(rol);
+
+  /// ¿Puede [rol] usar [g]? Esto decide qué se MUESTRA; el servidor lo vuelve a comprobar.
+  static bool puede(String? rol, Gestion g) => gestionesDe(rol).contains(g);
 
   static String etiqueta(String? rol) => switch (rol) {
         'admin' => 'Administración',
         'moderador_cra' => 'Moderación CRA',
         'vigia' => 'Vigía',
         'aliado' => 'Aliado',
+        'investigador' => 'Investigación',
+        'organizador' => 'Organización de jornadas',
         _ => 'Equipo',
       };
 }
 
 /// Cada bloque que puede salir en Inicio. El orden en que se piden es el orden en pantalla.
+/// `misJornadas`, `qrEvento` y `asistentes` ya no salen en Inicio: son herramientas de quien
+/// organiza y viven en Configuración › Gestión (con su cuenta).
 enum SeccionInicio {
   panel,
   queHagoYa,
@@ -63,62 +80,36 @@ enum SeccionInicio {
   sabiasQue,
 }
 
-/// Las secciones de Inicio, de lo más útil a lo menos, según el rol. Con sesión del equipo
-/// ([rolPanel] conocido) la bandeja del panel va arriba de todo.
-List<SeccionInicio> seccionesDeInicio(RolUsuario rol, {String? rolPanel}) {
-  final propias = switch (rol) {
-    RolUsuario.ciudadano => [
-        SeccionInicio.queHagoYa,
-        SeccionInicio.reportar,
-        SeccionInicio.estadoReportes,
-        SeccionInicio.clima,
-        SeccionInicio.reporteRapido,
-        SeccionInicio.progreso,
-        SeccionInicio.evento,
-        SeccionInicio.mision,
-        SeccionInicio.pronostico,
-        SeccionInicio.sensores,
-        SeccionInicio.sabiasQue,
-      ],
-    RolUsuario.estudiante => [
-        SeccionInicio.queHagoYa,
-        SeccionInicio.retoManglar,
-        SeccionInicio.rankingColegio,
-        SeccionInicio.mision,
-        SeccionInicio.reportar,
-        SeccionInicio.reporteRapido,
-        SeccionInicio.progreso,
-        SeccionInicio.evento,
-        SeccionInicio.clima,
-        SeccionInicio.pronostico,
-        SeccionInicio.sensores,
-        SeccionInicio.sabiasQue,
-      ],
-    RolUsuario.turista => [
-        SeccionInicio.queHagoYa,
-        SeccionInicio.pronostico,
-        SeccionInicio.queVer,
-        SeccionInicio.queNoHacer,
-        SeccionInicio.reporteRapido,
-        SeccionInicio.jornadasCerca,
-        SeccionInicio.clima,
-        SeccionInicio.sensores,
-        SeccionInicio.sabiasQue,
-      ],
-    RolUsuario.organizador => [
-        SeccionInicio.queHagoYa,
-        SeccionInicio.pronostico,
-        SeccionInicio.misJornadas,
-        SeccionInicio.qrEvento,
-        SeccionInicio.asistentes,
-        SeccionInicio.reportar,
-        SeccionInicio.clima,
-        SeccionInicio.sensores,
-        SeccionInicio.sabiasQue,
-      ],
-  };
-  return [if (RolPanel.esConocido(rolPanel)) SeccionInicio.panel, ...propias];
-}
+/// Las secciones de Inicio, iguales para todos, en cuatro bloques:
+/// 1. Actuar: «¿Qué hago ya?» y UN solo llamado a reportar (`reportar` lleva dentro el
+///    reporte rápido).
+/// 2. Lo tuyo: Zanky creciendo (arte oficial por etapas), tus reportes y la misión.
+/// 3. El manglar hoy: sensores, pronóstico y clima; después «Comunidad» (alertas y noticias).
+/// 4. Participar y aprender: jornadas, modo evento, reto, colegio, qué ver, qué no hacer y
+///    el dato curioso.
+/// Con sesión del equipo que modera ([rolPanel] conocido) la bandeja del panel va arriba.
+///
+/// `reporteRapido` ya no sale suelto (va dentro del héroe). La sección «Comunidad» se inserta
+/// después de [SeccionInicio.clima] y antes de [SeccionInicio.jornadasCerca].
+List<SeccionInicio> seccionesDeInicio({String? rolPanel}) => [
+      if (RolPanel.esConocido(rolPanel)) SeccionInicio.panel,
+      SeccionInicio.queHagoYa,
+      SeccionInicio.reportar,
+      SeccionInicio.progreso,
+      SeccionInicio.estadoReportes,
+      SeccionInicio.mision,
+      SeccionInicio.sensores,
+      SeccionInicio.pronostico,
+      SeccionInicio.clima,
+      // Aquí va «Comunidad».
+      SeccionInicio.jornadasCerca,
+      SeccionInicio.evento,
+      SeccionInicio.retoManglar,
+      SeccionInicio.rankingColegio,
+      SeccionInicio.queVer,
+      SeccionInicio.queNoHacer,
+      SeccionInicio.sabiasQue,
+    ];
 
 /// A dónde lleva «¿Qué hago ya?».
 enum DestinoYa { reportar, mapa, misReportes, guardian, perfil, evento, panel }
@@ -150,7 +141,6 @@ class AccionYa {
 /// no lee el reloj ni el estado de la app, así se puede probar con cualquier hora.
 class ContextoYa {
   const ContextoYa({
-    required this.rol,
     required this.hora,
     this.rolPanel,
     this.sinVerPanel = 0,
@@ -162,7 +152,6 @@ class ContextoYa {
     this.eventoAbierto = false,
   });
 
-  final RolUsuario rol;
   final int hora;
   final String? rolPanel;
   final int sinVerPanel;
@@ -220,151 +209,86 @@ AccionYa queHagoYa(ContextoYa c) {
       tono: TonoYa.suave,
     );
   }
-  switch (c.rol) {
-    case RolUsuario.estudiante:
-      if (!c.tieneColegio) {
-        return const AccionYa(
-          clave: 'est_colegio',
-          titulo: 'Agrega tu colegio',
-          detalle: 'Así tus reportes validados suman para tu curso y tu PRAE.',
-          boton: 'Agregar mi colegio',
-          icono: Icons.school_rounded,
-          destino: DestinoYa.perfil,
-        );
-      }
-      if (c.enviados == 0) {
-        return const AccionYa(
-          clave: 'est_primero',
-          titulo: 'Haz el primer reporte de tu colegio',
-          detalle: 'Una foto y la ubicación bastan. Si lo validan, sube tu nivel.',
-          boton: 'Reportar ahora',
-          icono: Icons.add_a_photo_rounded,
-          destino: DestinoYa.reportar,
-        );
-      }
-      return const AccionYa(
-        clave: 'est_mision',
-        titulo: 'Cumple la misión de la semana',
-        detalle: 'Es el motivo para volver al manglar con tu grupo.',
-        boton: 'Reportar para la misión',
-        icono: Icons.flag_rounded,
-        destino: DestinoYa.reportar,
-        tono: TonoYa.suave,
-      );
-    case RolUsuario.turista:
-      if (c.hora >= 18 || c.hora < 5) {
-        return const AccionYa(
-          clave: 'tur_noche',
-          titulo: 'Planea tu visita de mañana',
-          detalle: 'El manglar se disfruta con luz: mira el mapa y elige por dónde ir.',
-          boton: 'Abrir el mapa',
-          icono: Icons.map_rounded,
-          destino: DestinoYa.mapa,
-          tono: TonoYa.suave,
-        );
-      }
-      return const AccionYa(
-        clave: 'tur_dia',
-        titulo: 'Recorre con cuidado',
-        detalle: 'Mira abajo qué ver y qué no hacer. Si ves algo raro, repórtalo.',
-        boton: 'Reportar algo que vi',
-        icono: Icons.hiking_rounded,
-        destino: DestinoYa.reportar,
-      );
-    case RolUsuario.organizador:
-      if (c.eventoAbierto) {
-        return const AccionYa(
-          clave: 'org_abierto',
-          titulo: 'Tu jornada está abierta',
-          detalle: 'Registra a quienes llegan y comparte el QR del evento.',
-          boton: 'Abrir el evento',
-          icono: Icons.qr_code_2_rounded,
-          destino: DestinoYa.evento,
-        );
-      }
-      return const AccionYa(
-        clave: 'org_preparar',
-        titulo: 'Prepara tu próxima jornada',
-        detalle: 'Abre el evento con su código y comparte el QR para que la gente entre.',
-        boton: 'Abrir un evento',
-        icono: Icons.event_available_rounded,
-        destino: DestinoYa.evento,
-      );
-    case RolUsuario.ciudadano:
-      if (c.enviados == 0) {
-        return const AccionYa(
-          clave: 'ciu_primero',
-          titulo: 'Haz tu primer reporte',
-          detalle: 'Tala, fuego, un caño tapado… una foto y listo, aunque no haya señal.',
-          boton: 'Reportar ahora',
-          icono: Icons.add_a_photo_rounded,
-          destino: DestinoYa.reportar,
-        );
-      }
-      if (c.hora < 7) {
-        return const AccionYa(
-          clave: 'ciu_madrugada',
-          titulo: 'Madrugaste: mira el manglar',
-          detalle: 'Los pescadores salen ahora. Si ves algo raro, repórtalo con la luz del alba.',
-          boton: 'Reportar',
-          icono: Icons.wb_twilight_rounded,
-          destino: DestinoYa.reportar,
-        );
-      }
-      return const AccionYa(
-        clave: 'ciu_mapa',
-        titulo: 'Mira qué se ha reportado cerca',
-        detalle: 'El mapa muestra lo que ya avisaron otras personas.',
-        boton: 'Abrir el mapa',
-        icono: Icons.map_rounded,
-        destino: DestinoYa.mapa,
-        tono: TonoYa.suave,
-      );
+  if (c.eventoAbierto) {
+    return const AccionYa(
+      clave: 'evento_abierto',
+      titulo: 'Estás en una jornada',
+      detalle: 'Mira el evento: qué llevar, el punto de encuentro y registra tu llegada.',
+      boton: 'Abrir el evento',
+      icono: Icons.event_available_rounded,
+      destino: DestinoYa.evento,
+    );
   }
+  if (c.enviados == 0) {
+    return const AccionYa(
+      clave: 'primero',
+      titulo: 'Haz tu primer reporte',
+      detalle: 'Tala, fuego, un caño tapado… una foto y listo, aunque no haya señal.',
+      boton: 'Reportar ahora',
+      icono: Icons.add_a_photo_rounded,
+      destino: DestinoYa.reportar,
+    );
+  }
+  if (c.hora >= 19 || c.hora < 5) {
+    return const AccionYa(
+      clave: 'noche',
+      titulo: 'Planea tu próxima visita',
+      detalle: 'El manglar se recorre con luz: mira el mapa y elige por dónde ir.',
+      boton: 'Abrir el mapa',
+      icono: Icons.map_rounded,
+      destino: DestinoYa.mapa,
+      tono: TonoYa.suave,
+    );
+  }
+  if (c.hora < 7) {
+    return const AccionYa(
+      clave: 'madrugada',
+      titulo: 'Madrugaste: mira el manglar',
+      detalle: 'Los pescadores salen ahora. Si ves algo raro, repórtalo con la luz del alba.',
+      boton: 'Reportar',
+      icono: Icons.wb_twilight_rounded,
+      destino: DestinoYa.reportar,
+    );
+  }
+  if (!c.tieneColegio && c.enviados < 3) {
+    return const AccionYa(
+      clave: 'colegio',
+      titulo: '¿Estudias? Agrega tu colegio',
+      detalle: 'Tus reportes validados suman para tu curso y tu PRAE. Si no estudias, sigue reportando.',
+      boton: 'Agregar mi colegio',
+      icono: Icons.school_rounded,
+      destino: DestinoYa.perfil,
+      tono: TonoYa.suave,
+    );
+  }
+  return const AccionYa(
+    clave: 'mapa',
+    titulo: 'Mira qué se ha reportado cerca',
+    detalle: 'El mapa muestra lo que ya avisaron otras personas.',
+    boton: 'Abrir el mapa',
+    icono: Icons.map_rounded,
+    destino: DestinoYa.mapa,
+    tono: TonoYa.suave,
+  );
 }
 
-/// Los bloques de Guardián, en orden, según el rol.
+/// Los bloques de Guardián, en orden, iguales para todos. `rol` queda por compatibilidad y
+/// ya no se pinta; `panel` es la sección «Gestión», que solo aparece con una cuenta del
+/// equipo ([conGestion]).
 enum SeccionGuardian { tarjeta, rol, nivel, puntos, participacion, mision, insignias, colegios, panel }
 
-List<SeccionGuardian> seccionesDeGuardian(RolUsuario rol, {bool conPerfil = true}) {
-  final base = switch (rol) {
-    RolUsuario.estudiante => [
-        SeccionGuardian.tarjeta,
-        SeccionGuardian.colegios,
-        SeccionGuardian.nivel,
-        SeccionGuardian.mision,
-        SeccionGuardian.insignias,
-        SeccionGuardian.puntos,
-        SeccionGuardian.participacion,
-      ],
-    RolUsuario.organizador => [
-        SeccionGuardian.tarjeta,
-        SeccionGuardian.participacion,
-        SeccionGuardian.nivel,
-        SeccionGuardian.insignias,
-        SeccionGuardian.puntos,
-        SeccionGuardian.mision,
-      ],
-    _ => [
-        SeccionGuardian.tarjeta,
-        SeccionGuardian.nivel,
-        SeccionGuardian.puntos,
-        SeccionGuardian.participacion,
-        SeccionGuardian.mision,
-        SeccionGuardian.insignias,
-        if (rol == RolUsuario.ciudadano) SeccionGuardian.colegios,
-      ],
-  };
-  // El rol se cambia justo debajo de la tarjeta; sin perfil no hay nada que cambiar.
-  return [
-    base.first,
-    if (conPerfil) SeccionGuardian.rol,
-    ...base.skip(1),
-    SeccionGuardian.panel,
-  ];
-}
+List<SeccionGuardian> seccionesDeGuardian({bool conGestion = false}) => [
+      SeccionGuardian.tarjeta,
+      if (conGestion) SeccionGuardian.panel,
+      SeccionGuardian.nivel,
+      SeccionGuardian.mision,
+      SeccionGuardian.puntos,
+      SeccionGuardian.participacion,
+      SeccionGuardian.insignias,
+      SeccionGuardian.colegios,
+    ];
 
-/// «AP» de «Ana Pérez»; vacío sin nombre (el carné pone entonces el ícono del rol).
+/// «AP» de «Ana Pérez»; vacío sin nombre (el carné pone entonces un ícono).
 String inicialesDe(String nombre) {
   final partes = nombre.trim().split(RegExp(r'\s+')).where((x) => x.isNotEmpty).toList();
   if (partes.isEmpty) return '';

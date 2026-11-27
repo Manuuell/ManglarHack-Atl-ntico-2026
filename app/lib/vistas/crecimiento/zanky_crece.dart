@@ -9,6 +9,7 @@ import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/kit/anuncio.dart';
 import '../../nucleo/kit/haptica.dart';
 import '../../nucleo/identidad.dart';
+import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 
@@ -332,25 +333,53 @@ class ZankyCreceCompacto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final avance = AvanceCrecimiento.de(puntos);
-    return Semantics(button: true, label: 'Mi manglar. Zanky es ${avance.etapa.nombre}. ${avance.faltaTexto}',
-      child: InkWell(onTap: alAbrir, borderRadius: BorderRadius.circular(Zr.m),
-        child: Container(padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Zc.superficie, borderRadius: BorderRadius.circular(Zr.m),
-            border: Border.all(color: Zc.linea)),
-          child: Row(children: [
-            ZankyEtapa(etapa: avance.etapa.numero, tamano: 66),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Zanky está creciendo', style: Theme.of(context).textTheme.titleSmall),
-              Text('Etapa ${avance.etapa.numero} · ${avance.etapa.nombre}',
-                style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 7),
-              LinearProgressIndicator(value: avance.fraccion, color: Zc.hoja,
-                backgroundColor: Zc.hojaClara),
-            ])),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: Zc.raiz),
-          ])),
+    final tt = Theme.of(context).textTheme;
+    // El arte oficial de la etapa (assets/zanky/etapas) sobre un halo suave, sin dibujo en código.
+    return Presionable(
+      escala: 0.98,
+      etiqueta: 'Mi manglar. Zanky es ${avance.etapa.nombre}. ${avance.faltaTexto}',
+      onTap: alAbrir,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
+        decoration: BoxDecoration(
+          color: Zc.superficie,
+          borderRadius: BorderRadius.circular(Zr.l),
+          border: Border.all(color: Zc.linea.withValues(alpha: 0.7)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 76,
+            height: 76,
+            decoration: const BoxDecoration(color: Zc.hojaClara, shape: BoxShape.circle),
+            alignment: Alignment.center,
+            child: ZankyEtapa(etapa: avance.etapa.numero, tamano: 68),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('MI MANGLAR · ETAPA ${avance.etapa.numero} DE 5',
+                  style: tt.labelSmall?.copyWith(color: Cra.azul, letterSpacing: 0.6, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 2),
+              Text('Zanky está creciendo', style: tt.titleMedium),
+              Text(avance.etapa.nombre, style: tt.bodySmall),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(99),
+                child: LinearProgressIndicator(
+                  value: avance.fraccion,
+                  minHeight: 6,
+                  color: Zc.hoja,
+                  backgroundColor: Zc.hojaClara,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(avance.faltaTexto, maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: tt.labelSmall?.copyWith(color: Zc.textoTenue)),
+            ]),
+          ),
+          const SizedBox(width: 6),
+          const Icon(Icons.chevron_right_rounded, color: Zc.raiz),
+        ]),
       ),
     );
   }

@@ -1,14 +1,17 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
 import '../datos/admin/controlador_admin.dart';
+import '../datos/cuenta/cuenta.dart';
 import '../datos/estado.dart';
 import '../nucleo/base/transicion_pestanas.dart';
 import '../nucleo/presionable.dart';
 import '../nucleo/tema.dart';
 import 'admin/piezas_admin.dart';
 import 'comun/capa_avisos.dart';
+import 'configuracion/piezas_configuracion.dart';
 import 'guardian/pantalla_guardian.dart';
 import 'comun/zanky_mascota.dart';
 import 'inicio/inicio.dart';
@@ -37,6 +40,9 @@ class _RaizState extends State<Raiz> {
   /// del ícono sigan mientras se navega, y se detiene al cerrarla.
   ControladorAdmin? _admin;
 
+  /// La cuenta (Configuración): misma sesión que la web; si su rol modera, abre el panel.
+  ControladorCuenta? _cuenta;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +53,13 @@ class _RaizState extends State<Raiz> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     _admin ??= ControladorAdmin(servidor: Zanky.leer(context).servidor);
+    if (_cuenta == null) {
+      _cuenta = ControladorCuenta(
+        servidor: Zanky.leer(context).servidor,
+        panel: _admin,
+      );
+      unawaited(_cuenta!.restaurar());
+    }
     // Una sola vez: las imágenes de Zanky ya en memoria antes del primer cambio de ánimo.
     if (!_precargado) {
       _precargado = true;
@@ -59,6 +72,7 @@ class _RaizState extends State<Raiz> {
   @override
   void dispose() {
     Raiz._pedida.removeListener(_atenderPedido);
+    _cuenta?.dispose();
     _admin?.dispose();
     super.dispose();
   }
@@ -79,21 +93,29 @@ class _RaizState extends State<Raiz> {
   @override
   Widget build(BuildContext context) {
     final abajo = MediaQuery.paddingOf(context).bottom;
-    return AdminScope(
-      controlador: _admin!,
-      child: Scaffold(
-        extendBody: true,
-        body: CapaAvisos(
-          verMisReportes: () => _ir(2),
-          child: AnimatedTabStack(
-            index: _actual,
-            ordenPrecarga: const [1, 2, 3],
-            children: const [Inicio(), PantallaMapa(), PantallaMisReportes(), PantallaGuardian()],
+    return CuentaScope(
+      cuenta: _cuenta!,
+      child: AdminScope(
+        controlador: _admin!,
+        child: Scaffold(
+          extendBody: true,
+          body: CapaAvisos(
+            verMisReportes: () => _ir(2),
+            child: AnimatedTabStack(
+              index: _actual,
+              ordenPrecarga: const [1, 2, 3],
+              children: const [
+                Inicio(),
+                PantallaMapa(),
+                PantallaMisReportes(),
+                PantallaGuardian(),
+              ],
+            ),
           ),
-        ),
-        bottomNavigationBar: Padding(
-          padding: EdgeInsets.fromLTRB(14, 0, 14, abajo > 0 ? abajo : 12),
-          child: _BarraPestanas(actual: _actual, onCambio: _ir),
+          bottomNavigationBar: Padding(
+            padding: EdgeInsets.fromLTRB(14, 0, 14, abajo > 0 ? abajo : 12),
+            child: _BarraPestanas(actual: _actual, onCambio: _ir),
+          ),
         ),
       ),
     );
@@ -134,7 +156,9 @@ class _BarraPestanas extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.84),
                   borderRadius: BorderRadius.circular(26),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.9)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
                 ),
               ),
             ),
@@ -144,16 +168,24 @@ class _BarraPestanas extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(26),
-                  boxShadow: const [BoxShadow(color: Color(0x1F0B2E24), blurRadius: 30, offset: Offset(0, 12))],
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x1F0B2E24),
+                      blurRadius: 30,
+                      offset: Offset(0, 12),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
           Row(
             children: [
-              for (var i = 0; i < 2; i++) _pestana(context, i, pendientes, sinVer),
+              for (var i = 0; i < 2; i++)
+                _pestana(context, i, pendientes, sinVer),
               const SizedBox(width: 76),
-              for (var i = 2; i < 4; i++) _pestana(context, i, pendientes, sinVer),
+              for (var i = 2; i < 4; i++)
+                _pestana(context, i, pendientes, sinVer),
             ],
           ),
           Positioned(top: -16, child: _BotonReportar()),
@@ -169,7 +201,8 @@ class _BarraPestanas extends StatelessWidget {
     return Expanded(
       child: Presionable(
         escala: 0.88,
-        vibracion: Vibracion.ninguna, // la vibración la pone el cambio de pestaña
+        vibracion:
+            Vibracion.ninguna, // la vibración la pone el cambio de pestaña
         etiqueta: nombre,
         onTap: () => onCambio(i),
         child: SizedBox(
@@ -178,7 +211,8 @@ class _BarraPestanas extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Badge(
-                isLabelVisible: (i == 2 && pendientes > 0) || (i == 3 && sinVer > 0),
+                isLabelVisible:
+                    (i == 2 && pendientes > 0) || (i == 3 && sinVer > 0),
                 backgroundColor: Zc.sol,
                 label: Text(i == 3 ? '$sinVer' : '$pendientes'),
                 child: AnimatedScale(
@@ -192,10 +226,10 @@ class _BarraPestanas extends StatelessWidget {
               AnimatedDefaultTextStyle(
                 duration: Zm.corto,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                      color: color,
-                      fontWeight: activa ? FontWeight.w700 : FontWeight.w600,
-                      letterSpacing: 0,
-                    ),
+                  color: color,
+                  fontWeight: activa ? FontWeight.w700 : FontWeight.w600,
+                  letterSpacing: 0,
+                ),
                 child: Text(nombre, maxLines: 1),
               ),
             ],
@@ -225,9 +259,19 @@ class _BotonReportar extends StatelessWidget {
             colors: [Color(0xFF3DB37C), Zc.hoja, Color(0xFF1E7A50)],
           ),
           border: Border.all(color: Colors.white, width: 4),
-          boxShadow: [BoxShadow(color: Zc.hoja.withValues(alpha: 0.45), blurRadius: 20, offset: const Offset(0, 8))],
+          boxShadow: [
+            BoxShadow(
+              color: Zc.hoja.withValues(alpha: 0.45),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        child: const Icon(Icons.add_a_photo_rounded, color: Colors.white, size: 28),
+        child: const Icon(
+          Icons.add_a_photo_rounded,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
     );
   }
