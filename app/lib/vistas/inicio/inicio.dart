@@ -228,7 +228,7 @@ class _InicioState extends State<Inicio> {
         // Alertas oficiales del servidor (las de la web); el pronóstico local queda de respaldo sin red.
         return const ComunidadInicio();
       case SeccionInicio.sensores:
-        // Visores de la C.R.A. junto a los sensores: un único acceso a «Visores del manglar».
+        // Visores de la CRA junto a los sensores: un único acceso a «Visores del manglar».
         return const Column(children: [SensoresCompacto(), SizedBox(height: 12), VisoresCompacto()]);
       case SeccionInicio.sabiasQue:
         return _SabiasQue(hectareas: estado.manglar.areaTotalHa);
@@ -722,8 +722,8 @@ class _SabiasQueState extends State<_SabiasQue> {
     (Icons.water_rounded, const Color(0xFF6A4FA3), 'Agua dulce y salada',
         'Necesita las dos. Un caño taponado le corta el agua dulce y lo enferma: también se reporta.'),
     (Icons.map_rounded, Zc.fango, 'Cuatro ciénagas',
-        'En el Atlántico hay manglar en Mallorquín, Tubará, Juan de Acosta y Piojó: unas 775 ha según la CRA '
-            '(${widget.hectareas.round()} ha en la capa de la CRA, cartografía 1:5.000, que usa esta app).'),
+        'En el Atlántico hay manglar en Mallorquín, Tubará, Juan de Acosta y Piojó: unas '
+            '${widget.hectareas.round()} ha en la capa oficial de la CRA (cartografía 1:5.000), la que usa esta app.'),
   ];
 
   @override
