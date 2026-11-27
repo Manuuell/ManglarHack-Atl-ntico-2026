@@ -2,6 +2,7 @@ import type { Actor, Accion, CambioAccion, Jornada, Inscripcion, ReporteMonitore
 import { crearAlmacen } from './almacen';
 import { TIPOS_ACTOR, PAPELES, SECTORES, TIPOS_ACCION, TRANSICIONES_ACCION, REQUERIMIENTOS_POR_TIPO, puede } from './catalogos';
 import { heredarPlan } from './geo';
+import { useSincronizarJornadas } from './jornadasApi';
 
 export const actores = crearAlmacen<Actor[]>('actores');
 export const acciones = crearAlmacen<Accion[]>('acciones');
@@ -14,7 +15,8 @@ const SIN_INSCRIPCIONES: Inscripcion[] = [];
 export const useActores = (iniciales: Actor[]) => actores.usar(iniciales);
 export const useAcciones = (iniciales: Accion[]) => acciones.usar(iniciales);
 export const useCambiosAccion = (iniciales: CambioAccion[]) => cambiosAccion.usar(iniciales);
-export const useJornadas = (iniciales: Jornada[]) => jornadas.usar(iniciales);
+// Las jornadas viven en el servidor de Zanky: quien las usa las recibe al día (ver jornadasApi.ts).
+export const useJornadas = (iniciales: Jornada[]) => { useSincronizarJornadas(); return jornadas.usar(iniciales); };
 export const useInscripciones = (iniciales: Inscripcion[] = SIN_INSCRIPCIONES) => inscripciones.usar(iniciales);
 export const useMonitoreos = (iniciales: ReporteMonitoreo[]) => monitoreos.usar(iniciales);
 export const useRolDemo = () => rolDemo.usar('moderador');

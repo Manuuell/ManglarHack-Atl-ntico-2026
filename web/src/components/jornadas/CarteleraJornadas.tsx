@@ -1,15 +1,18 @@
 // Cartelera de jornadas comunitarias: tarjetas con banner, ficha de invitación con inscripción,
 // formas de compartir (WhatsApp, enlace, calendario), QR y cartel imprimible, «Interactúa con Zanky»
-// (la experiencia del evento en la app) y alta de jornadas.
+// (la experiencia del evento en la app). Las jornadas y las inscripciones viven en el servidor de Zanky;
+// se crean desde el panel de administración (/admin).
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { ArrowRight, CalendarPlus, Check, Clock, Copy, Download, MapPin, MessageCircle, Navigation, Plus, Printer, Share2, Users, X } from 'lucide-react';
 import type { Accion, Jornada, TipoJornada } from '../../types/plataforma';
-import { inscribirseEnJornada, useAcciones, useInscripciones, useJornadas } from '../../lib/plataforma/estado';
+import { useAcciones, useInscripciones, useJornadas } from '../../lib/plataforma/estado';
+import { inscribirseEnServidor, normalizarCelular, useOrigenJornadas, type OrigenJornadas } from '../../lib/plataforma/jornadasApi';
+import { useSesion } from '../../lib/cuenta';
 import { TIPOS_JORNADA } from '../../lib/plataforma/catalogos';
 import { copiarEnlace, descargarICS, enlaceInvitacionWhatsApp } from '../../lib/plataforma/calendario';
-import { crearJornada, enlaceComoLlegar, enlaceGoogleCalendar, fmt, urlEventoZanky, urlInvitacion, type DatosJornada } from '../../lib/plataforma/jornadas';
+import { enlaceComoLlegar, enlaceGoogleCalendar, fmt, urlEventoZanky, urlInvitacion } from '../../lib/plataforma/jornadas';
 import { cn } from '../../lib/utils';
 
 interface Props { jornadas: Jornada[]; acciones: Accion[]; aviso: string }
@@ -34,10 +37,14 @@ function Banner({ j, className, grande = false }: { j: Jornada; className?: stri
   const { libres, pasada, lleno } = estadoDe(j);
   return (
     <div className={cn('relative isolate overflow-hidden bg-linear-to-br', BANNER[j.tipo], className)}>
-      <svg aria-hidden="true" viewBox="0 0 400 225" preserveAspectRatio="none" className="absolute inset-0 -z-10 h-full w-full fill-none stroke-white/15">
+      {j.imagen_url && <>
+        <img src={j.imagen_url} alt="" loading="lazy" className="absolute inset-0 -z-10 h-full w-full object-cover" />
+        <span aria-hidden="true" className="absolute inset-0 -z-10 bg-linear-to-t from-black/45 via-transparent to-black/20" />
+      </>}
+      {!j.imagen_url && <svg aria-hidden="true" viewBox="0 0 400 225" preserveAspectRatio="none" className="absolute inset-0 -z-10 h-full w-full fill-none stroke-white/15">
         {[0, 1, 2, 3, 4].map((i) => <path key={i} d={`M-20 ${150 + i * 14} C 80 ${110 + i * 14}, 180 ${190 + i * 14}, 420 ${130 + i * 14}`} strokeWidth="1.2" />)}
-      </svg>
-      <Icono aria-hidden="true" strokeWidth={1.2} className={cn('absolute -right-5 -bottom-6 text-white/20 transition-transform duration-500 group-hover:scale-110', grande ? 'size-56' : 'size-36')} />
+      </svg>}
+      {!j.imagen_url && <Icono aria-hidden="true" strokeWidth={1.2} className={cn('absolute -right-5 -bottom-6 text-white/20 transition-transform duration-500 group-hover:scale-110', grande ? 'size-56' : 'size-36')} />}
       <div className="absolute top-3 left-3 rounded-2xl bg-white px-3 py-1.5 text-center text-cra-950 shadow-lg">
         <span className="block font-[family-name:var(--font-titulo)] text-2xl leading-none font-extrabold">{fmt.dia(j.inicio)}</span>
         <span className="text-[11px] font-bold tracking-wider uppercase">{fmt.mes(j.inicio)}</span>
@@ -106,26 +113,35 @@ function BotonCompartir({ onClick, href, icono, children, externo }: { onClick?:
     : <button type="button" onClick={onClick} className={clase}>{icono}{children}</button>;
 }
 
-function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; accion?: Accion; inscrito: boolean; aviso: string; onCerrar: () => void }) {
+function Invitacion({ j, accion, inscrito, aviso, origen, onCerrar }: { j: Jornada; accion?: Accion; inscrito: boolean; aviso: string; origen: OrigenJornadas; onCerrar: () => void }) {
   const T = TIPOS_JORNADA[j.tipo];
   const { pasada, lleno } = estadoDe(j);
   const url = urlInvitacion(j.id);
   const urlZanky = urlEventoZanky(j.id);
   const qr = useQr(url);
   const qrZanky = useQr(urlZanky);
-  const [nombre, setNombre] = useState('');
+  const sesion = useSesion();
+  const [nombre, setNombre] = useState(() => sesion?.usuario.nombre ?? '');
+  const [celular, setCelular] = useState(() => sesion?.usuario.telefono ?? '');
+  const [conWhatsapp, setConWhatsapp] = useState(() => Boolean(sesion?.usuario.whatsapp_ok));
   const [acepta, setAcepta] = useState(false);
+  const [ocupado, setOcupado] = useState(false);
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
   const puedeCompartir = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
-  function confirmar(e: FormEvent) {
+  async function confirmar(e: FormEvent) {
     e.preventDefault();
-    if (nombre.trim().length < 2) { setMensaje({ ok: false, texto: 'Escribe tu nombre para la lista.' }); return; }
-    if (!acepta) { setMensaje({ ok: false, texto: 'Para inscribirte, acepta el tratamiento de tu nombre (Ley 1581).' }); return; }
-    const r = inscribirseEnJornada(j.id, nombre);
+    if (ocupado) return;
+    if (nombre.trim().length < 3) { setMensaje({ ok: false, texto: 'Escribe tu nombre para la lista (al menos 3 letras).' }); return; }
+    const telefono = normalizarCelular(celular);
+    if (telefono === 'invalido') { setMensaje({ ok: false, texto: 'Revisa el celular: escribe los 10 dígitos, por ejemplo 300 123 4567.' }); return; }
+    if (!acepta) { setMensaje({ ok: false, texto: 'Para inscribirte, acepta el tratamiento de tus datos (Ley 1581).' }); return; }
+    setOcupado(true);
+    const r = await inscribirseEnServidor(j, { nombre, telefono, acepta_whatsapp: conWhatsapp });
+    setOcupado(false);
     if (!r.ok) { setMensaje({ ok: false, texto: Object.values(r.errores)[0] ?? 'No se pudo inscribir.' }); return; }
-    setMensaje({ ok: true, texto: '¡Listo! Quedaste en la lista. Te esperamos.' });
+    setMensaje({ ok: true, texto: r.enServidor ? '¡Listo! Quedaste en la lista. Te esperamos.' : '¡Listo! Quedaste en la lista de este navegador (sin conexión con el servidor).' });
   }
 
   async function copiar() {
@@ -140,7 +156,7 @@ function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; acci
         <header>
           <p className={cn('rotulo flex items-center gap-1.5', T.clase)}><T.icono className="size-3.5" aria-hidden="true" />{T.etiqueta}</p>
           <h2 className="titular mt-2 text-3xl sm:text-4xl">{j.titulo}</h2>
-          <p className="mt-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-xs text-suave">{aviso}</p>
+          {aviso && <p className="mt-3 rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-xs text-suave">{aviso}</p>}
         </header>
 
         <dl className="grid gap-4 sm:grid-cols-2">
@@ -173,7 +189,7 @@ function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; acci
         <section aria-labelledby={`inscripcion-${j.id}`} className="rounded-3xl border border-dorado-500/40 bg-dorado-500/10 p-5 sm:p-6">
           <h3 id={`inscripcion-${j.id}`} className="titular text-2xl">¿Vas a ir?</h3>
           {inscrito || mensaje?.ok ? (
-            <p className="mt-3 flex items-center gap-2 font-semibold text-emerald-200"><Check className="size-5" aria-hidden="true" />{mensaje?.texto ?? 'Ya estás inscrito en esta jornada desde este navegador.'}</p>
+            <p role="status" className="mt-3 flex items-center gap-2 font-semibold text-emerald-200"><Check className="size-5 shrink-0" aria-hidden="true" />{mensaje?.texto ?? 'Ya estás inscrito en esta jornada desde este navegador.'}</p>
           ) : pasada || lleno ? (
             <p className="mt-3 text-suave">{pasada ? 'Esta jornada ya se realizó.' : 'Esta jornada ya no tiene cupos. Comparte la invitación: pueden abrir más cupos.'}</p>
           ) : (
@@ -182,13 +198,21 @@ function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; acci
                 <span className="text-sm font-semibold text-suave">Tu nombre</span>
                 <input value={nombre} onChange={(e) => setNombre(e.target.value)} autoComplete="name" maxLength={80} placeholder="Como quieres aparecer en la lista" className="min-h-12 rounded-2xl border border-white/20 bg-white/5 px-4 text-base text-texto placeholder:text-tenue focus:border-dorado-300 focus:outline-none" />
               </label>
+              <label className="grid gap-1.5">
+                <span className="text-sm font-semibold text-suave">Celular (WhatsApp, opcional)</span>
+                <input value={celular} onChange={(e) => { setCelular(e.target.value); if (!e.target.value.trim()) setConWhatsapp(false); }} type="tel" inputMode="tel" autoComplete="tel" maxLength={20} placeholder="300 123 4567" className="min-h-12 rounded-2xl border border-white/20 bg-white/5 px-4 text-base text-texto placeholder:text-tenue focus:border-dorado-300 focus:outline-none" />
+              </label>
+              <label className={cn('flex items-start gap-3 text-sm', celular.trim() ? 'text-suave' : 'text-tenue')}>
+                <input type="checkbox" checked={conWhatsapp} disabled={!celular.trim()} onChange={(e) => setConWhatsapp(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-dorado-500" />
+                <span>Acepto recibir por WhatsApp recordatorios de esta jornada e invitaciones a otras.</span>
+              </label>
               <label className="flex items-start gap-3 text-sm text-suave">
                 <input type="checkbox" checked={acepta} onChange={(e) => setAcepta(e.target.checked)} className="mt-0.5 size-5 shrink-0 accent-dorado-500" />
-                <span>Acepto que la organización use mi nombre solo para la lista de esta jornada, según la Ley 1581 de 2012. No se publica.</span>
+                <span>Acepto que la organización use mi nombre (y mi celular, si lo dejo) solo para la lista de esta jornada, según la Ley 1581 de 2012. No se publica.</span>
               </label>
-              <button type="submit" className="inline-flex min-h-12 items-center justify-center rounded-full bg-dorado-500 px-6 font-bold text-cra-950 transition-colors hover:bg-dorado-300">Confirmar asistencia</button>
+              <button type="submit" disabled={ocupado} className="inline-flex min-h-12 items-center justify-center rounded-full bg-dorado-500 px-6 font-bold text-cra-950 transition-colors hover:bg-dorado-300 disabled:opacity-60">{ocupado ? 'Inscribiendo…' : 'Confirmar asistencia'}</button>
               {mensaje && !mensaje.ok && <p role="alert" className="text-sm font-semibold text-alta-texto">{mensaje.texto}</p>}
-              <p className="text-xs text-tenue">Modo demostración: la inscripción se guarda en este navegador.</p>
+              <p className="text-xs text-tenue">{origen === 'servidor' ? 'La inscripción queda en el servidor de la plataforma: la organización ve tu nombre y, si lo dejas, tu celular.' : 'Sin conexión con el servidor de jornadas: la inscripción se guarda solo en este navegador.'}</p>
             </form>
           )}
         </section>
@@ -254,69 +278,20 @@ function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; acci
   );
 }
 
-function FormularioJornada({ acciones, onCreada, onCerrar }: { acciones: Accion[]; onCreada: (j: Jornada) => void; onCerrar: () => void }) {
-  const elegibles = acciones.filter((a) => a.estado === 'aprobada' || a.estado === 'en_ejecucion');
-  const manana = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
-  const [d, setD] = useState<DatosJornada>({ titulo: '', tipo: 'siembra', accion_id: elegibles[0]?.id ?? '', fecha: manana, hora_inicio: '07:00', hora_fin: '11:00', punto_encuentro: '', cupos: 30, que_llevar: 'Agua potable, gorra, bloqueador solar', descripcion: '' });
-  const [errores, setErrores] = useState<Record<string, string>>({});
-  const cambiar = <K extends keyof DatosJornada>(k: K, v: DatosJornada[K]) => setD((p) => ({ ...p, [k]: v }));
-  const campo = 'min-h-12 w-full rounded-2xl border border-white/20 bg-white/5 px-4 text-base text-texto placeholder:text-tenue focus:border-dorado-300 focus:outline-none';
-  const Error = ({ k }: { k: string }) => (errores[k] ? <span role="alert" className="text-sm font-semibold text-alta-texto">{errores[k]}</span> : null);
-
-  function enviar(e: FormEvent) {
-    e.preventDefault();
-    const r = crearJornada(d, elegibles);
-    if (!r.ok) { setErrores(r.errores); return; }
-    onCreada(r.jornada);
-  }
-
-  return (
-    <Hoja titulo="Crear una jornada" onCerrar={onCerrar}>
-      <form onSubmit={enviar} noValidate className="grid gap-5 p-6 sm:p-9">
-        <header className="pr-12">
-          <p className="rotulo text-dorado-300">Nueva jornada</p>
-          <h2 className="titular mt-2 text-3xl">Convoca a tu comunidad</h2>
-          <p className="mt-2 text-sm text-suave">La jornada se liga a una acción aprobada o en ejecución, y toma su punto en el mapa.</p>
-        </header>
-        {elegibles.length === 0 ? (
-          <p className="rounded-2xl bg-superficie p-4 text-suave">Todavía no hay acciones aprobadas o en ejecución. Propón una en <a href="/plataforma/proponer" className="font-semibold text-dorado-300 underline">Proponer acción</a>.</p>
-        ) : (
-          <>
-            <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Nombre de la jornada</span><input className={campo} value={d.titulo} onChange={(e) => cambiar('titulo', e.target.value)} maxLength={90} placeholder="Ej.: Siembra de mangle rojo en el caño" /><Error k="titulo" /></label>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Tipo</span>
-                <select className={campo} value={d.tipo} onChange={(e) => cambiar('tipo', e.target.value as TipoJornada)}>{TIPOS.map((t) => <option key={t} value={t}>{TIPOS_JORNADA[t].etiqueta}</option>)}</select></label>
-              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Acción</span>
-                <select className={campo} value={d.accion_id} onChange={(e) => cambiar('accion_id', e.target.value)}>{elegibles.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}</select><Error k="accion_id" /></label>
-            </div>
-            <div className="grid gap-5 sm:grid-cols-3">
-              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Fecha</span><input type="date" className={campo} value={d.fecha} min={new Date().toISOString().slice(0, 10)} onChange={(e) => cambiar('fecha', e.target.value)} /><Error k="fecha" /></label>
-              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Empieza</span><input type="time" className={campo} value={d.hora_inicio} onChange={(e) => cambiar('hora_inicio', e.target.value)} /><Error k="hora_inicio" /></label>
-              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Termina</span><input type="time" className={campo} value={d.hora_fin} onChange={(e) => cambiar('hora_fin', e.target.value)} /><Error k="hora_fin" /></label>
-            </div>
-            <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Punto de encuentro</span><input className={campo} value={d.punto_encuentro} onChange={(e) => cambiar('punto_encuentro', e.target.value)} maxLength={140} placeholder="Ej.: Ecoparque Ciénaga de Mallorquín, entrada principal" /><Error k="punto_encuentro" /></label>
-            <div className="grid gap-5 sm:grid-cols-[10rem_1fr]">
-              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Cupos</span><input type="number" inputMode="numeric" min={1} max={500} className={campo} value={d.cupos} onChange={(e) => cambiar('cupos', Number(e.target.value))} /><Error k="cupos" /></label>
-              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Qué llevar (separado por comas)</span><input className={campo} value={d.que_llevar} onChange={(e) => cambiar('que_llevar', e.target.value)} maxLength={300} /></label>
-            </div>
-            <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Descripción</span><textarea rows={3} className={cn(campo, 'py-3')} value={d.descripcion} onChange={(e) => cambiar('descripcion', e.target.value)} maxLength={600} placeholder="Qué se va a hacer, quién acompaña, recomendaciones" /><Error k="descripcion" /></label>
-            <button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-dorado-500 px-6 font-bold text-cra-950 hover:bg-dorado-300"><Plus className="size-5" aria-hidden="true" />Crear y compartir</button>
-            <p className="text-xs text-tenue">Modo demostración: la jornada se guarda en este navegador. En producción la crea el servidor con tu cuenta de actor.</p>
-          </>
-        )}
-      </form>
-    </Hoja>
-  );
-}
+/** Aviso de la ficha: «Datos de ejemplo» en las jornadas de ejemplo del servidor; si no hay servidor, el del respaldo. */
+const avisoDeJornada = (j: Jornada, aviso: string, origen: OrigenJornadas) => (origen === 'servidor' ? (j.ejemplo ? 'Datos de ejemplo de la demostración.' : '') : aviso);
 
 export default function CarteleraJornadas(props: Props) {
   const lista = useJornadas(props.jornadas);
   const acciones = useAcciones(props.acciones);
   const inscripciones = useInscripciones();
+  const { origen, aviso: avisoServidor } = useOrigenJornadas();
+  const aviso = origen === 'servidor'
+    ? (avisoServidor || 'Jornadas publicadas por la organización.')
+    : origen === 'respaldo' ? `${props.aviso}. Sin conexión con el servidor de jornadas: lo que ves y lo que hagas queda solo en este navegador.` : props.aviso;
   const [tipo, setTipo] = useState<TipoJornada | 'todas'>('todas');
   const [cuando, setCuando] = useState<'proximas' | 'realizadas'>('proximas');
   const [abierta, setAbierta] = useState<string | null>(null);
-  const [creando, setCreando] = useState(false);
 
   // Enlace de invitación: ?jornada=<id> abre la ficha.
   useEffect(() => {
@@ -345,7 +320,7 @@ export default function CarteleraJornadas(props: Props) {
           <h2 className="titular mt-2 text-3xl sm:text-4xl">Siembras, limpiezas y recorridos para cuidar el manglar</h2>
           <p className="mt-3 max-w-2xl text-suave">Cada jornada tiene su invitación: se comparte por WhatsApp, se agenda en el calendario y se imprime con un QR para el punto de encuentro.</p>
         </div>
-        <button type="button" onClick={() => setCreando(true)} className="inline-flex min-h-12 shrink-0 items-center gap-2 self-start rounded-full bg-dorado-500 px-6 font-bold text-cra-950 shadow-[0_12px_34px_-14px_rgb(237_181_18/0.8)] hover:bg-dorado-300 sm:self-auto"><Plus className="size-5" aria-hidden="true" />Crear jornada</button>
+        <a href="/admin#jornadas" title="Las jornadas se crean desde el panel de administración" className="inline-flex min-h-12 shrink-0 items-center gap-2 self-start rounded-full bg-dorado-500 px-6 font-bold text-cra-950 shadow-[0_12px_34px_-14px_rgb(237_181_18/0.8)] hover:bg-dorado-300 sm:self-auto"><Plus className="size-5" aria-hidden="true" />Crear jornada</a>
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -358,12 +333,12 @@ export default function CarteleraJornadas(props: Props) {
         </div>
       </div>
 
-      <p className="text-xs text-tenue">{props.aviso}</p>
+      <p className="text-xs text-tenue" aria-live="polite">{origen === 'cargando' ? 'Cargando las jornadas del servidor…' : aviso}</p>
 
       {visibles.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-linea p-10 text-center">
           <p className="titular text-2xl">{cuando === 'proximas' ? 'No hay jornadas próximas con este filtro' : 'Todavía no hay jornadas realizadas'}</p>
-          <p className="mt-2 text-suave">{cuando === 'proximas' ? 'Crea una y comparte la invitación con tu comunidad.' : 'Aquí aparecerán las jornadas cuando pasen.'}</p>
+          <p className="mt-2 text-suave">{cuando === 'proximas' ? 'Cuando la organización publique una, aparecerá aquí con su invitación.' : 'Aquí aparecerán las jornadas cuando pasen.'}</p>
         </div>
       ) : (
         <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
@@ -380,6 +355,7 @@ export default function CarteleraJornadas(props: Props) {
                       <p className="mt-1 text-sm text-suave">{capital(fmt.diaSemana(j.inicio))} · {fmt.hora(j.inicio)} – {fmt.hora(j.fin)}</p>
                       <p className="mt-0.5 flex items-start gap-1 text-sm text-suave"><MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />{j.punto_encuentro}</p>
                       <Cupos j={j} />
+                      {j.ejemplo && <p className="mt-2 inline-flex rounded-full border border-white/15 px-3 py-1 text-xs text-tenue">Datos de ejemplo</p>}
                       {inscrito(j.id) && <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-200"><Check className="size-3.5" aria-hidden="true" />Vas a ir</p>}
                     </div>
                   </button>
@@ -395,8 +371,7 @@ export default function CarteleraJornadas(props: Props) {
         </ul>
       )}
 
-      {actual && <Invitacion j={actual} accion={acciones.find((a) => a.id === actual.accion_id)} inscrito={inscrito(actual.id)} aviso={props.aviso} onCerrar={() => abrir(null)} />}
-      {creando && <FormularioJornada acciones={acciones} onCerrar={() => setCreando(false)} onCreada={(j) => { setCreando(false); setCuando('proximas'); setTipo('todas'); abrir(j.id); }} />}
+      {actual && <Invitacion j={actual} accion={acciones.find((a) => a.id === actual.accion_id)} inscrito={inscrito(actual.id)} aviso={avisoDeJornada(actual, aviso, origen)} origen={origen} onCerrar={() => abrir(null)} />}
     </div>
   );
 }

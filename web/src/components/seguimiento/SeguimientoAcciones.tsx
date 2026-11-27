@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { CalendarPlus, Check, CircleDashed, Copy, MapPin, MessageCircle, Users } from 'lucide-react';
 import type { Accion, Actor, CambioAccion, EstadoAccion, Jornada, ReporteMonitoreo } from '../../types/plataforma';
-import { inscribirseEnJornada, useAcciones, useActores, useCambiosAccion, useInscripciones, useJornadas, useMonitoreos } from '../../lib/plataforma/estado';
+import { useAcciones, useActores, useCambiosAccion, useInscripciones, useJornadas, useMonitoreos } from '../../lib/plataforma/estado';
+import { inscribirseEnServidor } from '../../lib/plataforma/jornadasApi';
 import { ACCIONES_PLAN, ESTADOS_ACCION, LISTA_ESTADOS_ACCION, ROLES, SECTORES, TIPOS_ACCION, TIPOS_JORNADA } from '../../lib/plataforma/catalogos';
 import { copiarEnlace, descargarICS, enlaceInvitacionWhatsApp } from '../../lib/plataforma/calendario';
 import { cn } from '../../lib/utils';
@@ -33,11 +34,11 @@ function TarjetaJornada({ jornada, accion, resaltada, inscrito }: { jornada: Jor
   const pasada = Date.parse(jornada.fin) < Date.now();
   const url = typeof window === 'undefined' ? `/plataforma/seguimiento?jornada=${jornada.id}` : `${window.location.origin}/plataforma/seguimiento?jornada=${jornada.id}`;
 
-  function inscribir(e: FormEvent) {
+  async function inscribir(e: FormEvent) {
     e.preventDefault();
-    const r = inscribirseEnJornada(jornada.id, nombre);
+    const r = await inscribirseEnServidor(jornada, { nombre, telefono: null, acepta_whatsapp: false });
     if (!r.ok) { setMensaje({ ok: false, texto: Object.values(r.errores)[0] ?? 'No se pudo inscribir.' }); return; }
-    setMensaje({ ok: true, texto: 'Inscripción guardada en este navegador (demostración). En la versión conectada recibirá la confirmación por WhatsApp.' });
+    setMensaje({ ok: true, texto: r.enServidor ? 'Inscripción guardada en el servidor de la plataforma. ¡Te esperamos!' : 'Inscripción guardada solo en este navegador: no hubo conexión con el servidor.' });
     setNombre(''); setAbierto(false);
   }
 
