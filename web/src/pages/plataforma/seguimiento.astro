@@ -1,10 +1,15 @@
 ---
 import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
-import Card from '../../components/ui/Card.astro';
+import SeguimientoAcciones from '../../components/seguimiento/SeguimientoAcciones';
+import { obtenerAcciones, obtenerActores, obtenerCambiosAccion, obtenerJornadas, obtenerMonitoreos } from '../../lib/plataforma/datos';
+
+const [acciones, actores, cambios, jornadas, monitoreos] = await Promise.all([
+  obtenerAcciones(), obtenerActores(), obtenerCambiosAccion(), obtenerJornadas(), obtenerMonitoreos(),
+]);
+// Los actores viajan sin correo: esta vista es pública.
+const actoresPublicos = actores.map(({ correo: _correo, ...resto }) => ({ ...resto, correo: '' }));
 ---
+
 <PlataformaLayout title="Seguimiento · Plataforma abierta del manglar" activa="seguimiento">
- <Card class="p-6 sm:p-8">
-  <p class="rotulo text-dorado-300">Seguimiento</p>
-  <h2 class="titular mt-4 text-2xl">Sección en construcción</h2>
- </Card>
+  <SeguimientoAcciones client:load acciones={acciones} actores={actoresPublicos} cambios={cambios} jornadas={jornadas} monitoreos={monitoreos} />
 </PlataformaLayout>
