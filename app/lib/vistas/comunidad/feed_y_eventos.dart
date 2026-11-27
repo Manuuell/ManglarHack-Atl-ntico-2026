@@ -8,12 +8,14 @@ import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/kit/accion_gesto.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/fila_deslizable.dart';
 import '../../nucleo/kit/menu_mantenido.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../mapa/marcadores.dart' show tintaSobre;
+import '../mis_reportes/gestos_reporte.dart' show copiarCodigoReporte;
 import '../raiz.dart';
 import 'piezas_comunidad.dart';
 
@@ -148,6 +150,18 @@ class TarjetaReporte extends StatelessWidget {
       alEjecutar: () => verEnMapa(context, r),
     );
     final ficha = AccionGesto(etiqueta: 'Ver ficha', icono: Icons.description_rounded, alEjecutar: () => abrirFichaReporte(context, r));
+    // Copiar y compartir el código del caso: solo los reales (un simulado no se difunde como caso).
+    final copiar = AccionGesto(
+      etiqueta: 'Copiar código ${p.id}',
+      icono: Icons.copy_rounded,
+      alEjecutar: () => copiarCodigoReporte(context, p.id),
+    );
+    final compartir = AccionGesto(
+      etiqueta: 'Compartir caso',
+      icono: Icons.ios_share_rounded,
+      color: Zc.cienaga,
+      alEjecutar: () => compartirCasoFeed(context, r),
+    );
     final contenido = Container(
       constraints: const BoxConstraints(minHeight: 64),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -173,6 +187,7 @@ class TarjetaReporte extends StatelessWidget {
                     style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w700)),
               ),
               if (r.simulado) ...[const SizedBox(width: 6), const Rotulo('Simulado', color: Cra.recuperacion)],
+              if (r.prueba && !r.simulado) ...[const SizedBox(width: 6), const Rotulo('Prueba', color: Zc.textoSuave)],
             ]),
             const SizedBox(height: 2),
             Text(
@@ -194,13 +209,26 @@ class TarjetaReporte extends StatelessWidget {
       radio: BorderRadius.circular(Zr.m),
       alTocar: () => abrirFichaReporte(context, r),
       vistaPrevia: (_) => _FichaReporte(r: r, conBoton: false),
-      acciones: [ficha, mapa],
+      acciones: [ficha, mapa, if (!r.simulado) ...[compartir, copiar]],
       child: FilaDeslizable(
         radio: BorderRadius.circular(Zr.m),
+        accionesInicio: [if (!r.simulado) compartir],
         accionesFin: [mapa],
         hijo: contenido,
       ),
     );
+  }
+}
+
+/// Comparte el caso del feed: código, tipo, zona y estado. Nunca coordenadas exactas ni datos de quien reporta.
+Future<void> compartirCasoFeed(BuildContext context, ReporteFeed r) async {
+  final p = r.publico;
+  final texto = 'Caso ${p.id} en Zanky: ${p.tipo.nombre} en ${nombreZona(p.zona)}. Estado: ${p.estado.nombre}.'
+      '${r.prueba ? ' (Reporte de prueba)' : ''}';
+  try {
+    await SharePlus.instance.share(ShareParams(text: texto, subject: 'Caso ${p.id} en Zanky'));
+  } catch (_) {
+    if (context.mounted) avisar(context, 'No pude abrir el menú de compartir.', tipo: TipoAviso.error);
   }
 }
 

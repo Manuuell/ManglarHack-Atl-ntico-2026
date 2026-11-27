@@ -7,7 +7,7 @@ import '../../nucleo/tema.dart';
 import 'pantalla_visores.dart';
 import 'piezas_visores.dart';
 
-/// Los visores de la C.R.A. en una fila para Inicio (misma forma que `SensoresCompacto`): el aviso
+/// Los visores de la CRA en una fila para Inicio (misma forma que `SensoresCompacto`): el aviso
 /// de focos cerca del manglar si lo hay, o cuántos puntos críticos hay en la franja. Lee solo las
 /// copias guardadas (no gasta datos en Inicio); un toque abre «Visores del manglar».
 class VisoresCompacto extends StatefulWidget {
@@ -60,7 +60,7 @@ class _VisoresCompactoState extends State<VisoresCompacto> {
         : puntos == null
         ? 'Riesgos, focos de calor y agua'
         : '$puntos puntos críticos de riesgo en la franja';
-    const detalle = 'Datos oficiales de la C.R.A., también sin señal.';
+    const detalle = 'Datos oficiales de la CRA, también sin señal.';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Presionable(

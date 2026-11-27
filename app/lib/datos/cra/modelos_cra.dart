@@ -1,6 +1,6 @@
 import 'dart:ui' show Color;
 
-/// Datos oficiales de la C.R.A. para los visores del manglar. Portado de `web/src/lib/craApi.ts`
+/// Datos oficiales de la CRA para los visores del manglar. Portado de `web/src/lib/craApi.ts`
 /// (misma API, mismos ids, mismos colores, mismo recorte a la franja del manglar) para que la app y
 /// la web digan lo mismo. Aquí solo hay datos y reglas puras: sin red, sin Flutter de vistas.
 
@@ -12,9 +12,9 @@ const visorPuntosCriticos = 'https://www.crautonoma.gov.co/critical-points';
 const visorGeovisorCra = 'https://www.crautonoma.gov.co/geovisor-ambiental/';
 const paginaCalidadAgua = 'https://www.crautonoma.gov.co/ambiental/monitoreos-de-calidad-de-agua';
 
-/// Workflow de monitoreo del manglar de la C.R.A. (copia servida por el equipo).
+/// Workflow de monitoreo del manglar de la CRA (copia servida por el equipo).
 const urlCoreWorkflow = 'https://mimanglar.sentralabs.co/cra/data/core.json';
-const fuenteWorkflow = 'Workflow de monitoreo del manglar de la C.R.A., versión 4 '
+const fuenteWorkflow = 'Workflow de monitoreo del manglar de la CRA, versión 4 '
     '(Sentinel-2, radar, elevación y alta resolución)';
 
 // Ids estables de la API (/cartography/municipalities): la ruta trae polígonos de más de 1 MB.
@@ -546,7 +546,7 @@ final indicadoresAgua = <String, Indicador>{
 
 // ───────────────────────────── El manglar en cifras ─────────────────────────────
 
-/// Un sector del workflow de la C.R.A. (`resumen` + `carb.sect` de core.json).
+/// Un sector del workflow de la CRA (`resumen` + `carb.sect` de core.json).
 class SectorCifras {
   const SectorCifras({
     required this.zona,

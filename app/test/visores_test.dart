@@ -13,7 +13,7 @@ import 'package:zanky/nucleo/tema.dart';
 import 'package:zanky/vistas/visores/pantalla_visores.dart';
 import 'package:zanky/vistas/visores/visores_compacto.dart';
 
-/// Pruebas de los visores con las respuestas REALES de la API de la C.R.A. guardadas el 27-nov
+/// Pruebas de los visores con las respuestas REALES de la API de la CRA guardadas el 27-nov
 /// (`test/fixtures/cra/`). Ninguna prueba sale a la red.
 
 String fx(String n) => File('test/fixtures/cra/$n').readAsStringSync();
@@ -75,7 +75,7 @@ void main() {
     pedidos = 0;
   });
 
-  group('Datos de la C.R.A. (respuestas reales)', () {
+  group('Datos de la CRA (respuestas reales)', () {
     test('puntos críticos: todo el Atlántico o solo la franja, con el color oficial', () {
       final tipos = interpretarTipos(fj('tipos_evento.json'));
       final zonas = interpretarZonas(fj('zonas_evento.json'));
@@ -230,7 +230,7 @@ void main() {
     await montar(t, PantallaVisores(servicio: servicio(caido: true)), const Size(390, 844));
     expect(find.textContaining('Sin señal: copia de las'), findsOneWidget);
     await irA(t, 'Agua');
-    expect(find.text('La C.R.A. no respondió'), findsOneWidget);
+    expect(find.text('La CRA no respondió'), findsOneWidget);
     expect(find.text('Intentar de nuevo'), findsOneWidget);
     // La mascota del estado vacío parpadea con un temporizador: se desmonta antes de cerrar.
     await t.pumpWidget(const SizedBox());

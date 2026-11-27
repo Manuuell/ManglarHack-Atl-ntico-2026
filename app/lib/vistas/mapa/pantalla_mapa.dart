@@ -113,6 +113,7 @@ class _PantallaMapaState extends State<PantallaMapa>
   // Lo de la comunidad que también muestra la web: reportes de datos abiertos (WhatsApp incluido)
   // y alertas oficiales del servidor, con caché sin señal.
   List<ReportePublico> _comunidad = const [];
+  Set<String> _idsPrueba = const {};
   ResultadoAlertas _alertasOf = ResultadoAlertas.vacio;
 
   Future<void> _cargarComunidad() async {
@@ -120,7 +121,9 @@ class _PantallaMapaState extends State<PantallaMapa>
     final [r, a] = await Future.wait<Object>([f.reportes(), f.alertas()]);
     if (!mounted) return;
     setState(() {
-      _comunidad = [for (final x in (r as Lote<List<ReporteComunidad>>).datos) x.publico];
+      final lote = (r as Lote<List<ReporteComunidad>>).datos;
+      _comunidad = [for (final x in lote) x.publico];
+      _idsPrueba = {for (final x in lote) if (x.prueba) x.publico.id};
       _alertasOf = (a as Lote<ResultadoAlertas>).datos;
     });
   }
@@ -394,6 +397,7 @@ class _PantallaMapaState extends State<PantallaMapa>
               latido: _latido,
               latir: latir,
               reciente: g.puntos.first.esReciente(_ahora),
+              prueba: _idsPrueba.contains(g.puntos.first.id),
               alTocar: () => _abrirPunto(g.puntos.first),
             ),
           )
@@ -733,6 +737,7 @@ class _PantallaMapaState extends State<PantallaMapa>
         _yo = aqui;
         _precisionYo = pos.accuracy;
       });
+      vibrar(Vibracion.ligera);
       await _volar(aqui, math.max(_mapa.camera.zoom, 15.5));
     } on TimeoutException {
       _mostrarAviso(

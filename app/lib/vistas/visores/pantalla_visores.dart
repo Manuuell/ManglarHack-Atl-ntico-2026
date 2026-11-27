@@ -58,7 +58,7 @@ Future<void> abrirVisores(
   );
 }
 
-/// Lo que la C.R.A. publica del manglar, dentro de la app y sin señal: puntos críticos de riesgo,
+/// Lo que la CRA publica del manglar, dentro de la app y sin señal: puntos críticos de riesgo,
 /// focos de calor por satélite, calidad del agua por ciénaga y el manglar en cifras.
 class PantallaVisores extends StatefulWidget {
   const PantallaVisores({super.key, this.servicio, this.inicial = PestanaVisor.riesgo});
@@ -157,9 +157,9 @@ class _PantallaVisoresState extends State<PantallaVisores> {
       PestanaVisor.cifras => null,
     };
     final fuente = switch (PestanaVisor.values[_pestana]) {
-      PestanaVisor.riesgo => 'API de gestión del riesgo de la C.R.A. (visor de puntos críticos)',
-      PestanaVisor.focos => 'API de la C.R.A., focos de calor detectados por satélite',
-      PestanaVisor.agua => 'Monitoreos de calidad de agua de la C.R.A. (ICA del IDEAM)',
+      PestanaVisor.riesgo => 'API de gestión del riesgo de la CRA (visor de puntos críticos)',
+      PestanaVisor.focos => 'API de la CRA, focos de calor detectados por satélite',
+      PestanaVisor.agua => 'Monitoreos de calidad de agua de la CRA (ICA del IDEAM)',
       PestanaVisor.cifras => '',
     };
     return Scaffold(
@@ -268,7 +268,7 @@ class _PantallaVisoresState extends State<PantallaVisores> {
     if (r.origen == OrigenVisor.sinDatos || r.datos == null) {
       return EstadoVacio(
         key: const ValueKey('error'),
-        titulo: 'La C.R.A. no respondió',
+        titulo: 'La CRA no respondió',
         texto: 'Prueba de nuevo en un momento. Cuando haya señal guardo una copia para verla también sin internet.',
         animo: Animo.preocupado,
         textoAccion: 'Intentar de nuevo',
@@ -367,7 +367,7 @@ class _Riesgo extends StatelessWidget {
         const SizedBox(height: 12),
         MapaVisor(
           alto: ancha ? 320 : 230,
-          descripcion: 'Mapa de ${visibles.length} puntos críticos de riesgo de la C.R.A.',
+          descripcion: 'Mapa de ${visibles.length} puntos críticos de riesgo de la CRA',
           puntos: [
             for (final p in visibles)
               PuntoMapa(
@@ -472,7 +472,7 @@ class _FilaPunto extends StatelessWidget {
   }
 }
 
-/// Lo que se ve al mantener presionado un punto: tipo, lugar, fecha y lo que registró la C.R.A.
+/// Lo que se ve al mantener presionado un punto: tipo, lugar, fecha y lo que registró la CRA
 class _VistaPreviaPunto extends StatelessWidget {
   const _VistaPreviaPunto({required this.punto, required this.distanciaM});
   final PuntoCritico punto;
@@ -546,7 +546,7 @@ Future<void> abrirFichaPunto(BuildContext context, PuntoCritico p) => mostrarHoj
         Text(p.tipo.explicacion, style: tt.bodyMedium),
         const SizedBox(height: 14),
         if (p.descripcion.isNotEmpty) ...[
-          Text('LO QUE REGISTRÓ LA C.R.A.', style: tt.labelSmall),
+          Text('LO QUE REGISTRÓ LA CRA', style: tt.labelSmall),
           const SizedBox(height: 4),
           Text(p.descripcion, style: tt.bodyMedium),
           const SizedBox(height: 14),
@@ -558,7 +558,7 @@ Future<void> abrirFichaPunto(BuildContext context, PuntoCritico p) => mostrarHoj
         _Dato('Franja del manglar', p.enFranja ? 'Dentro' : 'Fuera'),
         _Dato('Coordenadas', '${p.lat.toStringAsFixed(5)}, ${p.lon.toStringAsFixed(5)}'),
         const SizedBox(height: 10),
-        Text('Fuente: visor de puntos críticos de la C.R.A.', style: tt.bodySmall),
+        Text('Fuente: visor de puntos críticos de la CRA', style: tt.bodySmall),
       ],
     );
   },
@@ -702,7 +702,7 @@ class _Focos extends StatelessWidget {
           )
         else ...[
           Text(
-            'Focos de calor (${focos.length}), del más reciente al más viejo. Detectados por satélite y agrupados por la C.R.A. '
+            'Focos de calor (${focos.length}), del más reciente al más viejo. Detectados por satélite y agrupados por la CRA '
             'Un foco de calor no siempre es un incendio.',
             style: tt.labelMedium?.copyWith(color: Zc.textoSuave),
           ),
@@ -778,7 +778,7 @@ class _Agua extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           'Ciénagas y cuerpos de agua (${cienagas.length}). Índice de calidad del agua (ICA) del IDEAM, de 0 (muy mala) a 1 (buena): '
-          'promedio de los puntos de muestreo de la C.R.A., de la peor a la mejor. El árbol marca las rodeadas de manglar.',
+          'promedio de los puntos de muestreo de la CRA, de la peor a la mejor. El árbol marca las rodeadas de manglar.',
           style: tt.labelMedium?.copyWith(color: Zc.textoSuave),
         ),
         const SizedBox(height: 8),
@@ -981,7 +981,7 @@ class _Cifras extends StatelessWidget {
         else if (w.datos == null)
           TarjetaVisor(
             child: Text(
-              'No pude leer el workflow de la C.R.A. y no hay copia guardada. Tira hacia abajo para intentar de nuevo.',
+              'No pude leer el workflow de la CRA y no hay copia guardada. Tira hacia abajo para intentar de nuevo.',
               style: tt.bodyMedium,
             ),
           )
@@ -1171,7 +1171,7 @@ class _CifrasReportes extends StatelessWidget {
       children: [
         _Rejilla2([
           _Cifra(valor: e.total.toDouble(), formato: n, etiqueta: 'reportes recibidos'),
-          _Cifra(valor: e.validados.toDouble(), formato: n, etiqueta: 'validados por la C.R.A.', color: Zc.hoja),
+          _Cifra(valor: e.validados.toDouble(), formato: n, etiqueta: 'validados por la CRA', color: Zc.hoja),
           _Cifra(valor: e.pendientes.toDouble(), formato: n, etiqueta: 'en revisión', color: Zc.fango),
           if (e.pctDentroManglar != null)
             _Cifra(valor: e.pctDentroManglar!, formato: (v) => '${v.round()} %', etiqueta: 'dentro del manglar')
@@ -1244,18 +1244,18 @@ String _fechasFoco(FocoCalor f) {
   return 'del ${fechaCorta(d)} al ${fechaCorta(h)}';
 }
 
-/// Texto para copiar un foco: lo que publica la C.R.A., sin nada inventado.
+/// Texto para copiar un foco: lo que publica la CRA, sin nada inventado.
 String textoFoco(FocoCalor f) =>
     'Foco de calor en ${_lugarFoco(f)} (${f.focos} ${f.focos == 1 ? 'detección' : 'detecciones'}), ${_fechasFoco(f)}. '
     'Confianza ${f.confianzaTexto}. Coordenadas ${f.lat.toStringAsFixed(5)}, ${f.lon.toStringAsFixed(5)}. '
-    'Fuente: visor de focos de calor de la C.R.A.';
+    'Fuente: visor de focos de calor de la CRA';
 
 /// Texto para copiar el resumen de una ciénaga.
 String textoCienaga(CienagaAgua c) {
   final cat = categoriaIca(c.ica);
   return 'Ciénaga ${c.nombre}: calidad del agua ${cat?.etiqueta.toLowerCase() ?? 'sin dato'}'
       '${c.ica == null ? '' : ' (ICA ${decimal(c.ica!, 2)})'}, medida el ${fechaCorta(c.ultimaFecha)} '
-      'en ${c.muestras.length} ${c.muestras.length == 1 ? 'estación' : 'estaciones'}. Fuente: C.R.A.';
+      'en ${c.muestras.length} ${c.muestras.length == 1 ? 'estación' : 'estaciones'}. Fuente: CRA';
 }
 
 class _FilaFoco extends StatelessWidget {
@@ -1413,7 +1413,7 @@ Future<void> abrirFichaFoco(BuildContext context, FocoCalor f, double distanciaM
         _Dato('Distancia', textoDistancia(distanciaM)),
         _Dato('Coordenadas', '${f.lat.toStringAsFixed(5)}, ${f.lon.toStringAsFixed(5)}'),
         const SizedBox(height: 10),
-        Text('Fuente: visor de focos de calor de la C.R.A. (detección por satélite).', style: tt.bodySmall),
+        Text('Fuente: visor de focos de calor de la CRA (detección por satélite).', style: tt.bodySmall),
       ],
     );
   },
@@ -1506,7 +1506,7 @@ Future<void> abrirFichaCienaga(BuildContext context, CienagaAgua c) => mostrarHo
             m.muestreadoEn == null ? 'Sin medición' : 'Medida el ${fechaCorta(m.muestreadoEn)}',
           ),
         const SizedBox(height: 10),
-        Text('Fuente: puntos de muestreo de calidad del agua de la C.R.A. (ICA del IDEAM).', style: tt.bodySmall),
+        Text('Fuente: puntos de muestreo de calidad del agua de la CRA (ICA del IDEAM).', style: tt.bodySmall),
       ],
     );
   },

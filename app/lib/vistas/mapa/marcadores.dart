@@ -25,9 +25,13 @@ class MarcadorPunto extends StatelessWidget {
     required this.latir,
     required this.reciente,
     required this.alTocar,
+    this.prueba = false,
   });
 
   final PuntoMapa punto;
+
+  /// Reporte de prueba del bot: sale en el mapa con un rótulo discreto «PRUEBA».
+  final bool prueba;
 
   /// Un solo reloj para todos los marcadores (0 → 1 cada ciclo).
   final Animation<double> latido;
@@ -44,7 +48,8 @@ class MarcadorPunto extends StatelessWidget {
     final etiqueta = '${punto.tipo.nombre}, prioridad ${Prioridad.nombres[punto.prioridad]}, '
         '${haceCuanto(punto.capturadoEn)}'
         '${punto.esMio ? ', es tu reporte' : ''}'
-        '${punto.enCola ? ', aún no enviado' : ''}. Toca para ver más';
+        '${punto.enCola ? ', aún no enviado' : ''}'
+        '${prueba ? ', reporte de prueba' : ''}. Toca para ver más';
     return Semantics(
       button: true,
       label: etiqueta,
@@ -85,6 +90,8 @@ class MarcadorPunto extends StatelessWidget {
                   ),
                 ),
               ),
+              if (prueba)
+                const Positioned(bottom: 0, child: RotuloPrueba()),
             ],
           ),
         ),
@@ -128,10 +135,13 @@ class MarcadorGrupo extends StatelessWidget {
                 border: Border.all(color: Colors.white, width: grupo.hayMio ? 4 : 3),
                 boxShadow: const [BoxShadow(color: Color(0x4D0B2E24), blurRadius: 8, offset: Offset(0, 3))],
               ),
-              child: Text(
-                n > 99 ? '99+' : '$n',
-                maxLines: 1,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: tintaSobre(color), height: 1),
+              child: ConteoGrupo(
+                n: n,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: tintaSobre(color),
+                  height: 1,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ),
           ),
@@ -267,4 +277,50 @@ class _AnilloPainter extends CustomPainter {
   @override
   bool shouldRepaint(_AnilloPainter old) =>
       old.color != color || old.base != base || old.fase != fase || old.t != t;
+}
+
+/// Rótulo discreto de los reportes de prueba del bot: se ven, pero se distinguen.
+class RotuloPrueba extends StatelessWidget {
+  const RotuloPrueba({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: Zc.textoTenue.withValues(alpha: 0.6), width: 0.8),
+        ),
+        child: const Text(
+          'PRUEBA',
+          style: TextStyle(fontSize: 8, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: Zc.textoSuave, height: 1.1),
+        ),
+      ),
+    );
+  }
+}
+
+/// El número de un grupo: al aparecer brota (0,6 → 1) y cuenta desde 0 hasta [n] en 280 ms
+/// con números tabulares. Con «reducir movimiento» sale quieto y con su valor final.
+class ConteoGrupo extends StatelessWidget {
+  const ConteoGrupo({super.key, required this.n, this.style});
+  final int n;
+  final TextStyle? style;
+
+  @override
+  Widget build(BuildContext context) {
+    String texto(int v) => v > 99 ? '99+' : '$v';
+    if (MediaQuery.disableAnimationsOf(context)) return Text(texto(n), maxLines: 1, style: style);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 280),
+      curve: const Cubic(0.16, 1, 0.3, 1),
+      builder: (_, t, _) => Transform.scale(
+        scale: 0.6 + 0.4 * t,
+        child: Text(texto((n * t).round().clamp(1, n)), maxLines: 1, style: style),
+      ),
+    );
+  }
 }
