@@ -98,6 +98,8 @@
       setTimeout(quitar, 25000);
     })();
   </script>
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- defer: pwa.js busca el script de arranque, que va debajo; sin defer no existe aún y el registro falla en silencio. -->
+  <script src="pwa.js" defer></script>
+  <script id="arranque-flutter" src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -7,13 +7,17 @@ final _codigoValido = RegExp(r'^[a-z0-9_-]{1,64}$');
 
 /// Un evento al que se llegó por un QR: el código de la jornada o un código libre.
 class EntradaEvento {
-  const EntradaEvento(this.codigo);
+  const EntradaEvento(this.codigo, {this.accionAsistencia = false});
   final String codigo;
+  final bool accionAsistencia;
 
   @override
-  bool operator ==(Object other) => other is EntradaEvento && other.codigo == codigo;
+  bool operator ==(Object other) =>
+      other is EntradaEvento &&
+      other.codigo == codigo &&
+      other.accionAsistencia == accionAsistencia;
   @override
-  int get hashCode => codigo.hashCode;
+  int get hashCode => Object.hash(codigo, accionAsistencia);
   @override
   String toString() => 'EntradaEvento($codigo)';
 }
@@ -36,11 +40,18 @@ EntradaEvento? leerEntradaEvento(Uri uri) {
       for (final e in Uri.splitQueryString(f.substring(i + 1)).entries) {
         params.putIfAbsent(e.key, () => e.value);
       }
-    } catch (_) {/* fragmento raro: se ignora */}
+    } catch (_) {
+      /* fragmento raro: se ignora */
+    }
   }
   for (final clave in const ['evento', 'jornada']) {
     final c = codigoEventoValido(params[clave]);
-    if (c != null) return EntradaEvento(c);
+    if (c != null) {
+      return EntradaEvento(
+        c,
+        accionAsistencia: params['accion']?.toLowerCase() == 'asistencia',
+      );
+    }
   }
   final rutaFragmento = i >= 0 ? f.substring(0, i) : f;
   for (final ruta in [rutaFragmento, uri.path]) {
@@ -50,16 +61,24 @@ EntradaEvento? leerEntradaEvento(Uri uri) {
       String parte = partes[k + 1];
       try {
         parte = Uri.decodeComponent(parte);
-      } catch (_) {/* se usa tal cual */}
+      } catch (_) {
+        /* se usa tal cual */
+      }
       final c = codigoEventoValido(parte);
-      if (c != null) return EntradaEvento(c);
+      if (c != null) {
+        return EntradaEvento(
+          c,
+          accionAsistencia: params['accion']?.toLowerCase() == 'asistencia',
+        );
+      }
     }
   }
   return null;
 }
 
 /// El evento con el que se abrió la app (o que se escaneó). `null` = ninguno.
-final ValueNotifier<EntradaEvento?> entradaEvento = ValueNotifier<EntradaEvento?>(null);
+final ValueNotifier<EntradaEvento?> entradaEvento =
+    ValueNotifier<EntradaEvento?>(null);
 
 /// Se llama una vez al arrancar. No pisa una entrada ya guardada (recargar el enlace no la pierde).
 void registrarEntradaEvento([Uri? uri]) {
@@ -69,4 +88,9 @@ void registrarEntradaEvento([Uri? uri]) {
 }
 
 /// El enlace que lleva a un evento: el que va dentro del QR.
-String enlaceEvento(String codigo) => '$urlAppWeb?evento=${Uri.encodeQueryComponent(codigo)}';
+String enlaceEvento(String codigo) =>
+    '$urlAppWeb?evento=${Uri.encodeQueryComponent(codigo)}';
+
+/// Enlace NDEF para abrir el evento directamente en la hoja de asistencia.
+String enlaceAsistenciaEvento(String codigo) =>
+    '${enlaceEvento(codigo)}&accion=asistencia';
