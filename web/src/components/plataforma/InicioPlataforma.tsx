@@ -103,7 +103,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
               );
             })}
           </ul>
-          <a href="/#monitoreo" className="rotulo mt-3 inline-flex min-h-11 items-center gap-1 text-dorado-300 hover:underline">Ver monitoreo comunitario <ArrowRight className="size-3.5" aria-hidden="true" /></a>
+          <a href="/visores/reportes" className="rotulo mt-3 inline-flex min-h-11 items-center gap-1 text-dorado-300 hover:underline">Ver monitoreo comunitario <ArrowRight className="size-3.5" aria-hidden="true" /></a>
         </section>
 
         <section aria-labelledby="titulo-jornadas">
