@@ -633,7 +633,11 @@ class _ProximoEventoInicioState extends State<ProximoEventoInicio> {
   @override
   void dispose() {
     recargaComunidadInicio.removeListener(_cargar);
-    if (proximoEventoMostrado.value == _proximo?.jornada.id) proximoEventoMostrado.value = null;
+    // Fuera del dispose: avisar a los que escuchan con el árbol bloqueado lanza.
+    final id = _proximo?.jornada.id;
+    Future.microtask(() {
+      if (proximoEventoMostrado.value == id) proximoEventoMostrado.value = null;
+    });
     super.dispose();
   }
 
