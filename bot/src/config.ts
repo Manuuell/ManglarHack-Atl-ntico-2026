@@ -17,7 +17,11 @@ export const config = {
   panelApiKey: env.PANEL_API_KEY ?? '',
   hashSalt: env.HASH_SALT ?? 'zanky-dev-salt',
   dataDir: path.resolve(env.DATA_DIR ?? './data'),
-  zonasGeojson: path.resolve(env.ZONAS_GEOJSON ?? '../datos/manglares_atlantico_invemar_2020.geojson'),
+  /** Zonas de manglar: el mismo archivo que usan la app y el backend (4 zonas con id y prioridad). */
+  zonasGeojson: path.resolve(env.ZONAS_GEOJSON ?? '../app/assets/datos/manglar_zonas.json'),
+  /** Backend común (backend/supabase). Sin estos dos valores los reportes se quedan en la copia local. */
+  supabaseUrl: (env.SUPABASE_URL ?? '').replace(/\/$/, ''),
+  supabaseAnon: env.SUPABASE_ANON_KEY ?? '',
   radioInfluenciaM: Number(env.RADIO_INFLUENCIA_M ?? 500),
   /** Más allá de esta distancia se pregunta si la ubicación es correcta. */
   distanciaSospechosaM: 3000,
@@ -33,5 +37,6 @@ export function avisosDeConfiguracion(): string[] {
   if (!config.dryRun && !config.phoneNumberId) avisos.push('WHATSAPP_PHONE_NUMBER_ID vacío.');
   if (env.HASH_SALT === undefined) avisos.push('HASH_SALT vacío: se usa una sal de desarrollo.');
   if (!config.panelApiKey) avisos.push('PANEL_API_KEY vacío: la API del panel queda cerrada.');
+  if (!config.supabaseUrl || !config.supabaseAnon) avisos.push('SUPABASE_URL o SUPABASE_ANON_KEY vacíos: los reportes NO llegan al backend común (app, web y panel).');
   return avisos;
 }

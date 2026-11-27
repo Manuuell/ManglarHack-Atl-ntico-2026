@@ -1,5 +1,5 @@
 import { Boton, Fila } from '../whatsapp/cloudApi';
-import { CUANDO, ESTADOS, MUNICIPIOS, MunicipioId, ROLES, Reporte, RolId, TIPOS, TipoId } from '../reportes/modelo';
+import { ESTADOS, MAGNITUDES, MOMENTOS, MUNICIPIOS, MagnitudId, MomentoId, MunicipioId, ROLES, Reporte, RolId, TIPOS, TipoId } from '../reportes/modelo';
 
 export const ENCABEZADO = 'Zanky BOT 🌿';
 
@@ -50,7 +50,7 @@ export const MENU = {
   cuerpo:
     '¡Ajá! Soy *Zanky*, el vigía del manglar del Atlántico.\n\n' +
     'Si ves algo que le hace daño al manglar (tala, quemas, basura, vertimientos o un caño tapado), ' +
-    'cuéntamelo aquí y le llega a la CRA para que actúe a tiempo.',
+    'cuéntamelo aquí: le llega a la CRA, que lo verifica y decide cómo actuar.',
   botones: [
     { id: 'reportar', titulo: '🚨 Reportar' },
     { id: 'mis_reportes', titulo: '📋 Mis reportes' },
@@ -132,7 +132,17 @@ export const BOTON_OMITIR: Boton[] = [{ id: 'omitir', titulo: 'Omitir' }];
 
 export const PEDIR_CUANDO = '⏱️ ¿Cuándo está pasando?';
 
-export const BOTONES_CUANDO: Boton[] = (Object.keys(CUANDO) as (keyof typeof CUANDO)[]).map(id => ({ id, titulo: CUANDO[id] }));
+export const BOTONES_CUANDO: Boton[] = (Object.keys(MOMENTOS) as MomentoId[]).map(id => ({ id, titulo: MOMENTOS[id] }));
+
+export const PEDIR_MAGNITUD =
+  '📏 ¿Qué tan grande es lo que ves?\n\n' +
+  (Object.keys(MAGNITUDES) as MagnitudId[]).map(id => `• *${MAGNITUDES[id].nombre}:* ${MAGNITUDES[id].ejemplo.toLowerCase()}`).join('\n');
+
+export const BOTONES_MAGNITUD: Boton[] = (Object.keys(MAGNITUDES) as MagnitudId[]).map(id => ({ id, titulo: MAGNITUDES[id].nombre }));
+
+export const FUERA_DEL_ATLANTICO =
+  '📍 Esa ubicación queda fuera del Atlántico, y Zanky solo recibe reportes del manglar del departamento.\n\n' +
+  'Si el sitio sí está en el Atlántico, vuelve a enviar la ubicación o un enlace de Google Maps.';
 
 export interface Resumen {
   tipo: TipoId;
@@ -141,7 +151,8 @@ export interface Resumen {
   distanciaM: number;
   conFoto: boolean;
   descripcion?: string;
-  cuando: keyof typeof CUANDO;
+  momento: MomentoId;
+  magnitud: MagnitudId;
 }
 
 export function resumen(r: Resumen): string {
@@ -152,7 +163,8 @@ export function resumen(r: Resumen): string {
     `📍 ${lugar}\n` +
     `📸 ${r.conFoto ? 'Con foto' : 'Sin foto'}\n` +
     `✍️ ${r.descripcion ? r.descripcion.slice(0, 200) : 'Sin descripción'}\n` +
-    `⏱️ ${CUANDO[r.cuando]}\n\n` +
+    `⏱️ ${MOMENTOS[r.momento]}\n` +
+    `📏 ${MAGNITUDES[r.magnitud].nombre} (${MAGNITUDES[r.magnitud].ejemplo.toLowerCase()})\n\n` +
     '¿Lo envío a la CRA?'
   );
 }
@@ -163,11 +175,33 @@ export const BOTONES_CONFIRMAR: Boton[] = [
   { id: 'cancelar', titulo: '❌ Cancelar' },
 ];
 
+/** Solo se usa cuando el backend común confirmó que guardó el reporte. */
 export function enviado(codigo: string): string {
   return (
     `🌿 ¡Gracias, vigía! Tu reporte *${codigo}* ya está en el panel de la CRA.\n\n` +
-    `Estado: *${ESTADOS.recibido}*. La CRA lo va a verificar antes de actuar.\n\n` +
+    `Estado: *${ESTADOS.recibido}*. La CRA lo verifica y decide cómo actuar. También aparece en el mapa de la app y de la web, sin tus datos.\n\n` +
     'Escribe *menu* para volver al inicio.'
+  );
+}
+
+/** El servidor no respondió: el reporte queda en cola y todavía no tiene número de caso confirmado. */
+export const ENVIO_PENDIENTE =
+  '📶 Guardé tu reporte, pero el servidor de la CRA no respondió.\n\n' +
+  'Lo reenvío solo en cuanto vuelva y te escribo con tu número de caso. No tienes que hacer nada más.';
+
+/** Un reporte que estaba en cola por fin llegó al servidor. */
+export function enviadoTarde(codigo: string): string {
+  return `🌿 Listo: tu reporte *${codigo}* ya llegó al panel de la CRA. ¡Gracias por cuidar el manglar!`;
+}
+
+export const ENVIO_RECHAZADO =
+  '⚠️ El servidor de la CRA no aceptó este reporte. Intenta de nuevo con *menu* → *🚨 Reportar*. Si hay peligro, llama al *123*.';
+
+/** Versión de prueba sin backend: no se promete que esté en el panel. */
+export function guardadoSinBackend(codigo: string): string {
+  return (
+    `🌿 ¡Gracias, vigía! Guardé tu reporte *${codigo}*.\n\n` +
+    'Esta es una versión de prueba: todavía no está conectada al panel de la CRA.'
   );
 }
 
@@ -181,7 +215,10 @@ export function misReportes(reportes: Reporte[]): string {
   return (
     '*Tus últimos reportes* 📋\n\n' +
     ultimos
-      .map(r => `• *${r.codigo}* · ${TIPOS[r.tipo].emoji} ${TIPOS[r.tipo].nombre}\n   ${ESTADOS[r.estado]} · ${r.recibido_en.slice(0, 10)}`)
+      .map(r => {
+        const estado = r.envio?.estado === 'pendiente' ? 'Pendiente de envío' : r.envio?.estado === 'rechazado' ? 'No se pudo enviar' : ESTADOS[r.estado];
+        return `• *${r.codigo}* · ${TIPOS[r.tipo].emoji} ${TIPOS[r.tipo].nombre}\n   ${estado} · ${r.capturado_en.slice(0, 10)}`;
+      })
       .join('\n')
   );
 }

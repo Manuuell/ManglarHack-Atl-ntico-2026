@@ -6,7 +6,9 @@ import { ubicar } from '../geo/zonas';
 import { ubicacionDesdeTexto } from '../geo/ubicacionTexto';
 import * as almacen from '../reportes/almacen';
 import { confianza, corroboraciones, prioridad } from '../reportes/evaluacion';
-import { CuandoId, FuenteUbicacion, RolId, TipoId, esMunicipio, esRol, esTipo } from '../reportes/modelo';
+import { FuenteUbicacion, MagnitudId, MomentoId, RolId, TipoId, enAtlantico, esMagnitud, esMomento, esMunicipio, esRol, esTipo, numeroDeCaso } from '../reportes/modelo';
+import { enviarReporte } from '../backend/envio';
+import { backendActivo, estadoDeReportes } from '../backend/supabase';
 import * as T from './textos';
 
 type Paso =
@@ -22,6 +24,7 @@ type Paso =
   | 'foto'
   | 'descripcion'
   | 'cuando'
+  | 'magnitud'
   | 'confirmar';
 
 interface Registro {
@@ -40,10 +43,13 @@ interface Borrador {
   distanciaM?: number;
   zona?: string;
   prioridadZona?: number;
-  foto?: { archivo: string; hash: string };
+  zonaId?: string;
+  municipio?: string;
+  foto?: { archivo: string; hash: string; jpeg: boolean };
   conFoto?: boolean;
   descripcion?: string;
-  cuando?: CuandoId;
+  momento?: MomentoId;
+  magnitud?: MagnitudId;
 }
 
 interface Sesion {
@@ -161,6 +167,12 @@ async function pedirFoto(de: string, s: Sesion): Promise<void> {
 }
 
 async function registrarUbicacion(de: string, s: Sesion, lat: number, lon: number, fuente: FuenteUbicacion, ts: number): Promise<void> {
+  if (!enAtlantico(lat, lon)) {
+    ir(s, 'ubicacion');
+    await whatsapp.texto(de, T.FUERA_DEL_ATLANTICO);
+    await whatsapp.pedirUbicacion(de, T.PEDIR_UBICACION);
+    return;
+  }
   const u = ubicar(lat, lon);
   Object.assign(s.borrador, {
     lat,
@@ -170,6 +182,8 @@ async function registrarUbicacion(de: string, s: Sesion, lat: number, lon: numbe
     dentro: u.dentro,
     distanciaM: u.distanciaM,
     zona: u.zona,
+    zonaId: u.zonaId,
+    municipio: u.municipio,
     prioridadZona: u.prioridadZona,
   });
   if (!u.dentro && u.distanciaM > config.distanciaSospechosaM) {
@@ -186,7 +200,7 @@ async function enviarResumen(de: string, s: Sesion): Promise<void> {
   ir(s, 'confirmar');
   await whatsapp.botones(
     de,
-    T.resumen({ tipo: b.tipo!, zona: b.zona, dentro: !!b.dentro, distanciaM: b.distanciaM ?? 0, conFoto: !!b.conFoto, descripcion: b.descripcion, cuando: b.cuando! }),
+    T.resumen({ tipo: b.tipo!, zona: b.zona, dentro: !!b.dentro, distanciaM: b.distanciaM ?? 0, conFoto: !!b.conFoto, descripcion: b.descripcion, momento: b.momento!, magnitud: b.magnitud! }),
     T.BOTONES_CONFIRMAR,
   );
 }
@@ -199,22 +213,25 @@ function uuidDesde(messageId: string): string {
 
 async function guardarReporte(de: string, s: Sesion, messageId: string): Promise<void> {
   const b = s.borrador;
-  if (!b.tipo || b.lat === undefined || b.lon === undefined || !b.cuando || !b.fuenteUbicacion) {
+  if (!b.tipo || b.lat === undefined || b.lon === undefined || !b.momento || !b.magnitud || !b.fuenteUbicacion) {
     await whatsapp.texto(de, T.NO_ENTENDI);
     await enviarMenu(de, s);
     return;
   }
   const hash = almacen.hashDe(de);
   const existentes = almacen.todos();
+  const ahora = new Date().toISOString();
   const datos = {
     tipo: b.tipo,
     lat: b.lat,
     lon: b.lon,
+    capturado_en: b.capturado_en ?? ahora,
     fuenteUbicacion: b.fuenteUbicacion,
     dentroPoligono: !!b.dentro,
     distanciaM: b.distanciaM ?? 0,
     prioridadZona: b.prioridadZona,
-    cuando: b.cuando,
+    momento: b.momento,
+    magnitud: b.magnitud,
     tieneFoto: !!b.conFoto,
     fotoHash: b.foto?.hash,
     descripcion: b.descripcion,
@@ -222,22 +239,25 @@ async function guardarReporte(de: string, s: Sesion, messageId: string): Promise
   };
   const corroborados = corroboraciones(datos, existentes);
   const conf = confianza(datos, existentes, corroborados);
-  const ahora = new Date().toISOString();
   const u = almacen.usuario(hash);
+  const id = uuidDesde(messageId);
   const reporte = almacen.crearReporte({
-    id: uuidDesde(messageId),
-    codigo: almacen.siguienteCodigo(),
+    id,
+    codigo: numeroDeCaso(id),
     canal: 'whatsapp',
     tipo: b.tipo,
     descripcion: b.descripcion,
     lat: b.lat,
     lon: b.lon,
     fuenteUbicacion: b.fuenteUbicacion,
-    zona: b.zona,
+    zona: b.zonaId,
+    zonaNombre: b.zona,
+    municipio: b.municipio,
     dentroPoligono: !!b.dentro,
     distanciaM: b.distanciaM ?? 0,
-    cuando: b.cuando,
-    capturado_en: b.capturado_en ?? ahora,
+    momento: b.momento,
+    magnitud: b.magnitud,
+    capturado_en: datos.capturado_en,
     recibido_en: ahora,
     prioridad: prioridad(datos, corroborados),
     confianza: conf.puntaje,
@@ -245,24 +265,37 @@ async function guardarReporte(de: string, s: Sesion, messageId: string): Promise
     estado: 'recibido',
     foto: b.foto,
     reportanteHash: hash,
+    anonimo: u?.consentimiento !== 'identificado',
     ...(u?.consentimiento === 'identificado' ? { contacto: de } : {}),
+    envio: { estado: 'pendiente', intentos: 0 },
     historial: [{ estado: 'recibido', fecha: ahora, por: 'zanky-bot' }],
   });
   console.log(`[reporte] ${reporte.codigo} ${reporte.tipo} prioridad ${reporte.prioridad} confianza ${reporte.confianza}`);
   ir(s, 'menu');
   s.borrador = {};
-  await whatsapp.texto(de, T.enviado(reporte.codigo));
+  // Solo se dice «ya está en el panel» cuando el backend común lo guardó.
+  const resultado = await enviarReporte(reporte);
+  if (resultado === 'enviado') await whatsapp.texto(de, T.enviado(reporte.codigo));
+  else if (resultado === 'sin_backend') await whatsapp.texto(de, T.guardadoSinBackend(reporte.codigo));
+  else if (resultado === 'rechazado') await whatsapp.texto(de, T.ENVIO_RECHAZADO);
+  else {
+    reporte.avisarA = de;
+    almacen.actualizar(reporte);
+    await whatsapp.texto(de, T.ENVIO_PENDIENTE);
+  }
 }
 
 async function recibirFoto(de: string, s: Sesion, mediaId: string, sha256Meta?: string): Promise<void> {
   try {
     const media = await whatsapp.descargarMedia(mediaId);
     if (media) {
-      const hash = media.sha256 ?? createHash('sha256').update(media.datos).digest('hex');
-      s.borrador.foto = { archivo: almacen.guardarFoto(media.datos, hash, media.mime), hash };
+      // Hash propio en hex (el de Meta viene en base64): así lo pide foto_hash en el backend.
+      const hash = createHash('sha256').update(media.datos).digest('hex');
+      const jpeg = /jpe?g/i.test(media.mime);
+      s.borrador.foto = { archivo: almacen.guardarFoto(media.datos, hash, media.mime), hash, jpeg };
     } else {
       // Modo simulación: no hay archivo, pero sí el hash que reporta WhatsApp.
-      s.borrador.foto = { archivo: '', hash: sha256Meta ?? mediaId };
+      s.borrador.foto = { archivo: '', hash: sha256Meta ?? mediaId, jpeg: false };
     }
     s.borrador.conFoto = true;
   } catch (err) {
@@ -271,6 +304,28 @@ async function recibirFoto(de: string, s: Sesion, mediaId: string, sha256Meta?: 
   }
   ir(s, 'descripcion');
   await whatsapp.botones(de, `${s.borrador.conFoto ? '📸 ¡Foto recibida!' : 'No pude guardar la foto, sigamos sin ella.'}\n\n${T.PEDIR_DESCRIPCION}`, T.BOTON_OMITIR);
+}
+
+/** Los reportes de la persona con el estado que tiene hoy en el backend común (lo cambia la CRA en el panel). */
+async function misReportesConEstado(de: string) {
+  const propios = almacen.delReportante(almacen.hashDe(de));
+  const enviados = propios.filter(r => r.envio?.estado === 'enviado').slice(-20);
+  if (backendActivo() && enviados.length) {
+    try {
+      const estados = await estadoDeReportes(enviados.map(r => r.id));
+      for (const e of estados) {
+        const r = propios.find(x => x.id === e.id);
+        if (r && r.estado !== e.estado) {
+          r.estado = e.estado;
+          r.prioridad = e.prioridad;
+          almacen.actualizar(r);
+        }
+      }
+    } catch (err) {
+      console.warn('[backend] no se pudo leer el estado:', (err as Error).message);
+    }
+  }
+  return propios;
 }
 
 /** Atiende un mensaje entrante según el paso en que va la conversación. */
@@ -347,7 +402,7 @@ export async function atender(m: MensajeEntrante): Promise<void> {
       }
       if (opcion === 'reportar' || texto.includes('report') || texto.includes('denunci')) return empezarReporte(de, s);
       if (opcion === 'mis_reportes' || texto.includes('mis reportes')) {
-        await whatsapp.texto(de, T.misReportes(almacen.delReportante(almacen.hashDe(de))));
+        await whatsapp.texto(de, T.misReportes(await misReportesConEstado(de)));
         return;
       }
       if (opcion === 'como_funciona') {
@@ -427,11 +482,22 @@ export async function atender(m: MensajeEntrante): Promise<void> {
     }
 
     case 'cuando': {
-      if (opcion === 'ahora' || opcion === 'hoy' || opcion === 'dias') {
-        s.borrador.cuando = opcion;
-        return enviarResumen(de, s);
+      if (esMomento(opcion)) {
+        s.borrador.momento = opcion;
+        ir(s, 'magnitud');
+        await whatsapp.botones(de, T.PEDIR_MAGNITUD, T.BOTONES_MAGNITUD);
+        return;
       }
       await whatsapp.botones(de, T.PEDIR_CUANDO, T.BOTONES_CUANDO);
+      return;
+    }
+
+    case 'magnitud': {
+      if (esMagnitud(opcion)) {
+        s.borrador.magnitud = opcion;
+        return enviarResumen(de, s);
+      }
+      await whatsapp.botones(de, T.PEDIR_MAGNITUD, T.BOTONES_MAGNITUD);
       return;
     }
 

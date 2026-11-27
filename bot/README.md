@@ -89,6 +89,26 @@ Sin `WHATSAPP_TOKEN`, el bot arranca en **modo simulación** y no envía nada a 
    - Por si acaso, el bot ignora los mensajes dirigidos a otros números.
 6. **Probar:** escribirle «hola» al número.
 
+## Conexión con la app y la web (backend común)
+
+Lo que llega por WhatsApp entra a la **misma tabla `reportes`** del backend común (`backend/supabase`), así que se ve en
+la app, en el mapa de la web y en el panel de la CRA.
+
+- **Inserción:** con la clave **anon**, como la app.
+  - `POST /rest/v1/reportes` con `Prefer: resolution=ignore-duplicates`.
+  - El `id` es un UUID estable que sale del mensaje de WhatsApp, así que un reintento no duplica.
+  - Solo se mandan las 23 columnas del contrato.
+- **Foto:** va al bucket privado `evidencias/<id>.jpg`, con `foto_hash` en hex.
+- **Número de caso:** `ZK-` + los 4 primeros hex del UUID, el mismo en la app, el bot y el panel.
+- **Lo que recalcula el servidor:** zona, prioridad y corroboración. Lo que calcula el bot es solo para responderle a la
+  persona.
+- **Confirmación honesta:** el bot dice «ya está en el panel» **solo** cuando el servidor confirmó que lo guardó.
+- **Si el servidor no responde:** el reporte queda en la cola local, se reintenta cada minuto y la persona recibe su número
+  de caso cuando llega.
+- **«Mis reportes»:** lee el estado actual con la RPC `estado_de_reportes`.
+- **Variables:** `SUPABASE_URL` y `SUPABASE_ANON_KEY`. Sin ellas, el bot avisa que es una versión de prueba y no promete
+  que el reporte esté en el panel.
+
 ## Endpoints
 
 | Ruta | Acceso | Qué devuelve |

@@ -4,7 +4,10 @@ type Anillo = [number, number][]; // [lon, lat]
 type Poligono = Anillo[]; // el primero es el borde, los demás son huecos
 
 interface Zona {
+  /** Id del contrato (mallorquin, tubara, juan_de_acosta, piojo), si la fuente lo trae. */
+  id?: string;
   nombre: string;
+  municipio?: string;
   /** Prioridad de conservación 1-5 si el GeoJSON la trae (propiedad "prioridad"). */
   prioridad?: number;
   poligonos: Poligono[];
@@ -16,6 +19,8 @@ export interface ResultadoUbicacion {
   /** Metros al borde de manglar más cercano (0 si está dentro). */
   distanciaM: number;
   zona?: string;
+  zonaId?: string;
+  municipio?: string;
   prioridadZona?: number;
 }
 
@@ -26,10 +31,39 @@ function nombreDe(props: Record<string, unknown>): string {
   return typeof candidato === 'string' && candidato.trim() ? candidato.trim() : 'Manglar del Atlántico';
 }
 
-/** Carga los polígonos del manglar (Polygon o MultiPolygon) desde un GeoJSON. */
+function cajaDe(poligonos: Poligono[]): [number, number, number, number] {
+  let minLon = Infinity, minLat = Infinity, maxLon = -Infinity, maxLat = -Infinity;
+  for (const p of poligonos) for (const [lon, lat] of p[0]) {
+    minLon = Math.min(minLon, lon); maxLon = Math.max(maxLon, lon);
+    minLat = Math.min(minLat, lat); maxLat = Math.max(maxLat, lat);
+  }
+  return [minLon, minLat, maxLon, maxLat];
+}
+
+/**
+ * Carga las zonas de manglar. Acepta el archivo de la app (app/assets/datos/manglar_zonas.json:
+ * { zonas: [{ id, nombre, municipio, prioridadConservacion, poligonos: [anillo, …] }] }), que es el mismo
+ * del que sale backend/supabase/zonas.sql, o un GeoJSON de Polygon/MultiPolygon.
+ */
 export function cargarZonas(ruta: string): number {
   const geo = JSON.parse(fs.readFileSync(ruta, 'utf8'));
   zonas = [];
+  if (Array.isArray(geo.zonas)) {
+    for (const z of geo.zonas) {
+      const poligonos: Poligono[] = (z.poligonos ?? []).map((anillo: Anillo) => [anillo]);
+      if (!poligonos.length) continue;
+      const prioridad = Number(z.prioridadConservacion);
+      zonas.push({
+        id: String(z.id),
+        nombre: String(z.nombre ?? z.id),
+        municipio: z.municipio ? String(z.municipio) : undefined,
+        prioridad: Number.isFinite(prioridad) ? prioridad : undefined,
+        poligonos,
+        bbox: cajaDe(poligonos),
+      });
+    }
+    return zonas.length;
+  }
   for (const f of geo.features ?? []) {
     const g = f?.geometry;
     if (!g) continue;
@@ -86,7 +120,7 @@ export function ubicar(lat: number, lon: number): ResultadoUbicacion {
   let mejor: ResultadoUbicacion = { dentro: false, distanciaM: Infinity };
   for (const z of zonas) {
     for (const p of z.poligonos) {
-      if (dentroDePoligono(lon, lat, p)) return { dentro: true, distanciaM: 0, zona: z.nombre, prioridadZona: z.prioridad };
+      if (dentroDePoligono(lon, lat, p)) return { dentro: true, distanciaM: 0, zona: z.nombre, zonaId: z.id, municipio: z.municipio, prioridadZona: z.prioridad };
     }
     // Descarta rápido las zonas cuya caja está mucho más lejos que el mejor candidato.
     const margenGrados = Number.isFinite(mejor.distanciaM) ? mejor.distanciaM / 100_000 : Infinity;
@@ -95,7 +129,7 @@ export function ubicar(lat: number, lon: number): ResultadoUbicacion {
     for (const p of z.poligonos) for (const anillo of p) {
       for (let i = 1; i < anillo.length; i++) {
         const d = distanciaASegmento(lon, lat, anillo[i - 1], anillo[i]);
-        if (d < mejor.distanciaM) mejor = { dentro: false, distanciaM: d, zona: z.nombre, prioridadZona: z.prioridad };
+        if (d < mejor.distanciaM) mejor = { dentro: false, distanciaM: d, zona: z.nombre, zonaId: z.id, municipio: z.municipio, prioridadZona: z.prioridad };
       }
     }
   }

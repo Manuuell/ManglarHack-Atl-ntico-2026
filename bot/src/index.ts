@@ -9,6 +9,9 @@ import * as almacen from './reportes/almacen';
 import { aCSV, aGeoJSON, aKML } from './reportes/datosAbiertos';
 import { esEstado } from './reportes/modelo';
 import { atender, avisarCambio } from './flujos/zanky';
+import { enviarReporte } from './backend/envio';
+import { backendActivo } from './backend/supabase';
+import { enviadoTarde } from './flujos/textos';
 
 type ConCuerpoCrudo = Request & { cuerpoCrudo?: Buffer };
 
@@ -112,7 +115,8 @@ function exigirClave(req: Request, res: Response, next: NextFunction): void {
 }
 
 app.get('/api/reportes', exigirClave, (_req, res) => {
-  res.json(almacen.todos().map(({ reportanteHash, ...r }) => ({ ...r, reportante: reportanteHash.slice(0, 12) })));
+  // Ni el número ni a quién avisar salen por aquí: el panel los pide aparte y queda auditado (backend: ver_reportante).
+  res.json(almacen.todos().map(({ reportanteHash, contacto, avisarA, ...r }) => ({ ...r, reportante: reportanteHash.slice(0, 12) })));
 });
 
 app.patch('/api/reportes/:codigo/estado', exigirClave, async (req, res) => {
@@ -146,10 +150,26 @@ app.get('/api/fotos/:archivo', exigirClave, (req, res) => {
 
 // ---------------------------------------------------------------------------
 
+/** Reintenta los reportes que el backend no recibió (caída, límite, sin señal del servidor). */
+async function reintentarPendientes(): Promise<void> {
+  if (!backendActivo()) return;
+  for (const r of almacen.pendientesDeEnvio()) {
+    if (r.envio.intentos >= 50) continue;
+    const resultado = await enviarReporte(r);
+    if (resultado === 'enviado' && r.avisarA) {
+      await whatsapp.texto(r.avisarA, enviadoTarde(r.codigo)).catch(err => console.warn(`[aviso] ${(err as Error).message}`));
+      delete r.avisarA;
+      almacen.actualizar(r);
+    }
+  }
+}
+
 export function iniciar(): void {
   almacen.iniciarAlmacen();
   const n = cargarZonas(config.zonasGeojson);
   for (const aviso of avisosDeConfiguracion()) console.warn(`[config] ${aviso}`);
+  setInterval(() => void reintentarPendientes(), 60_000);
+  void reintentarPendientes();
   app.listen(config.port, () => {
     console.log(`Zanky BOT escuchando en el puerto ${config.port} · ${n} polígonos de manglar cargados`);
   });

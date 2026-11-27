@@ -1,10 +1,13 @@
+// Tipos, estados y número de caso del contrato común (handoff/05 y backend/supabase/schema.sql).
+// La gravedad es la misma que usan la app y el servidor (app/lib/datos/tipos.dart).
+
 export const TIPOS = {
   tala: { nombre: 'Tala de mangle', emoji: '🪓', gravedad: 5, descripcion: 'Están cortando o arrancando mangle' },
   quema: { nombre: 'Quema o incendio', emoji: '🔥', gravedad: 5, descripcion: 'Fuego o humo en el manglar o cerca' },
   relleno: { nombre: 'Relleno o construcción', emoji: '🚧', gravedad: 4, descripcion: 'Echan tierra o escombros, o construyen' },
   vertimiento: { nombre: 'Vertimiento', emoji: '🛢️', gravedad: 4, descripcion: 'Aguas negras, aceite o químicos al agua' },
-  cano_taponado: { nombre: 'Caño tapado', emoji: '🚱', gravedad: 3, descripcion: 'Un caño o paso de agua está bloqueado' },
-  fauna: { nombre: 'Fauna afectada', emoji: '🐟', gravedad: 3, descripcion: 'Caza, o peces o aves muertos' },
+  cano_taponado: { nombre: 'Caño tapado', emoji: '🚱', gravedad: 4, descripcion: 'Un caño o paso de agua está bloqueado' },
+  fauna: { nombre: 'Fauna afectada', emoji: '🐟', gravedad: 4, descripcion: 'Caza, o peces o aves muertos' },
   basuras: { nombre: 'Basuras', emoji: '🗑️', gravedad: 2, descripcion: 'Residuos acumulados en el manglar o la orilla' },
   otro: { nombre: 'Otra amenaza', emoji: '❓', gravedad: 2, descripcion: 'Algo distinto que pone en riesgo el manglar' },
 } as const;
@@ -15,13 +18,31 @@ export function esTipo(id: string): id is TipoId {
   return Object.prototype.hasOwnProperty.call(TIPOS, id);
 }
 
-export const CUANDO = {
+/** `momento` del contrato: cuándo está pasando. */
+export const MOMENTOS = {
   ahora: 'Ahora mismo',
   hoy: 'Hoy, más temprano',
-  dias: 'Hace días',
+  antes: 'Antes de hoy',
 } as const;
 
-export type CuandoId = keyof typeof CUANDO;
+export type MomentoId = keyof typeof MOMENTOS;
+
+export function esMomento(id: string): id is MomentoId {
+  return Object.prototype.hasOwnProperty.call(MOMENTOS, id);
+}
+
+/** `magnitud` del contrato, con los mismos ejemplos que la app. */
+export const MAGNITUDES = {
+  pequena: { nombre: 'Pequeña', ejemplo: 'Unos metros' },
+  mediana: { nombre: 'Mediana', ejemplo: 'Como una cancha' },
+  grande: { nombre: 'Grande', ejemplo: 'Más que una cancha' },
+} as const;
+
+export type MagnitudId = keyof typeof MAGNITUDES;
+
+export function esMagnitud(id: string): id is MagnitudId {
+  return Object.prototype.hasOwnProperty.call(MAGNITUDES, id);
+}
 
 export type Estado = 'recibido' | 'en_verificacion' | 'verificado' | 'alerta_oficial' | 'en_atencion' | 'cerrado' | 'descartado';
 
@@ -39,6 +60,18 @@ export function esEstado(v: unknown): v is Estado {
   return typeof v === 'string' && Object.prototype.hasOwnProperty.call(ESTADOS, v);
 }
 
+/** Número de caso común a la app, el bot y el panel: ZK- + 4 primeros hex del UUID. */
+export function numeroDeCaso(id: string): string {
+  return 'ZK-' + id.replace(/-/g, '').slice(0, 4).toUpperCase();
+}
+
+/** Recuadro del Atlántico ampliado que acepta el servidor (schema.sql). */
+export const ATLANTICO = { latMin: 10.2, latMax: 11.4, lonMin: -75.7, lonMax: -74.4 };
+
+export function enAtlantico(lat: number, lon: number): boolean {
+  return lat >= ATLANTICO.latMin && lat <= ATLANTICO.latMax && lon >= ATLANTICO.lonMin && lon <= ATLANTICO.lonMax;
+}
+
 export type FuenteUbicacion = 'gps' | 'enlace';
 
 export interface CambioEstado {
@@ -48,10 +81,18 @@ export interface CambioEstado {
   nota?: string;
 }
 
+/** Cómo va el envío del reporte al backend común (Supabase). */
+export interface Envio {
+  estado: 'pendiente' | 'enviado' | 'rechazado' | 'sin_backend';
+  intentos: number;
+  ultimoError?: string;
+  enviadoEn?: string;
+}
+
 export interface Reporte {
-  /** UUID del reporte (contrato común). Se deriva del mensaje de WhatsApp, así un reintento no lo duplica. */
+  /** UUID del reporte (contrato común). Sale del id del mensaje de WhatsApp: un reintento no lo duplica. */
   id: string;
-  /** Código corto para la persona y la CRA, ej. ZK-0001. */
+  /** Número de caso: ZK- + 4 hex del UUID. */
   codigo: string;
   canal: 'whatsapp';
   tipo: TipoId;
@@ -59,23 +100,31 @@ export interface Reporte {
   lat: number;
   lon: number;
   fuenteUbicacion: FuenteUbicacion;
+  /** Id de la zona del contrato (mallorquin, tubara, juan_de_acosta, piojo). El servidor la recalcula. */
   zona?: string;
+  zonaNombre?: string;
+  municipio?: string;
   dentroPoligono: boolean;
   distanciaM: number;
-  cuando: CuandoId;
+  momento: MomentoId;
+  magnitud: MagnitudId;
   /** Hora en que la persona envió la ubicación, según WhatsApp. */
   capturado_en: string;
-  /** Hora en que el reporte quedó guardado. */
+  /** Hora en que el bot armó el reporte. */
   recibido_en: string;
   prioridad: number;
   confianza: number;
   motivosConfianza: string[];
   estado: Estado;
-  foto?: { archivo: string; hash: string };
-  /** Hash del número: permite contar reportes por persona sin guardar el número en claro. */
+  foto?: { archivo: string; hash: string; jpeg: boolean };
+  /** Hash del número: cuenta reportes por persona sin guardar el número en claro. Va como reportante_id. */
   reportanteHash: string;
+  anonimo: boolean;
   /** Solo si la persona aceptó reportar con su número. */
   contacto?: string;
+  /** A quién avisar cuando un envío pendiente por fin llegue al servidor; se borra al avisar. */
+  avisarA?: string;
+  envio: Envio;
   historial: CambioEstado[];
 }
 

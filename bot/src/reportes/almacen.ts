@@ -5,8 +5,8 @@ import { config } from '../config';
 import { CambioEstado, Estado, Reporte, Usuario } from './modelo';
 
 /**
- * Almacenamiento en archivos JSON dentro de DATA_DIR. Alcanza para el prototipo;
- * la interfaz es pequeña para poder cambiarla por una base de datos sin tocar los flujos.
+ * Copia local en DATA_DIR: registro de vigías, cola de reintento de los reportes que todavía no llegan
+ * al backend común y fotos. La fuente de verdad de los reportes es Supabase (backend/supabase).
  */
 
 interface Datos {
@@ -20,7 +20,11 @@ let archivo = '';
 export function iniciarAlmacen(): void {
   fs.mkdirSync(path.join(config.dataDir, 'fotos'), { recursive: true });
   archivo = path.join(config.dataDir, 'zanky.json');
-  if (fs.existsSync(archivo)) datos = JSON.parse(fs.readFileSync(archivo, 'utf8'));
+  if (fs.existsSync(archivo)) {
+    datos = JSON.parse(fs.readFileSync(archivo, 'utf8'));
+    // Reportes de versiones anteriores, sin estado de envío: se tratan como pendientes.
+    for (const r of datos.reportes) r.envio ??= { estado: 'pendiente', intentos: 0 };
+  }
 }
 
 function guardar(): void {
@@ -29,6 +33,7 @@ function guardar(): void {
   fs.renameSync(tmp, archivo);
 }
 
+/** Hash con sal secreta: identifica a la persona sin guardar su número. 64 hex, cabe en reportante_id. */
 export function hashDe(id: string): string {
   return createHash('sha256').update(`${config.hashSalt}:${id}`).digest('hex');
 }
@@ -51,16 +56,17 @@ export function vigias(): Usuario[] {
   return Object.values(datos.usuarios).filter(u => u.vigiaNumero);
 }
 
-export function siguienteCodigo(): string {
-  return `ZK-${String(datos.reportes.length + 1).padStart(4, '0')}`;
-}
-
 export function crearReporte(r: Reporte): Reporte {
   const existente = datos.reportes.find(x => x.id === r.id);
   if (existente) return existente;
   datos.reportes.push(r);
   guardar();
   return r;
+}
+
+/** Guarda los cambios hechos a un reporte que ya está en la lista. */
+export function actualizar(_r: Reporte): void {
+  guardar();
 }
 
 export function todos(): Reporte[] {
@@ -73,6 +79,10 @@ export function porCodigo(codigo: string): Reporte | undefined {
 
 export function delReportante(hash: string): Reporte[] {
   return datos.reportes.filter(r => r.reportanteHash === hash);
+}
+
+export function pendientesDeEnvio(): Reporte[] {
+  return datos.reportes.filter(r => r.envio.estado === 'pendiente');
 }
 
 export function cambiarEstado(codigo: string, estado: Estado, por: string, nota?: string): Reporte | undefined {
@@ -96,4 +106,9 @@ export function rutaFoto(nombre: string): string | null {
   if (!/^[a-zA-Z0-9]{1,64}\.(jpg|png|webp)$/.test(nombre)) return null;
   const ruta = path.join(config.dataDir, 'fotos', nombre);
   return fs.existsSync(ruta) ? ruta : null;
+}
+
+export function leerFoto(nombre: string): Buffer | null {
+  const ruta = rutaFoto(nombre);
+  return ruta ? fs.readFileSync(ruta) : null;
 }

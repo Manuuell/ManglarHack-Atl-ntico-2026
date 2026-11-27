@@ -1,15 +1,23 @@
 import { config } from '../config';
-import { CuandoId, FuenteUbicacion, Reporte, TIPOS, TipoId } from './modelo';
+import { FuenteUbicacion, MagnitudId, MomentoId, Reporte, TIPOS, TipoId } from './modelo';
+
+/**
+ * Prioridad y confianza que el bot calcula para responderle a la persona y guardar en su copia local.
+ * El servidor (trigger de recepción en backend/supabase/schema.sql) las vuelve a calcular con PostGIS:
+ * lo que vale en el panel y en la app es lo del servidor. Las reglas son las mismas que las de la app.
+ */
 
 export interface DatosEvaluacion {
   tipo: TipoId;
   lat: number;
   lon: number;
+  capturado_en: string;
   fuenteUbicacion: FuenteUbicacion;
   dentroPoligono: boolean;
   distanciaM: number;
   prioridadZona?: number;
-  cuando: CuandoId;
+  momento: MomentoId;
+  magnitud: MagnitudId;
   tieneFoto: boolean;
   fotoHash?: string;
   descripcion?: string;
@@ -21,35 +29,36 @@ function distanciaM(aLat: number, aLon: number, bLat: number, bLon: number): num
   return Math.hypot((bLon - aLon) * kx, (bLat - aLat) * 110_540);
 }
 
-/** Reportes de otras personas a menos de 500 m en las últimas 24 horas. */
-export function corroboraciones(d: Pick<DatosEvaluacion, 'lat' | 'lon' | 'reportanteHash'>, existentes: Reporte[]): number {
-  const limite = Date.now() - 24 * 3600 * 1000;
+/** Como el servidor: mismo tipo, a 1 km o menos, ±3 horas y de otra persona. */
+export function corroboraciones(d: Pick<DatosEvaluacion, 'tipo' | 'lat' | 'lon' | 'capturado_en' | 'reportanteHash'>, existentes: Reporte[]): number {
+  const t = Date.parse(d.capturado_en);
   return existentes.filter(
     r =>
+      r.tipo === d.tipo &&
       r.reportanteHash !== d.reportanteHash &&
       r.estado !== 'descartado' &&
-      Date.parse(r.recibido_en) >= limite &&
-      distanciaM(d.lat, d.lon, r.lat, r.lon) <= 500,
+      Math.abs(Date.parse(r.capturado_en) - t) <= 3 * 3600 * 1000 &&
+      distanciaM(d.lat, d.lon, r.lat, r.lon) <= 1000,
   ).length;
 }
 
-/**
- * Prioridad 1-5: gravedad del tipo de amenaza ajustada por la zona, la distancia
- * al manglar, si está pasando ahora y si otras personas reportan lo mismo.
- */
+/** Prioridad 1-5, con la misma regla que la app y el trigger del servidor. */
 export function prioridad(d: DatosEvaluacion, corroborados: number): number {
   let p: number = TIPOS[d.tipo].gravedad;
-  if ((d.prioridadZona ?? 0) >= 4) p += 1;
-  if (!d.dentroPoligono && d.distanciaM > config.radioInfluenciaM) p -= 1;
-  if (d.cuando === 'dias') p -= 1;
+  if (d.dentroPoligono) {
+    if ((d.prioridadZona ?? 0) >= 5) p += 1;
+  } else if (d.distanciaM > config.radioInfluenciaM) {
+    p -= 1;
+  }
+  if (d.momento === 'antes') p -= 1;
+  if (d.magnitud === 'grande') p += 1;
   if (corroborados > 0) p += 1;
   return Math.max(1, Math.min(5, p));
 }
 
 /**
- * Confianza 0-100 por capas: evidencia, coherencia geográfica, oportunidad,
- * corroboración y antecedentes. Cada punto deja un motivo legible para el panel.
- * La decisión final la toma una persona de la CRA o un vigía comunitario.
+ * Confianza 0-100 por capas: evidencia, coherencia geográfica, oportunidad, corroboración y antecedentes.
+ * El servidor acepta del cliente como máximo 80; de ahí para arriba lo suben la IA y las personas.
  */
 export function confianza(d: DatosEvaluacion, existentes: Reporte[], corroborados: number): { puntaje: number; motivos: string[] } {
   let puntaje = 20;
@@ -73,8 +82,8 @@ export function confianza(d: DatosEvaluacion, existentes: Reporte[], corroborado
   else if (d.distanciaM <= config.radioInfluenciaM) sumar(10, `a ${d.distanciaM} m del manglar`);
   else motivos.push(`+0 lejos del manglar (${d.distanciaM} m)`);
 
-  if (d.cuando === 'ahora') sumar(10, 'está pasando ahora');
-  else if (d.cuando === 'hoy') sumar(5, 'pasó hoy');
+  if (d.momento === 'ahora') sumar(10, 'está pasando ahora');
+  else if (d.momento === 'hoy') sumar(5, 'pasó hoy');
 
   if (corroborados > 0) sumar(Math.min(20, corroborados * 10), `${corroborados} reporte(s) cercano(s) de otras personas`);
 
@@ -84,5 +93,5 @@ export function confianza(d: DatosEvaluacion, existentes: Reporte[], corroborado
   if (previos.some(r => ['verificado', 'alerta_oficial', 'en_atencion', 'cerrado'].includes(r.estado))) sumar(10, 'reportante con reportes verificados');
   if (previos.filter(r => r.estado === 'descartado').length >= 2) sumar(-20, 'reportante con varios reportes descartados');
 
-  return { puntaje: Math.max(0, Math.min(100, puntaje)), motivos };
+  return { puntaje: Math.max(0, Math.min(80, puntaje)), motivos };
 }
