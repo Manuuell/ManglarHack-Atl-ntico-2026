@@ -14,6 +14,8 @@ Base de datos con PostGIS, reglas de seguridad, funciones del panel y almacenami
 | `zonas-1.sql` … `zonas-3.sql` | Las 4 zonas del manglar del Atlántico, capa oficial de la CRA a escala 1:5.000 (649,66 ha, 886 polígonos) como `MultiPolygon`. Generados. |
 | `prioridades-1.sql` … `prioridades-6.sql` | Prioridades de conservación de la CRA (Alta/Media/Baja): 458 filas, 9.274 polígonos. La 1 crea la tabla y la vacía; las demás solo insertan. Generados. |
 | `seed_demo.sql` | 15 reportes de **demostración** (`[DEMO] …`). Opcional; no son datos reales. |
+| `estadisticas.sql` | Estadísticas, ranking de colegios y sensores; se carga después del esquema. |
+| `estadisticas_parche_1.sql` | Parche de privacidad y permisos para `estadisticas.sql`; aditivo e idempotente. |
 | `../.env.example` | Nombres de las variables. |
 
 ## 1. Crear el proyecto (gratis)
@@ -37,6 +39,9 @@ Base de datos con PostGIS, reglas de seguridad, funciones del panel y almacenami
    | 9 | `prioridades-5.sql` | 898 KB | Solo inserta. |
    | 10 | `prioridades-6.sql` | 251 KB | Última: `filas = 458`, `poligonos = 9274`. |
    | 11 | `seed_demo.sql` | 10 KB | Opcional, solo para demostrar: 15 reportes `[DEMO]`. Muestra los reportes por zona. |
+   | 12 | `estadisticas.sql` | ~23 KB | Agrega estadísticas, colegios y sensores. |
+   | 13 | `estadisticas_parche_1.sql` | ~10 KB | Restringe la publicación y los permisos. Si el paso 12 ya está cargado, ejecuta solo este. |
+   | 14 | `seed_sensores_demo.sql` | — | Opcional, solo sensores de demostración. |
 
    `ia.sql` (IA en la validación) va aparte, cuando se despliegue la función (ver «IA en la validación»).
    Las partes de `zonas-N` y `prioridades-N` se pueden repetir sin duplicar nada (zonas: *upsert*; prioridades: la parte 1 vacía y
@@ -365,19 +370,21 @@ Nada de esto se ha ejecutado contra un Supabase real ni contra la API de Anthrop
 
 ## 9. Estadísticas, ranking de colegios y sensores (`estadisticas.sql`)
 
-**Orden:** `schema.sql` → `zonas-N.sql` → `prioridades-N.sql` → (opcional `seed_demo.sql`) → **`estadisticas.sql`** → (opcional `seed_sensores_demo.sql`).
-Es aditivo e idempotente: se corre encima de la base ya cargada, las veces que haga falta (unos 23 KB). Reemplaza `crear_reporte(p jsonb)` (misma firma y permisos) para que lea la clave opcional `colegio`; si vuelves a correr `schema.sql`, corre `estadisticas.sql` otra vez.
+**Orden:** `schema.sql` → `zonas-N.sql` → `prioridades-N.sql` → (opcional `seed_demo.sql`) → **`estadisticas.sql` → `estadisticas_parche_1.sql`** → (opcional `seed_sensores_demo.sql`). Si `estadisticas.sql` ya está cargado en Supabase, pega solo `estadisticas_parche_1.sql` encima. Después de volver a ejecutar `schema.sql` o `estadisticas.sql`, vuelve a aplicar el parche.
+`estadisticas.sql` es aditivo e idempotente (unos 23 KB) y reemplaza `crear_reporte(p jsonb)` para aceptar la clave opcional `colegio`. El parche también es aditivo e idempotente y reemplaza las cuatro RPC afectadas. Si se repite la carga, conserva el orden indicado.
 
-Todas son públicas (`anon` y `authenticated`), `security definer`, y devuelven solo agregados (ni ids, ni coordenadas, ni descripciones, ni reportantes).
+Las RPC admiten `anon` y `authenticated` y usan `security definer`. El parche limita las estadísticas públicas, el nombre de colegios y la ubicación de sensores según el rol del panel.
 
 | RPC | Devuelve |
 |---|---|
 | `estadisticas(desde timestamptz default now() - interval '30 days')` | json: `total`, `por_estado`, `por_tipo`, `por_zona[]` (`zona`, `nombre`, `municipio`, `reportes`, `validados`), `por_prioridad` (1-5), `por_prioridad_cra` (`alta`/`media`/`baja`/`sin_clasificar`), `por_dia[]` (últimos 30 días, hora de Bogotá), `validados`, `pendientes`, `descartados`, `mediana_validacion_min`, `pct_dentro_manglar` |
-| `ranking_colegios(limite int default 20)` | json array (máx. 100): `puesto`, `colegio`, `validados`, `totales`, `zonas_distintas`, `ultimo_reporte` (solo fecha). Solo los validados dan puesto; sin validados `puesto` es `null` |
-| `asignar_colegio(p_id uuid, p_colegio text)` | `{id, colegio}`. Quien tiene el id del reporte lo pone una vez; el admin lo cambia o quita |
-| `ultimas_lecturas()` | json array: última lectura de cada sensor activo (`valor`, `unidad`, `medido_en`, `umbral_alerta`, `en_alerta`, `vigente`, zona, lat/lon). Sin lecturas, `valor` es `null` |
+| `ranking_colegios(limite int default 20)` | json array (máx. 100): `puesto`, `colegio`, `validados`, `totales`, `zonas_distintas`, `ultimo_reporte` (solo fecha). Solo aparecen colegios con al menos un reporte validado; el nombre se publica en minúsculas y con espacios normalizados. |
+| `asignar_colegio(p_id uuid, p_colegio text)` | `{id, colegio}`. Sin rol admin, solo se puede poner una vez si el reporte sigue `recibido` y tiene menos de 24 h desde `recibido_en`; el admin puede cambiarlo o quitarlo. |
+| `ultimas_lecturas()` | json array: última lectura de cada sensor activo (`valor`, `unidad`, `medido_en`, `en_alerta`, `vigente`, zona, lat/lon). Solo el admin ve lat/lon exactos y la clave `umbral_alerta`; los demás reciben coordenadas con dos decimales y sin esa clave. Sin lecturas, `valor` es `null`. |
 
 Validado = `verificado`, `alerta_oficial`, `en_atencion` o `cerrado`; pendiente = `recibido` o `en_verificacion`. `colegio` viaja dentro de `p` en `crear_reporte` (texto, se recorta a 80).
+
+En `estadisticas(desde)`, solo admin y moderador CRA reciben los valores exactos. Para los demás roles, `desde` baja al inicio del día en Bogotá y nunca queda después del inicio del día de hace siete días. Las celdas de 1 o 2 reportes en `por_tipo`, `por_zona` (ambos conteos) y `por_prioridad_cra` se devuelven como texto `"<3"`; la mediana de validación es `null` si su base tiene menos de 3 reportes. Los otros agregados conservan el contrato anterior.
 
 ```bash
 curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/estadisticas" -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
@@ -386,6 +393,6 @@ curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/ranking_colegios" -H "apikey: $ANON" 
   -H "Content-Type: application/json" -d '{"limite": 10}'
 ```
 
-**Sensores (maqueta):** `sensores` y `lecturas_sensor` con RLS: los sensores activos son públicos; las lecturas crudas solo las lee el panel y solo las escribe un admin (o el service role). No hay lecturas inventadas: `seed_sensores_demo.sql` es aparte y va marcado `[DEMO]` / `-- DEMOSTRACIÓN`.
+**Sensores (maqueta):** `anon` no tiene `SELECT` directo sobre `sensores` ni `lecturas_sensor`; consulta `ultimas_lecturas()`. El panel autenticado conserva los permisos de tabla definidos en `estadisticas.sql`. No hay lecturas inventadas: `seed_sensores_demo.sql` es aparte y va marcado `[DEMO]` / `-- DEMOSTRACIÓN`.
 
-**Cómo se probó:** PGlite (Postgres en WASM) con un PostGIS de mentira, cargando `schema.sql` + `seed_demo.sql` + `estadisticas.sql` dos veces. **No** con PostGIS real: `por_prioridad_cra` usa `ST_Covers`; comprobar en Supabase con `select public.estadisticas();`.
+**Comprobación original de `estadisticas.sql`:** PGlite (Postgres en WASM) con un PostGIS de mentira, cargando `schema.sql` + `seed_demo.sql` + `estadisticas.sql` dos veces. Este resultado no cubre el parche ni PostGIS real: tras cargarlo, comprobar en Supabase con `select public.estadisticas();` y sesiones `anon`/panel.
