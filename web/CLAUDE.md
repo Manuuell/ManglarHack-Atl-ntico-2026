@@ -149,7 +149,8 @@ La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se
 - `components/comunidad/AlertasManglar.tsx` (con `styles/alertas.css`) lee `GET https://zanqui.sentralabs.co/alertas` (variable `PUBLIC_ALERTAS_URL`). Ese endpoint es el motor del bot (`bot/src/alertas/`, rama `zanqui-bot`).
 - Cada 10 minutos, el motor cruza las estaciones automáticas del IDEAM (WIS2), el pronóstico (WRF y WW3) y las tablas de marea de DIMAR, los focos de calor de la C.R.A. y la vista `reportes_publicos`.
 - Siete alertas, con nivel amarillo, naranja o rojo: mar de leva, pleamar con oleaje, lluvia fuerte, viento fuerte, riesgo de incendio, fuego cerca del manglar y varios reportes de la misma amenaza en una zona. Los umbrales están en `UMBRALES`, en `motor.ts`.
-- `modo="aviso"` es la píldora del hero. La sección muestra «Ahora» (viento, lluvia, ola máxima, próxima pleamar y calor) y una tarjeta por alerta, con qué hacer, cuándo, la fuente y «Avisar por WhatsApp».
+- `modo="aviso"` es la píldora del hero. La sección muestra «Ahora» (viento, lluvia, ola máxima, próxima pleamar y calor) y **hasta 6 tarjetas cortas** (las más recientes por `desde`): la imagen satelital del sector más cercano (`/cra/img/z1..z4_img.jpg`), el nivel, el tipo (medido, pronóstico o simulado) con la fuente, el título, la primera frase del detalle, dónde · cuándo y «Avisar por WhatsApp».
+- De las alertas de la comunidad (`amenaza_ciudadana`, que hoy salen de reportes de la demostración) se muestra **una sola, rotulada «Simulado»**; las de IDEAM, DIMAR y C.R.A. van todas. La píldora cuenta las mismas (`publicadas()`).
 - «Ver un simulacro» pide `?simulacro=1`: alertas de ejemplo rotuladas SIMULACRO, con las cifras de «Ahora» reales.
 - En WhatsApp, Zanky responde a «alertas» y a «simulacro».
 - Si el servidor no responde, la sección lo dice y la píldora no aparece.

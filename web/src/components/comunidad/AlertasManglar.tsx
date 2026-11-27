@@ -82,6 +82,33 @@ function haceCuanto(iso: string): string {
   return min < 1 ? 'hace un momento' : min < 60 ? `hace ${min} min` : `hace ${Math.round(min / 60)} h`;
 }
 
+const MAX_TARJETAS = 6;
+type AlertaVista = Alerta & { simulado: boolean };
+
+/** Lo que se publica: de las alertas de la comunidad queda una sola, rotulada SIMULADO (los reportes de la
+ *  demostración las generan); las de IDEAM, DIMAR y la C.R.A. van todas. Solo las 6 más recientes. */
+function publicadas(alertas: Alerta[]): AlertaVista[] {
+  const comunidad = alertas.filter((a) => a.tipo === 'amenaza_ciudadana').slice(0, 1).map((a) => ({ ...a, simulado: true }));
+  const reales = alertas.filter((a) => a.tipo !== 'amenaza_ciudadana').map((a) => ({ ...a, simulado: false }));
+  return [...reales, ...comunidad].sort((x, y) => Date.parse(y.desde) - Date.parse(x.desde)).slice(0, MAX_TARJETAS);
+}
+
+/** Imagen del sector donde pasa la alerta: las vistas satelitales del workflow de la C.R.A. (copia en /cra/img,
+ *  z1 a z4). `lugar` a veces es una estación del IDEAM, así que se elige el sector más cercano al punto. */
+const SECTORES_IMAGEN: [number, number, number][] = [[1, 11.025, -74.86], [2, 10.99, -74.955], [3, 10.93, -75.05], [4, 10.74, -75.23]];
+function imagenDe(a: Alerta): string {
+  const k = Math.cos((a.lat * Math.PI) / 180);
+  const [zona] = SECTORES_IMAGEN.reduce((mejor, z) => (Math.hypot(z[1] - a.lat, (z[2] - a.lon) * k) < Math.hypot(mejor[1] - a.lat, (mejor[2] - a.lon) * k) ? z : mejor));
+  return `/cra/img/z${zona}_img.jpg`;
+}
+
+/** La primera frase del detalle: la tarjeta va con poco texto. */
+function resumen(texto: string): string {
+  // Corta donde termina una oración (punto y mayúscula), no en «a. m.» ni «p. m.».
+  const frase = texto.match(/^.*?[.!?](?=\s+[A-ZÁÉÍÓÚÑ¿¡]|\s*$)/)?.[0]?.trim() ?? texto;
+  return frase.length > 150 ? `${frase.slice(0, 147).trimEnd()}…` : frase;
+}
+
 function compartir(a: Alerta): string {
   const texto = `${a.nivel === 'roja' ? '🔴' : a.nivel === 'naranja' ? '🟠' : '🟡'} ${a.titulo}\n${a.detalle}\n👉 ${a.recomendacion}\n\nMás en https://mimanglar.sentralabs.co/#alertas`;
   return `https://wa.me/?text=${encodeURIComponent(texto)}`;
@@ -92,15 +119,16 @@ function compartir(a: Alerta): string {
 function Aviso() {
   const { datos } = useAlertas(false);
   if (!datos) return null;
-  const n = datos.alertas.length;
+  const lista = publicadas(datos.alertas);
+  const n = lista.length;
   if (!n) {
     return <a className="al-pildora" data-nivel="calma" href="#alertas"><span aria-hidden="true">✅</span> Sin alertas en el manglar ahora</a>;
   }
-  const a = datos.alertas[0];
+  const a = lista[0];
   return (
     <a className="al-pildora" data-nivel={a.nivel} href="#alertas">
       <span className="al-punto" aria-hidden="true" />
-      <span><strong>{NIVEL_TEXTO[a.nivel]}:</strong> {a.titulo}{n > 1 ? ` · y ${n - 1} más` : ''}</span>
+      <span><strong>{NIVEL_TEXTO[a.nivel]}{a.simulado ? ' (simulado)' : ''}:</strong> {a.titulo}{n > 1 ? ` · y ${n - 1} más` : ''}</span>
       <span aria-hidden="true">→</span>
     </a>
   );
@@ -129,24 +157,22 @@ function Ahora({ a }: { a: Resultado['ahora'] }) {
   );
 }
 
-function Tarjeta({ a }: { a: Alerta }) {
+function Tarjeta({ a, simulacro }: { a: AlertaVista; simulacro: boolean }) {
+  const origen = simulacro ? 'Simulacro' : a.simulado ? 'Simulado' : a.medido ? 'Medido' : 'Pronóstico';
   return (
     <li className="al-tarjeta" data-nivel={a.nivel}>
-      <div className="al-tarjeta-cab">
+      <div className="al-foto">
+        <img src={imagenDe(a)} alt="" loading="lazy" decoding="async" />
         <span className="al-etiqueta" data-nivel={a.nivel}>{NIVEL_TEXTO[a.nivel]}</span>
-        <span className="al-tipo">{a.medido ? 'Medido' : 'Pronóstico'}</span>
+        {(a.simulado || simulacro) && <span className="al-sello">{simulacro ? 'Simulacro' : 'Simulado'}</span>}
+        <span className="al-icono" aria-hidden="true">{ICONO[a.tipo]}</span>
       </div>
-      <h3 className="al-titulo"><span aria-hidden="true">{ICONO[a.tipo]}</span> {a.titulo}</h3>
-      <p className="al-detalle">{a.detalle}</p>
-      <p className="al-hacer"><strong>Qué hacer:</strong> {a.recomendacion}</p>
-      <dl className="al-meta">
-        <div><dt>Dónde</dt><dd>{a.lugar}</dd></div>
-        <div><dt>Cuándo</dt><dd>{a.desde === a.hasta ? cuando(a.desde) : `${cuando(a.desde)} → ${cuando(a.hasta)}`}</dd></div>
-        <div><dt>Fuente</dt><dd>{a.fuentes.map((f) => NOMBRE_FUENTE[f] ?? f).join(' + ')}</dd></div>
-      </dl>
-      <div className="al-acciones">
-        <a className="al-boton" href={compartir(a)} target="_blank" rel="noopener noreferrer">Avisar por WhatsApp</a>
-        <a className="al-boton al-boton-claro" href="#reportar" data-cuenta-reportar>Reportar lo que veas</a>
+      <div className="al-cuerpo">
+        <p className="al-tipo">{origen} · {a.fuentes.map((f) => NOMBRE_FUENTE[f] ?? f).join(' + ')}</p>
+        <h3 className="al-titulo">{a.titulo}</h3>
+        <p className="al-detalle">{resumen(a.detalle)}</p>
+        <p className="al-donde">{a.lugar} · {a.desde === a.hasta ? cuando(a.desde) : `${cuando(a.desde)} → ${cuando(a.hasta)}`}</p>
+        <a className="al-enlace" href={compartir(a)} target="_blank" rel="noopener noreferrer">Avisar por WhatsApp <span aria-hidden="true">→</span></a>
       </div>
     </li>
   );
@@ -196,7 +222,7 @@ function Seccion() {
             </div>
           ) : (
             <ul className="al-lista" aria-live="polite">
-              {datos.alertas.map((a) => <Tarjeta key={a.id} a={a} />)}
+              {publicadas(datos.alertas).map((a) => <Tarjeta key={a.id} a={a} simulacro={simulacro} />)}
             </ul>
           )}
           <div className="al-pie">
