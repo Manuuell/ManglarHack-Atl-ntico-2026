@@ -99,6 +99,47 @@ class ControladorCuenta extends ChangeNotifier {
     _poner(s, r);
   }
 
+  /// Crea la cuenta con los mismos datos que la web (`web/src/lib/cuenta.ts`, `registrarse`):
+  /// nombre, sector, celular y permiso de WhatsApp van en `user_metadata`, con la fecha del
+  /// consentimiento (Ley 1581). Si Supabase deja entrar de una, queda la sesión puesta
+  /// ([ResultadoCrear.sesion]); si antes hay que confirmar el correo, [ResultadoCrear.confirmar].
+  Future<ResultadoCrear> crearCuenta({
+    required String nombre,
+    required String correo,
+    required String clave,
+    String? sector,
+    String? telefono,
+    bool whatsappOk = false,
+  }) async {
+    final c = correo.trim();
+    final n = nombre.trim();
+    if (!configurado) {
+      throw const ErrorCuenta('Este teléfono no está conectado al servidor.');
+    }
+    if (n.length < 2) throw const ErrorCuenta('Escribe tu nombre.');
+    if (!correoValido(c)) throw const ErrorCuenta('Escribe un correo válido.');
+    if (clave.length < 8) throw const ErrorCuenta('Usa al menos 8 caracteres.');
+    final ahora = reloj().toUtc().toIso8601String();
+    final whatsapp = telefono != null && telefono.isNotEmpty && whatsappOk;
+    final j = await _auth('signup', {
+      'email': c,
+      'password': clave,
+      'data': {
+        'nombre': n,
+        'sector': sector,
+        'consentimiento_ley_1581': ahora,
+        'telefono': telefono,
+        'whatsapp_ok': whatsapp,
+        'whatsapp_consentimiento_en': whatsapp ? ahora : null,
+      },
+    });
+    if (j['access_token'] is! String) return ResultadoCrear.confirmar;
+    final s = _sesionDe(j, c);
+    final r = await _rolDe(s);
+    _poner(s, r);
+    return ResultadoCrear.sesion;
+  }
+
   /// Manda el correo para elegir una contraseña nueva. No dice si la cuenta existe.
   Future<void> recuperarClave(String correoIngresado) async {
     final c = correoIngresado.trim();
@@ -307,6 +348,26 @@ class ControladorCuenta extends ChangeNotifier {
   }
 }
 
+/// Cómo terminó «Crear cuenta»: ya dentro, o falta confirmar el correo.
+enum ResultadoCrear { sesion, confirmar }
+
+/// Los sectores del manglar que ofrece la cuenta (los mismos de la web).
+const sectoresCuenta = ['Mallorquín', 'Balboa', 'Manatíes', 'Totumo'];
+
+/// El mismo filtro de correo que la web.
+bool correoValido(String c) => RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$').hasMatch(c.trim());
+
+/// Celular en dígitos con indicativo (300 123 4567 → 573001234567), nulo si está vacío y
+/// [celularInvalido] si no parece un número. Igual que `normalizarCelular` de la web.
+String? normalizarCelular(String texto) {
+  final d = texto.replaceAll(RegExp(r'\D'), '');
+  if (d.isEmpty) return null;
+  final n = d.length == 10 && d.startsWith('3') ? '57$d' : d;
+  return n.length >= 10 && n.length <= 15 ? n : celularInvalido;
+}
+
+const celularInvalido = 'invalido';
+
 /// Lo que responde Supabase Auth, en palabras de la persona (mismos textos que la web).
 String traducirErrorAuth(int estado, String codigo, String mensaje) {
   final m = mensaje.toLowerCase();
@@ -317,6 +378,19 @@ String traducirErrorAuth(int estado, String codigo, String mensaje) {
   }
   if (codigo == 'email_not_confirmed' || m.contains('email not confirmed')) {
     return 'Falta confirmar tu correo: abre el enlace que te enviamos y vuelve a entrar.';
+  }
+  if (codigo == 'user_already_exists' || m.contains('already registered')) {
+    return 'Ya hay una cuenta con ese correo. Inicia sesión.';
+  }
+  if (codigo == 'weak_password' || m.contains('password should')) {
+    return 'La contraseña es muy débil: usa al menos 8 caracteres, con letras y números.';
+  }
+  if (codigo == 'email_address_not_authorized') {
+    return 'El servidor todavía no puede enviar correos a esa dirección (falta configurar su correo '
+        'de salida). Inténtalo más tarde.';
+  }
+  if (codigo == 'signup_disabled' || m.contains('signups not allowed')) {
+    return 'Por ahora no se pueden crear cuentas nuevas.';
   }
   if (codigo == 'email_address_invalid' ||
       m.contains('invalid format') ||

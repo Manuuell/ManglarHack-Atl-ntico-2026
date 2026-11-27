@@ -10,10 +10,12 @@ import '../../nucleo/identidad.dart';
 import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/boton_estado.dart';
 import '../../nucleo/kit/confirmar.dart';
+import '../../nucleo/kit/segmentado.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../admin/panel_cra.dart';
 import '../admin/piezas_admin.dart';
+import '../bienvenida/formulario.dart' show CasillaZ;
 import '../comun/zanky_mascota.dart';
 import 'pantalla_configuracion.dart';
 import 'piezas_configuracion.dart';
@@ -85,7 +87,8 @@ Future<void> abrirPanelDeCuenta(BuildContext context) {
 
 // ------------------------------------------------------------------ formulario
 
-/// Correo, contraseña con «ver», «¿Olvidaste tu contraseña?» y el botón con estados
+/// Pestañas «Iniciar sesión | Crear cuenta» (como la web), correo, contraseña con «ver»,
+/// «¿Olvidaste tu contraseña?» y el botón con estados
 /// (cargando, ✓ con háptica, error con sacudida). Los errores salen en palabras claras
 /// (correo o clave incorrectos, sin señal) debajo de los campos.
 ///
@@ -102,24 +105,48 @@ class FormularioEntrar extends StatefulWidget {
 }
 
 class _FormularioEntrarState extends State<FormularioEntrar> {
+  final _nombre = TextEditingController();
   final _correo = TextEditingController();
   final _clave = TextEditingController();
+  final _celular = TextEditingController();
+  final _focoNombre = FocusNode();
   final _focoCorreo = FocusNode();
   final _focoClave = FocusNode();
+  final _focoCelular = FocusNode();
+  bool _crear = false;
   bool _ver = false;
+  bool _whatsapp = false;
+  bool _acepta = false;
+  bool _porConfirmar = false;
+  String? _sector;
   String? _error;
   String? _nota;
 
   @override
   void dispose() {
-    _correo.dispose();
-    _clave.dispose();
-    _focoCorreo.dispose();
-    _focoClave.dispose();
+    for (final c in [_nombre, _correo, _clave, _celular]) {
+      c.dispose();
+    }
+    for (final f in [_focoNombre, _focoCorreo, _focoClave, _focoCelular]) {
+      f.dispose();
+    }
     super.dispose();
   }
 
-  bool get _completo => _correo.text.contains('@') && _clave.text.isNotEmpty;
+  bool get _completo => _crear
+      ? _nombre.text.trim().isNotEmpty && _correo.text.contains('@') && _clave.text.isNotEmpty
+      : _correo.text.contains('@') && _clave.text.isNotEmpty;
+
+  /// Cambia entre «Iniciar sesión» y «Crear cuenta» sin perder el correo escrito.
+  void _cambiarModo(bool crear) {
+    if (crear == _crear) return;
+    setState(() {
+      _crear = crear;
+      _error = null;
+      _nota = null;
+      _clave.clear();
+    });
+  }
 
   Future<void> _entrar() async {
     FocusScope.of(context).unfocus();
@@ -141,6 +168,72 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
         setState(() => _error = 'No se pudo entrar. Revisa tu internet e inténtalo de nuevo.');
       }
       rethrow;
+    }
+  }
+
+  /// Los mismos controles que la web antes de crear la cuenta; se dice el primero que falle.
+  String? _validarCrear() {
+    if (_nombre.text.trim().length < 2) return 'Escribe tu nombre.';
+    if (!correoValido(_correo.text)) return 'Escribe un correo válido.';
+    if (_clave.text.length < 8) return 'La contraseña necesita al menos 8 caracteres.';
+    if (normalizarCelular(_celular.text) == celularInvalido) {
+      return 'Revisa el celular: escribe los 10 dígitos, por ejemplo 300 123 4567.';
+    }
+    if (!_acepta) return 'Para crear la cuenta hay que aceptar el tratamiento de datos.';
+    return null;
+  }
+
+  Future<void> _crearCuenta() async {
+    FocusScope.of(context).unfocus();
+    final falta = _validarCrear();
+    setState(() {
+      _error = falta;
+      _nota = null;
+      _porConfirmar = false;
+    });
+    if (falta != null) throw ErrorCuenta(falta);
+    final correo = _correo.text.trim();
+    try {
+      final r = await widget.cuenta.crearCuenta(
+        nombre: _nombre.text,
+        correo: correo,
+        clave: _clave.text,
+        sector: _sector,
+        telefono: normalizarCelular(_celular.text),
+        whatsappOk: _whatsapp,
+      );
+      TextInput.finishAutofillContext();
+      if (r == ResultadoCrear.confirmar && mounted) {
+        setState(() {
+          _porConfirmar = true;
+          _nota = 'Te enviamos un correo a $correo. Abre el enlace para activar la cuenta y luego inicia sesión.';
+        });
+      }
+    } on ErrorCuenta catch (e) {
+      if (mounted) setState(() => _error = e.mensaje);
+      rethrow;
+    } on ErrorPanel catch (e) {
+      if (mounted) setState(() => _error = e.mensaje);
+      rethrow;
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'No se pudo crear la cuenta. Revisa tu internet e inténtalo de nuevo.');
+      }
+      rethrow;
+    }
+  }
+
+  /// Cuando el ✓ ya se dibujó: con sesión se cierra la hoja; si falta confirmar el correo,
+  /// se vuelve a «Iniciar sesión» con el aviso a la vista y el correo ya escrito.
+  void _alHecho() {
+    if (widget.cuenta.conSesion) {
+      widget.alEntrar?.call();
+    } else if (_porConfirmar && mounted) {
+      setState(() {
+        _crear = false;
+        _porConfirmar = false;
+        _clave.clear();
+      });
     }
   }
 
@@ -179,7 +272,15 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
               const SizedBox(height: 8),
               Semantics(
                 header: true,
-                child: Text('Entra con tu cuenta de Zanky', textAlign: TextAlign.center, style: tt.headlineSmall),
+                child: AnimatedSwitcher(
+                  duration: context.resolveDuration(Zm.corto),
+                  child: Text(
+                    _crear ? 'Crea tu cuenta de Zanky' : 'Entra con tu cuenta de Zanky',
+                    key: ValueKey(_crear),
+                    textAlign: TextAlign.center,
+                    style: tt.headlineSmall,
+                  ),
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -201,7 +302,10 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
                 padding: const EdgeInsets.only(left: 4, bottom: 8),
                 child: Semantics(
                   header: true,
-                  child: Text('ENTRAR CON TU CUENTA', style: tt.seccion.copyWith(color: Zc.textoSuave)),
+                  child: Text(
+                    _crear ? 'CREAR TU CUENTA' : 'ENTRAR CON TU CUENTA',
+                    style: tt.seccion.copyWith(color: Zc.textoSuave),
+                  ),
                 ),
               ),
               Container(
@@ -220,17 +324,31 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
     );
   }
 
+  /// Aparece y desaparece con el cambio de pestaña (altura animada, sin saltos).
+  Widget _plegable(BuildContext context, bool visible, Widget hijo) => AnimatedSize(
+        duration: context.resolveDuration(Zm.medio),
+        curve: Zm.entrar,
+        alignment: Alignment.topCenter,
+        child: AnimatedSwitcher(
+          duration: context.resolveDuration(Zm.corto),
+          child: visible ? hijo : const SizedBox(width: double.infinity),
+        ),
+      );
+
   Widget _campos(BuildContext context, ControladorCuenta c) {
     final tt = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          c.configurado
-              ? 'La misma cuenta de la web. Si el equipo te dio un rol (administración, moderación, '
-                    'investigación u organización), aquí se desbloquea lo tuyo.'
-              : 'Este teléfono no está conectado al servidor, así que no hay cuentas. '
-                    'Puedes ver la demostración de la gestión con datos de ejemplo.',
+          !c.configurado
+              ? 'Este teléfono no está conectado al servidor, así que no hay cuentas. '
+                    'Puedes ver la demostración de la gestión con datos de ejemplo.'
+              : _crear
+                  ? 'Con tu cuenta sigues tus reportes y sumas como guardián del manglar. '
+                        'Para reportar no la necesitas.'
+                  : 'La misma cuenta de la web. Si el equipo te dio un rol (administración, moderación, '
+                        'investigación u organización), aquí se desbloquea lo tuyo.',
           style: tt.bodyMedium,
         ),
         const SizedBox(height: 16),
@@ -239,10 +357,38 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
             child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator()),
           )
         else if (c.configurado) ...[
+          Semantics(
+            label: 'Iniciar sesión o crear cuenta',
+            container: true,
+            child: SegmentadoZ(
+              key: const ValueKey('cuenta_pestanas'),
+              valor: _crear ? 1 : 0,
+              etiquetas: const ['Iniciar sesión', 'Crear cuenta'],
+              alCambiar: (i) => _cambiarModo(i == 1),
+            ),
+          ),
+          const SizedBox(height: 16),
           AutofillGroup(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _plegable(
+                  context,
+                  _crear,
+                  Padding(
+                    key: const ValueKey('campo_nombre'),
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: CampoAdmin(
+                      etiqueta: 'Nombre',
+                      icono: Icons.person_outline_rounded,
+                      controlador: _nombre,
+                      foco: _focoNombre,
+                      teclado: TextInputType.name,
+                      pistas: const [AutofillHints.name],
+                      alEnviar: _focoCorreo.requestFocus,
+                    ),
+                  ),
+                ),
                 CampoAdmin(
                   etiqueta: 'Correo',
                   icono: Icons.alternate_email_rounded,
@@ -259,10 +405,14 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
                   controlador: _clave,
                   foco: _focoClave,
                   oculto: !_ver,
-                  accion: TextInputAction.done,
-                  pistas: const [AutofillHints.password],
+                  accion: _crear ? TextInputAction.next : TextInputAction.done,
+                  pistas: [_crear ? AutofillHints.newPassword : AutofillHints.password],
                   alEnviar: () {
-                    if (_completo) _entrar().catchError((_) {});
+                    if (_crear) {
+                      _focoCelular.requestFocus();
+                    } else if (_completo) {
+                      _entrar().catchError((_) {});
+                    }
                   },
                   sufijo: Presionable(
                     etiqueta: _ver ? 'Ocultar contraseña' : 'Mostrar contraseña',
@@ -278,6 +428,12 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
                     ),
                   ),
                 ),
+                if (_crear)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, top: 4),
+                    child: Text('Al menos 8 caracteres.', style: tt.bodySmall),
+                  ),
+                _plegable(context, _crear, _extrasCrear(context)),
               ],
             ),
           ),
@@ -313,23 +469,40 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
           ),
           const SizedBox(height: 16),
           ListenableBuilder(
-            listenable: Listenable.merge([_correo, _clave]),
-            builder: (context, _) => BotonEstado(
-              texto: 'Entrar',
-              textoCargando: 'Entrando',
-              textoHecho: 'Dentro',
-              textoError: 'No se pudo entrar',
-              icono: Icons.login_rounded,
-              alPresionar: _completo ? _entrar : null,
-              alHecho: widget.alEntrar,
-            ),
+            listenable: Listenable.merge([_nombre, _correo, _clave]),
+            builder: (context, _) => _crear
+                ? BotonEstado(
+                    key: const ValueKey('boton_crear'),
+                    texto: 'Crear mi cuenta',
+                    textoCargando: 'Creando tu cuenta',
+                    textoHecho: 'Cuenta creada',
+                    textoError: 'No se pudo crear',
+                    icono: Icons.person_add_alt_1_rounded,
+                    alPresionar: _completo ? _crearCuenta : null,
+                    alHecho: _alHecho,
+                  )
+                : BotonEstado(
+                    key: const ValueKey('boton_entrar'),
+                    texto: 'Entrar',
+                    textoCargando: 'Entrando',
+                    textoHecho: 'Dentro',
+                    textoError: 'No se pudo entrar',
+                    icono: Icons.login_rounded,
+                    alPresionar: _completo ? _entrar : null,
+                    alHecho: _alHecho,
+                  ),
           ),
           const SizedBox(height: 4),
-          Center(
-            child: TextButton(
-              onPressed: _recuperar,
-              style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
-              child: const Text('¿Olvidaste tu contraseña?'),
+          _plegable(
+            context,
+            !_crear,
+            Center(
+              key: const ValueKey('olvido'),
+              child: TextButton(
+                onPressed: _recuperar,
+                style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                child: const Text('¿Olvidaste tu contraseña?'),
+              ),
             ),
           ),
         ] else
@@ -343,7 +516,115 @@ class _FormularioEntrarState extends State<FormularioEntrar> {
       ],
     );
   }
+
+  /// Celular con permiso de WhatsApp, sector y el consentimiento: los mismos de la web.
+  Widget _extrasCrear(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Column(
+      key: const ValueKey('extras_crear'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 14),
+        CampoAdmin(
+          etiqueta: 'Celular (WhatsApp, opcional)',
+          icono: Icons.phone_iphone_rounded,
+          controlador: _celular,
+          foco: _focoCelular,
+          teclado: TextInputType.phone,
+          maximo: 20,
+          pistas: const [AutofillHints.telephoneNumber],
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, top: 4),
+          child: Text('Solo para invitaciones a jornadas. No se publica.', style: tt.bodySmall),
+        ),
+        ListenableBuilder(
+          listenable: _celular,
+          builder: (context, _) {
+            final hay = _celular.text.trim().isNotEmpty;
+            // Sin celular no hay WhatsApp que aceptar (igual que la web).
+            if (!hay) _whatsapp = false;
+            return _plegable(
+              context,
+              hay,
+              CasillaZ(
+                key: const ValueKey('casilla_whatsapp'),
+                texto: 'Acepto recibir por WhatsApp invitaciones a jornadas e información del manglar. '
+                    'Puedo retirarlo en mi perfil.',
+                valor: _whatsapp,
+                alCambiar: () => setState(() => _whatsapp = !_whatsapp),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 14),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text('Tu sector del manglar (opcional)', style: tt.labelLarge),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final s in sectoresCuenta)
+              _PildoraSector(
+                texto: s,
+                activa: _sector == s,
+                alTocar: () => setState(() => _sector = _sector == s ? null : s),
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        CasillaZ(
+          key: const ValueKey('casilla_acepta'),
+          texto: 'Acepto que la C.R.A. y el equipo Zanky traten mi nombre, correo y sector para gestionar '
+              'mi cuenta y mis reportes, según la Ley 1581 de 2012. No se publican; puedo consultarlos '
+              'y corregirlos en mi perfil.',
+          valor: _acepta,
+          alCambiar: () => setState(() => _acepta = !_acepta),
+        ),
+      ],
+    );
+  }
 }
+
+/// Un sector para elegir (o soltar con otro toque). 44 px de alto.
+class _PildoraSector extends StatelessWidget {
+  const _PildoraSector({required this.texto, required this.activa, required this.alTocar});
+  final String texto;
+  final bool activa;
+  final VoidCallback alTocar;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        selected: activa,
+        label: 'Sector $texto',
+        excludeSemantics: true,
+        child: Presionable(
+          onTap: alTocar,
+          child: AnimatedContainer(
+            duration: context.resolveDuration(Zm.corto),
+            curve: Zm.entrar,
+            constraints: const BoxConstraints(minHeight: 44),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: activa ? Cra.azul : Zc.superficie,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: activa ? Cra.azul : Zc.linea),
+            ),
+            child: Text(
+              texto,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: activa ? Colors.white : Zc.texto,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ),
+      );
+}
+
 
 // ------------------------------------------------------------------ avatar y tarjeta
 
