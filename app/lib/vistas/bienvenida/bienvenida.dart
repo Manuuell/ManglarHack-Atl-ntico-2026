@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/guardian.dart';
+import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
@@ -63,10 +64,7 @@ class _BienvenidaState extends State<Bienvenida> {
       'En la ciénaga también funciona.',
       'Sin internet, tu reporte se guarda en el teléfono y sale solo cuando vuelve la señal.',
       FotoManglar.sendero,
-      [
-        (Icons.save_alt_rounded, 'Se guarda'),
-        (Icons.cloud_done_rounded, 'Se envía después'),
-      ],
+      [(Icons.save_alt_rounded, 'Se guarda'), (Icons.cloud_done_rounded, 'Se envía después')],
     ),
     _Paso(
       'CRECE CONTIGO',
@@ -234,7 +232,9 @@ class _BienvenidaState extends State<Bienvenida> {
           if (!ancho) {
             return Stack(
               children: [
-                Positioned.fill(child: FotosConParalaje(controlador: _ctrl, fotos: fotos, oscurecerDesde: _ultima)),
+                Positioned.fill(
+                  child: FotosConParalaje(controlador: _ctrl, fotos: fotos, oscurecerDesde: _ultima),
+                ),
                 // Velo de arriba: el logo y «Saltar» se leen sobre cualquier cielo.
                 Positioned(
                   left: 0,
@@ -263,12 +263,17 @@ class _BienvenidaState extends State<Bienvenida> {
               Expanded(
                 child: Stack(
                   children: [
-                    Positioned.fill(child: FotosConParalaje(controlador: _ctrl, fotos: fotos, oscurecerDesde: _ultima)),
+                    Positioned.fill(
+                      child: FotosConParalaje(controlador: _ctrl, fotos: fotos, oscurecerDesde: _ultima),
+                    ),
                     Positioned(left: 32, top: relleno.top + 28, child: const InsigniaCra(alto: 52)),
                   ],
                 ),
               ),
-              SizedBox(width: anchoTexto, child: ColoredBox(color: Cra.hero, child: columna)),
+              SizedBox(
+                width: anchoTexto,
+                child: ColoredBox(color: Cra.hero, child: columna),
+              ),
             ],
           );
         },
@@ -372,10 +377,7 @@ class _BienvenidaState extends State<Bienvenida> {
       animation: _ctrl,
       builder: (context, hijo) {
         final t = _haciaForm();
-        return ColoredBox(
-          color: Color.lerp(ancho ? Cra.hero : VeloFoto.texto, Zc.arena, t)!,
-          child: hijo,
-        );
+        return ColoredBox(color: Color.lerp(ancho ? Cra.hero : VeloFoto.texto, Zc.arena, t)!, child: hijo);
       },
       child: Padding(
         padding: EdgeInsets.fromLTRB(24, 6, 24, 16 + seguro),
@@ -426,8 +428,7 @@ class _BienvenidaState extends State<Bienvenida> {
   }
 }
 
-double _paginaDe(PageController c) =>
-    c.hasClients && c.position.haveDimensions ? (c.page ?? 0.0) : 0.0;
+double _paginaDe(PageController c) => c.hasClients && c.position.haveDimensions ? (c.page ?? 0.0) : 0.0;
 
 /// Paralaje de una página: el PageView la mueve a la velocidad del dedo; aquí se le
 /// devuelve el 65 % de ese desplazamiento (avanza solo el 35 %) y se desvanece rápido.
@@ -451,10 +452,7 @@ class _Paralaje extends StatelessWidget {
           final opacidad = (1 - d.abs() * 1.6).clamp(0.0, 1.0);
           return Opacity(
             opacity: opacidad,
-            child: Transform.translate(
-              offset: Offset(quieto ? 0 : d * caja.maxWidth * 0.65, 0),
-              child: hijo,
-            ),
+            child: Transform.translate(offset: Offset(quieto ? 0 : d * caja.maxWidth * 0.65, 0), child: hijo),
           );
         },
       ),
@@ -483,44 +481,56 @@ class _PaginaFoto extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              zanky,
-              const SizedBox(width: 12),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(paso.ceja, style: estiloSeccion(context)),
+          EntradaEscalonada(
+            index: 0,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                zanky,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(paso.ceja, style: estiloSeccion(context)),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          Semantics(
-            header: true,
-            child: Text(
-              paso.titulo,
-              style: tema.headlineLarge?.copyWith(
-                color: Cra.blanco,
-                fontWeight: FontWeight.w900,
-                height: 1.08,
-                fontSize: ancho ? 40 : 32,
-                letterSpacing: -0.4,
+          EntradaEscalonada(
+            index: 1,
+            child: Semantics(
+              header: true,
+              child: Text(
+                paso.titulo,
+                style: tema.headlineLarge?.copyWith(
+                  color: Cra.blanco,
+                  fontWeight: FontWeight.w900,
+                  height: 1.08,
+                  fontSize: ancho ? 40 : 32,
+                  letterSpacing: -0.4,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          Text(paso.texto, style: tema.bodyLarge?.copyWith(color: Cra.textoSuave, height: 1.45)),
+          EntradaEscalonada(
+            index: 2,
+            child: Text(paso.texto, style: tema.bodyLarge?.copyWith(color: Cra.textoSuave, height: 1.45)),
+          ),
           if (paso.pildoras.isNotEmpty) ...[
             const SizedBox(height: 18),
-            Semantics(
-              label: paso.pildoras.map((p) => p.$2).join(', luego '),
-              excludeSemantics: true,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [for (final p in paso.pildoras) _Pildora(icono: p.$1, texto: p.$2)],
+            EntradaEscalonada(
+              index: 3,
+              child: Semantics(
+                label: paso.pildoras.map((p) => p.$2).join(', luego '),
+                excludeSemantics: true,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [for (final p in paso.pildoras) _Pildora(icono: p.$1, texto: p.$2)],
+                ),
               ),
             ),
           ],
@@ -539,7 +549,10 @@ class _PaginaFoto extends StatelessWidget {
                           text: 'Zanky: ',
                           style: tema.titleSmall?.copyWith(color: Cra.dorado),
                           children: [
-                            TextSpan(text: frase, style: tema.bodyMedium?.copyWith(color: Cra.blanco)),
+                            TextSpan(
+                              text: frase,
+                              style: tema.bodyMedium?.copyWith(color: Cra.blanco),
+                            ),
                           ],
                         ),
                       ),
@@ -547,10 +560,7 @@ class _PaginaFoto extends StatelessWidget {
                   ),
           ),
           const SizedBox(height: 14),
-          Text(
-            paso.foto.credito,
-            style: tema.bodySmall?.copyWith(color: Cra.textoTenue, fontSize: 11),
-          ),
+          Text(paso.foto.credito, style: tema.bodySmall?.copyWith(color: Cra.textoTenue, fontSize: 11)),
         ],
       ),
     );
@@ -618,12 +628,7 @@ class _Pildora extends StatelessWidget {
 /// El botón del final. Igual que [BotonZ] pero deja que el texto largo pase a dos
 /// renglones (con letra grande no se corta) y explica por qué está apagado.
 class _BotonEmpezar extends StatelessWidget {
-  const _BotonEmpezar({
-    required this.activo,
-    required this.cargando,
-    required this.onTap,
-    required this.alPedirAcepto,
-  });
+  const _BotonEmpezar({required this.activo, required this.cargando, required this.onTap, required this.alPedirAcepto});
 
   final bool activo;
   final bool cargando;

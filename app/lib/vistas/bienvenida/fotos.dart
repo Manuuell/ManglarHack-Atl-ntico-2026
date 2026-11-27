@@ -84,7 +84,7 @@ abstract final class VeloFoto {
 /// Las fotos de todas las páginas, una encima de otra, siguiendo al dedo: la que entra
 /// llega desde el lado y se funde; la que sale se queda atrás (paralaje al 30 %) y se
 /// aclara un poco más. Con «reducir movimiento» solo hay fundido.
-class FotosConParalaje extends StatelessWidget {
+class FotosConParalaje extends StatefulWidget {
   /// Decodifica las fotos después del primer cuadro, sin esperarlas: la primera pantalla
   /// sale con el fondo azul y la foto se funde al llegar; las demás ya estarán listas
   /// cuando el dedo pase de página. Usa el mismo proveedor que [FotosConParalaje].
@@ -98,12 +98,7 @@ class FotosConParalaje extends StatelessWidget {
     });
   }
 
-  const FotosConParalaje({
-    super.key,
-    required this.controlador,
-    required this.fotos,
-    this.oscurecerDesde,
-  });
+  const FotosConParalaje({super.key, required this.controlador, required this.fotos, this.oscurecerDesde});
 
   final PageController controlador;
   final List<FotoManglar> fotos;
@@ -112,12 +107,42 @@ class FotosConParalaje extends StatelessWidget {
   final int? oscurecerDesde;
 
   @override
+  State<FotosConParalaje> createState() => _FotosConParalajeState();
+}
+
+/// Acercamiento lento (de la portada de fotos que ya usamos): la foto «respira» entre
+/// 1,06 y 1,11 en 14 s de ida y vuelta, como un video sin sonido. Solo escala (la GPU
+/// la mueve sin volver a decodificar) y se detiene con «reducir movimiento».
+class _FotosConParalajeState extends State<FotosConParalaje> with SingleTickerProviderStateMixin {
+  late final AnimationController _respiro = AnimationController(vsync: this, duration: const Duration(seconds: 14));
+
+  PageController get controlador => widget.controlador;
+  List<FotoManglar> get fotos => widget.fotos;
+  int? get oscurecerDesde => widget.oscurecerDesde;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (context.animationsDisabled) {
+      _respiro.stop();
+    } else if (!_respiro.isAnimating) {
+      _respiro.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _respiro.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final quieto = context.animationsDisabled;
     return RepaintBoundary(
       child: LayoutBuilder(
         builder: (context, caja) => AnimatedBuilder(
-          animation: controlador,
+          animation: Listenable.merge([controlador, _respiro]),
           builder: (context, _) {
             final p = controlador.hasClients && controlador.position.haveDimensions
                 ? (controlador.page ?? 0.0)
@@ -128,35 +153,37 @@ class FotosConParalaje extends StatelessWidget {
             void capa(int k, double d, double opacidad) {
               if (k < 0 || k >= fotos.length || opacidad <= 0) return;
               final foto = fotos[k];
-              hijos.add(Positioned.fill(
-                child: Opacity(
-                  opacity: opacidad.clamp(0.0, 1.0),
-                  child: Transform.translate(
-                    offset: Offset(quieto ? 0 : -d * caja.maxWidth * 0.3, 0),
-                    child: Transform.scale(
-                      scale: quieto ? 1 : 1.06,
-                      child: Image(
-                        image: foto.proveedor(caja.biggest, MediaQuery.devicePixelRatioOf(context)),
-                        // La foto que aún se decodifica no aparece de golpe: se funde sobre el azul.
-                        frameBuilder: (context, hijo, cuadro, sincrona) => sincrona
-                            ? hijo
-                            : AnimatedOpacity(
-                                opacity: cuadro == null ? 0 : 1,
-                                duration: context.resolveDuration(Zm.largo),
-                                curve: Zm.entrar,
-                                child: hijo,
-                              ),
-                        errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                        fit: BoxFit.cover,
-                        alignment: foto.foco,
-                        filterQuality: FilterQuality.medium,
-                        gaplessPlayback: true,
-                        excludeFromSemantics: true,
+              hijos.add(
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: opacidad.clamp(0.0, 1.0),
+                    child: Transform.translate(
+                      offset: Offset(quieto ? 0 : -d * caja.maxWidth * 0.3, 0),
+                      child: Transform.scale(
+                        scale: quieto ? 1 : 1.06 + 0.05 * Curves.easeInOut.transform(_respiro.value),
+                        child: Image(
+                          image: foto.proveedor(caja.biggest, MediaQuery.devicePixelRatioOf(context)),
+                          // La foto que aún se decodifica no aparece de golpe: se funde sobre el azul.
+                          frameBuilder: (context, hijo, cuadro, sincrona) => sincrona
+                              ? hijo
+                              : AnimatedOpacity(
+                                  opacity: cuadro == null ? 0 : 1,
+                                  duration: context.resolveDuration(Zm.largo),
+                                  curve: Zm.entrar,
+                                  child: hijo,
+                                ),
+                          errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                          fit: BoxFit.cover,
+                          alignment: foto.foco,
+                          filterQuality: FilterQuality.medium,
+                          gaplessPlayback: true,
+                          excludeFromSemantics: true,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ));
+              );
             }
 
             capa(i, f, 1);
