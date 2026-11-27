@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'ayudas/fuente_lato.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zanky/datos/estado.dart';
 import 'package:zanky/datos/experiencia/entrada_evento.dart';
@@ -154,12 +154,7 @@ EventoZanky _evento() => EventoZanky.generico('feria-colegio');
 
 void main() {
   setUpAll(() async {
-    final inter = FontLoader('Inter');
-    for (final f in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
-      final bytes = File('google_fonts/Inter-$f.ttf').readAsBytesSync();
-      inter.addFont(Future.value(ByteData.sublistView(bytes)));
-    }
-    await inter.load();
+    await cargarLato();
   });
 
   setUp(() {

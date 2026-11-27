@@ -15,11 +15,15 @@ abstract final class Zc {
   static const raizSuave = Color(0xFF184437);
   static const hoja = Color(0xFF2E9E6A);
   static const hojaClara = Color(0xFFDDF3E6);
-  static const cienaga = Color(0xFF1FA2A6); // agua: color principal de la identidad (handoff/08)
+  static const cienaga = Color(
+    0xFF1FA2A6,
+  ); // agua: color principal de la identidad (handoff/08)
   static const cienagaClara = Color(0xFFDDF2F2);
   static const arena = Color(0xFFF6F1E7);
   static const fango = Color(0xFF8A6A4B);
-  static const sol = Color(0xFFF2A33A);
+  static const sol = Color(
+    0xFFE8B33D,
+  ); // el dorado único de la CRA (identidad.dart)
   static const solClaro = Color(0xFFFDEED6);
 
   // Colores del Carnaval de Barranquilla: el confeti y las celebraciones.
@@ -72,48 +76,84 @@ abstract final class Zr {
   static const xl = 34.0;
 }
 
-ThemeData temaZanky() {
-  const fuente = 'Inter';
+/// Tipografía de la app: Lato va empaquetada (en el manglar no hay señal para bajar fuentes).
+const familiaTexto = 'Lato';
+
+ThemeData temaZanky() => construirTema(
+  brillo: Brightness.light,
+  scheme: ColorScheme.fromSeed(
+    seedColor: Zc.hoja,
+    primary: Zc.hoja,
+    secondary: Zc.cienaga,
+    tertiary: Zc.sol,
+    surface: Zc.arena,
+    error: Zc.prioridad[5]!,
+  ),
+  fondo: Zc.arena,
+  texto: Zc.texto,
+  suave: Zc.textoSuave,
+  snack: Zc.raiz,
+);
+
+/// Un solo constructor de tema: claro (Zanky) u oscuro (CRA) cambian solo los colores.
+ThemeData construirTema({
+  required Brightness brillo,
+  required ColorScheme scheme,
+  required Color fondo,
+  required Color texto,
+  required Color suave,
+  required Color snack,
+}) {
+  const fuente = familiaTexto;
   final base = ThemeData(
     useMaterial3: true,
+    brightness: brillo,
     fontFamily: fuente,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: Zc.hoja,
-      primary: Zc.hoja,
-      secondary: Zc.cienaga,
-      tertiary: Zc.sol,
-      surface: Zc.arena,
-      error: Zc.prioridad[5]!,
-    ),
-    scaffoldBackgroundColor: Zc.arena,
+    colorScheme: scheme,
+    scaffoldBackgroundColor: fondo,
     splashFactory: NoSplash.splashFactory,
     highlightColor: Colors.transparent,
   );
-  TextStyle t(double size, FontWeight w, {double h = 1.25, double ls = 0, Color c = Zc.texto}) =>
-      TextStyle(fontFamily: fuente, fontSize: size, fontWeight: w, height: h, letterSpacing: ls, color: c);
+  TextStyle t(
+    double size,
+    FontWeight w, {
+    double h = 1.25,
+    double ls = 0,
+    Color? c,
+  }) => TextStyle(
+    fontFamily: fuente,
+    fontSize: size,
+    fontWeight: w,
+    height: h,
+    letterSpacing: ls,
+    color: c ?? texto,
+  );
   return base.copyWith(
     textTheme: TextTheme(
-      displaySmall: t(34, FontWeight.w700, h: 1.08, ls: -0.8),
-      headlineMedium: t(28, FontWeight.w700, h: 1.12, ls: -0.6),
-      headlineSmall: t(22, FontWeight.w700, h: 1.18, ls: -0.4),
-      titleLarge: t(19, FontWeight.w600, ls: -0.3),
-      titleMedium: t(16, FontWeight.w600, ls: -0.2),
-      titleSmall: t(14, FontWeight.w600),
+      displaySmall: t(34, FontWeight.w700, h: 1.08, ls: -0.6),
+      headlineMedium: t(28, FontWeight.w700, h: 1.12, ls: -0.4),
+      headlineSmall: t(22, FontWeight.w700, h: 1.18, ls: -0.3),
+      titleLarge: t(19, FontWeight.w700, ls: -0.2),
+      titleMedium: t(16, FontWeight.w700, ls: -0.1),
+      titleSmall: t(14, FontWeight.w700),
       bodyLarge: t(16, FontWeight.w400, h: 1.42),
-      bodyMedium: t(14.5, FontWeight.w400, h: 1.4, c: Zc.textoSuave),
-      bodySmall: t(12.5, FontWeight.w500, h: 1.35, c: Zc.textoSuave),
-      labelLarge: t(15, FontWeight.w600),
-      labelMedium: t(13, FontWeight.w600, ls: 0.1),
-      labelSmall: t(11, FontWeight.w600, ls: 0.4, c: Zc.textoSuave),
+      bodyMedium: t(14.5, FontWeight.w400, h: 1.4, c: suave),
+      bodySmall: t(12.5, FontWeight.w400, h: 1.35, c: suave),
+      labelLarge: t(15, FontWeight.w700),
+      labelMedium: t(13, FontWeight.w700, ls: 0.1),
+      // Titulares de sección: cada pantalla escribe el texto en MAYÚSCULAS; aquí va el tracking.
+      labelSmall: t(11, FontWeight.w700, ls: 1.2, c: suave),
     ),
-    pageTransitionsTheme: const PageTransitionsTheme(builders: {
-      TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-    }),
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      backgroundColor: Zc.raiz,
-      contentTextStyle: t(14, FontWeight.w500, c: Colors.white),
+      backgroundColor: snack,
+      contentTextStyle: t(14, FontWeight.w700, c: Colors.white),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Zr.m)),
     ),
   );

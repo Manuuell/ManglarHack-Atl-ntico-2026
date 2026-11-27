@@ -44,16 +44,16 @@ flutter:
     - assets/datos/
     - assets/zanky/
     - assets/zanky/etapas/
+    - assets/marca/
 
-  # Inter va dentro de la app: en el manglar no hay señal para bajar fuentes.
+  # Lato (licencia OFL, assets/fuentes/OFL.txt) va dentro de la app: en el manglar no hay señal
+  # para bajar fuentes. Los pesos 500 y 600 caen en el 400 y el 700 más cercanos.
   fonts:
-    - family: Inter
+    - family: Lato
       fonts:
-        - asset: google_fonts/Inter-Regular.ttf
+        - asset: assets/fuentes/Lato-Regular.ttf
           weight: 400
-        - asset: google_fonts/Inter-Medium.ttf
-          weight: 500
-        - asset: google_fonts/Inter-SemiBold.ttf
-          weight: 600
-        - asset: google_fonts/Inter-Bold.ttf
+        - asset: assets/fuentes/Lato-Bold.ttf
           weight: 700
+        - asset: assets/fuentes/Lato-Black.ttf
+          weight: 900

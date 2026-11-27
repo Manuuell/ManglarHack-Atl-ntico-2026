@@ -5,6 +5,7 @@ import '../../datos/admin/repositorio_admin.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/kit/boton_estado.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 import 'piezas_admin.dart';
@@ -100,7 +101,7 @@ class _AccesoAdminState extends State<AccesoAdmin> {
                     child: SizedBox(
                       width: 48,
                       height: 48,
-                      child: Icon(_ver ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 22, color: Zc.textoSuave),
+                      child: Icon(_ver ? Icons.visibility_off_rounded : Icons.visibility_rounded, size: 22, color: Cra.textoSuave),
                     ),
                   ),
                 ),
@@ -119,10 +120,10 @@ class _AccesoAdminState extends State<AccesoAdmin> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.error_outline_rounded, size: 18, color: Zc.prioridad[5]),
+                          Icon(Icons.error_outline_rounded, size: 18, color: Cra.prioridad[5]),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: Text(_error ?? c.error!, style: tt.bodySmall?.copyWith(color: Zc.prioridad[5])),
+                            child: Text(_error ?? c.error!, style: tt.bodySmall?.copyWith(color: Cra.prioridad[5])),
                           ),
                         ],
                       ),
@@ -145,19 +146,19 @@ class _AccesoAdminState extends State<AccesoAdmin> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Zc.solClaro,
+              color: Cra.solClaro,
               borderRadius: BorderRadius.circular(Zr.m),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.science_rounded, color: Zc.fango, size: 22),
+                const Icon(Icons.science_rounded, color: Cra.fango, size: 22),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'La demostración usa reportes de ejemplo que viven solo en este teléfono. '
                     'Sirve para ver la bandeja, las decisiones y los avisos; nada llega a la CRA.',
-                    style: tt.bodyMedium?.copyWith(color: Zc.texto),
+                    style: tt.bodyMedium?.copyWith(color: Cra.texto),
                   ),
                 ),
               ],

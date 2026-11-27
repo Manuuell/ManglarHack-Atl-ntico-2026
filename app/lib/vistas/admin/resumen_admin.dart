@@ -5,6 +5,7 @@ import '../../datos/admin/reporte_admin.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 import 'piezas_admin.dart';
@@ -62,9 +63,9 @@ class _ResumenAdminState extends State<ResumenAdmin> {
               spacing: 10,
               runSpacing: 10,
               children: [
-                _Gran(valor: cifras.nuevos, titulo: 'Nuevos', color: Zc.cienaga, icono: Icons.inbox_rounded),
-                _Gran(valor: cifras.altaPrioridad, titulo: 'Alta prioridad', color: Zc.prioridad[5]!, icono: Icons.priority_high_rounded),
-                _Gran(valor: cifras.pendientes, titulo: 'Esperan decisión', color: Zc.sol, icono: Icons.hourglass_top_rounded),
+                _Gran(valor: cifras.nuevos, titulo: 'Nuevos', color: Cra.cienaga, icono: Icons.inbox_rounded),
+                _Gran(valor: cifras.altaPrioridad, titulo: 'Alta prioridad', color: Cra.prioridad[5]!, icono: Icons.priority_high_rounded),
+                _Gran(valor: cifras.pendientes, titulo: 'Esperan decisión', color: Cra.sol, icono: Icons.hourglass_top_rounded),
               ],
             ),
           ),
@@ -74,7 +75,7 @@ class _ResumenAdminState extends State<ResumenAdmin> {
             child: _Barras<String>(
               datos: cifras.porZona,
               etiqueta: (z) => z,
-              color: (_) => Zc.cienaga,
+              color: (_) => Cra.cienaga,
             ),
           ),
           SeccionAdmin(
@@ -114,9 +115,9 @@ class _Gran extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 140, maxWidth: 220),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Zc.superficie,
+          color: Cra.superficie,
           borderRadius: BorderRadius.circular(Zr.l),
-          border: Border.all(color: Zc.linea.withValues(alpha: 0.7)),
+          border: Border.all(color: Cra.linea.withValues(alpha: 0.7)),
           boxShadow: const [BoxShadow(color: Color(0x0F0B2E24), blurRadius: 20, offset: Offset(0, 8))],
         ),
         child: Column(
@@ -129,7 +130,7 @@ class _Gran extends StatelessWidget {
               Flexible(child: Text(titulo, style: tt.labelMedium)),
             ]),
             const SizedBox(height: 6),
-            ContadorAnimado(valor: valor.toDouble(), formato: (v) => v.round().toString(), estilo: tt.displaySmall?.copyWith(color: Zc.texto)),
+            ContadorAnimado(valor: valor.toDouble(), formato: (v) => v.round().toString(), estilo: tt.displaySmall?.copyWith(color: Cra.texto)),
           ],
         ),
       ),
@@ -151,9 +152,9 @@ class _Barras<K> extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Zc.superficie,
+        color: Cra.superficie,
         borderRadius: BorderRadius.circular(Zr.l),
-        border: Border.all(color: Zc.linea.withValues(alpha: 0.7)),
+        border: Border.all(color: Cra.linea.withValues(alpha: 0.7)),
       ),
       child: Column(
         children: [
@@ -169,7 +170,7 @@ class _Barras<K> extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text(etiqueta(e.key), style: tt.bodyMedium?.copyWith(color: Zc.texto))),
+                        Expanded(child: Text(etiqueta(e.key), style: tt.bodyMedium?.copyWith(color: Cra.texto))),
                         const SizedBox(width: 8),
                         Text('${e.value}', style: tt.titleSmall),
                       ],
@@ -197,7 +198,7 @@ class _Barra extends StatelessWidget {
       borderRadius: BorderRadius.circular(99),
       child: Container(
         height: 10,
-        color: Zc.arena,
+        color: Cra.arena,
         alignment: Alignment.centerLeft,
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: fraccion.clamp(0.04, 1.0)),
@@ -230,9 +231,9 @@ class _BarrasDias extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 16, 14, 12),
         decoration: BoxDecoration(
-          color: Zc.superficie,
+          color: Cra.superficie,
           borderRadius: BorderRadius.circular(Zr.l),
-          border: Border.all(color: Zc.linea.withValues(alpha: 0.7)),
+          border: Border.all(color: Cra.linea.withValues(alpha: 0.7)),
         ),
         child: SizedBox(
           height: 130,
@@ -255,7 +256,7 @@ class _BarrasDias extends StatelessWidget {
                             width: 18,
                             height: 4 + 64 * v.clamp(0.0, 1.2),
                             decoration: BoxDecoration(
-                              color: i == cuentas.length - 1 ? Zc.hoja : Zc.cienaga.withValues(alpha: 0.55),
+                              color: i == cuentas.length - 1 ? Cra.hoja : Cra.cienaga.withValues(alpha: 0.55),
                               borderRadius: BorderRadius.circular(6),
                             ),
                           ),

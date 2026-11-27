@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../datos/admin/controlador_admin.dart';
 import '../../datos/admin/reporte_admin.dart';
 import '../../nucleo/kit/anuncio.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import 'acceso_admin.dart';
 import 'bandeja_admin.dart';
@@ -18,7 +19,7 @@ Future<void> abrirPanelCra(BuildContext context) {
     RutaBorde<void>(
       sinMovimiento: MediaQuery.disableAnimationsOf(context),
       settings: const RouteSettings(name: 'panel_cra'),
-      builder: (_) => AdminScope(controlador: c, child: const PanelCra()),
+      builder: (_) => Theme(data: temaCra(), child: AdminScope(controlador: c, child: const PanelCra())),
     ),
   );
 }
@@ -136,11 +137,13 @@ class _Cabecera extends StatelessWidget {
             alTocar: () => Navigator.of(context).maybePop(),
           ),
           const SizedBox(width: 6),
+          const InsigniaCra(alto: 38),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Semantics(header: true, child: Text('Panel CRA', style: tt.titleLarge)),
+                Semantics(header: true, child: Text('PANEL CRA', style: tt.titleLarge?.copyWith(color: Cra.dorado, letterSpacing: 1.4))),
                 if (c.dentro)
                   Text(
                     c.demostracion ? 'Demostración · ${rol ?? ''}' : [?rol, ?c.correo].join(' · '),

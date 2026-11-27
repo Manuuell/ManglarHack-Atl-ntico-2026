@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'ayudas/fuente_lato.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zanky/datos/estado.dart';
@@ -25,12 +25,7 @@ void main() {
   var msPoligonos = 0;
 
   setUpAll(() async {
-    final inter = FontLoader('Inter');
-    for (final f in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
-      final bytes = File('google_fonts/Inter-$f.ttf').readAsBytesSync();
-      inter.addFont(Future.value(ByteData.sublistView(bytes)));
-    }
-    await inter.load();
+    await cargarLato();
     textoPrioridades = File('assets/datos/prioridades_cra.json').readAsStringSync();
     jsonPrioridades = jsonDecode(textoPrioridades) as Map<String, dynamic>;
     final j = jsonDecode(File('assets/datos/manglar_zonas.json').readAsStringSync());

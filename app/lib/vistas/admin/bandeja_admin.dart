@@ -17,6 +17,7 @@ import '../../nucleo/kit/menu_mantenido.dart';
 import '../../nucleo/kit/ruta_borde.dart';
 import '../../nucleo/kit/tirar_actualizar.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
@@ -141,7 +142,7 @@ class _Estado extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(texto, style: tt.bodySmall?.copyWith(color: Zc.textoTenue)),
+          Text(texto, style: tt.bodySmall?.copyWith(color: Cra.textoTenue)),
           if (c.navegador.disponible) _AvisosNavegador(controlador: c),
         ],
       ),
@@ -169,7 +170,7 @@ class _AvisosNavegador extends StatelessWidget {
           child: Row(
             children: [
               Icon(activo ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
-                  size: 20, color: activo ? Zc.hoja : Zc.textoSuave),
+                  size: 20, color: activo ? Cra.hoja : Cra.textoSuave),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -274,9 +275,9 @@ class TarjetaAdmin extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Zc.superficie,
+          color: Cra.superficie,
           borderRadius: BorderRadius.circular(Zr.l),
-          border: Border.all(width: resaltada ? 2.5 : 1, color: resaltada ? Zc.cienaga : r.pendiente && r.prioridad >= 4 ? Zc.dePrioridad(r.prioridad).withValues(alpha: 0.5) : Zc.linea.withValues(alpha: 0.7)),
+          border: Border.all(width: resaltada ? 2.5 : 1, color: resaltada ? Cra.cienaga : r.pendiente && r.prioridad >= 4 ? Cra.dePrioridad(r.prioridad).withValues(alpha: 0.5) : Cra.linea.withValues(alpha: 0.7)),
           boxShadow: const [BoxShadow(color: Color(0x0F0B2E24), blurRadius: 20, offset: Offset(0, 8))],
         ),
         child: Row(
@@ -316,7 +317,7 @@ class TarjetaAdmin extends StatelessWidget {
             ),
             const Padding(
               padding: EdgeInsets.only(left: 4, top: 10),
-              child: Icon(Icons.chevron_right_rounded, color: Zc.textoTenue),
+              child: Icon(Icons.chevron_right_rounded, color: Cra.textoTenue),
             ),
           ],
         ),
@@ -337,7 +338,7 @@ class _Dato extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icono, size: 14, color: Zc.textoSuave),
+        Icon(icono, size: 14, color: Cra.textoSuave),
         const SizedBox(width: 4),
         Flexible(child: Text(texto, style: Theme.of(context).textTheme.bodySmall)),
       ],
@@ -374,7 +375,7 @@ class _AyudaAtajos extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
         child: Text('Atajos: J / K moverse · A aprobar · R rechazar',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Zc.textoTenue)),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Cra.textoTenue)),
       );
 }
 
@@ -418,13 +419,13 @@ class TarjetaAdminConGestos extends StatelessWidget {
     final aprobar = AccionGesto(
       etiqueta: 'Aprobar',
       icono: Icons.verified_rounded,
-      color: Zc.hoja,
+      color: Cra.hoja,
       alEjecutar: () => aprobarConDeshacer(context, c, r),
     );
     final rechazar = AccionGesto(
       etiqueta: 'Rechazar',
       icono: Icons.do_not_disturb_on_rounded,
-      color: Zc.dePrioridad(5),
+      color: Cra.dePrioridad(5),
       alEjecutar: () => rechazarConMotivo(context, c, r),
     );
     final tarjeta = TarjetaAdmin(reporte: r, alTocar: () => abrirDetalleAdmin(context, r.id), resaltada: resaltada);
@@ -475,17 +476,17 @@ class _VistaPreviaAdmin extends StatelessWidget {
                   builder: (_, s) => s.data != null
                       ? Image.memory(s.data!, fit: BoxFit.cover, gaplessPlayback: true)
                       : Container(
-                          color: Zc.hojaClara,
+                          color: Cra.hojaClara,
                           alignment: Alignment.center,
                           child: s.connectionState == ConnectionState.done
                               ? Text(controlador.demostracion ? 'La demostración no trae fotos' : 'Sin foto disponible',
                                   style: tt.bodySmall)
                               : const SizedBox.square(
-                                  dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Zc.hoja)),
+                                  dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: Cra.hoja)),
                         ),
                 )
               : Container(
-                  color: Zc.hojaClara,
+                  color: Cra.hojaClara,
                   alignment: Alignment.center,
                   child: Text('Este reporte no trae foto', style: tt.bodySmall),
                 ),

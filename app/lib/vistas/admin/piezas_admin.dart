@@ -4,6 +4,7 @@ import '../../datos/admin/controlador_admin.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
@@ -87,24 +88,24 @@ class _Segmento extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: activo ? Zc.raiz : Zc.superficie,
+            color: activo ? Cra.dorado : Cra.superficie,
             borderRadius: BorderRadius.circular(99),
-            border: Border.all(color: activo ? Zc.raiz : Zc.linea),
+            border: Border.all(color: activo ? Cra.dorado : Cra.linea),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(texto, style: tt.labelLarge?.copyWith(color: activo ? Colors.white : Zc.texto)),
+              Text(texto, style: tt.labelLarge?.copyWith(color: activo ? Cra.azul : Cra.texto)),
               if (cuenta != null) ...[
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
                   decoration: BoxDecoration(
-                    color: activo ? Colors.white.withValues(alpha: 0.18) : Zc.arena,
+                    color: activo ? Cra.azul.withValues(alpha: 0.14) : Cra.azul,
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text('$cuenta',
-                      style: tt.labelMedium?.copyWith(color: activo ? Colors.white : Zc.textoSuave)),
+                      style: tt.labelMedium?.copyWith(color: activo ? Cra.azul : Cra.textoSuave)),
                 ),
               ],
             ],
@@ -136,7 +137,7 @@ class EtiquetaEstado extends StatelessWidget {
               estado.nombre,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Color.lerp(c, Zc.texto, 0.3)),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Color.lerp(c, Cra.texto, 0.3)),
             ),
           ),
         ],
@@ -191,8 +192,8 @@ class ErrorAdmin extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
           padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-          decoration: BoxDecoration(color: Zc.hoja, borderRadius: BorderRadius.circular(Zr.m)),
-          child: Text('Reintentar', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white)),
+          decoration: BoxDecoration(color: Cra.dorado, borderRadius: BorderRadius.circular(Zr.m)),
+          child: Text('Reintentar', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Cra.azul)),
         ),
       ),
     );
@@ -220,16 +221,16 @@ class BotonIcono extends StatelessWidget {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Zc.superficie,
+              color: Cra.superficie,
               shape: BoxShape.circle,
-              border: Border.all(color: Zc.linea),
+              border: Border.all(color: Cra.linea),
             ),
             child: Badge(
               isLabelVisible: cuenta > 0,
-              backgroundColor: Zc.sol,
-              textColor: Zc.raiz,
+              backgroundColor: Cra.sol,
+              textColor: Cra.raiz,
               label: Text(cuenta > 99 ? '99+' : '$cuenta'),
-              child: Icon(icono, size: 22, color: Zc.raiz),
+              child: Icon(icono, size: 22, color: Cra.raiz),
             ),
           ),
         ),
@@ -279,7 +280,7 @@ class _Barra extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
         decoration: BoxDecoration(
-          color: Zc.raiz,
+          color: Cra.raiz,
           borderRadius: BorderRadius.circular(Zr.m),
           boxShadow: const [BoxShadow(color: Color(0x330B2E24), blurRadius: 24, offset: Offset(0, 10))],
         ),
@@ -291,7 +292,7 @@ class _Barra extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded, color: Zc.hojaClara, size: 22),
+                  const Icon(Icons.check_circle_rounded, color: Cra.acierto, size: 22),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(decision.resumen, style: tt.titleSmall?.copyWith(color: Colors.white)),
@@ -303,7 +304,7 @@ class _Barra extends StatelessWidget {
                       constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       alignment: Alignment.center,
-                      child: Text('Deshacer', style: tt.labelLarge?.copyWith(color: Zc.sol)),
+                      child: Text('Deshacer', style: tt.labelLarge?.copyWith(color: Cra.sol)),
                     ),
                   ),
                 ],
@@ -318,7 +319,7 @@ class _Barra extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: FractionallySizedBox(
                     widthFactor: v,
-                    child: Container(height: 3, color: Zc.sol),
+                    child: Container(height: 3, color: Cra.sol),
                   ),
                 ),
               ),
@@ -367,13 +368,13 @@ class CampoAdmin extends StatelessWidget {
       listenable: foco,
       builder: (context, _) {
         final enfocado = foco.hasFocus;
-        final borde = enfocado ? Zc.hoja : Zc.linea;
+        final borde = enfocado ? Cra.hoja : Cra.linea;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 7),
-              child: Text(etiqueta, style: tt.labelMedium?.copyWith(color: Zc.texto)),
+              child: Text(etiqueta, style: tt.labelMedium?.copyWith(color: Cra.texto)),
             ),
             AnimatedContainer(
               duration: context.resolveDuration(Zm.corto),
@@ -381,7 +382,7 @@ class CampoAdmin extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 54),
               padding: const EdgeInsets.only(left: 16, right: 6, top: 4, bottom: 4),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Cra.superficie,
                 borderRadius: BorderRadius.circular(Zr.m),
                 border: Border.all(color: borde, width: 1.5),
                 boxShadow: [
@@ -391,7 +392,7 @@ class CampoAdmin extends StatelessWidget {
               child: Row(
                 children: [
                   if (icono != null) ...[
-                    Icon(icono, size: 22, color: enfocado ? Zc.hoja : Zc.textoTenue),
+                    Icon(icono, size: 22, color: enfocado ? Cra.hoja : Cra.textoTenue),
                     const SizedBox(width: 12),
                   ],
                   Expanded(
@@ -474,17 +475,17 @@ class FranjaDemo extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
       padding: const EdgeInsets.fromLTRB(14, 10, 6, 0),
-      decoration: BoxDecoration(color: Zc.solClaro, borderRadius: BorderRadius.circular(Zr.s)),
+      decoration: BoxDecoration(color: Cra.solClaro, borderRadius: BorderRadius.circular(Zr.s)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(padding: EdgeInsets.only(top: 1), child: Icon(Icons.science_rounded, size: 18, color: Zc.fango)),
+              const Padding(padding: EdgeInsets.only(top: 1), child: Icon(Icons.science_rounded, size: 18, color: Cra.fango)),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Datos de ejemplo en este teléfono. Nada llega a la CRA.', style: tt.bodySmall?.copyWith(color: Zc.texto)),
+                child: Text('Datos de ejemplo en este teléfono. Nada llega a la CRA.', style: tt.bodySmall?.copyWith(color: Cra.texto)),
               ),
             ],
           ),
@@ -497,7 +498,7 @@ class FranjaDemo extends StatelessWidget {
                 constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 alignment: Alignment.center,
-                child: Text('Simular llegada de un reporte', textAlign: TextAlign.center, style: tt.labelMedium?.copyWith(color: Zc.fango)),
+                child: Text('Simular llegada de un reporte', textAlign: TextAlign.center, style: tt.labelMedium?.copyWith(color: Cra.fango)),
               ),
             ),
           ),

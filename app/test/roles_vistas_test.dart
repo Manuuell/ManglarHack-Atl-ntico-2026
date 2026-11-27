@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'ayudas/fuente_lato.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -156,11 +156,7 @@ void _tocables(WidgetTester t, List<String> errores) {
 
 void main() {
   setUpAll(() async {
-    final inter = FontLoader('Inter');
-    for (final f in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
-      inter.addFont(Future.value(ByteData.sublistView(File('google_fonts/Inter-$f.ttf').readAsBytesSync())));
-    }
-    await inter.load();
+    await cargarLato();
     _manglar = Manglar.desdeJson(
         jsonDecode(File('assets/datos/manglar_zonas.json').readAsStringSync()) as Map<String, dynamic>);
   });

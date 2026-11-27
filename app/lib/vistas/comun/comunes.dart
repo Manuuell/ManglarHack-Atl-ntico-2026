@@ -4,6 +4,7 @@ import '../../datos/estado.dart';
 import '../../datos/prioridad.dart';
 import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 
 /// Piezas pequeñas que comparten todas las pantallas. Si una pantalla necesita una
@@ -24,6 +25,8 @@ class CabeceraZ extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          const InsigniaCra(alto: 40),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,7 +34,7 @@ class CabeceraZ extends StatelessWidget {
                 if (subtitulo != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 2),
-                    child: Text(subtitulo!.toUpperCase(), style: tt.labelSmall?.copyWith(color: Zc.hoja)),
+                    child: Text(subtitulo!.toUpperCase(), style: tt.labelSmall?.copyWith(color: Cra.azul)),
                   ),
                 Text(titulo, style: tt.headlineMedium),
               ],

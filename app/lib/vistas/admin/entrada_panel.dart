@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import 'panel_cra.dart';
 import 'piezas_admin.dart';
@@ -31,18 +32,18 @@ class EntradaPanelCra extends StatelessWidget {
           constraints: const BoxConstraints(minHeight: 64),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: dentro ? Zc.hojaClara : Zc.superficie,
+            color: dentro ? Cra.hojaClara : Cra.superficie,
             borderRadius: BorderRadius.circular(Zr.m),
-            border: Border.all(color: dentro ? Zc.hoja.withValues(alpha: 0.4) : Zc.linea),
+            border: Border.all(color: dentro ? Cra.hoja.withValues(alpha: 0.4) : Cra.linea),
           ),
           child: Row(
             children: [
               Badge(
                 isLabelVisible: n > 0,
-                backgroundColor: Zc.sol,
-                textColor: Zc.raiz,
+                backgroundColor: Cra.sol,
+                textColor: Cra.raiz,
                 label: Text(n > 99 ? '99+' : '$n'),
-                child: Icon(Icons.shield_outlined, color: dentro ? Zc.hoja : Zc.textoSuave, size: 26),
+                child: Icon(Icons.shield_outlined, color: dentro ? Cra.hoja : Cra.textoSuave, size: 26),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -54,7 +55,7 @@ class EntradaPanelCra extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Zc.textoTenue),
+              const Icon(Icons.chevron_right_rounded, color: Cra.textoTenue),
             ],
           ),
         ),

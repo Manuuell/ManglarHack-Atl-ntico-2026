@@ -9,6 +9,7 @@ import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/kit/haptica.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import 'piezas_admin.dart';
@@ -129,7 +130,7 @@ class _Datos extends StatelessWidget {
       spacing: 10,
       runSpacing: 10,
       children: [
-        _Cifra(icono: Icons.flag_rounded, titulo: 'Prioridad CRA', valor: '${r.prioridad} de 5', color: Zc.dePrioridad(r.prioridad)),
+        _Cifra(icono: Icons.flag_rounded, titulo: 'Prioridad CRA', valor: '${r.prioridad} de 5', color: Cra.dePrioridad(r.prioridad)),
         _Cifra(icono: Icons.near_me_rounded, titulo: 'Distancia al manglar', valor: dist),
         _Cifra(icono: Icons.verified_user_rounded, titulo: 'Confianza', valor: '${r.confianza} %', barra: r.confianza / 100),
         _Cifra(icono: Icons.schedule_rounded, titulo: 'Llegó', valor: haceCuanto(r.llegadaEn)),
@@ -154,7 +155,7 @@ class _Cifra extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final c = color ?? Zc.hoja;
+    final c = color ?? Cra.hoja;
     return Semantics(
       container: true,
       label: '$titulo: $valor',
@@ -163,9 +164,9 @@ class _Cifra extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 150, maxWidth: 260),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Zc.superficie,
+          color: Cra.superficie,
           borderRadius: BorderRadius.circular(Zr.m),
-          border: Border.all(color: Zc.linea.withValues(alpha: 0.7)),
+          border: Border.all(color: Cra.linea.withValues(alpha: 0.7)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,8 +189,8 @@ class _Cifra extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: barra!.clamp(0.0, 1.0),
                   minHeight: 6,
-                  backgroundColor: Zc.arena,
-                  color: barra! >= 0.7 ? Zc.hoja : (barra! >= 0.4 ? Zc.sol : Zc.prioridad[4]),
+                  backgroundColor: Cra.arena,
+                  color: barra! >= 0.7 ? Cra.hoja : (barra! >= 0.4 ? Cra.sol : Cra.prioridad[4]),
                 ),
               ),
             ],
@@ -213,9 +214,9 @@ class _Bloque extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: resaltado ? Zc.solClaro : Zc.superficie,
+        color: resaltado ? Cra.solClaro : Cra.superficie,
         borderRadius: BorderRadius.circular(Zr.m),
-        border: Border.all(color: Zc.linea.withValues(alpha: 0.7)),
+        border: Border.all(color: Cra.linea.withValues(alpha: 0.7)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,16 +325,16 @@ class _Hueco extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     return Container(
-      color: Zc.hojaClara,
+      color: Cra.hojaClara,
       alignment: Alignment.center,
       padding: const EdgeInsets.all(16),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icono, size: 40, color: Zc.hoja),
+            Icon(icono, size: 40, color: Cra.hoja),
             const SizedBox(height: 8),
-            Text(texto, textAlign: TextAlign.center, style: tt.bodyMedium?.copyWith(color: Zc.texto)),
+            Text(texto, textAlign: TextAlign.center, style: tt.bodyMedium?.copyWith(color: Cra.texto)),
             if (accion != null)
               Presionable(
                 etiqueta: accion,
@@ -342,7 +343,7 @@ class _Hueco extends StatelessWidget {
                   constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
                   alignment: Alignment.center,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(accion!, style: tt.labelLarge?.copyWith(color: Zc.hoja)),
+                  child: Text(accion!, style: tt.labelLarge?.copyWith(color: Cra.hoja)),
                 ),
               ),
           ],
@@ -371,7 +372,7 @@ class _MapaAdmin extends StatelessWidget {
               Positioned.fill(
                 child: FlutterMap(
               options: MapOptions(
-                backgroundColor: Zc.cienagaClara,
+                backgroundColor: Cra.cienagaClara,
                 initialCenter: r.punto,
                 initialZoom: 15.5,
                 interactionOptions: const InteractionOptions(flags: InteractiveFlag.pinchZoom | InteractiveFlag.pinchMove),
@@ -405,7 +406,7 @@ class _MapaAdmin extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.8), borderRadius: BorderRadius.circular(6)),
-                  child: Text('© OpenStreetMap', style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
+                  child: Text('© OpenStreetMap', style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: Cra.azul)),
                 ),
               ),
             ]),
@@ -432,7 +433,7 @@ class _Resuelto extends StatelessWidget {
           Icon(ChipEstado.iconoDe(e), color: c),
           const SizedBox(width: 12),
           Expanded(
-            child: Text('Ya está ${e.nombre.toLowerCase()}. ${e.explicacion}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Zc.texto)),
+            child: Text('Ya está ${e.nombre.toLowerCase()}. ${e.explicacion}', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Cra.texto)),
           ),
         ],
       ),
@@ -469,7 +470,7 @@ class _Acciones extends StatelessWidget {
         BotonZ(
           texto: 'Pedir más datos',
           icono: Icons.chat_bubble_outline_rounded,
-          color: Zc.cienaga,
+          color: Cra.cienaga,
           secundario: true,
           onTap: () => _decidir(context, AccionAdmin.pedirDatos),
         ),
@@ -477,7 +478,7 @@ class _Acciones extends StatelessWidget {
         BotonZ(
           texto: 'Rechazar',
           icono: Icons.do_not_disturb_on_rounded,
-          color: Zc.prioridad[5]!,
+          color: Cra.prioridad[5]!,
           secundario: true,
           onTap: () => _decidir(context, AccionAdmin.rechazar),
         ),
@@ -531,21 +532,21 @@ class _HojaDecisionState extends State<HojaDecision> {
           'Pasa a «Verificado» y quien reportó lo verá en su app. Tienes unos segundos para deshacerlo.',
           'Sí, aprobar',
           Icons.verified_rounded,
-          Zc.hoja,
+          Cra.hoja,
         ),
       AccionAdmin.rechazar => (
           '¿Rechazar este reporte?',
           'Quien reportó leerá tu motivo. Escríbelo con amabilidad: casi siempre lo hizo de buena fe.',
           'Rechazar',
           Icons.do_not_disturb_on_rounded,
-          Zc.prioridad[5]!,
+          Cra.prioridad[5]!,
         ),
       AccionAdmin.pedirDatos => (
           'Pedir más datos',
           'El reporte queda «En verificación» y quien lo envió lee tu mensaje la próxima vez que abra Zanky.',
           'Enviar mensaje',
           Icons.chat_bubble_outline_rounded,
-          Zc.cienaga,
+          Cra.cienaga,
         ),
     };
     final sugerencias = _a == AccionAdmin.rechazar ? HojaDecision.motivos : HojaDecision.preguntas;
@@ -593,9 +594,9 @@ class _HojaDecisionState extends State<HojaDecision> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: Zc.superficie,
+                      color: Cra.superficie,
                       borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: Zc.linea),
+                      border: Border.all(color: Cra.linea),
                     ),
                     child: Text(s, style: tt.labelMedium),
                   ),
@@ -620,7 +621,7 @@ class _HojaDecisionState extends State<HojaDecision> {
           child: Container(
             constraints: const BoxConstraints(minHeight: 48),
             alignment: Alignment.center,
-            child: Text('Cancelar', style: tt.labelLarge?.copyWith(color: Zc.textoSuave)),
+            child: Text('Cancelar', style: tt.labelLarge?.copyWith(color: Cra.textoSuave)),
           ),
         ),
       ],

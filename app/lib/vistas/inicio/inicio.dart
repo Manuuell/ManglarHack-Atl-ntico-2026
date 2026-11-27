@@ -17,6 +17,7 @@ import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/kit/menu_mantenido.dart';
 import '../../nucleo/kit/tirar_actualizar.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../admin/panel_cra.dart';
 import '../admin/piezas_admin.dart';
@@ -251,6 +252,7 @@ class _InicioState extends State<Inicio> {
       child: ListView(
         padding: EdgeInsets.fromLTRB(0, arriba + 10, 0, 120),
         children: [
+          const FranjaMarcaCra(),
           // Saludo + Zanky que cuenta cosas al tocarlo.
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 14, 0),
@@ -261,7 +263,7 @@ class _InicioState extends State<Inicio> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_saludo().toUpperCase(), style: tt.labelSmall?.copyWith(color: Zc.hoja)),
+                      Text(_saludo().toUpperCase(), style: tt.labelSmall?.copyWith(color: Cra.azul)),
                       const SizedBox(height: 2),
                       Text(nombre.isEmpty ? 'Guardián del manglar' : nombre, style: tt.headlineMedium),
                       if (perfil != null) _PildoraRol(rol: rol),
