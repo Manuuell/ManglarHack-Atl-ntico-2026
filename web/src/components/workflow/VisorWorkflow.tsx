@@ -5,7 +5,8 @@ import type { FeatureCollection, Geometry } from 'geojson';
 import { GeoJSON, MapContainer, Pane, Popup, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import { obtenerCapaManglarCRA } from '../../lib/datos';
 import { LIMITES_MANGLAR } from '../../lib/areaReporte';
-import { FUENTE_WORKFLOW, PESTANAS_WORKFLOW, SECTORES_WORKFLOW } from '../../lib/workflow';
+import { FUENTE_WORKFLOW, PESTANAS_WORKFLOW, SECTORES_WORKFLOW, URL_WORKFLOW_CRA, VERSION_WORKFLOW } from '../../lib/workflow';
+import { BloqueWorkflow } from './BloquesWorkflow';
 import type { PropiedadesZona, ZonasManglar } from '../../types/manglar';
 import 'leaflet/dist/leaflet.css';
 import '../../styles/workflow.css';
@@ -57,13 +58,14 @@ function datoInvemar(p: PropiedadesZona, clave: 'area_invemar_ha' | 'poligonos_i
   return typeof valor === 'number' && Number.isFinite(valor) ? numero(valor) : 'No publicado';
 }
 
-const convenciones = [
-  ['bg-capa-manglar', 'Manglar probable'], ['bg-capa-dosel', 'Dosel'],
-  ['bg-capa-agua', 'Agua'], ['bg-capa-recuperacion', 'Recuperación'], ['bg-capa-riesgo', 'Riesgo muy alto'],
-] as const;
+const indiceDeHash = () => {
+  if (typeof window === 'undefined') return 0;
+  const i = PESTANAS_WORKFLOW.findIndex(p => `#${p.id}` === window.location.hash);
+  return i < 0 ? 0 : i;
+};
 
 export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
-  const [indice, setIndice] = useState(0);
+  const [indice, setIndice] = useState(indiceDeHash);
   const [capa, setCapa] = useState<Awaited<ReturnType<typeof obtenerCapaManglarCRA>> | null>(null);
   const [estadoCapa, setEstadoCapa] = useState<'cargando' | 'lista' | 'error'>('cargando');
   const [intento, setIntento] = useState(0);
@@ -76,7 +78,8 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   const contenido = useRef<HTMLDivElement>(null);
   const botones = useRef<(HTMLButtonElement | null)[]>([]);
   const pestana = PESTANAS_WORKFLOW[indice]!;
-  const etiquetas = pestana.id === 'sintesis' || pestana.id === 'extension';
+  const etiquetas = Boolean(pestana.rotuloSector);
+  const pendiente = pestana.bloques.find(b => b.tipo === 'pendiente');
 
   useEffect(() => {
     let vigente = true;
@@ -115,6 +118,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   function seleccionar(nuevo: number, enfocar = false) {
     const siguiente = (nuevo + PESTANAS_WORKFLOW.length) % PESTANAS_WORKFLOW.length;
     setIndice(siguiente);
+    try { history.replaceState(null, '', `#${PESTANAS_WORKFLOW[siguiente]!.id}`); } catch { /* sin historial: no pasa nada */ }
     contenido.current?.scrollTo({ top: 0 });
     if (enfocar) botones.current[siguiente]?.focus({ preventScroll: true });
     botones.current[siguiente]?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -133,17 +137,17 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
         <AjustarMapa zonas={zonas} activar={() => setRueda(true)} />
         <ZoomControl position="bottomright" zoomInTitle="Acercar" zoomOutTitle="Alejar" />
         <Pane name="referencia-workflow" style={{ zIndex: 350 }}>
-          {capa && <GeoJSON data={capa} style={{ fillColor: '#d946ef', fillOpacity: pestana.capa === 'invemar' || etiquetas ? 0.55 : 0.18, color: '#f0abfc', weight: 0.8, opacity: pestana.capa === 'invemar' || etiquetas ? 1 : 0.4 }} />}
+          {capa && <GeoJSON data={capa} style={{ fillColor: '#d946ef', fillOpacity: pestana.capa === 'cra' ? 0.55 : 0.18, color: '#f0abfc', weight: 0.8, opacity: pestana.capa === 'cra' ? 1 : 0.4 }} />}
         </Pane>
         <Pane name="sectores-workflow" style={{ zIndex: 400 }}>
           {zonas.features.map(zona => {
             const sector = SECTORES_WORKFLOW.find(s => s.id === zona.properties.id);
             return <GeoJSON key={zona.properties.id} data={zona} style={{ color: 'white', dashArray: '6 5', weight: 1.3, fillColor: 'white', fillOpacity: 0.04, opacity: pestana.capa === 'sectores' || etiquetas ? 1 : 0.35 }}>
-              {etiquetas && <Tooltip permanent direction="center" className="workflow-sector">{sector ? `${sector.nombre.toLocaleUpperCase('es-CO')} · ${numero(sector.total_ha)} ha` : zona.properties.nombre}</Tooltip>}
-              <Popup><strong>{zona.properties.nombre}</strong>
-                {sector && <><p>Total probable + por revisar: {numero(sector.total_ha)} ha.</p>
-                  {sector.probable_ha !== null && <p>Manglar probable: {numero(sector.probable_ha)} ha.</p>}
-                  {sector.por_revisar_ha !== null && <p>Por revisar: {numero(sector.por_revisar_ha)} ha.</p>}</>}
+              {etiquetas && <Tooltip permanent direction="center" className="workflow-sector">{sector ? `${sector.nombre.toLocaleUpperCase('es-CO')} · ${numero(pestana.rotuloSector === 'total' ? sector.total_ha : sector.probable_ha)} ha` : zona.properties.nombre}</Tooltip>}
+              <Popup><strong>{sector?.nombre_largo ?? zona.properties.nombre}</strong>
+                {sector && <><p>Manglar probable: {numero(sector.probable_ha)} ha ({numero(sector.alta_ha)} con probabilidad alta y {numero(sector.media_ha)} media).</p>
+                  <p>Por revisar: {numero(sector.por_revisar_ha)} ha. Total probable + por revisar: {numero(sector.total_ha)} ha.</p>
+                  <p>Dosel claramente más seco en 2026: {numero(sector.dosel_seco_ha)} ha · riesgo medio {sector.riesgo_medio.toLocaleString('es-CO')} (0 a 1) · altura mediana {sector.altura_mediana_m.toLocaleString('es-CO')} m.</p></>}
                 <p>Polígonos INVEMAR: {datoInvemar(zona.properties, 'poligonos_invemar')}.<br />Área INVEMAR: {datoInvemar(zona.properties, 'area_invemar_ha')} ha.</p>
                 <p>Límite sectorial aproximado. Manglar probable, no confirmado: requiere verificación en campo.</p>
                 <p>Fuente: {FUENTE_WORKFLOW}; {zona.properties.fuente}.</p>
@@ -170,17 +174,17 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
       <details open className="workflow-leyenda absolute bottom-6 left-3 z-[500] max-h-[45%] w-[min(360px,calc(100%-4.5rem))] overflow-auto border border-linea bg-fondo-alt/90 p-3 text-xs">
         <summary className="rotulo min-h-11 cursor-pointer text-dorado-300">Convenciones del workflow</summary>
         <ul className="space-y-2">
-          {convenciones.map(([color, nombre]) => <li key={nombre} className="flex items-center gap-2"><span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 ${color}`} />{nombre} · capa pendiente</li>)}
-          <li className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-5 shrink-0 border border-dashed border-white" />Sectores aproximados</li>
+          {pendiente?.tipo === 'pendiente' && <li className="space-y-1 border-b border-linea-suave pb-2"><p className="font-semibold">{pendiente.capas[0]}: capa de la C.R.A. pendiente de entrega</p>{pendiente.convenciones && <p className="text-tenue">{pendiente.convenciones.join(' · ')}</p>}</li>}
+          <li className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-5 shrink-0 border border-dashed border-white" />Sectores de la C.R.A. (límites aproximados)</li>
           <li className="flex items-start gap-2"><span aria-hidden="true" className="mt-1 h-2.5 w-2.5 shrink-0 bg-capa-manglar" /><span>Cobertura de manglar C.R.A. 1:5.000 (649,7 ha; Maxar 2021–2022, verificada en campo). La capa de manglar probable del workflow (775 ha) es otra: se cargará cuando la C.R.A. la entregue</span></li>
           {capasCRA.length > 0 && <li className="flex items-center gap-2"><span className="h-2.5 w-5 border border-dorado-500" />Capas C.R.A. cargadas</li>}
         </ul>
       </details>
     </section>
-    <aside className="workflow-panel flex min-w-0 flex-col border-l border-linea bg-fondo-alt lg:w-[440px] lg:shrink-0" aria-label="Análisis del workflow">
+    <aside className="workflow-panel flex min-w-0 flex-col border-l border-linea bg-fondo-alt lg:w-[480px] lg:shrink-0 xl:w-[560px]" aria-label="Análisis del workflow">
       <div className="shrink-0 border-b border-linea bg-fondo-alt p-4">
         <p className="rotulo text-dorado-300">Manglar probable, no confirmado</p>
-        <p className="mt-1 text-sm text-suave">Requiere verificación en campo.</p>
+        <p className="mt-1 text-sm text-suave">Requiere verificación en campo. {VERSION_WORKFLOW}.</p>
       </div>
       <div role="tablist" aria-label="Temas del workflow" className="flex shrink-0 overflow-x-auto border-b border-linea">
         {PESTANAS_WORKFLOW.map((p, i) => <button key={p.id} ref={el => { botones.current[i] = el; }} id={`tab-${p.id}`} role="tab" aria-selected={i === indice} aria-controls={`panel-${p.id}`} tabIndex={i === indice ? 0 : -1} onClick={() => seleccionar(i)} onKeyDown={e => teclado(e, i)} className={`rotulo min-h-11 shrink-0 border-b-[3px] px-4 py-3 text-white ${i === indice ? 'border-dorado-500' : 'border-transparent hover:bg-white/5'}`}>{p.etiqueta}</button>)}
@@ -188,13 +192,14 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
       <div ref={contenido} className="min-h-0 flex-1 overflow-y-auto">
         <section role="tabpanel" id={`panel-${pestana.id}`} aria-labelledby={`tab-${pestana.id}`} tabIndex={0} className="space-y-6 p-5">
           <h2 className="titular text-2xl">{pestana.titulo}</h2>
-          <p className="leading-relaxed text-suave">{pestana.resumen}</p>
-          {pestana.cifras.length > 0 && <dl className="grid grid-cols-2 gap-x-4 gap-y-6">{pestana.cifras.map(c => <div key={c.etiqueta} className="border-t border-linea pt-3"><dt className="rotulo text-suave">{c.etiqueta}</dt><dd className="mt-2"><span className="titular block text-4xl">{c.valor}</span><span className="rotulo mt-1 block text-dorado-300">{c.unidad}</span></dd></div>)}</dl>}
-          {pestana.id === 'sintesis' && <table className="w-full text-sm"><caption className="mb-3 text-left text-suave">Por sector · probable + por revisar</caption><thead><tr className="border-b border-linea"><th scope="col" className="py-2 text-left">Sector</th><th scope="col" className="text-right">Total ha</th><th scope="col"><span className="sr-only">Proporción del total</span></th></tr></thead><tbody>{SECTORES_WORKFLOW.map(s => <tr key={s.id} className="border-b border-linea-suave"><th scope="row" className="py-3 text-left font-normal">{s.nombre}</th><td className="text-right tabular-nums">{numero(s.total_ha)}</td><td className="w-24 pl-3"><span aria-hidden="true" className="block h-1.5 bg-dorado-500" style={{ width: `${s.total_ha / 1603 * 100}%` }} /></td></tr>)}</tbody></table>}
-          <ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-suave">{pestana.puntos.map(p => <li key={p}>{p}</li>)}</ul>
-          <p className="border-l-2 border-dorado-500 pl-3 text-sm">{pestana.capa === 'pendiente' ? 'Capa espacial pendiente del GeoJSON de la C.R.A.' : `Capa en el mapa: ${pestana.capa === 'invemar' ? 'cobertura de manglar de la C.R.A. (1:5.000)' : 'sectores aproximados'}.`}</p>
+          <details className="rounded-sm border border-linea-suave">
+            <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm text-dorado-300">Resumen de la sección (texto del audio de la C.R.A.)</summary>
+            <p className="px-3 pb-3 text-sm leading-relaxed text-suave">{pestana.narracion}</p>
+          </details>
+          {pestana.bloques.map((b, i) => <BloqueWorkflow key={`${pestana.id}-${i}`} bloque={b} />)}
+          <p className="border-l-2 border-dorado-500 pl-3 text-sm">Capa en el mapa de esta web: {pestana.capa === 'cra' ? 'cobertura de manglar de la C.R.A. (1:5.000) resaltada' : 'sectores de la C.R.A. con límites aproximados'}.</p>
           <p className="text-xs leading-relaxed text-tenue">Fuente: {pestana.fuente}.</p>
-          {pestana.id === 'fuentes' && <a href="https://manglarcra.netlify.app/workflow" target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-sm text-dorado-300 underline">Ver el workflow original de la C.R.A. ↗</a>}
+          <a href={`${URL_WORKFLOW_CRA}`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center text-sm text-dorado-300 underline">Ver esta sección en el workflow original de la C.R.A. ↗</a>
         </section>
       </div>
       <nav aria-label="Recorrer pestañas" className="grid shrink-0 grid-cols-2 border-t border-linea">
