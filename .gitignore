@@ -1,0 +1,27 @@
+# Secretos
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.jks
+*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# Node
+node_modules/
+dist/
+.next/
+
+# Flutter / Dart
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/android/local.properties
+**/ios/Flutter/Generated.xcconfig
+
+# Sistema
+.DS_Store
+*.log
