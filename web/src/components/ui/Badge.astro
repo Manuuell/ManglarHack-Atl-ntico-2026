@@ -1,0 +1,14 @@
+---
+import { cn } from '../../lib/utils';
+import { PRIORIDADES_ZONA } from '../../lib/catalogos';
+interface Props { tono?: 'neutro' | 'dorado' | 'ejemplo' | 'critica' | 'alta' | 'media' | 'baja'; class?: string; }
+const { tono = 'neutro', class: clase } = Astro.props;
+const tonos = {
+ neutro: 'border border-linea bg-white/10 text-suave',
+ dorado: 'border border-dorado-300 text-dorado-300',
+ ejemplo: 'border border-white/50 text-suave',
+ critica: PRIORIDADES_ZONA.critica.chip, alta: PRIORIDADES_ZONA.alta.chip,
+ media: PRIORIDADES_ZONA.media.chip, baja: PRIORIDADES_ZONA.baja.chip,
+};
+---
+<span class={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em]', tonos[tono], clase)}>{tono === 'ejemplo' ? 'DATOS DE EJEMPLO' : <slot />}</span>

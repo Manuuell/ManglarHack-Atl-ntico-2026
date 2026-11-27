@@ -1,0 +1,170 @@
+[
+  {
+    "id": "d380968c-5fbc-4245-8e11-fe71848fef0c",
+    "reporte_id": "4e343fdb-d626-4054-927f-64891f7b43c1",
+    "estado": "recibido",
+    "usuario_id": "sistema",
+    "nota": "Recibido por el sistema.",
+    "fecha": "2026-11-24T08:02:00-05:00"
+  },
+  {
+    "id": "c4a2cb01-ab53-418a-9718-4051d5abc31d",
+    "reporte_id": "4c6cf926-00bd-43ff-aa74-6c1895c5f0ce",
+    "estado": "recibido",
+    "usuario_id": "sistema",
+    "nota": "Recibido por el sistema.",
+    "fecha": "2026-11-25T13:00:00-05:00"
+  },
+  {
+    "id": "6b7a85ea-4d07-4485-a778-49c5dff9a798",
+    "reporte_id": "4c6cf926-00bd-43ff-aa74-6c1895c5f0ce",
+    "estado": "en_verificacion",
+    "usuario_id": "vigia-demo",
+    "nota": "Vigía revisa la evidencia.",
+    "fecha": "2026-11-25T13:20:00-05:00"
+  },
+  {
+    "id": "a881d301-6f31-4e56-804e-77fa56adb03a",
+    "reporte_id": "4c6cf926-00bd-43ff-aa74-6c1895c5f0ce",
+    "estado": "verificado",
+    "usuario_id": "moderador-cra-demo",
+    "nota": "Hallazgo confirmado en campo.",
+    "fecha": "2026-11-25T13:40:00-05:00"
+  },
+  {
+    "id": "e62f2b95-efb4-47d8-8a04-8f296e93ddaa",
+    "reporte_id": "4c6cf926-00bd-43ff-aa74-6c1895c5f0ce",
+    "estado": "alerta_oficial",
+    "usuario_id": "moderador-cra-demo",
+    "nota": "Moderación emite alerta y abre expediente de ejemplo.",
+    "fecha": "2026-11-25T14:00:00-05:00"
+  },
+  {
+    "id": "64850941-0bf6-42ed-b35e-4498af6e05ea",
+    "reporte_id": "4c6cf926-00bd-43ff-aa74-6c1895c5f0ce",
+    "estado": "en_atencion",
+    "usuario_id": "moderador-cra-demo",
+    "nota": "Equipo coordina visita al sector.",
+    "fecha": "2026-11-25T14:20:00-05:00"
+  },
+  {
+    "id": "4c946953-862f-4a8f-831f-894ee5fb7941",
+    "reporte_id": "53b5007d-5f76-4315-937b-cec2eb8e154d",
+    "estado": "recibido",
+    "usuario_id": "sistema",
+    "nota": "Recibido por el sistema.",
+    "fecha": "2026-11-26T08:02:00-05:00"
+  },
+  {
+    "id": "1a8ddd9d-0db6-4823-b1c4-bfb545d71d1c",
+    "reporte_id": "53b5007d-5f76-4315-937b-cec2eb8e154d",
+    "estado": "en_verificacion",
+    "usuario_id": "vigia-demo",
+    "nota": "Vigía revisa la evidencia.",
+    "fecha": "2026-11-26T08:22:00-05:00"
+  },
+  {
+    "id": "0af3cffa-c06c-4b61-ba4c-62edfc0d1be6",
+    "reporte_id": "53b5007d-5f76-4315-937b-cec2eb8e154d",
+    "estado": "verificado",
+    "usuario_id": "moderador-cra-demo",
+    "nota": "Hallazgo confirmado en campo.",
+    "fecha": "2026-11-26T08:42:00-05:00"
+  },
+  {
+    "id": "af8b1658-e8fd-42a1-be56-c6a4bc82a136",
+    "reporte_id": "88e900b6-a839-4916-aea0-238d315c11c8",
+    "estado": "recibido",
+    "usuario_id": "sistema",
+    "nota": "Recibido por el sistema.",
+    "fecha": "2026-11-27T08:02:00-05:00"
+  },
+  {
+    "id": "20c394d5-fd41-423d-97de-398cdd1ab018",
+    "reporte_id": "88e900b6-a839-4916-aea0-238d315c11c8",
+    "estado": "en_verificacion",
+    "usuario_id": "vigia-demo",
+    "nota": "Vigía revisa la evidencia.",
+    "fecha": "2026-11-27T08:22:00-05:00"
+  },
+  {
+    "id": "37e6328a-9251-4cf4-81e2-1edc0f4fb495",
+    "reporte_id": "eae1a84f-7e09-430f-9bb3-efb8880ebb76",
+    "estado": "recibido",
+    "usuario_id": "sistema",
+    "nota": "Recibido por el sistema.",
+    "fecha": "2026-11-24T08:02:00-05:00"
+  },
+  {
+    "id": "851a75a7-9b58-47d7-8bdc-ec50c298029e",
+    "reporte_id": "eae1a84f-7e09-430f-9bb3-efb8880ebb76",
+    "estado": "en_verificacion",
+    "usuario_id": "vigia-demo",
+    "nota": "Vigía revisa la evidencia.",
+    "fecha": "2026-11-24T08:22:00-05:00"
+  },
+  {
+    "id": "04204e5a-cda2-42c8-8dec-2d7ec03442d6",
+    "reporte_id": "47d910e5-adbc-400a-8ae1-c2db7d5d9876",
+    "estado": "recibido",
+    "usuario_id": "sistema",
+    "nota": "Recibido por el sistema.",
+    "fecha": "2026-11-25T08:02:00-05:00"
+  },
+  {
+    "id": "e9936166-3e4c-4997-8ba7-6a86579fd4e5",
+    "reporte_id": "47d910e5-adbc-400a-8ae1-c2db7d5d9876",
+    "estado": "en_verificacion",
+    "usuario_id": "vigia-demo",
+    "nota": "Vigía revisa la evidencia.",
+    "fecha": "2026-11-25T08:22:00-05:00"
+  },
+  {
+    "id": "3f3b240d-63df-422f-af57-ba7b2d32c43c",
+    "reporte_id": "47d910e5-adbc-400a-8ae1-c2db7d5d9876",
+    "estado": "verificado",
+    "usuario_id": "moderador-cra-demo",
+    "nota": "Hallazgo confirmado en campo.",
+    "fecha": "2026-11-25T08:42:00-05:00"
+  },
+  {
+    "id": "d44a9c63-0131-4bdd-a3c4-6b7992e51e18",
+    "reporte_id": "47d910e5-adbc-400a-8ae1-c2db7d5d9876",
+    "estado": "alerta_oficial",
+    "usuario_id": "moderador-cra-demo",
+    "nota": "Moderación emite alerta y abre expediente de ejemplo.",
+    "fecha": "2026-11-25T09:02:00-05:00"
+  },
+  {
+    "id": "e46d9da1-a563-4219-8d40-1905e4450d16",
+    "reporte_id": "5eea9422-802d-4cb4-806a-d38f14606dd7",
+    "estado": "recibido",
+    "usuario_id": "sistema",
+    "nota": "Recibido por el sistema.",
+    "fecha": "2026-11-26T08:02:00-05:00"
+  },
+  {
+    "id": "01b0ef92-9a17-4455-b2c7-0b99c6105253",
+    "reporte_id": "5eea9422-802d-4cb4-806a-d38f14606dd7",
+    "estado": "en_verificacion",
+    "usuario_id": "vigia-demo",
+    "nota": "Vigía revisa la evidencia.",
+    "fecha": "2026-11-26T08:22:00-05:00"
+  },
+  {
+    "id": "072b78ad-c48e-463b-a50a-dffdf0f7efb9",
+    "reporte_id": "5eea9422-802d-4cb4-806a-d38f14606dd7",
+    "estado": "descartado",
+    "usuario_id": "moderador-cra-demo",
+    "nota": "La evidencia no confirma el hallazgo reportado.",
+    "fecha": "2026-11-26T08:42:00-05:00"
+  },
+  {
+    "id": "3f8ccb5d-ee3b-4485-8c62-0101c7190fe9",
+    "reporte_id": "4cf88128-987b-4398-af47-b60eaeb88c6a",
+    "estado": "recibido",
+    "usuario_id": "sistema",
+    "nota": "Recibido por el sistema.",
+    "fecha": "2026-11-27T08:02:00-05:00"
+  }
+]

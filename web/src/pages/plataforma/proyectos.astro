@@ -1,0 +1,13 @@
+---
+import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
+import ProyectosPlantillas from '../../components/proyectos/ProyectosPlantillas';
+import { obtenerAcciones, obtenerActores } from '../../lib/plataforma/datos';
+
+const [acciones, actores] = await Promise.all([obtenerAcciones(), obtenerActores()]);
+// Vista pública: los actores viajan sin correo.
+const actoresPublicos = actores.map((a) => ({ ...a, correo: '' }));
+---
+
+<PlataformaLayout title="Proyectos · Plataforma abierta del manglar" activa="proyectos">
+  <ProyectosPlantillas client:load acciones={acciones} actores={actoresPublicos} />
+</PlataformaLayout>

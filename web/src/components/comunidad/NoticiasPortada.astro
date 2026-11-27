@@ -1,0 +1,16 @@
+---
+// Noticias al final de la portada: las 3 últimas de la C.R.A. sobre el manglar (el resto, en su sala de prensa).
+// Va dentro de .mon para que monitoreo-portada.css devuelva a Tailwind los h3, p y a que portada.css fija sin capa.
+import NoticiasCRA from './NoticiasCRA';
+import '../../styles/monitoreo-portada.css';
+---
+<section class="panel" data-tono="hondo" id="noticias" aria-label="Noticias de la C.R.A. sobre el manglar">
+  <div class="panel-dentro">
+    <div class="mon noticias-portada" data-reveal="card">
+      <NoticiasCRA client:visible limite={3} />
+    </div>
+  </div>
+</section>
+<style>
+  .noticias-portada { margin-top: 0; }
+</style>

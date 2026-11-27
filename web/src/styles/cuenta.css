@@ -1,0 +1,132 @@
+/* Botón de perfil y panel de cuenta (components/cuenta/PanelCuenta.tsx).
+   Va en la portada (que fija sin capa h2, p y a) y en la plataforma: por eso todo lleva clases
+   propias con dos niveles de especificidad y no depende de Tailwind. Colores: tokens --c-* de global.css. */
+
+/* -- botón de la cabecera: hereda el color (blanco sobre el hero, tinta en la cápsula) -- */
+.cuenta-boton {
+  display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0;
+  border-radius: 999px; border: 1.5px solid currentColor; background: transparent; color: inherit;
+  cursor: pointer; transition: background-color .2s ease, transform .2s ease;
+}
+.cuenta-boton:hover { background: rgb(255 255 255 / .14); }
+.cab.flotante .cuenta-boton:hover { background: #f1f5f8; }
+.cuenta-boton:focus-visible { outline: 3px solid var(--color-dorado-500, #edb512); outline-offset: 2px; }
+.cuenta-boton svg { width: 24px; height: 24px; }
+.cuenta-boton:has(.cuenta-inicial) { border-color: transparent; }
+.cuenta-inicial, .cuenta-avatar {
+  display: grid; place-items: center; width: 100%; height: 100%; border-radius: 999px;
+  background: var(--color-dorado-500, #edb512); color: #05243a;
+  font: 800 18px/1 var(--font-titulo, "Figtree", system-ui, sans-serif);
+}
+.cab .cuenta-boton { margin-left: 8px; }
+
+/* -- panel ------------------------------------------------------------------------------ */
+.cuenta-dialogo {
+  /* El reset de Tailwind quita el margin: auto con que el navegador centra el <dialog>. */
+  position: fixed; inset: 0; margin: auto; height: fit-content;
+  width: min(460px, calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 24px);
+  padding: 0; border: 0; background: transparent; overflow: visible;
+  color: var(--c-texto); font: 400 15px/1.5 var(--font-sans, "Inter", system-ui, sans-serif);
+  letter-spacing: normal; text-transform: none; text-align: left;
+}
+.cuenta-dialogo::backdrop { background: rgb(3 18 30 / .62); backdrop-filter: blur(3px); }
+.cuenta-dialogo[open] .cuenta-caja { animation: cuenta-entra .28s cubic-bezier(.16, 1, .3, 1); }
+@keyframes cuenta-entra { from { opacity: 0; transform: translateY(14px) scale(.98); } }
+@media (prefers-reduced-motion: reduce) { .cuenta-dialogo[open] .cuenta-caja { animation: none; } }
+
+.cuenta-dialogo .cuenta-caja {
+  position: relative; display: flex; flex-direction: column; gap: 16px;
+  max-height: calc(100dvh - 24px); overflow-y: auto; padding: 26px 22px 22px;
+  background: var(--c-fondo-alt); border: 1px solid var(--c-linea); border-radius: 28px;
+  box-shadow: var(--c-sombra-alta);
+}
+.cuenta-dialogo .cuenta-cerrar {
+  position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 44px; height: 44px;
+  border: 0; border-radius: 999px; background: transparent; color: var(--c-texto-suave); cursor: pointer;
+}
+.cuenta-dialogo .cuenta-cerrar:hover { background: rgb(255 255 255 / .1); color: var(--c-texto); }
+.cuenta-dialogo .cuenta-cerrar svg { width: 22px; height: 22px; }
+
+.cuenta-dialogo .cuenta-cab { display: flex; align-items: center; gap: 14px; padding-right: 40px; }
+.cuenta-dialogo .cuenta-cab img { width: 56px; height: 56px; object-fit: contain; flex: none; }
+.cuenta-dialogo .cuenta-avatar { width: 56px; height: 56px; flex: none; font-size: 24px; }
+.cuenta-dialogo .cuenta-kicker {
+  margin: 0; color: var(--color-dorado-300, #f8d86f); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase;
+}
+.cuenta-dialogo .cuenta-titulo {
+  margin: 2px 0 0; max-width: none; color: var(--c-texto);
+  font: 800 26px/1.1 var(--font-titulo, "Figtree", system-ui, sans-serif); letter-spacing: -.03em;
+}
+.cuenta-dialogo .cuenta-sub { margin: 4px 0 0; color: var(--c-texto-tenue); font-size: 13.5px; overflow-wrap: anywhere; }
+
+.cuenta-dialogo .cuenta-reportar {
+  display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px;
+  background: rgb(237 181 18 / .1); border: 1px solid rgb(237 181 18 / .35);
+}
+.cuenta-dialogo .cuenta-reportar p { margin: 0; color: var(--c-texto-suave); }
+
+.cuenta-dialogo .cuenta-pestanas { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 999px; background: rgb(255 255 255 / .07); }
+.cuenta-dialogo .cuenta-pestanas button {
+  min-height: 42px; border: 0; border-radius: 999px; background: transparent; color: var(--c-texto-suave);
+  font-family: inherit; font-size: 14px; font-weight: 700; line-height: 1; cursor: pointer;
+}
+.cuenta-dialogo .cuenta-pestanas button[aria-selected="true"] { background: var(--color-dorado-500, #edb512); color: #05243a; }
+
+.cuenta-dialogo .cuenta-form { display: flex; flex-direction: column; gap: 14px; }
+.cuenta-dialogo .cuenta-campo { display: flex; flex-direction: column; gap: 6px; }
+.cuenta-dialogo .cuenta-campo > label:not(.cuenta-check) { font-size: 13px; font-weight: 600; color: var(--c-texto-suave); }
+.cuenta-dialogo .cuenta-campo input:not([type="checkbox"]),
+.cuenta-dialogo .cuenta-campo select {
+  width: 100%; min-height: 46px; padding: 10px 14px; border-radius: 14px; border: 1px solid var(--c-linea);
+  background: rgb(255 255 255 / .06); color: var(--c-texto); font: inherit; font-size: 16px;
+}
+.cuenta-dialogo .cuenta-campo select option { color: #05243a; }
+.cuenta-dialogo .cuenta-campo input:focus-visible,
+.cuenta-dialogo .cuenta-campo select:focus-visible { outline: 2px solid var(--color-dorado-500, #edb512); outline-offset: 1px; border-color: transparent; }
+.cuenta-dialogo .cuenta-campo [aria-invalid="true"] { border-color: #fca5a5; }
+.cuenta-dialogo .cuenta-clave { position: relative; }
+.cuenta-dialogo .cuenta-clave input { padding-right: 52px; }
+.cuenta-dialogo .cuenta-ver {
+  position: absolute; top: 1px; right: 1px; display: grid; place-items: center; width: 44px; height: 44px;
+  border: 0; border-radius: 14px; background: transparent; color: var(--c-texto-tenue); cursor: pointer;
+}
+.cuenta-dialogo .cuenta-ver svg { width: 20px; height: 20px; }
+.cuenta-dialogo .cuenta-ayuda { font-size: 12.5px; color: var(--c-texto-tenue); }
+.cuenta-dialogo .cuenta-error { font-size: 13px; color: #fca5a5; }
+.cuenta-dialogo .cuenta-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.45; color: var(--c-texto-suave); cursor: pointer; }
+.cuenta-dialogo .cuenta-check input { width: 20px; height: 20px; margin-top: 1px; flex: none; accent-color: var(--color-dorado-500, #edb512); }
+
+.cuenta-dialogo .cuenta-enlace {
+  align-self: flex-start; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer;
+  color: var(--color-dorado-300, #f8d86f); font: inherit; font-size: 14px; text-decoration: underline; text-underline-offset: 3px;
+}
+
+.cuenta-dialogo .cuenta-aviso { margin: 0; padding: 10px 12px; border-radius: 14px; font-size: 14px; }
+.cuenta-dialogo .cuenta-aviso-ok { background: rgb(34 197 94 / .14); color: #bbf7d0; }
+.cuenta-dialogo .cuenta-aviso-error { background: rgb(239 68 68 / .14); color: #fecaca; }
+
+.cuenta-dialogo .cuenta-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px;
+  border-radius: 999px; border: 1px solid transparent; font: 700 15px/1 var(--font-sans, "Inter", system-ui, sans-serif);
+  cursor: pointer; text-decoration: none; transition: background-color .2s ease, opacity .2s ease;
+}
+.cuenta-dialogo .cuenta-btn:disabled { opacity: .55; cursor: not-allowed; }
+.cuenta-dialogo .cuenta-btn svg { width: 18px; height: 18px; }
+.cuenta-dialogo .cuenta-btn-dorado { background: var(--color-dorado-500, #edb512); color: #05243a; }
+.cuenta-dialogo .cuenta-btn-dorado:not(:disabled):hover { background: var(--color-dorado-300, #f8d86f); }
+.cuenta-dialogo .cuenta-btn-claro { background: rgb(255 255 255 / .08); color: var(--c-texto); border-color: var(--c-linea); }
+.cuenta-dialogo .cuenta-btn-claro:hover { background: rgb(255 255 255 / .14); }
+.cuenta-dialogo .cuenta-btn-salir { background: transparent; color: #fecaca; border-color: rgb(254 202 202 / .35); }
+
+.cuenta-dialogo .cuenta-perfil { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid var(--c-linea-suave); }
+.cuenta-dialogo .cuenta-atajos { display: flex; flex-direction: column; }
+.cuenta-dialogo .cuenta-atajos a {
+  display: flex; align-items: center; min-height: 44px; color: var(--color-dorado-300, #f8d86f);
+  font-size: 14.5px; text-decoration: none; border-bottom: 1px solid var(--c-linea-suave);
+}
+.cuenta-dialogo .cuenta-atajos a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.cuenta-dialogo .cuenta-check-apagado { opacity: .55; cursor: not-allowed; }
+.cuenta-dialogo .cuenta-atajos .cuenta-atajo-admin { gap: 8px; font-weight: 700; color: var(--color-dorado-500, #edb512); }
+.cuenta-dialogo .cuenta-atajos .cuenta-atajo-admin svg { width: 18px; height: 18px; flex: none; }

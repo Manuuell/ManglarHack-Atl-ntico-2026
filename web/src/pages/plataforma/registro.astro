@@ -1,0 +1,11 @@
+---
+import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
+import RegistroActor from '../../components/plataforma/RegistroActor';
+import { obtenerActores } from '../../lib/plataforma/datos';
+
+const actores = await obtenerActores();
+---
+
+<PlataformaLayout title="Registro de actor · Plataforma abierta del manglar" activa="registro">
+  <RegistroActor client:load actores={actores} />
+</PlataformaLayout>

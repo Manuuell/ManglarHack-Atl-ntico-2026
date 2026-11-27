@@ -1,0 +1,59 @@
+[
+  {
+    "id": "pescadores-demo",
+    "nombre": "Asociación de pescadores de la ciénaga",
+    "tipo": "comunidad",
+    "correo": "pescadores-demo@ejemplo.org",
+    "sector": "mallorquin",
+    "papeles": [
+      "proponer_ejecutar",
+      "coparticipar",
+      "monitorear_reportar"
+    ],
+    "verificado": true,
+    "acepta_datos": true,
+    "creado_en": "2026-04-01T09:00:00-05:00"
+  },
+  {
+    "id": "universidad-demo",
+    "nombre": "Universidad del Atlántico, grupo de ecosistemas costeros",
+    "tipo": "academia",
+    "correo": "universidad-demo@ejemplo.org",
+    "sector": "balboa",
+    "papeles": [
+      "proponer_ejecutar",
+      "monitorear_reportar"
+    ],
+    "verificado": true,
+    "acepta_datos": true,
+    "creado_en": "2026-04-01T09:00:00-05:00"
+  },
+  {
+    "id": "fundacion-demo",
+    "nombre": "Fundación Manglar Vivo",
+    "tipo": "ong",
+    "correo": "fundacion-demo@ejemplo.org",
+    "sector": "totumo",
+    "papeles": [
+      "proponer_ejecutar",
+      "financiar_cooperar"
+    ],
+    "verificado": true,
+    "acepta_datos": true,
+    "creado_en": "2026-04-01T09:00:00-05:00"
+  },
+  {
+    "id": "colegio-demo",
+    "nombre": "Institución Educativa Técnica de Santa Verónica",
+    "tipo": "academia",
+    "correo": "colegio-demo@ejemplo.org",
+    "sector": "manaties",
+    "papeles": [
+      "proponer_ejecutar",
+      "monitorear_reportar"
+    ],
+    "verificado": false,
+    "acepta_datos": true,
+    "creado_en": "2026-04-01T09:00:00-05:00"
+  }
+]

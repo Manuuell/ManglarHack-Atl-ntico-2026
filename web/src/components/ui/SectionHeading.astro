@@ -1,0 +1,10 @@
+---
+import { cn } from '../../lib/utils';
+interface Props { eyebrow: string; titulo: string; descripcion?: string; align?: 'left' | 'center'; }
+const { eyebrow, titulo, descripcion, align = 'left' } = Astro.props;
+---
+<div class={cn('mb-10 max-w-3xl', align === 'center' && 'mx-auto text-center')}>
+ <p class="rotulo mb-3 text-dorado-300">{eyebrow}</p>
+ <h2 class="titular text-3xl text-texto sm:text-4xl">{titulo}</h2>
+ {descripcion && <p class="mt-4 text-base leading-relaxed text-suave sm:text-lg">{descripcion}</p>}
+</div>

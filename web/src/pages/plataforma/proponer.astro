@@ -1,0 +1,14 @@
+---
+import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
+import ProponerAccion from '../../components/plataforma/ProponerAccion';
+import { obtenerPoligonos } from '../../lib/datos';
+import { obtenerAcciones, obtenerActores, obtenerCambiosAccion } from '../../lib/plataforma/datos';
+
+const [zonas, actores, acciones, cambios] = await Promise.all([obtenerPoligonos(), obtenerActores(), obtenerAcciones(), obtenerCambiosAccion()]);
+---
+
+<PlataformaLayout title="Proponer acción · Plataforma abierta del manglar" activa="proponer">
+  <ProponerAccion client:only="react" zonas={zonas} actores={actores} acciones={acciones} cambios={cambios}>
+    <div slot="fallback" class="grid h-[600px] place-items-center border border-linea bg-fondo-alt text-tenue">Cargando el mapa para marcar el sitio…</div>
+  </ProponerAccion>
+</PlataformaLayout>

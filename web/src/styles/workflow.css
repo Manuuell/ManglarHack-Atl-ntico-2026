@@ -1,0 +1,33 @@
+.visor-workflow .workflow-mapa { height: 55vh; min-height: 320px; }
+.visor-workflow .leaflet-container { background: #082d45; font-family: inherit; }
+.visor-workflow .workflow-teselas { filter: brightness(.85) saturate(.8); }
+.visor-workflow .workflow-teselas::after {
+  content: ''; position: absolute; inset: -100vh -100vw;
+  background: rgb(11 58 88 / 10%); pointer-events: none; z-index: 1;
+}
+.visor-workflow .leaflet-popup-content-wrapper,
+.visor-workflow .leaflet-popup-tip,
+.visor-workflow .leaflet-tooltip {
+  background: #082d45; color: white; border: 1px solid var(--c-linea);
+  border-radius: 0; box-shadow: var(--c-sombra);
+}
+.visor-workflow .leaflet-popup-content { max-height: 260px; overflow-y: auto; line-height: 1.5; }
+.visor-workflow .leaflet-popup-content p { margin: 10px 0; }
+.visor-workflow .leaflet-popup-close-button { color: white; width: 44px; height: 44px; }
+.visor-workflow .leaflet-tooltip.workflow-sector { font-weight: 900; font-size: 11px; letter-spacing: .04em; }
+.visor-workflow .leaflet-tooltip-top::before { border-top-color: #082d45; }
+.visor-workflow .leaflet-tooltip-bottom::before { border-bottom-color: #082d45; }
+.visor-workflow .leaflet-tooltip-left::before { border-left-color: #082d45; }
+.visor-workflow .leaflet-tooltip-right::before { border-right-color: #082d45; }
+.visor-workflow .leaflet-bar { border: 1px solid var(--c-linea); border-radius: 0; }
+.visor-workflow .leaflet-bar a { width: 44px; height: 44px; line-height: 44px; background: #0b3a58; color: white; border-color: var(--c-linea); border-radius: 0; }
+.visor-workflow .leaflet-bar a:hover { background: var(--c-superficie); }
+.visor-workflow .leaflet-bar a.leaflet-disabled { color: var(--c-texto-tenue); }
+.visor-workflow .leaflet-control-attribution { background: #082d45; color: white; }
+.visor-workflow .leaflet-control-attribution a { color: var(--color-dorado-300); }
+.visor-workflow input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--color-dorado-500); }
+@media (min-width: 1024px) {
+  .visor-workflow { height: calc(100dvh - var(--workflow-offset, 160px)); min-height: 480px; }
+  .visor-workflow .workflow-mapa { height: 100%; min-height: 0; }
+  .visor-workflow .workflow-panel { height: 100%; }
+}

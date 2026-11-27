@@ -1,0 +1,21 @@
+---
+import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
+import PanelCorporacion from '../../components/corporacion/PanelCorporacion';
+import CapasCorporacion from '../../components/corporacion/CapasCorporacion';
+import { obtenerHistorial, obtenerPoligonos, obtenerReportes } from '../../lib/datos';
+import { obtenerAcciones, obtenerActores, obtenerCambiosAccion, obtenerJornadas, obtenerMonitoreos } from '../../lib/plataforma/datos';
+
+const [acciones, actores, cambiosAccion, jornadas, monitoreos, reportes, historial, zonas] = await Promise.all([
+  obtenerAcciones(), obtenerActores(), obtenerCambiosAccion(), obtenerJornadas(), obtenerMonitoreos(),
+  obtenerReportes(), obtenerHistorial(), obtenerPoligonos(),
+]);
+---
+
+<PlataformaLayout title="Panel de la Corporación · Plataforma abierta del manglar" activa="panel">
+  <div class="grid gap-14">
+    <PanelCorporacion client:load acciones={acciones} actores={actores} cambiosAccion={cambiosAccion} jornadas={jornadas} monitoreos={monitoreos} reportes={reportes} historial={historial} zonas={zonas} />
+    <CapasCorporacion client:only="react">
+      <div slot="fallback" class="grid h-[420px] place-items-center border border-linea bg-fondo-alt text-tenue">Cargando las capas de la Corporación…</div>
+    </CapasCorporacion>
+  </div>
+</PlataformaLayout>

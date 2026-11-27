@@ -1,0 +1,7 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { cn } from '../../lib/utils';
+type Props = HTMLAttributes<'div'>;
+const { class: clase, ...rest } = Astro.props;
+---
+<div class={cn('rounded-3xl border border-linea-suave bg-superficie shadow-[var(--c-sombra)]', clase)} {...rest}><slot /></div>

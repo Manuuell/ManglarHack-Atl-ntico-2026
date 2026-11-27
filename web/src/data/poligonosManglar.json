@@ -1,0 +1,686 @@
+{
+  "type": "FeatureCollection",
+  "name": "sectores_manglar_cra_aproximados",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "mallorquin",
+        "nombre": "Mallorquín",
+        "nombre_largo": "Mallorquín – Bocas de Ceniza",
+        "municipio": "Barranquilla",
+        "prioridad": "critica",
+        "area_ha": null,
+        "area_invemar_ha": 292.9,
+        "poligonos_invemar": 22,
+        "especies": [
+          "Mangle rojo (Rhizophora mangle)",
+          "Mangle blanco (Laguncularia racemosa)",
+          "Mangle negro (Avicennia germinans)",
+          "Mangle zaragoza (Conocarpus erectus)"
+        ],
+        "amenazas": [
+          "Relleno urbano",
+          "Tala",
+          "Vertimientos"
+        ],
+        "descripcion": "Sector Mallorquín – Bocas de Ceniza. Envolvente aproximada de 22 polígonos de manglar de INVEMAR 2020.",
+        "fuente": "Envolvente de la capa INVEMAR 2020 calculada por el equipo; se reemplaza por el KMZ oficial de la C.R.A."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -74.90102,
+              11.03804
+            ],
+            [
+              -74.90102,
+              11.03798
+            ],
+            [
+              -74.90087,
+              11.03681
+            ],
+            [
+              -74.90005,
+              11.03627
+            ],
+            [
+              -74.89904,
+              11.03565
+            ],
+            [
+              -74.85064,
+              11.02444
+            ],
+            [
+              -74.84687,
+              11.02448
+            ],
+            [
+              -74.8443,
+              11.02487
+            ],
+            [
+              -74.84404,
+              11.02494
+            ],
+            [
+              -74.84382,
+              11.02504
+            ],
+            [
+              -74.84349,
+              11.02518
+            ],
+            [
+              -74.84338,
+              11.02523
+            ],
+            [
+              -74.83724,
+              11.02894
+            ],
+            [
+              -74.83284,
+              11.03197
+            ],
+            [
+              -74.82889,
+              11.03507
+            ],
+            [
+              -74.8269,
+              11.04108
+            ],
+            [
+              -74.82689,
+              11.04113
+            ],
+            [
+              -74.82626,
+              11.0474
+            ],
+            [
+              -74.82626,
+              11.04744
+            ],
+            [
+              -74.82626,
+              11.04749
+            ],
+            [
+              -74.82627,
+              11.04753
+            ],
+            [
+              -74.82628,
+              11.04757
+            ],
+            [
+              -74.8263,
+              11.0476
+            ],
+            [
+              -74.84207,
+              11.06628
+            ],
+            [
+              -74.84215,
+              11.06634
+            ],
+            [
+              -74.84226,
+              11.0664
+            ],
+            [
+              -74.84237,
+              11.0664
+            ],
+            [
+              -74.89647,
+              11.04316
+            ],
+            [
+              -74.90102,
+              11.03804
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "balboa",
+        "nombre": "Puerto Colombia",
+        "nombre_largo": "Puerto Colombia – Balboa – Puerto Velero",
+        "municipio": "Puerto Colombia y Tubará",
+        "prioridad": "alta",
+        "area_ha": null,
+        "area_invemar_ha": 122.5,
+        "poligonos_invemar": 60,
+        "especies": [
+          "Mangle rojo (Rhizophora mangle)",
+          "Mangle blanco (Laguncularia racemosa)",
+          "Mangle negro (Avicennia germinans)",
+          "Mangle zaragoza (Conocarpus erectus)"
+        ],
+        "amenazas": [
+          "Relleno urbano",
+          "Tala",
+          "Vertimientos"
+        ],
+        "descripcion": "Sector Puerto Colombia – Balboa – Puerto Velero. Envolvente aproximada de 60 polígonos de manglar de INVEMAR 2020.",
+        "fuente": "Envolvente de la capa INVEMAR 2020 calculada por el equipo; se reemplaza por el KMZ oficial de la C.R.A."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -75.05518,
+              10.94288
+            ],
+            [
+              -75.05517,
+              10.94278
+            ],
+            [
+              -75.04761,
+              10.89708
+            ],
+            [
+              -75.0476,
+              10.89701
+            ],
+            [
+              -75.04759,
+              10.89698
+            ],
+            [
+              -75.04757,
+              10.89695
+            ],
+            [
+              -75.04484,
+              10.89373
+            ],
+            [
+              -75.04482,
+              10.89373
+            ],
+            [
+              -75.0448,
+              10.89372
+            ],
+            [
+              -75.04477,
+              10.89372
+            ],
+            [
+              -75.04476,
+              10.89373
+            ],
+            [
+              -74.89172,
+              11.04086
+            ],
+            [
+              -74.89056,
+              11.04268
+            ],
+            [
+              -74.89004,
+              11.04378
+            ],
+            [
+              -74.88989,
+              11.04429
+            ],
+            [
+              -74.88995,
+              11.04447
+            ],
+            [
+              -74.89023,
+              11.04469
+            ],
+            [
+              -74.89079,
+              11.04497
+            ],
+            [
+              -74.8911,
+              11.04503
+            ],
+            [
+              -74.9108,
+              11.04661
+            ],
+            [
+              -75.02234,
+              10.97192
+            ],
+            [
+              -75.05094,
+              10.94755
+            ],
+            [
+              -75.05222,
+              10.94645
+            ],
+            [
+              -75.05224,
+              10.94642
+            ],
+            [
+              -75.05452,
+              10.94399
+            ],
+            [
+              -75.05464,
+              10.94384
+            ],
+            [
+              -75.05496,
+              10.94339
+            ],
+            [
+              -75.05511,
+              10.94314
+            ],
+            [
+              -75.05518,
+              10.94288
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "manaties",
+        "nombre": "Tubará",
+        "nombre_largo": "Tubará – Juan de Acosta",
+        "municipio": "Tubará y Juan de Acosta",
+        "prioridad": "media",
+        "area_ha": null,
+        "area_invemar_ha": 30,
+        "poligonos_invemar": 17,
+        "especies": [
+          "Mangle rojo (Rhizophora mangle)",
+          "Mangle blanco (Laguncularia racemosa)",
+          "Mangle negro (Avicennia germinans)",
+          "Mangle zaragoza (Conocarpus erectus)"
+        ],
+        "amenazas": [
+          "Relleno urbano",
+          "Tala",
+          "Vertimientos"
+        ],
+        "descripcion": "Sector Tubará – Juan de Acosta. Envolvente aproximada de 17 polígonos de manglar de INVEMAR 2020.",
+        "fuente": "Envolvente de la capa INVEMAR 2020 calculada por el equipo; se reemplaza por el KMZ oficial de la C.R.A."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -75.14227,
+              10.84863
+            ],
+            [
+              -75.14221,
+              10.84828
+            ],
+            [
+              -75.1422,
+              10.84825
+            ],
+            [
+              -75.14219,
+              10.84822
+            ],
+            [
+              -75.14217,
+              10.8482
+            ],
+            [
+              -75.14212,
+              10.84812
+            ],
+            [
+              -75.1421,
+              10.84809
+            ],
+            [
+              -75.14206,
+              10.84804
+            ],
+            [
+              -75.14204,
+              10.84801
+            ],
+            [
+              -75.14202,
+              10.84799
+            ],
+            [
+              -75.14199,
+              10.84798
+            ],
+            [
+              -75.14196,
+              10.84796
+            ],
+            [
+              -75.13958,
+              10.84753
+            ],
+            [
+              -75.13955,
+              10.84753
+            ],
+            [
+              -75.10142,
+              10.86437
+            ],
+            [
+              -75.06627,
+              10.88529
+            ],
+            [
+              -75.06625,
+              10.88531
+            ],
+            [
+              -75.06623,
+              10.88532
+            ],
+            [
+              -75.06621,
+              10.88535
+            ],
+            [
+              -75.06621,
+              10.88538
+            ],
+            [
+              -75.06622,
+              10.88541
+            ],
+            [
+              -75.06624,
+              10.88556
+            ],
+            [
+              -75.06625,
+              10.88559
+            ],
+            [
+              -75.06627,
+              10.88562
+            ],
+            [
+              -75.06902,
+              10.88818
+            ],
+            [
+              -75.0698,
+              10.88875
+            ],
+            [
+              -75.06983,
+              10.88877
+            ],
+            [
+              -75.06986,
+              10.88878
+            ],
+            [
+              -75.06989,
+              10.88878
+            ],
+            [
+              -75.06992,
+              10.88878
+            ],
+            [
+              -75.06995,
+              10.88878
+            ],
+            [
+              -75.13378,
+              10.86132
+            ],
+            [
+              -75.1338,
+              10.86131
+            ],
+            [
+              -75.14195,
+              10.84928
+            ],
+            [
+              -75.14223,
+              10.84879
+            ],
+            [
+              -75.14225,
+              10.84876
+            ],
+            [
+              -75.14226,
+              10.84873
+            ],
+            [
+              -75.14227,
+              10.8487
+            ],
+            [
+              -75.14227,
+              10.84866
+            ],
+            [
+              -75.14227,
+              10.84863
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "totumo",
+        "nombre": "Totumo",
+        "nombre_largo": "Totumo – Astilleros – Galerazamba",
+        "municipio": "Piojó",
+        "prioridad": "alta",
+        "area_ha": null,
+        "area_invemar_ha": 87.6,
+        "poligonos_invemar": 45,
+        "especies": [
+          "Mangle rojo (Rhizophora mangle)",
+          "Mangle blanco (Laguncularia racemosa)",
+          "Mangle negro (Avicennia germinans)",
+          "Mangle zaragoza (Conocarpus erectus)"
+        ],
+        "amenazas": [
+          "Relleno urbano",
+          "Tala",
+          "Vertimientos"
+        ],
+        "descripcion": "Sector Totumo – Astilleros – Galerazamba. Envolvente aproximada de 45 polígonos de manglar de INVEMAR 2020.",
+        "fuente": "Envolvente de la capa INVEMAR 2020 calculada por el equipo; se reemplaza por el KMZ oficial de la C.R.A."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -75.25114,
+              10.71769
+            ],
+            [
+              -75.25114,
+              10.71769
+            ],
+            [
+              -75.2497,
+              10.6933
+            ],
+            [
+              -75.2497,
+              10.69327
+            ],
+            [
+              -75.24969,
+              10.69324
+            ],
+            [
+              -75.24964,
+              10.6931
+            ],
+            [
+              -75.2492,
+              10.69234
+            ],
+            [
+              -75.24824,
+              10.69133
+            ],
+            [
+              -75.24822,
+              10.6913
+            ],
+            [
+              -75.24819,
+              10.69129
+            ],
+            [
+              -75.24807,
+              10.69122
+            ],
+            [
+              -75.24764,
+              10.69102
+            ],
+            [
+              -75.24761,
+              10.69102
+            ],
+            [
+              -75.21811,
+              10.6849
+            ],
+            [
+              -75.17063,
+              10.83166
+            ],
+            [
+              -75.17062,
+              10.83172
+            ],
+            [
+              -75.17061,
+              10.83173
+            ],
+            [
+              -75.1706,
+              10.8318
+            ],
+            [
+              -75.1706,
+              10.83185
+            ],
+            [
+              -75.17061,
+              10.83193
+            ],
+            [
+              -75.17063,
+              10.83196
+            ],
+            [
+              -75.17064,
+              10.83197
+            ],
+            [
+              -75.17248,
+              10.83291
+            ],
+            [
+              -75.17252,
+              10.83292
+            ],
+            [
+              -75.17325,
+              10.83322
+            ],
+            [
+              -75.17329,
+              10.83323
+            ],
+            [
+              -75.17333,
+              10.83324
+            ],
+            [
+              -75.17341,
+              10.83324
+            ],
+            [
+              -75.17349,
+              10.83324
+            ],
+            [
+              -75.17353,
+              10.83323
+            ],
+            [
+              -75.17356,
+              10.83322
+            ],
+            [
+              -75.20502,
+              10.82158
+            ],
+            [
+              -75.20509,
+              10.82155
+            ],
+            [
+              -75.20511,
+              10.82153
+            ],
+            [
+              -75.21803,
+              10.80912
+            ],
+            [
+              -75.21803,
+              10.80911
+            ],
+            [
+              -75.23187,
+              10.79027
+            ],
+            [
+              -75.24578,
+              10.73738
+            ],
+            [
+              -75.25114,
+              10.71769
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

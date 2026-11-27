@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
+import VisorWorkflow from '../components/workflow/VisorWorkflow';
+import { obtenerPoligonos } from '../lib/datos';
+
+const zonas = await obtenerPoligonos();
+---
+<BaseLayout title="Workflow · El manglar del Atlántico" sinPie>
+  <CabeceraCRA activo="workflow" rotulo="WORKFLOW · VISOR DEL MANGLAR DEL ATLÁNTICO" />
+  <main id="contenido">
+  <div class="workflow-franja flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b border-linea bg-fondo-alt px-5 py-3">
+    <h1 class="titular text-xl">EL MANGLAR DEL ATLÁNTICO: EXTENSIÓN PROBABLE Y CAMBIOS CONFIRMADOS</h1>
+    <a href="#visor-cra" class="inline-flex min-h-11 items-center text-sm text-dorado-300 underline underline-offset-4">Ver el visor completo de la C.R.A. ↓</a>
+  </div>
+  <VisorWorkflow client:only="react" zonas={zonas}>
+    <div slot="fallback" class="workflow-fallback flex items-center justify-center bg-fondo text-suave" role="status">Cargando el visor…</div>
+  </VisorWorkflow>
+  <section id="visor-cra" aria-labelledby="titulo-visor-cra" class="border-t border-linea px-4 py-12 sm:px-6">
+    <div class="mx-auto max-w-[1400px]">
+      <p class="rotulo text-dorado-300">Visor completo de la C.R.A. · en vivo</p>
+      <h2 id="titulo-visor-cra" class="titular mt-2 text-3xl sm:text-4xl">El workflow de la Corporación, con sus capas, la vista 3D y los audios</h2>
+      <p class="mt-3 max-w-3xl leading-relaxed text-suave">Es el visor que publica la C.R.A. en manglarcra.netlify.app, cargado aquí tal cual: cuando la Corporación lo actualiza, aquí se ve actualizado. Las cifras de arriba salen de los mismos datos.</p>
+      <div class="mt-6 overflow-hidden rounded-[2rem] border border-linea bg-fondo-alt">
+        <iframe src="https://manglarcra.netlify.app/workflow" title="Visor del workflow del manglar del Atlántico, de la C.R.A." loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen" class="block h-[85vh] min-h-[560px] w-full border-0"></iframe>
+      </div>
+      <a href="https://manglarcra.netlify.app/workflow" target="_blank" rel="noopener" class="mt-4 inline-flex min-h-11 items-center text-sm text-dorado-300 underline underline-offset-4">Abrir el visor de la C.R.A. en pantalla completa ↗</a>
+    </div>
+  </section>
+  </main>
+</BaseLayout>
+<script>
+  const fallback = document.querySelector<HTMLElement>('.workflow-fallback');
+  if (fallback) {
+    const ajustar = () => fallback.style.setProperty('--workflow-offset', `${fallback.getBoundingClientRect().top + window.scrollY}px`);
+    ajustar();
+    const observador = new ResizeObserver(() => {
+      if (!fallback.isConnected) { observador.disconnect(); return; }
+      ajustar();
+    });
+    document.querySelectorAll('header, .workflow-franja').forEach(elemento => observador.observe(elemento));
+    // La isla sustituye el fallback al hidratarse; liberar también el observador.
+    const isla = fallback.closest('astro-island');
+    isla?.addEventListener('astro:hydrate', () => observador.disconnect(), { once: true });
+  }
+</script>
+<style>
+  .workflow-fallback { height: 55vh; min-height: 320px; }
+  @media (min-width: 1024px) {
+    .workflow-fallback { height: calc(100dvh - var(--workflow-offset, 160px)); min-height: 480px; }
+  }
+</style>

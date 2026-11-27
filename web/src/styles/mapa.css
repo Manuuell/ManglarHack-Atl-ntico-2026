@@ -1,0 +1,30 @@
+.leaflet-container { font-family: inherit; background: #0b3a58; }
+.leaflet-popup-content-wrapper { border-radius: 2px; padding: 0; background: #082d45; border: 1px solid var(--c-linea); color: var(--c-texto); box-shadow: var(--c-sombra-alta); }
+.leaflet-popup-content { margin: 12px 14px; line-height: 1.5; }
+.leaflet-popup-tip { background: #082d45; box-shadow: var(--c-sombra-alta); }
+.leaflet-container a.leaflet-popup-close-button { top: 4px; right: 4px; width: 44px; height: 44px; border-radius: 2px; background: transparent; color: var(--c-texto-suave); font-size: 24px; line-height: 32px; }
+.leaflet-container a.leaflet-popup-close-button:hover { background: var(--c-fondo-alt); color: var(--c-texto); }
+.leaflet-popup-content a { color: var(--color-dorado-300); }
+.leaflet-tooltip { background: #082d45; border: 1px solid var(--c-linea); border-radius: 2px; padding: 6px 10px; box-shadow: var(--c-sombra); color: var(--c-texto); font-size: 12px; font-weight: 600; }
+.leaflet-touch .leaflet-control-zoom, .leaflet-control-zoom { border: 1px solid var(--c-linea); border-radius: 2px; overflow: hidden; box-shadow: var(--c-sombra-alta); }
+.leaflet-touch .leaflet-control-zoom a, .leaflet-control-zoom a { width: 44px; height: 44px; line-height: 44px; color: var(--c-texto); background: #082d45; border-color: var(--c-linea); }
+.leaflet-control-zoom a:hover { background: var(--c-fondo-alt); }
+.leaflet-container :focus-visible { outline: 2px solid var(--color-dorado-300); outline-offset: 2px; }
+.leaflet-control-zoom a:focus-visible { outline-offset: -3px; }
+
+.pin-reporte { background: none; border: 0; }
+.pin-reporte__cuerpo { position: absolute; top: 2px; left: 1px; display: grid; place-items: center; width: 32px; height: 32px; box-sizing: border-box; border: 2.5px solid white; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 3px 8px rgb(0 0 0 / .45); transition: transform 160ms ease; z-index: 1; }
+.pin-reporte__icono { display: grid; place-items: center; transform: rotate(45deg); }
+.pin-reporte:hover .pin-reporte__cuerpo, .pin-reporte:focus-visible .pin-reporte__cuerpo { transform: rotate(-45deg) scale(1.1); }
+.pin-reporte--pulso::after { content: ''; position: absolute; top: 2px; left: 1px; width: 32px; height: 32px; box-sizing: border-box; border: 2px solid var(--color-alta); border-radius: 50%; pointer-events: none; animation: pulso-reporte 2s ease-out infinite; }
+@keyframes pulso-reporte { 0% { transform: scale(.8); opacity: .7; } 85%, 100% { transform: scale(2); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .pin-reporte--pulso::after { animation: none; display: none; }
+  .pin-reporte__cuerpo { transition: none; }
+}
+/* Identidad C.R.A.: teselas integradas al azul oscuro y atribución legible. */
+.leaflet-container .leaflet-tile-pane { filter: brightness(.88) saturate(.85); }
+.leaflet-tooltip-top::before { border-top-color: #082d45; }
+.leaflet-tooltip-bottom::before { border-bottom-color: #082d45; }
+.leaflet-container .leaflet-control-attribution { background: rgb(8 45 69 / .85); color: var(--c-texto-suave); }
+.leaflet-container .leaflet-control-attribution a { color: var(--color-dorado-300); }

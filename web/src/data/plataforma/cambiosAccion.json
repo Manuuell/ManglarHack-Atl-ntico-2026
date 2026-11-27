@@ -1,0 +1,119 @@
+[
+  {
+    "id": "cambio-a-1",
+    "accion_id": "accion-a",
+    "estado": "propuesta",
+    "usuario_id": "pescadores-demo",
+    "rol": "vigia",
+    "nota": "Datos de ejemplo. Propuesta registrada por el actor.",
+    "fecha": "2026-04-15T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-a-2",
+    "accion_id": "accion-a",
+    "estado": "en_revision",
+    "usuario_id": "moderador-cra-demo",
+    "rol": "moderador",
+    "nota": "Datos de ejemplo. Revisión iniciada.",
+    "fecha": "2026-04-16T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-a-3",
+    "accion_id": "accion-a",
+    "estado": "aprobada",
+    "usuario_id": "moderador-cra-demo",
+    "rol": "moderador",
+    "nota": "Datos de ejemplo. Requerimientos revisados.",
+    "fecha": "2026-04-17T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-a-4",
+    "accion_id": "accion-a",
+    "estado": "en_ejecucion",
+    "usuario_id": "moderador-cra-demo",
+    "rol": "moderador",
+    "nota": "Datos de ejemplo. Inicio de ejecución registrado.",
+    "fecha": "2026-04-18T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-b-1",
+    "accion_id": "accion-b",
+    "estado": "propuesta",
+    "usuario_id": "fundacion-demo",
+    "rol": "vigia",
+    "nota": "Datos de ejemplo. Propuesta registrada por el actor.",
+    "fecha": "2026-11-10T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-b-2",
+    "accion_id": "accion-b",
+    "estado": "en_revision",
+    "usuario_id": "moderador-cra-demo",
+    "rol": "moderador",
+    "nota": "Datos de ejemplo. Revisión iniciada.",
+    "fecha": "2026-11-11T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-b-3",
+    "accion_id": "accion-b",
+    "estado": "aprobada",
+    "usuario_id": "moderador-cra-demo",
+    "rol": "moderador",
+    "nota": "Datos de ejemplo. Requerimientos revisados.",
+    "fecha": "2026-11-12T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-c-1",
+    "accion_id": "accion-c",
+    "estado": "propuesta",
+    "usuario_id": "pescadores-demo",
+    "rol": "vigia",
+    "nota": "Datos de ejemplo. Propuesta registrada por el actor.",
+    "fecha": "2026-11-10T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-c-2",
+    "accion_id": "accion-c",
+    "estado": "en_revision",
+    "usuario_id": "moderador-cra-demo",
+    "rol": "moderador",
+    "nota": "Datos de ejemplo. Revisión iniciada.",
+    "fecha": "2026-11-11T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-d-1",
+    "accion_id": "accion-d",
+    "estado": "propuesta",
+    "usuario_id": "universidad-demo",
+    "rol": "vigia",
+    "nota": "Datos de ejemplo. Propuesta registrada por el actor.",
+    "fecha": "2026-11-10T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-d-2",
+    "accion_id": "accion-d",
+    "estado": "en_revision",
+    "usuario_id": "moderador-cra-demo",
+    "rol": "moderador",
+    "nota": "Datos de ejemplo. Revisión iniciada.",
+    "fecha": "2026-11-11T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-d-3",
+    "accion_id": "accion-d",
+    "estado": "con_observaciones",
+    "usuario_id": "moderador-cra-demo",
+    "rol": "moderador",
+    "nota": "Datos de ejemplo. Adjuntar el perfil del caño y el manejo de sedimentos para evaluar efectos sobre el intercambio de agua antes de autorizar la reapertura.",
+    "fecha": "2026-11-12T09:00:00-05:00"
+  },
+  {
+    "id": "cambio-e-1",
+    "accion_id": "accion-e",
+    "estado": "propuesta",
+    "usuario_id": "colegio-demo",
+    "rol": "colegio",
+    "nota": "Datos de ejemplo. Propuesta registrada por el actor.",
+    "fecha": "2026-11-10T09:00:00-05:00"
+  }
+]

@@ -1,0 +1,43 @@
+---
+// Barra de navegación flotante (píldora de vidrio) con el logo de la C.R.A., los menús
+// desplegables «Visores» y «Plataforma» y el botón de perfil. En el teléfono, un menú
+// con ícono abre una hoja con todos los enlaces.
+import PanelCuenta from '../cuenta/PanelCuenta';
+import MenuDesplegable from './MenuDesplegable.astro';
+import MenuMovil from './MenuMovil.astro';
+import { PLATAFORMA, VISORES } from '../../lib/navegacion';
+interface Props {
+  rotulo?: string;
+  activo?: 'portada' | 'workflow' | 'plataforma' | 'visores';
+  /** id de la página actual dentro de su menú (por ejemplo, 'riesgo' o 'jornadas'). */
+  pagina?: string;
+  fija?: boolean;
+}
+const { rotulo, activo, pagina, fija = true } = Astro.props;
+// /workflow es uno de los visores.
+const visorActual = activo === 'workflow' ? 'workflow' : activo === 'visores' ? pagina : undefined;
+const plataformaActual = activo === 'plataforma' ? pagina : undefined;
+const portada = { id: 'portada', href: '/', texto: 'Portada' };
+---
+<header class:list={['z-40 px-3 pt-3 sm:px-5', fija ? 'sticky top-0' : 'relative']}>
+ <div class="vidrio mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-full py-2 pr-2 pl-4 shadow-[var(--c-sombra)] sm:pl-5">
+  <a href="/" class="inline-flex min-h-11 min-w-0 items-center gap-3">
+   <img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" class="h-8 w-auto sm:h-9" />
+   {rotulo && <span class="hidden truncate border-l border-linea pl-3 text-sm font-semibold text-suave lg:inline">{rotulo}</span>}
+  </a>
+  <div class="flex items-center gap-2">
+ <nav aria-label="Navegación principal" class="hidden items-center gap-1 md:flex">
+   <a href="/" aria-current={activo === 'portada' ? 'page' : undefined}
+      class:list={['inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors',
+       activo === 'portada' ? 'bg-white/12 text-texto' : 'text-suave hover:bg-white/8 hover:text-texto']}>Portada</a>
+   <MenuDesplegable texto="Visores" items={VISORES} activo={visorActual} />
+   <MenuDesplegable texto="Plataforma" items={PLATAFORMA} activo={plataformaActual} />
+   <a href="/#reportar" data-cuenta-reportar class="ml-1 inline-flex min-h-11 items-center rounded-full bg-dorado-500 px-5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">Reportar con Zanky</a>
+  </nav>
+  <PanelCuenta client:load contexto="plataforma" />
+  <MenuMovil class="md:hidden" activo={visorActual ?? plataformaActual ?? (activo === 'portada' ? 'portada' : undefined)}
+   grupos={[{ items: [portada] }, { titulo: 'Visores', items: VISORES }, { titulo: 'Plataforma', items: PLATAFORMA }]}
+   accion={{ href: '/#reportar', texto: 'Reportar con Zanky', reportar: true }} />
+ </div>
+ </div>
+</header>

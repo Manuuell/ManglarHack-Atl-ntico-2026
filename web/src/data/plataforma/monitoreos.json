@@ -1,0 +1,60 @@
+[
+  {
+    "id": "monitoreo-1",
+    "accion_id": "accion-a",
+    "fecha": "2026-08-15",
+    "vivas_pct": 84,
+    "altura_cm": 38,
+    "fotos": [
+      {
+        "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+1",
+        "lat": 11.03177,
+        "lon": -74.85785,
+        "tomada_en": "2026-08-15T08:00:00-05:00"
+      },
+      {
+        "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+2",
+        "lat": 11.03217,
+        "lon": -74.85705,
+        "tomada_en": "2026-08-15T08:00:00-05:00"
+      },
+      {
+        "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+3",
+        "lat": 11.03257,
+        "lon": -74.85785,
+        "tomada_en": "2026-08-15T08:00:00-05:00"
+      }
+    ],
+    "observaciones": "Datos de ejemplo. 12 fotos declaradas; se incluyen 3 imágenes de muestra, no evidencia de campo.",
+    "autor_id": "pescadores-demo"
+  },
+  {
+    "id": "monitoreo-2",
+    "accion_id": "accion-a",
+    "fecha": "2026-11-15",
+    "vivas_pct": 79,
+    "altura_cm": 46,
+    "fotos": [
+      {
+        "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+1",
+        "lat": 11.03177,
+        "lon": -74.85785,
+        "tomada_en": "2026-11-15T08:00:00-05:00"
+      },
+      {
+        "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+2",
+        "lat": 11.03217,
+        "lon": -74.85705,
+        "tomada_en": "2026-11-15T08:00:00-05:00"
+      },
+      {
+        "url": "https://placehold.co/800x600/0b3a58/ffffff?text=Foto+de+ejemplo+3",
+        "lat": 11.03257,
+        "lon": -74.85785,
+        "tomada_en": "2026-11-15T08:00:00-05:00"
+      }
+    ],
+    "observaciones": "Datos de ejemplo. 3 imágenes de muestra, no evidencia de campo. Se observa menor supervivencia y mayor altura media en este escenario simulado.",
+    "autor_id": "pescadores-demo"
+  }
+]

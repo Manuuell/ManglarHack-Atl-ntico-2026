@@ -1,0 +1,36 @@
+---
+import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
+import CarteleraJornadas from '../../components/jornadas/CarteleraJornadas';
+import { AVISO_DATOS_PLATAFORMA, obtenerAcciones, obtenerJornadas } from '../../lib/plataforma/datos';
+
+const [jornadas, acciones] = await Promise.all([obtenerJornadas(), obtenerAcciones()]);
+---
+
+<PlataformaLayout title="Jornadas comunitarias · Plataforma abierta del manglar" activa="jornadas">
+  <CarteleraJornadas client:load jornadas={jornadas} acciones={acciones} aviso={AVISO_DATOS_PLATAFORMA} />
+</PlataformaLayout>
+
+<style is:global>
+  /* Cartel de la jornada para imprimir: el cartel va directo en <body>; al imprimir se oculta todo lo
+     demás (sin dejar páginas en blanco) y queda una sola hoja A4, legible en blanco y negro. */
+  @media print {
+    @page { size: A4 portrait; margin: 14mm; }
+    html, body { background: #fff !important; }
+    body > *:not(#cartel-jornada) { display: none !important; }
+    #cartel-jornada {
+      display: block !important; color: #05243a; text-align: center;
+      font-family: 'Figtree', 'Inter', sans-serif;
+    }
+    .cartel-zanky { display: block; width: 34mm; height: 34mm; object-fit: contain; margin: 0 auto 3mm; }
+    .cartel-rotulo { font-size: 12pt; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #005f96; margin: 0; }
+    .cartel-titulo { font-size: 32pt; font-weight: 800; line-height: 1.05; margin: 4mm 0 5mm; }
+    .cartel-dato { font-size: 14pt; margin: 1.5mm 0; }
+    .cartel-qrs { display: flex; justify-content: center; gap: 12mm; margin: 10mm 0 8mm; }
+    .cartel-qrs figure { margin: 0; width: 80mm; break-inside: avoid; }
+    .cartel-qr { width: 80mm; height: 80mm; }
+    .cartel-qr svg { width: 100%; height: 100%; }
+    .cartel-qrs figcaption { font-size: 11pt; line-height: 1.35; margin-top: 3mm; }
+    .cartel-qrs figcaption b { display: block; font-size: 16pt; font-weight: 800; margin-bottom: 1mm; }
+    .cartel-pie { font-size: 11pt; margin: 4mm 0 0; }
+  }
+</style>
