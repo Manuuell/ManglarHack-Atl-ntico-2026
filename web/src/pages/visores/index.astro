@@ -1,0 +1,20 @@
+---
+import VisorLayout from '../../layouts/VisorLayout.astro';
+import { VISORES } from '../../lib/navegacion';
+---
+<VisorLayout titulo="Los visores del manglar" rotulo="Visores" resumen="Cada mapa en su propia página: lo que reporta la comunidad, los riesgos que registra la C.R.A., la calidad del agua de las ciénagas y el estado del manglar.">
+  <ul class="divide-y divide-linea border-y border-linea">
+    {VISORES.map((v, i) => (
+      <li>
+        <a href={v.href} class="group grid min-h-11 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-5 py-6 transition-colors hover:bg-white/5 sm:px-4">
+          <span class="titular text-3xl text-dorado-300 tabular-nums" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+          <span class="min-w-0">
+            <span class="block text-xl font-bold text-texto">{v.texto}</span>
+            {v.detalle && <span class="mt-1 block text-suave">{v.detalle}</span>}
+          </span>
+          <span class="text-2xl text-suave transition-transform group-hover:translate-x-1 motion-reduce:transition-none" aria-hidden="true">→</span>
+        </a>
+      </li>
+    ))}
+  </ul>
+</VisorLayout>

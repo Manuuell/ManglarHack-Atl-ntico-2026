@@ -1,0 +1,17 @@
+---
+import VisorLayout from '../../layouts/VisorLayout.astro';
+import MapaMonitoreo from '../../components/mapa/MapaMonitoreo';
+import { obtenerPoligonos, obtenerReportes } from '../../lib/datos';
+import { aReportePublico } from '../../lib/privacidad';
+
+// Lo público pasa por aReportePublico: sin foto, sin quién reporta y con la ubicación difuminada.
+const [reportes, sectores] = await Promise.all([obtenerReportes(), obtenerPoligonos()]);
+const publicos = reportes.map(aReportePublico);
+---
+<VisorLayout pagina="reportes" titulo="Reportes de la comunidad" resumen="Lo que reporta la gente desde la web, la app y WhatsApp, con filtros por tipo y prioridad, las capas oficiales de la C.R.A. para comparar y los datos abiertos en CSV, GeoJSON y KML. Sin fotos ni nombres, y con la ubicación difuminada.">
+  <div class="relative isolate">
+    <MapaMonitoreo client:only="react" reportes={publicos} poligonos={sectores}>
+      <div slot="fallback" class="grid h-[760px] place-items-center rounded-sm bg-white/5 text-suave ring-1 ring-linea" role="status">Cargando el mapa de reportes…</div>
+    </MapaMonitoreo>
+  </div>
+</VisorLayout>

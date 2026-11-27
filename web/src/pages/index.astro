@@ -12,6 +12,16 @@ import AvisosEnVivo from '../components/comunidad/AvisosEnVivo';
 import PanelCuenta from '../components/cuenta/PanelCuenta';
 import MonitoreoComunitario from '../components/comunidad/MonitoreoComunitario.astro';
 import GuardianesManglar from '../components/comunidad/GuardianesManglar.astro';
+import MenuDesplegable from '../components/layout/MenuDesplegable.astro';
+import MenuMovil from '../components/layout/MenuMovil.astro';
+import { PLATAFORMA, VISORES } from '../lib/navegacion';
+
+const SECCIONES_PORTADA = [
+  { id: 'mapa', href: '#mapa', texto: 'Mapa en vivo' },
+  { id: 'reportar', href: '#reportar', texto: 'Reportar' },
+  { id: 'jornadas', href: '#jornadas', texto: 'Jornadas' },
+  { id: 'monitoreo', href: '#monitoreo', texto: 'Monitoreo' },
+];
 
 // Lo público pasa por aReportePublico: sin foto, sin quién reporta y con la ubicación difuminada.
 const [reportes, sectores, jornadas, acciones, monitoreos, colegios] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerJornadas(), obtenerAcciones(), obtenerMonitoreos(), obtenerColegios()]);
@@ -23,11 +33,11 @@ const publicos = reportes.map(aReportePublico);
       <img class="logo-cra" src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" />
     </a>
     <nav class="cab-nav" aria-label="Secciones">
-      <a href="#mapa">Mapa en vivo</a>
-      <a href="#reportar">Reportar</a>
-      <a href="#jornadas">Jornadas</a>
-      <a href="#monitoreo">Monitoreo</a>
+      {SECCIONES_PORTADA.map((s) => <a href={s.href}>{s.texto}</a>)}
+      <MenuDesplegable texto="Visores" items={VISORES} variante="portada" />
+      <MenuDesplegable texto="Plataforma" items={PLATAFORMA} variante="portada" />
     </nav>
+    <MenuMovil variante="portada" grupos={[{ titulo: 'En esta página', items: SECCIONES_PORTADA }, { titulo: 'Visores', items: VISORES }, { titulo: 'Plataforma', items: PLATAFORMA }]} />
     <a class="boton boton-tinta cab-entrar" href="#reportar" data-cuenta-reportar>Reportar</a>
     <PanelCuenta client:load contexto="portada" />
   </header>

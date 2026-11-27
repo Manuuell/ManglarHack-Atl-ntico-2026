@@ -1,0 +1,42 @@
+---
+// Menú del teléfono: un botón con ícono que abre una hoja fija bajo la cabecera,
+// con los enlaces agrupados (secciones, visores, plataforma) y una acción al final.
+import type { EnlaceNav } from '../../lib/navegacion';
+import '../../styles/menu-desplegable.css';
+
+interface Grupo { titulo?: string; items: EnlaceNav[] }
+interface Props {
+  grupos: Grupo[];
+  variante?: 'cra' | 'portada';
+  /** id del enlace de la página actual. */
+  activo?: string;
+  /** Botón dorado al final de la hoja. */
+  accion?: { href: string; texto: string; reportar?: boolean };
+  class?: string;
+}
+const { grupos, variante = 'cra', activo, accion, class: clase } = Astro.props;
+---
+<details class:list={['menu-movil', `menu-movil--${variante}`, clase]} data-menu-movil>
+  <summary aria-label="Abrir el menú">
+    <svg class="menu-movil-icono menu-movil-abrir" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+    <svg class="menu-movil-icono menu-movil-cerrar" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+  </summary>
+  <nav class="menu-movil-hoja" aria-label="Menú">
+    {grupos.map((grupo) => (
+      <>
+        {grupo.titulo && <h3>{grupo.titulo}</h3>}
+        <ul>
+          {grupo.items.map((item) => (
+            <li><a href={item.href} aria-current={item.id === activo ? 'page' : undefined}>{item.texto}</a></li>
+          ))}
+        </ul>
+      </>
+    ))}
+    {accion && <a class="menu-movil-accion" href={accion.href} data-cuenta-reportar={accion.reportar ? '' : undefined}>{accion.texto}</a>}
+  </nav>
+</details>
+
+<script>
+  import { montarMenus } from '../../scripts/menus';
+  montarMenus();
+</script>

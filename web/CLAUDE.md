@@ -39,6 +39,10 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 |---|---|
 | `/` | Portada comunitaria en vivo (`src/styles/portada.css` + `src/scripts/portada.ts` + `src/components/comunidad/`): cabecera que pasa a cápsula al bajar; hero con el mapa satelital y la lista «Ahora en el manglar» (reportes de la comunidad y jornadas); «Reportar un problema» (tipo, ubicación en el mapa con la regla del área de reporte, foto, detalles, consentimiento); próximas jornadas con inscritos; avisos en tiempo real (otras pestañas incluidas, vía `lib/comunidad/reportesLocales.ts`); **monitoreo comunitario** (`#monitoreo`: mapa público con filtros y datos abiertos CSV/GeoJSON/KML), **seguimiento de siembras** (`#siembras`: plántulas vivas, altura y fotos ubicadas) y **guardianes del manglar** (`#guardianes`: ranking de colegios y pasaporte), en `components/comunidad/MonitoreoComunitario.astro` y `GuardianesManglar.astro` con `styles/monitoreo-portada.css`. Sin texto del reto: solo lo que hace la comunidad |
 | `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
+| `/visores` | Índice de los visores (cada mapa en su propia página, `layouts/VisorLayout.astro` con pestañas entre visores) |
+| `/visores/reportes` | Reportes de la comunidad a pantalla completa (`MapaMonitoreo`, el mismo de `#monitoreo`) |
+| `/visores/riesgo` | Puntos críticos y focos de calor de la C.R.A. cerca del manglar: mapa + lista ordenada por distancia (`components/visores/VisorCapasCRA.tsx`, `modo="riesgo"`) |
+| `/visores/agua` | Calidad del agua (ICA) de las ciénagas con manglar: mapa + fichas por ciénaga (`VisorCapasCRA`, `modo="agua"`) |
 | `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
 | `/plataforma/registro` | Registro de actor |
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
@@ -50,6 +54,12 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
 
 Todas las páginas de la plataforma usan `src/layouts/PlataformaLayout.astro` (cabecera con logo C.R.A., título y barra de pestañas).
+
+**Navegación:** los enlaces viven en `src/lib/navegacion.ts` (`VISORES`, `PLATAFORMA`).
+- `CabeceraCRA` lleva «Portada» y los desplegables «Visores» y «Plataforma». La portada (`.cab`) agrega «Visores» y «Plataforma» a sus secciones.
+- Los desplegables son `components/layout/MenuDesplegable.astro`: botón con `aria-expanded` y lista de enlaces; se cierran con Escape o con un clic fuera.
+- En el teléfono hay un botón con ícono que abre la hoja de `MenuMovil.astro`. Su comportamiento está en `scripts/menus.ts` y sus estilos en `styles/menu-desplegable.css`.
+- Con un menú abierto, la cabecera sube a z-index 2100, por encima de la burbuja (1900) y de los avisos (2000).
 
 ## Arquitectura
 

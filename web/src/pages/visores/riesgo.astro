@@ -1,0 +1,9 @@
+---
+import VisorLayout from '../../layouts/VisorLayout.astro';
+import VisorCapasCRA from '../../components/visores/VisorCapasCRA';
+---
+<VisorLayout pagina="riesgo" titulo="Puntos críticos y focos de calor" resumen="Los riesgos que registra la C.R.A. a 2 km o menos del manglar: inundación, erosión costera, remoción en masa, incendios y socavamiento, más los focos de calor que detectan los satélites. Se leen en vivo de la API de la Corporación.">
+  <VisorCapasCRA client:only="react" modo="riesgo">
+    <div slot="fallback" class="grid h-[70vh] place-items-center rounded-sm bg-white/5 text-suave ring-1 ring-linea" role="status">Cargando el visor…</div>
+  </VisorCapasCRA>
+</VisorLayout>

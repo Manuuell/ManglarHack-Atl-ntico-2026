@@ -1,0 +1,9 @@
+---
+import VisorLayout from '../../layouts/VisorLayout.astro';
+import VisorCapasCRA from '../../components/visores/VisorCapasCRA';
+---
+<VisorLayout pagina="agua" titulo="Calidad del agua" resumen="El índice de calidad del agua (ICA) que mide la C.R.A. en Mallorquín, El Totumo, Los Manatíes, Balboa y los demás cuerpos de agua cerca del manglar, con oxígeno, pH, temperatura y coliformes de cada punto. Se lee en vivo de la API de la Corporación.">
+  <VisorCapasCRA client:only="react" modo="agua">
+    <div slot="fallback" class="grid h-[70vh] place-items-center rounded-sm bg-white/5 text-suave ring-1 ring-linea" role="status">Cargando el visor…</div>
+  </VisorCapasCRA>
+</VisorLayout>

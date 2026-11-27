@@ -237,6 +237,8 @@ export const ESCALA_ICA: CategoriaICA[] = [
   { etiqueta: 'Mala', color: '#f97316', desde: 0.26 },
   { etiqueta: 'Muy mala', color: '#dc2626', desde: 0 },
 ];
+/** Color de un punto sin medición. */
+export const COLOR_SIN_DATO = '#94a3b8';
 export function categoriaICA(ica: number | null): CategoriaICA | null {
   return ica === null ? null : ESCALA_ICA.find((c) => ica >= c.desde) ?? ESCALA_ICA[ESCALA_ICA.length - 1];
 }

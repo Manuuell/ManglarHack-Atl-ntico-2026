@@ -1,26 +1,19 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
+import { PLATAFORMA } from '../lib/navegacion';
 interface Props {
  title: string;
  activa: 'inicio' | 'registro' | 'proponer' | 'seguimiento' | 'jornadas' | 'monitoreo' | 'proyectos' | 'panel';
  ancho?: 'normal' | 'completo';
 }
 const { title, activa, ancho = 'normal' } = Astro.props;
-const secciones = [
- { id: 'inicio', href: '/plataforma', texto: 'Inicio' },
- { id: 'registro', href: '/plataforma/registro', texto: 'Registro de actor' },
- { id: 'proponer', href: '/plataforma/proponer', texto: 'Proponer acción' },
- { id: 'seguimiento', href: '/plataforma/seguimiento', texto: 'Seguimiento' },
- { id: 'jornadas', href: '/plataforma/jornadas', texto: 'Jornadas comunitarias' },
- { id: 'monitoreo', href: '/#monitoreo', texto: 'Monitoreo comunitario' },
- { id: 'proyectos', href: '/plataforma/proyectos', texto: 'Proyectos' },
- { id: 'panel', href: '/plataforma/panel', texto: 'Panel de la Corporación' },
-];
+// La misma lista que el menú «Plataforma» de la cabecera (lib/navegacion.ts).
+const secciones = PLATAFORMA;
 ---
 <BaseLayout title={title}>
  <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 rounded-full bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
- <CabeceraCRA activo="plataforma" />
+ <CabeceraCRA activo="plataforma" pagina={activa} />
  <header class="relative isolate overflow-hidden">
   <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
    <div class="absolute -top-40 right-[-10%] h-[28rem] w-[28rem] rounded-full bg-cra-600/30 blur-[110px]"></div>

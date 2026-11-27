@@ -3,8 +3,9 @@
 // de las ciénagas. Sirven para dar contexto a los reportes de la comunidad: un reporte
 // cerca de un punto crítico o de un foco de calor oficial pesa más.
 //
-// Se usa desde MapaMonitoreo: useCapasCRA() da el estado; InterruptoresCRA va en el
-// panel de filtros, CapasCRAEnMapa dentro del MapContainer y LeyendaCRA en la leyenda.
+// Se usa desde MapaMonitoreo y desde los visores (/visores/riesgo y /visores/agua):
+// useCapasCRA() da el estado; InterruptoresCRA va en el panel de filtros, CapasCRAEnMapa
+// dentro del MapContainer y LeyendaCRA en la leyenda. `claves` elige qué capas se ofrecen.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import L from 'leaflet';
@@ -14,7 +15,7 @@ import { Droplet, Flame, TriangleAlert, type LucideIcon } from 'lucide-react';
 import type { CapaManglarCRA } from '../../types/manglar';
 import { evaluarUbicacion } from '../../lib/areaReporte';
 import {
-  CIENAGAS_CON_MANGLAR, ESCALA_ICA, PAGINA_CALIDAD_AGUA, VISOR_GEOVISOR_CRA, VISOR_PUNTOS_CRITICOS, categoriaICA, formatoFechaCRA, obtenerCapasCRA,
+  CIENAGAS_CON_MANGLAR, COLOR_SIN_DATO, ESCALA_ICA, PAGINA_CALIDAD_AGUA, VISOR_GEOVISOR_CRA, VISOR_PUNTOS_CRITICOS, categoriaICA, formatoFechaCRA, obtenerCapasCRA,
   type CalidadAguaCRA, type CapasCRA, type FocoIncendioCRA, type PuntoCriticoCRA,
 } from '../../lib/craApi';
 import '../../styles/capas-cra.css';
@@ -25,7 +26,11 @@ export type ClaveCapaCRA = 'puntos' | 'incendios' | 'agua';
  *  el resto (por ejemplo, las inundaciones del casco urbano) no es contexto del manglar. */
 export const RADIO_CONTEXTO_M = 2000;
 
-type ConDistancia<T> = T & { distancia: string | null };
+export type ConDistancia<T> = T & { distancia: string | null; distancia_m: number | null };
+export const TODAS_LAS_CAPAS: ClaveCapaCRA[] = ['puntos', 'incendios', 'agua'];
+/** Para abrir la ventana de un marcador desde fuera del mapa (las listas de los visores). */
+export type RegistrarMarcador = (clave: string, marcador: L.Marker | null) => void;
+export const claveMarcador = (capa: ClaveCapaCRA, id: number) => `${capa}-${id}`;
 export interface CapasCercanas {
   puntos: ConDistancia<PuntoCriticoCRA>[];
   incendios: ConDistancia<FocoIncendioCRA>[];
@@ -44,12 +49,13 @@ export interface EstadoCapasCRA {
 }
 
 /** @param manglar cobertura de manglar de la C.R.A. (null mientras carga)
- *  @param sinManglar true si la cobertura no se pudo cargar: se muestra todo sin filtrar */
-export function useCapasCRA(manglar: CapaManglarCRA | null, sinManglar = false): EstadoCapasCRA {
+ *  @param sinManglar true si la cobertura no se pudo cargar: se muestra todo sin filtrar
+ *  @param iniciales qué capas arrancan encendidas (por omisión, todas) */
+export function useCapasCRA(manglar: CapaManglarCRA | null, sinManglar = false, iniciales: Partial<Record<ClaveCapaCRA, boolean>> = {}): EstadoCapasCRA {
   const [crudas, setCrudas] = useState<CapasCRA | null>(null);
   const [error, setError] = useState(false);
   const [intento, setIntento] = useState(0);
-  const [visibles, setVisibles] = useState<Record<ClaveCapaCRA, boolean>>({ puntos: true, incendios: true, agua: true });
+  const [visibles, setVisibles] = useState<Record<ClaveCapaCRA, boolean>>(() => ({ puntos: true, incendios: true, agua: true, ...iniciales }));
   useEffect(() => {
     let activo = true;
     setError(false);
@@ -60,12 +66,12 @@ export function useCapasCRA(manglar: CapaManglarCRA | null, sinManglar = false):
     if (!crudas || (!manglar && !sinManglar)) return null;
     const cerca = <T extends { lat: number; lon: number }>(lista: T[], siempre: (item: T) => boolean = () => false): ConDistancia<T>[] =>
       lista.flatMap((item) => {
-        if (!manglar) return [{ ...item, distancia: null }];
+        if (!manglar) return [{ ...item, distancia: null, distancia_m: null }];
         const { dentro_poligono, distancia_m } = evaluarUbicacion(item.lat, item.lon, manglar);
-        if (dentro_poligono) return [{ ...item, distancia: 'Dentro del manglar' }];
+        if (dentro_poligono) return [{ ...item, distancia: 'Dentro del manglar', distancia_m: 0 }];
         const cercano = distancia_m <= RADIO_CONTEXTO_M;
         if (!cercano && !siempre(item)) return [];
-        return [{ ...item, distancia: cercano ? `A ${distancia_m.toLocaleString('es-CO')} m del manglar` : null }];
+        return [{ ...item, distancia: cercano ? `A ${distancia_m.toLocaleString('es-CO')} m del manglar` : null, distancia_m: Number.isFinite(distancia_m) ? distancia_m : null }];
       });
     return {
       puntos: cerca(crudas.puntos),
@@ -83,7 +89,7 @@ export function useCapasCRA(manglar: CapaManglarCRA | null, sinManglar = false):
 // ---- Íconos ----
 const TINTA_OSCURA = 'var(--color-cra-950)';
 /** Ícono blanco sobre colores oscuros y azul profundo sobre colores claros (amarillos, verdes). */
-function tinta(hex: string): string {
+export function tinta(hex: string): string {
   const n = Number.parseInt(hex.replace('#', '').slice(0, 6), 16);
   if (Number.isNaN(n)) return '#fff';
   const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => { const s = c / 255; return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4; });
@@ -106,7 +112,7 @@ function iconoCRA(forma: 'rombo' | 'circulo', color: string, Icono: LucideIcon):
   return icono;
 }
 
-const COLOR_FOCO = '#f97316';
+export const COLOR_FOCO = '#f97316';
 const CONFIANZA: Record<string, string> = { very_high: 'muy alta', high: 'alta', nominal: 'nominal', medium: 'media', low: 'baja' };
 
 function Fuente({ texto, enlace, etiqueta }: { texto: string; enlace: string; etiqueta: string }) {
@@ -116,11 +122,11 @@ function Fuente({ texto, enlace, etiqueta }: { texto: string; enlace: string; et
 const filaDatos = 'grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 text-xs [&_dt]:text-suave [&_dd]:min-w-0 [&_dd]:break-words';
 
 // ---- Capas dentro del mapa ----
-function PuntoCritico({ punto }: { punto: ConDistancia<PuntoCriticoCRA> }) {
+function PuntoCritico({ punto, registrar }: { punto: ConDistancia<PuntoCriticoCRA>; registrar?: RegistrarMarcador }) {
   const { distancia } = punto;
   const titulo = `${punto.tipo.nombre} · punto crítico de la C.R.A.`;
   return (
-    <Marker position={[punto.lat, punto.lon]} icon={iconoCRA('rombo', punto.tipo.color, TriangleAlert)} zIndexOffset={-200} title={titulo} alt={titulo}
+    <Marker ref={(m) => registrar?.(claveMarcador('puntos', punto.id), m)} position={[punto.lat, punto.lon]} icon={iconoCRA('rombo', punto.tipo.color, TriangleAlert)} zIndexOffset={-200} title={titulo} alt={titulo}
       eventHandlers={{ add: (e) => (e.target as L.Marker).getElement()?.setAttribute('aria-label', titulo) }}>
       <Tooltip>{punto.tipo.nombre} · C.R.A.</Tooltip>
       <Popup minWidth={260} maxWidth={290}>
@@ -141,11 +147,11 @@ function PuntoCritico({ punto }: { punto: ConDistancia<PuntoCriticoCRA> }) {
   );
 }
 
-function FocoIncendio({ foco }: { foco: ConDistancia<FocoIncendioCRA> }) {
+function FocoIncendio({ foco, registrar }: { foco: ConDistancia<FocoIncendioCRA>; registrar?: RegistrarMarcador }) {
   const { distancia } = foco;
   const titulo = `Focos de calor por satélite · ${formatoFechaCRA(foco.hasta)}`;
   return (
-    <Marker position={[foco.lat, foco.lon]} icon={iconoCRA('circulo', COLOR_FOCO, Flame)} zIndexOffset={-100} title={titulo} alt={titulo}
+    <Marker ref={(m) => registrar?.(claveMarcador('incendios', foco.id), m)} position={[foco.lat, foco.lon]} icon={iconoCRA('circulo', COLOR_FOCO, Flame)} zIndexOffset={-100} title={titulo} alt={titulo}
       eventHandlers={{ add: (e) => (e.target as L.Marker).getElement()?.setAttribute('aria-label', titulo) }}>
       <Tooltip>Focos de calor · {formatoFechaCRA(foco.hasta, false)}</Tooltip>
       <Popup minWidth={260} maxWidth={290}>
@@ -168,13 +174,13 @@ function FocoIncendio({ foco }: { foco: ConDistancia<FocoIncendioCRA> }) {
   );
 }
 
-function PuntoAgua({ punto }: { punto: CalidadAguaCRA }) {
+function PuntoAgua({ punto, registrar }: { punto: CalidadAguaCRA; registrar?: RegistrarMarcador }) {
   const categoria = categoriaICA(punto.ica);
-  const color = categoria?.color ?? '#94a3b8';
+  const color = categoria?.color ?? COLOR_SIN_DATO;
   const titulo = `Calidad del agua · ${punto.cuerpo} (${punto.codigo})`;
   const cifra = (v: number | null, unidad = '') => (v === null ? '—' : `${v.toLocaleString('es-CO', { maximumFractionDigits: 2 })}${unidad}`);
   return (
-    <Marker position={[punto.lat, punto.lon]} icon={iconoCRA('circulo', color, Droplet)} zIndexOffset={-300} title={titulo} alt={titulo}
+    <Marker ref={(m) => registrar?.(claveMarcador('agua', punto.id), m)} position={[punto.lat, punto.lon]} icon={iconoCRA('circulo', color, Droplet)} zIndexOffset={-300} title={titulo} alt={titulo}
       eventHandlers={{ add: (e) => (e.target as L.Marker).getElement()?.setAttribute('aria-label', titulo) }}>
       <Tooltip>{punto.cuerpo} · ICA {cifra(punto.ica)}</Tooltip>
       <Popup minWidth={260} maxWidth={290}>
@@ -201,7 +207,7 @@ function PuntoAgua({ punto }: { punto: CalidadAguaCRA }) {
   );
 }
 
-export function CapasCRAEnMapa({ capas }: { capas: EstadoCapasCRA }) {
+export function CapasCRAEnMapa({ capas, registrar }: { capas: EstadoCapasCRA; registrar?: RegistrarMarcador }) {
   const { datos, visibles } = capas;
   const areasFocos = useMemo<FeatureCollection<Polygon | MultiPolygon> | null>(() => datos && datos.incendios.length
     ? { type: 'FeatureCollection', features: datos.incendios.map((f) => ({ type: 'Feature', id: f.id, properties: {}, geometry: f.geometria })) }
@@ -211,21 +217,21 @@ export function CapasCRAEnMapa({ capas }: { capas: EstadoCapasCRA }) {
     <>
       {visibles.incendios && areasFocos && <GeoJSON key={`focos-${datos.incendios.length}`} data={areasFocos} interactive={false}
         style={{ color: COLOR_FOCO, weight: 1.5, fillColor: COLOR_FOCO, fillOpacity: 0.35 }} />}
-      {visibles.agua && datos.agua.map((p) => <PuntoAgua key={`agua-${p.id}`} punto={p} />)}
-      {visibles.incendios && datos.incendios.map((f) => <FocoIncendio key={`foco-${f.id}`} foco={f} />)}
-      {visibles.puntos && datos.puntos.map((p) => <PuntoCritico key={`punto-${p.id}`} punto={p} />)}
+      {visibles.agua && datos.agua.map((p) => <PuntoAgua key={`agua-${p.id}`} punto={p} registrar={registrar} />)}
+      {visibles.incendios && datos.incendios.map((f) => <FocoIncendio key={`foco-${f.id}`} foco={f} registrar={registrar} />)}
+      {visibles.puntos && datos.puntos.map((p) => <PuntoCritico key={`punto-${p.id}`} punto={p} registrar={registrar} />)}
     </>
   );
 }
 
 // ---- Panel de filtros y leyenda ----
-export function InterruptoresCRA({ capas }: { capas: EstadoCapasCRA }) {
+export function InterruptoresCRA({ capas, claves = TODAS_LAS_CAPAS }: { capas: EstadoCapasCRA; claves?: ClaveCapaCRA[] }) {
   const { datos, error, visibles, alternar, reintentar } = capas;
-  const opciones: { clave: ClaveCapaCRA; etiqueta: string; cantidad?: number }[] = [
+  const opciones = ([
     { clave: 'puntos', etiqueta: 'Puntos críticos de riesgo', cantidad: datos?.puntos.length },
     { clave: 'incendios', etiqueta: 'Focos de calor por satélite', cantidad: datos?.incendios.length },
     { clave: 'agua', etiqueta: 'Calidad del agua (ICA)', cantidad: datos?.agua.length },
-  ];
+  ] as { clave: ClaveCapaCRA; etiqueta: string; cantidad?: number }[]).filter((o) => claves.includes(o.clave));
   return (
     <fieldset className="mt-3">
       <legend className="mb-1 text-xs font-semibold text-suave">Capas oficiales de la C.R.A. · en vivo</legend>
@@ -242,7 +248,7 @@ export function InterruptoresCRA({ capas }: { capas: EstadoCapasCRA }) {
   );
 }
 
-export function LeyendaCRA({ capas }: { capas: EstadoCapasCRA }) {
+export function LeyendaCRA({ capas, claves = TODAS_LAS_CAPAS }: { capas: EstadoCapasCRA; claves?: ClaveCapaCRA[] }) {
   const { datos } = capas;
   const resumen = useMemo(() => {
     if (!datos) return null;
@@ -260,16 +266,20 @@ export function LeyendaCRA({ capas }: { capas: EstadoCapasCRA }) {
   return (
     <div>
       <h3 className="mb-2 font-semibold text-texto">Capas oficiales de la C.R.A. · en vivo</h3>
-      <ul className="flex flex-wrap gap-3">
-        {resumen.tiposPresentes.map((t) => <li key={t.id} className="flex items-center gap-1.5 text-suave"><span aria-hidden="true" className="size-2.5 rotate-45 rounded-[2px]" style={{ backgroundColor: t.color }} />{t.nombre}</li>)}
-        <li className="flex items-center gap-1.5 text-suave"><Flame size={14} color={COLOR_FOCO} aria-hidden="true" />Focos de calor</li>
-      </ul>
-      <ul className="mt-2 flex flex-wrap gap-3" aria-label="Escala del índice de calidad del agua">
+      {(claves.includes('puntos') || claves.includes('incendios')) && <ul className="flex flex-wrap gap-3">
+        {claves.includes('puntos') && resumen.tiposPresentes.map((t) => <li key={t.id} className="flex items-center gap-1.5 text-suave"><span aria-hidden="true" className="size-2.5 rotate-45 rounded-[2px]" style={{ backgroundColor: t.color }} />{t.nombre}</li>)}
+        {claves.includes('incendios') && <li className="flex items-center gap-1.5 text-suave"><Flame size={14} color={COLOR_FOCO} aria-hidden="true" />Focos de calor</li>}
+      </ul>}
+      {claves.includes('agua') && <ul className="mt-2 flex flex-wrap gap-3" aria-label="Escala del índice de calidad del agua">
         {ESCALA_ICA.map((c) => <li key={c.etiqueta} className="flex items-center gap-1.5 text-suave"><span aria-hidden="true" className="size-2.5 rounded-full" style={{ backgroundColor: c.color }} />Agua {c.etiqueta.toLowerCase()}</li>)}
-      </ul>
+      </ul>}
       <p className="mt-2 text-suave">
-        {datos.filtradas ? `Solo lo que está a ${(RADIO_CONTEXTO_M / 1000).toLocaleString('es-CO')} km o menos del manglar (y el agua de las ciénagas con manglar). ` : 'Sin la cobertura de manglar no se pudo filtrar: se muestra toda la franja costera. '}
-        Puntos críticos: {rango(resumen.puntos)} · focos de calor: {rango(resumen.focos)} · calidad del agua: muestreo del {rango(resumen.agua)}. Fuente: API de gestión del riesgo de la C.R.A., leída al abrir esta página.
+        {datos.filtradas ? `Solo lo que está a ${(RADIO_CONTEXTO_M / 1000).toLocaleString('es-CO')} km o menos del manglar${claves.includes('agua') ? ' (y el agua de las ciénagas con manglar)' : ''}. ` : 'Sin la cobertura de manglar no se pudo filtrar: se muestra toda la franja costera. '}
+        {[
+          claves.includes('puntos') && `puntos críticos: ${rango(resumen.puntos)}`,
+          claves.includes('incendios') && `focos de calor: ${rango(resumen.focos)}`,
+          claves.includes('agua') && `calidad del agua: muestreo del ${rango(resumen.agua)}`,
+        ].filter(Boolean).join(' · ').replace(/^./, (c) => c.toUpperCase())}. Fuente: API de gestión del riesgo de la C.R.A., leída al abrir esta página.
       </p>
     </div>
   );
