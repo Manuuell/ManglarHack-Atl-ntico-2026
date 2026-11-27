@@ -1,5 +1,5 @@
 -- =====================================================================================
--- Zanqui · DATOS DE DEMOSTRACIÓN (no son reportes reales)
+-- Zanky · DATOS DE DEMOSTRACIÓN (no son reportes reales)
 -- =====================================================================================
 -- 15 reportes de prueba, todos con la descripción «[DEMO] …» y reportante_id nulo, repartidos en las
 -- 4 zonas de manglar, con tipos y estados variados. Los puntos están dentro de los polígonos (INVEMAR),
