@@ -1,4 +1,4 @@
-// Seguimiento de las acciones y cartelera de jornadas (base: eventos de Innvita).
+// Seguimiento de las acciones y cartelera de jornadas.
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { CalendarPlus, Check, CircleDashed, Copy, MapPin, MessageCircle, Users } from 'lucide-react';
 import type { Accion, Actor, CambioAccion, EstadoAccion, Jornada, ReporteMonitoreo } from '../../types/plataforma';

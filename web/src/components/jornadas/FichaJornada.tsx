@@ -1,4 +1,4 @@
-// Ficha de una jornada, con la forma de la ficha de un evento de Innvita: a la izquierda el título,
+// Ficha de una jornada: a la izquierda el título,
 // quién publica, la acción a la que pertenece y los detalles; a la derecha la imagen y los datos duros
 // (cuándo, dónde, entrada, inscritos y compartir), pegados al bajar; abajo «Te puede interesar» y una
 // barra fija con «Asistir». Las jornadas no tienen límite de cupos.
