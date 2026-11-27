@@ -12,6 +12,12 @@ const CLAVE = 'zanky-web:v1:charla';
 const SALUDO: Turno = { rol: 'zanky', texto: '¡Hola! Soy Zanky 🌿. Pregúntame lo que quieras del manglar, cómo reportar algo raro o cuándo es la próxima jornada.' };
 const SUGERENCIAS = ['¿Por qué es importante el manglar?', '¿Cómo reporto una quema?', '¿Cuándo es la próxima jornada?'];
 
+/** Texto con **negritas** y enlaces tocables, sin insertar HTML. */
+function conFormato(texto: string): ReactNode {
+  return texto.split(/(\*\*[^*\n]+\*\*)/g).map((p, i) =>
+    /^\*\*[^*\n]+\*\*$/.test(p) ? <strong key={i}>{conEnlaces(p.slice(2, -2))}</strong> : <Fragment key={i}>{conEnlaces(p)}</Fragment>);
+}
+
 /** Texto con enlaces tocables, sin insertar HTML. */
 function conEnlaces(texto: string): ReactNode {
   const partes = texto.split(/(https?:\/\/[^\s)»"]+)/g);
@@ -114,7 +120,7 @@ export default function BurbujaZanky() {
 
           <div className="zk-lista" ref={lista} aria-live="polite">
             {charla.map((t, i) => (
-              <div key={i} className={`zk-msg ${t.rol === 'usuario' ? 'zk-yo' : 'zk-el'}${t.error ? ' zk-error' : ''}`}>{conEnlaces(t.texto)}</div>
+              <div key={i} className={`zk-msg ${t.rol === 'usuario' ? 'zk-yo' : 'zk-el'}${t.error ? ' zk-error' : ''}`}>{conFormato(t.texto)}</div>
             ))}
             {pensando && <div className="zk-msg zk-el zk-pensando" aria-label="Zanky está escribiendo"><i /><i /><i /></div>}
             {soloSaludo && !pensando && (
