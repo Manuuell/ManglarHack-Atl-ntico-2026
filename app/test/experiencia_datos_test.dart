@@ -13,6 +13,7 @@ import 'package:zanky/datos/experiencia/jornada.dart';
 import 'package:zanky/datos/experiencia/participacion.dart';
 import 'package:zanky/datos/experiencia/preguntas_zanky.dart';
 import 'package:zanky/datos/experiencia/trivia.dart';
+import 'package:zanky/vistas/experiencia/sigue_visitante.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -212,6 +213,22 @@ void main() {
       expect(ca.cancelada, isTrue);
       expect(Jornada.fromJson(base()).cancelada, isFalse);
       expect(Jornada.fromJson({...base(), 'imagen_url': 'javascript:alert(1)'}).imagen, isNull);
+    });
+
+    test('próximo evento: la siguiente futura, sin la actual ni las canceladas', () {
+      Map<String, dynamic> base() => (jsonDecode(unaJson) as Map).cast<String, dynamic>();
+      Jornada en(String id, String inicio, {String estado = 'publicada'}) =>
+          Jornada.fromJson({...base(), 'id': id, 'inicio': inicio, 'fin': inicio.replaceFirst('T07', 'T10'), 'estado': estado});
+      final ahora = DateTime.utc(2026, 11, 27, 12);
+      final lista = [
+        en('pasada', '2026-11-20T07:00:00Z'),
+        en('actual', '2026-11-28T07:00:00Z'),
+        en('cancelada', '2026-11-29T07:00:00Z', estado: 'cancelada'),
+        en('lejana', '2026-12-20T07:00:00Z'),
+        en('siguiente', '2026-12-06T07:00:00Z'),
+      ];
+      expect(proximaJornada(lista, actual: 'actual', ahora: ahora)?.id, 'siguiente');
+      expect(proximaJornada([lista.first], ahora: ahora), isNull);
     });
   });
 

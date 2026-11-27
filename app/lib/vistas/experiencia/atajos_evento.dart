@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../datos/estado.dart';
 import '../../nucleo/base/hoja.dart';
@@ -11,7 +12,11 @@ import 'piezas.dart';
 
 /// Reportar / Mapa / Mi tarjeta, a un toque desde el evento.
 class AtajosEvento extends StatelessWidget {
-  const AtajosEvento({super.key});
+  const AtajosEvento({super.key, this.punto, this.zonaId});
+
+  /// Ubicación del evento o del punto escaneado: el reporte empieza ya puesto ahí.
+  final LatLng? punto;
+  final String? zonaId;
 
   @override
   Widget build(BuildContext context) {
@@ -22,9 +27,9 @@ class AtajosEvento extends StatelessWidget {
           Expanded(
             child: _Atajo(
               icono: Icons.add_a_photo_rounded,
-              texto: 'Reportar',
+              texto: punto == null ? 'Reportar' : 'Reportar aquí',
               color: Zc.prioridad[4]!,
-              onTap: () => _ir(context, _Destino.reportar),
+              onTap: () => _ir(context, _Destino.reportar, punto: punto, zonaId: zonaId),
             ),
           ),
           const SizedBox(width: 10),
@@ -56,7 +61,7 @@ enum _Destino { reportar, mapa, tarjeta }
 bool _hayPerfil(BuildContext context) =>
     Zanky.leer(context).perfil?.consentimiento != null;
 
-void _ir(BuildContext context, _Destino d) {
+void _ir(BuildContext context, _Destino d, {LatLng? punto, String? zonaId}) {
   if (!_hayPerfil(context)) {
     explicarSinPerfil(
       context,
@@ -66,7 +71,7 @@ void _ir(BuildContext context, _Destino d) {
   }
   switch (d) {
     case _Destino.reportar:
-      abrirReporte(context);
+      abrirReporte(context, punto: punto, zonaId: zonaId);
     case _Destino.mapa:
       Navigator.of(context).popUntil((r) => r.isFirst);
       Raiz.irA(context, 1);

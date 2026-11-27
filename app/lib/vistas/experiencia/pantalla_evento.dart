@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../datos/experiencia/jornada.dart';
 import '../../datos/experiencia/participacion.dart';
@@ -11,6 +12,7 @@ import 'atajos_evento.dart';
 import 'charla_zanky.dart';
 import 'piezas.dart';
 import 'reto_zanky.dart';
+import 'sigue_visitante.dart';
 import 'organizadores_evento.dart';
 import 'avisos_web.dart';
 import '../contenido/bloques_contenido.dart';
@@ -196,7 +198,12 @@ class _PantallaEventoState extends State<PantallaEvento> {
           child: Text('Atajos', style: tt.labelSmall),
         ),
         const SizedBox(height: 8),
-        EntradaEscalonada(index: i++, child: const AtajosEvento()),
+        EntradaEscalonada(
+          index: i++,
+          child: AtajosEvento(punto: j == null || (j.lat == 0 && j.lon == 0) ? null : LatLng(j.lat, j.lon)),
+        ),
+        ProximoEvento(fuente: _fuente, actual: e.codigo),
+        EntradaEscalonada(index: i++, child: const SigueConZanky()),
         const SizedBox(height: 14),
         OrganizadoresEvento(codigo: e.codigo),
       ],

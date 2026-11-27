@@ -21,6 +21,21 @@
     await new NDEFReader().write({ records: [{ recordType: 'url', data: enlace }] });
   };
 
+  // Instalar la app web: se guarda el aviso del navegador para mostrarlo cuando el visitante toque «Instalar».
+  let avisoInstalar = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); avisoInstalar = e; });
+  window.addEventListener('appinstalled', () => { avisoInstalar = null; });
+  window.zankyInstalada = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  window.zankyPuedeInstalar = () => avisoInstalar !== null;
+  window.zankyInstalar = async () => {
+    if (!avisoInstalar) return 'no';
+    const e = avisoInstalar;
+    avisoInstalar = null;
+    await e.prompt();
+    const r = await e.userChoice;
+    return r && r.outcome === 'accepted' ? 'si' : 'no';
+  };
+
   window.addEventListener('offline', () => {
     conexion = 'Sin señal · Puedes seguir usando Zanky';
   });

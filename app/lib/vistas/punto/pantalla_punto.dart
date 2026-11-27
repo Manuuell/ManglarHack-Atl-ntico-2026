@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
 
 import '../../datos/punto/punto_zanky.dart';
 import '../../datos/punto/servicio_punto.dart';
@@ -8,7 +9,9 @@ import '../../nucleo/kit/estado_vacio.dart';
 import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
+import '../../datos/experiencia/jornada.dart';
 import '../experiencia/puerta_evento.dart';
+import '../experiencia/sigue_visitante.dart';
 import '../experiencia/atajos_evento.dart';
 import '../reporte/flujo_reporte.dart';
 
@@ -23,6 +26,7 @@ class PantallaPunto extends StatefulWidget {
 class _PantallaPuntoState extends State<PantallaPunto> {
   late final ServicioPunto _servicio = widget.servicio ?? ServicioPunto();
   PuntoZanky? _punto;
+  final _jornadas = FuenteJornadas();
   bool _cargando = true;
   bool _pendiente = false;
   bool _fotoPendiente = false;
@@ -34,7 +38,12 @@ class _PantallaPuntoState extends State<PantallaPunto> {
     if (Zanky.leer(context).perfil?.consentimiento == null) {
       return explicarSinPerfil(context, 'un reporte');
     }
-    return abrirReporte(context, zonaId: punto.zona.isEmpty ? null : punto.zona);
+    final lat = punto.lat, lon = punto.lon;
+    return abrirReporte(
+      context,
+      zonaId: punto.zona.isEmpty ? null : punto.zona,
+      punto: lat == null || lon == null ? null : LatLng(lat, lon),
+    );
   }
 
   Future<void> _reportarFoto(PuntoZanky punto) async {
@@ -135,6 +144,8 @@ class _PantallaPuntoState extends State<PantallaPunto> {
                   if (p.descripcion.isNotEmpty) Text(p.descripcion),
                   const SizedBox(height: 22),
                   ..._contenido(p),
+                  ProximoEvento(fuente: _jornadas, actual: p.eventoId),
+                  const SigueConZanky(),
                 ]),
     );
   }
