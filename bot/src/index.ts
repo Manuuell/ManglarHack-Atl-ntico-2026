@@ -89,6 +89,12 @@ function encolar(m: MensajeEntrante): void {
 }
 
 app.post('/webhook', (req: ConCuerpoCrudo, res: Response) => {
+  // Modo prueba: antes de exigir la firma se comprueba que el secreto sea el de esta app de Meta.
+  if (!config.appSecret && config.appSecretPrueba) {
+    const firma = req.header('x-hub-signature-256');
+    const ok = firmaValida(req.cuerpoCrudo, firma, config.appSecretPrueba);
+    console.log(`[firma] modo prueba: ${ok ? 'COINCIDE' : 'NO coincide'} (${firma ? 'llegó con firma' : 'llegó sin firma'})`);
+  }
   if (config.appSecret && !firmaValida(req.cuerpoCrudo, req.header('x-hub-signature-256'), config.appSecret)) {
     res.sendStatus(401);
     return;

@@ -11,6 +11,8 @@ export const config = {
   phoneNumberId: env.WHATSAPP_PHONE_NUMBER_ID ?? '',
   verifyToken: env.WHATSAPP_VERIFY_TOKEN ?? '',
   appSecret: env.META_APP_SECRET ?? '',
+  /** Secreto a probar sin exigirlo: se anota si la firma coincide, pero no se rechaza nada. */
+  appSecretPrueba: env.META_APP_SECRET_PRUEBA ?? '',
   graphVersion: env.GRAPH_API_VERSION ?? 'v25.0',
   /** Sin token no se envía nada a Meta: los mensajes salen por consola. */
   dryRun: token === '',
@@ -74,7 +76,9 @@ export const config = {
 export function avisosDeConfiguracion(): string[] {
   const avisos: string[] = [];
   if (config.dryRun) avisos.push('WHATSAPP_TOKEN vacío: modo simulación, no se envía nada a WhatsApp.');
-  if (!config.dryRun && !config.appSecret) avisos.push('META_APP_SECRET vacío: los webhooks se aceptan SIN verificar la firma.');
+  if (!config.dryRun && !config.appSecret) avisos.push(config.appSecretPrueba
+    ? 'Firma de Meta en MODO PRUEBA (META_APP_SECRET_PRUEBA): se anota si coincide, pero no se rechaza nada.'
+    : 'META_APP_SECRET vacío: los webhooks se aceptan SIN verificar la firma.');
   if (!config.dryRun && !config.phoneNumberId) avisos.push('WHATSAPP_PHONE_NUMBER_ID vacío.');
   if (env.HASH_SALT === undefined) avisos.push('HASH_SALT vacío: se usa una sal de desarrollo.');
   if (!config.panelApiKey) avisos.push('PANEL_API_KEY vacío: la API del panel queda cerrada.');
