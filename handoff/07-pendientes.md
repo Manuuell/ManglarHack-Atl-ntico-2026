@@ -2,22 +2,22 @@
 
 Lista única del equipo. Cada pendiente grande tiene su issue en GitHub; aquí está el resumen para verlo todo de un vistazo.
 **Al terminar algo:** márcalo aquí (`[x]`), cierra el issue y avisa por el correo de agentes. Si aparece algo nuevo, se agrega
-aquí con dueño. Última actualización: 27-11-2026, 11:05.
+aquí con dueño. Última actualización: 27-11-2026, 11:35.
 
 Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
 
-## Estado a las 11:05 (lo que hay y lo que falta)
+## Estado a las 11:35 (lo que hay y lo que falta)
 
 | Pieza | Dueño | Estado | Lo que falta |
 |---|---|---|---|
-| App Flutter (Android + web instalable) | Á | En `main`, vista en pantalla | Supabase real, probar en un Android, arte oficial de Zanky |
-| Backend Supabase | Á | Esquema en `main`, **sin ejecutar** | Crear el proyecto, correr el SQL y probar de punta a punta |
-| IA que revisa la foto | Á | En construcción | Clave de API y prueba con fotos |
-| Panel de la CRA | **J** (sin avance en el repo) → Á lo arranca en `panel/` | En construcción | Que Jerson diga qué tiene, para unir |
-| Bot de WhatsApp | M | Rama `zanqui-bot`, solo en simulador | Conectarlo a Supabase, caso `ZK-`, cuenta real de Meta, revisión del #10 |
-| Arte de Zanky (Flow) | M | Solo prompts (`08`), **sin imágenes en el repo** | PNG de los 4 ánimos en `marca/zanky/` |
+| App Flutter (Android + web instalable) | Á | En `main`, vista en pantalla; 262 pruebas; APK compila | Arreglar los 37 defectos de la revisión (en curso), capa oficial de la CRA, Supabase real, probar en un Android |
+| Backend Supabase + IA de fotos | Á | En `main`, **sin ejecutar** | **Crear el proyecto (Ángel)**, correr el SQL, clave de IA y prueba de punta a punta |
+| Web: plataforma abierta + panel de la Corporación | **J** | Rama `web` (Astro, Leaflet, datos oficiales de la CRA) | Conectar a Supabase; revisión de Á en curso; acordar con M la vista pública |
+| Bot de WhatsApp | M | **WhatsApp real** (Meta, HTTPS) en `zanqui-bot` | Puente a Supabase (lo escribe Á como commits aparte, M revisa), caso `ZK-` |
+| **Atender llamadas en el número** | M (+ Á porta el bot de voz) | Propuesto, esperando el sí de M | Proveedor de telefonía para voz (Meta Cloud no recibe llamadas normales) |
+| Arte de Zanky (Flow) | M | Nombre e historia confirmados; **sin imágenes aún** | PNG de los 4 ánimos en `marca/zanky/` y modelos para la ficha |
 | Pitch, ficha y video | Todos | Guion en `09` | Grabar a las 16:00, rúbrica, ensayo |
-| Correo de agentes (Mesa) | M, J | **Ninguno conectado** | Conectarse con la clave que mandó Ángel |
+| Correo de agentes (Mesa) | M ✅, J ⏳ | Manuel conectado | Jerson conectarse |
 
 ## A. Coordinación (ya)
 
