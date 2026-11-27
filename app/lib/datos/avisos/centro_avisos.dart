@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,7 +9,9 @@ import '../admin/aviso_navegador.dart';
 import '../comunidad/comunidad.dart';
 import '../estado.dart';
 import '../experiencia/jornada.dart';
-import 'notificador_nada.dart' if (dart.library.js_interop) 'notificador_web.dart' as notificador;
+import 'notificador_nada.dart'
+    if (dart.library.io) 'notificador_android.dart'
+    if (dart.library.js_interop) 'notificador_web.dart' as notificador;
 import 'reglas_avisos.dart';
 
 /// El centro de avisos: junta las alertas del manglar, los recordatorios de las jornadas
@@ -19,12 +22,14 @@ import 'reglas_avisos.dart';
 /// la misma caché que usa Comunidad: sin señal se revisa lo guardado, sin pedir nada más.
 ///
 /// En la web, si la persona lo activó desde un toque (nunca al abrir), además sale el
-/// aviso del navegador. En el teléfono el aviso es la píldora de la app y la campana.
+/// aviso del navegador. En el APK de Android, el aviso del sistema (canales «Alertas del manglar» y
+/// «Jornadas y reportes») y los recordatorios de jornada programados, que llegan con la app cerrada.
+/// Siempre quedan también la píldora de la app y la campana.
 class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
   CentroAvisos({FuenteComunidad? fuente, DateTime Function()? reloj, AvisoNavegador? navegador})
       : _fuente = fuente ?? FuenteComunidad.compartida,
         _reloj = reloj ?? DateTime.now,
-        navegador = navegador ?? AvisoNavegador() {
+        navegador = navegador ?? notificador.crearAvisoSistema() {
     // Un navegador de prueba recibe los avisos; el de verdad usa el service worker.
     _sistema = navegador != null
         ? ((a) => navegador.mostrar(a.titulo, a.cuerpo))
@@ -35,7 +40,19 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Clave del aviso que la persona tocó fuera de la app (aviso del navegador): la campana lo abre.
   final pedido = ValueNotifier<String?>(null);
-  void _pedir(String clave) => pedido.value = clave;
+  void _pedir(String clave) {
+    // Un toque que llega antes de cargar la bandeja (la app se abrió desde el aviso) espera a la carga.
+    if (cargado) {
+      pedido.value = clave;
+    } else {
+      _pedidoAntesDeCargar = clave;
+    }
+  }
+
+  String? _pedidoAntesDeCargar;
+
+  /// En el teléfono (no en la web): los textos dicen «teléfono» en vez de «navegador».
+  bool get avisosDelTelefono => !kIsWeb && navegador.disponible;
 
   static final compartido = CentroAvisos();
 
@@ -44,6 +61,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
   static const _clavePrefs = 'avisos.prefs.v1';
   static const _claveInscritas = 'avisos.inscritas.v1';
   static const _claveNavegador = 'avisos.navegador.v1';
+  static const _claveProgramadas = 'avisos.programadas.v1';
 
   static const cadaCuanto = Duration(minutes: 10);
   static const alVolverSiPasaron = Duration(minutes: 2);
@@ -57,13 +75,17 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
   PreferenciasAvisos preferencias = const PreferenciasAvisos();
   final List<Jornada> _inscritas = [];
 
+  /// Claves de los recordatorios que el sistema ya entrega solo (programados): la bandeja los guarda,
+  /// pero no se vuelven a mostrar en la barra.
+  Set<String> _programadas = {};
+
   /// Último aviso nuevo, para la píldora de dentro de la app (la escucha la campana).
   final nuevo = ValueNotifier<AvisoApp?>(null);
 
   EstadoZanky? _estado;
   Timer? _temporizador, _primera;
   DateTime? _ultimaRevision;
-  bool _revisando = false;
+  Future<void>? _enCurso;
   bool cargado = false;
 
   int get noLeidos => avisos.where((a) => !a.leido).length;
@@ -79,6 +101,9 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
     await cargar();
     final desdeAviso = notificador.avisoDeLaDireccion();
     if (desdeAviso != null) _pedir(desdeAviso);
+    final antes = _pedidoAntesDeCargar;
+    _pedidoAntesDeCargar = null;
+    if (antes != null) _pedir(antes);
     if (_estado != estado) return; // se desconectó mientras cargaba
     _temporizador = Timer.periodic(cadaCuanto, (_) => unawaited(revisar()));
     // Después del primer cuadro: lo primero es que la app pinte.
@@ -113,6 +138,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
           ..addAll([for (final x in jsonDecode(ins) as List) if (x is Map) Jornada.fromJson(x)]);
       }
       navegador.activo = p.getBool(_claveNavegador) == true && navegador.disponible && !navegador.bloqueado;
+      _programadas = (p.getStringList(_claveProgramadas) ?? const []).toSet();
     } catch (_) {}
     cargado = true;
     notifyListeners();
@@ -126,6 +152,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
       await p.setString(_clavePrefs, jsonEncode(preferencias.aJson()));
       await p.setString(_claveInscritas, jsonEncode([for (final j in _inscritas) j.aJson()]));
       await p.setBool(_claveNavegador, navegador.activo);
+      await p.setStringList(_claveProgramadas, recortarClaves(_programadas).toList());
     } catch (_) {}
   }
 
@@ -136,10 +163,10 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
     if (u == null || _reloj().difference(u) >= alVolverSiPasaron) unawaited(revisar());
   }
 
-  /// Revisa alertas y recordatorios. Nunca dos a la vez.
-  Future<void> revisar() async {
-    if (_revisando) return;
-    _revisando = true;
+  /// Revisa alertas y recordatorios. Nunca dos a la vez: si ya hay una en curso, se espera esa.
+  Future<void> revisar() => _enCurso ??= _revisar().whenComplete(() => _enCurso = null);
+
+  Future<void> _revisar() async {
     try {
       _ultimaRevision = _reloj();
       final nuevos = <AvisoApp>[];
@@ -151,10 +178,17 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
       // Las jornadas que ya pasaron no se recuerdan más.
       _inscritas.removeWhere((j) => j.fin.isBefore(_reloj()));
       _entregar(nuevos);
-    } catch (_) {
-    } finally {
-      _revisando = false;
-    }
+    } catch (_) {}
+  }
+
+  /// El aviso de [clave] para abrirlo desde fuera de la app. Si aún no está en la bandeja (un
+  /// recordatorio programado que salió con la app cerrada), se revisa antes.
+  Future<AvisoApp?> buscar(String clave) async {
+    AvisoApp? b() => avisos.where((x) => x.clave == clave).firstOrNull;
+    final a = b();
+    if (a != null) return a;
+    await revisar();
+    return b();
   }
 
   void _alNovedad() {
@@ -176,7 +210,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
     // El más grave primero: una alerta roja gana a un recordatorio.
     final primero = permitidos.firstWhere((a) => a.nivel == 'roja', orElse: () => permitidos.first);
     if (navegador.activo) {
-      for (final a in permitidos.take(3)) {
+      for (final a in permitidos.where((a) => !_programadas.contains(a.clave)).take(3)) {
         _sistema(a);
       }
     }
@@ -192,6 +226,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
     _inscritas
       ..removeWhere((x) => x.id == j.id)
       ..add(j);
+    await _programar(j);
     await _guardar();
     unawaited(revisar());
   }
@@ -233,10 +268,37 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
   void cambiarPreferencia(TipoAvisoApp t, bool v) {
     preferencias = preferencias.con(t, v);
     notifyListeners();
-    unawaited(_guardar());
+    if (t == TipoAvisoApp.jornada) {
+      unawaited(_reprogramarTodas().then((_) => _guardar()));
+    } else {
+      unawaited(_guardar());
+    }
   }
 
-  /// Avisos del navegador (solo web). Se pide permiso desde el toque de la persona.
+  // ---------------------------------------------------------------- programados (APK)
+
+  bool get _puedeProgramar => navegador.activo && preferencias.jornadas;
+
+  /// Programa en el sistema los recordatorios de [j] (solo el APK con los avisos activos).
+  Future<void> _programar(Jornada j) async {
+    if (!_puedeProgramar) return;
+    _programadas.addAll(await notificador.programarJornada(j));
+  }
+
+  /// Pone o quita los recordatorios programados de todas las jornadas inscritas.
+  Future<void> _reprogramarTodas() async {
+    for (final j in List.of(_inscritas)) {
+      if (_puedeProgramar) {
+        await _programar(j);
+      } else {
+        await notificador.cancelarJornada(j.id);
+        _programadas.removeWhere((c) => c.startsWith('jornada|${j.id}|'));
+      }
+    }
+  }
+
+  /// Avisos del navegador (web) o del teléfono (APK). Se pide permiso desde el toque de la persona,
+  /// nunca al abrir la app.
   Future<bool> activarNavegador(bool encender) async {
     if (!encender) {
       navegador.activo = false;
@@ -244,6 +306,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
       navegador.activo = await navegador.pedirPermiso();
     }
     notifyListeners();
+    await _reprogramarTodas();
     unawaited(_guardar());
     return navegador.activo;
   }

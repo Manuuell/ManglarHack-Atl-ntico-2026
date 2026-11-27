@@ -8,6 +8,11 @@
     <!-- Foto de la evidencia: image_picker abre la cámara del sistema (ACTION_IMAGE_CAPTURE),
          que no necesita permiso. NO declarar CAMERA: si está en el manifiesto, el plugin
          lo pide en ejecución y, si la persona lo niega, la cámara no abre. -->
+    <!-- Avisos de Zanky (alertas del manglar y recordatorios de jornadas). En Android 13+ se pide
+         al activarlos en la bandeja o en Configuración, nunca al abrir. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Los recordatorios programados vuelven a quedar puestos tras reiniciar el teléfono. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <application
@@ -39,6 +44,18 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Recordatorios de jornada programados (flutter_local_notifications): llegan con la app cerrada. -->
+        <receiver android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

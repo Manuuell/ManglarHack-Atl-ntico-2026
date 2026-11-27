@@ -64,15 +64,17 @@ class _CampanaAvisosState extends State<CampanaAvisos> with SingleTickerProvider
     WidgetsBinding.instance.addPostFrameCallback((_) => _alPedido());
   }
 
-  /// Tocaron un aviso del navegador: lleva al lugar exacto (si ya cargó la bandeja).
+  /// Tocaron un aviso del navegador o del teléfono: lleva al lugar exacto (si ya cargó la bandeja).
+  /// Un recordatorio programado que salió con la app cerrada aún no está en la bandeja: se busca.
   void _alPedido() {
     final clave = _centro.pedido.value;
     if (clave == null || !mounted || !_centro.cargado) return;
     _centro.pedido.value = null;
-    final a = _centro.avisos.where((x) => x.clave == clave).firstOrNull;
-    if (a == null) return;
-    _centro.marcarLeido(a);
-    unawaited(abrirAviso(context, a));
+    unawaited(_centro.buscar(clave).then((a) {
+      if (a == null || !mounted) return;
+      _centro.marcarLeido(a);
+      unawaited(abrirAviso(context, a));
+    }));
   }
 
   @override
@@ -346,13 +348,15 @@ class _Titulo extends StatelessWidget {
       );
 }
 
-/// En la web: pedir el permiso del navegador aquí, cuando la persona ya ve para qué sirve.
+/// Pedir el permiso aquí (navegador en la web, Android 13+ en el APK), cuando la persona ya ve
+/// para qué sirve. Nunca al abrir la app.
 class _OfertaNavegador extends StatelessWidget {
   const _OfertaNavegador();
 
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final telefono = CentroAvisos.compartido.avisosDelTelefono;
     return Container(
       margin: const EdgeInsets.only(top: 6, bottom: 4),
       padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
@@ -365,14 +369,23 @@ class _OfertaNavegador extends StatelessWidget {
         const Icon(Icons.notifications_active_rounded, color: Cra.azul),
         const SizedBox(width: 10),
         Expanded(
-          child: Text('Recibe estos avisos aunque tengas otra pestaña delante.',
+          child: Text(
+              telefono
+                  ? 'Recibe las alertas y tus recordatorios aunque Zanky esté cerrado.'
+                  : 'Recibe estos avisos aunque tengas otra pestaña delante.',
               style: tt.bodyMedium?.copyWith(color: Zc.texto)),
         ),
         TextButton(
           onPressed: () async {
             final ok = await CentroAvisos.compartido.activarNavegador(true);
             if (!context.mounted) return;
-            avisar(context, ok ? 'Listo: el navegador te avisará.' : 'El navegador no dio permiso. Puedes cambiarlo en su candado.',
+            avisar(
+                context,
+                telefono
+                    ? (ok
+                        ? 'Listo: el teléfono te avisará.'
+                        : 'Android no dio permiso. Actívalo en Ajustes › Apps › Zanky › Notificaciones.')
+                    : (ok ? 'Listo: el navegador te avisará.' : 'El navegador no dio permiso. Puedes cambiarlo en su candado.'),
                 tipo: ok ? TipoAviso.exito : TipoAviso.aviso);
           },
           child: const Text('Activar'),
@@ -510,7 +523,8 @@ class _Vista extends StatelessWidget {
 // ------------------------------------------------------------------ preferencias
 
 /// «Avisos» en Configuración (y en la hoja de la bandeja): un interruptor por tipo y, en la
-/// web, los avisos del navegador (el permiso se pide al encenderlo, nunca al abrir la app).
+/// web, los avisos del navegador; en el APK, los del teléfono (el permiso se pide al encenderlo,
+/// nunca al abrir la app).
 class SeccionPreferenciasAvisos extends StatelessWidget {
   const SeccionPreferenciasAvisos({super.key, this.enHoja = false});
   final bool enHoja;
@@ -523,6 +537,7 @@ class SeccionPreferenciasAvisos extends StatelessWidget {
       builder: (context, _) {
         final p = centro.preferencias;
         final nav = centro.navegador;
+        final telefono = centro.avisosDelTelefono;
         FilaAjustes fila(TipoAvisoApp t, IconData icono, Color color, String detalle) => FilaAjustes(
               icono: icono,
               color: color,
@@ -553,12 +568,14 @@ class SeccionPreferenciasAvisos extends StatelessWidget {
               FilaAjustes(
                 icono: Icons.notifications_active_rounded,
                 color: Cra.dorado,
-                titulo: 'Avisos del navegador',
-                detalle: nav.bloqueado
-                    ? 'El navegador los tiene bloqueados: actívalos en el candado de la barra de direcciones'
-                    : 'También fuera de la pestaña, mientras Zanky siga abierto',
+                titulo: telefono ? 'Avisos del teléfono' : 'Avisos del navegador',
+                detalle: telefono
+                    ? 'En la barra del teléfono, y los recordatorios de jornada aunque Zanky esté cerrado'
+                    : nav.bloqueado
+                        ? 'El navegador los tiene bloqueados: actívalos en el candado de la barra de direcciones'
+                        : 'También fuera de la pestaña, mientras Zanky siga abierto',
                 fin: InterruptorIos(
-                  etiqueta: 'Avisos del navegador',
+                  etiqueta: telefono ? 'Avisos del teléfono' : 'Avisos del navegador',
                   valor: nav.activo,
                   alCambiar: nav.bloqueado ? null : (v) => unawaited(centro.activarNavegador(v)),
                 ),

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- El ícono pequeño de los avisos se nombra desde Dart: que la compilación de entrega no lo borre. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@drawable/ic_aviso_zanky" />
+

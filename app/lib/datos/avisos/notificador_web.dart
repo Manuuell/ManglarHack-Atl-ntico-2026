@@ -3,6 +3,9 @@ import 'dart:js_interop';
 
 import 'package:web/web.dart' as web;
 
+import '../admin/aviso_navegador.dart';
+import '../experiencia/jornada.dart';
+
 /// Avisos del sistema en la web. Con el service worker de la app (PWA instalada o pestaña en
 /// segundo plano) se usa `registration.showNotification`, que también funciona en Chrome de
 /// Android, donde `new Notification()` no existe. Sin service worker, el aviso clásico.
@@ -59,3 +62,11 @@ void escucharToques(void Function(String) alTocar) {
 
 /// `?aviso=…` cuando la app se abrió desde un aviso con la pestaña cerrada.
 String? avisoDeLaDireccion() => Uri.base.queryParameters['aviso'];
+
+/// Avisos del sistema de esta plataforma: aquí, los del navegador.
+AvisoNavegador crearAvisoSistema() => AvisoNavegador();
+
+/// Solo el APK programa recordatorios con la app cerrada.
+Future<List<String>> programarJornada(Jornada j) async => const [];
+
+Future<void> cancelarJornada(String id) async {}
