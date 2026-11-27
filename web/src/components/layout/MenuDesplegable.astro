@@ -1,0 +1,41 @@
+---
+// Menú desplegable de la barra (patrón de divulgación: botón + lista de enlaces).
+// Se abre con clic o con Enter/Espacio, se cierra con Escape o al hacer clic fuera.
+import type { EnlaceNav } from '../../lib/navegacion';
+import '../../styles/menu-desplegable.css';
+
+interface Props {
+  texto: string;
+  items: EnlaceNav[];
+  /** «cra» para CabeceraCRA (vidrio azul) y «portada» para la cabecera de la portada. */
+  variante?: 'cra' | 'portada';
+  /** id del enlace de la página actual, si está en este menú. */
+  activo?: string;
+}
+const { texto, items, variante = 'cra', activo } = Astro.props;
+const id = `menu-${texto.toLowerCase().normalize('NFD').replace(/[^a-z]/g, '')}`;
+const enEsteMenu = items.some((item) => item.id === activo);
+---
+<div class:list={['desplegable', `desplegable--${variante}`]} data-desplegable>
+  <button type="button" class:list={['desplegable-boton', enEsteMenu && 'es-actual']} aria-expanded="false" aria-controls={id}>
+    {texto}
+    <svg class="desplegable-flecha" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+  </button>
+  <div class="desplegable-panel" id={id} hidden>
+    <ul>
+      {items.map((item) => (
+        <li>
+          <a href={item.href} aria-current={item.id === activo ? 'page' : undefined}>
+            <span class="desplegable-texto">{item.texto}</span>
+            {item.detalle && <span class="desplegable-detalle">{item.detalle}</span>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </div>
+</div>
+
+<script>
+  import { montarMenus } from '../../scripts/menus';
+  montarMenus();
+</script>

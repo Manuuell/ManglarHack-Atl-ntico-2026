@@ -1,4 +1,4 @@
-// Próximas jornadas de la comunidad, con los inscritos al día (también lo que pasa en otras pestañas).
+// Próximas jornadas de la comunidad, con los inscritos al día: vienen del servidor de Zanky (useJornadas).
 import { useEffect, useMemo, useState } from 'react';
 import { Users } from 'lucide-react';
 import type { Jornada } from '../../types/plataforma';
@@ -21,7 +21,7 @@ export default function JornadasEnVivo({ jornadas: iniciales }: { jornadas: Jorn
   const proximas = useMemo(() => jornadas.filter((j) => Date.parse(j.fin) > ahora).sort((a, b) => a.inicio.localeCompare(b.inicio)).slice(0, 3), [jornadas, ahora]);
 
   if (!proximas.length) {
-    return <p className="jornadas-vacio">No hay jornadas próximas. <a href="/plataforma/jornadas">Crea la primera</a> y convoca a tu comunidad.</p>;
+    return <p className="jornadas-vacio">No hay jornadas próximas. <a href="/plataforma/jornadas">Mira la cartelera</a>: cuando la organización publique una, aparece aquí.</p>;
   }
   return (
     <div className="jornadas-grid">
@@ -30,7 +30,7 @@ export default function JornadasEnVivo({ jornadas: iniciales }: { jornadas: Jorn
         const pct = Math.min(100, (j.inscritos / Math.max(1, j.cupos)) * 100);
         return (
           <a key={j.id} className="jornada-mini" href={`/plataforma/jornadas?jornada=${j.id}`}>
-            <span className="banda" style={{ display: 'block', ['--g' as string]: BANDA[j.tipo] ?? BANDA.siembra }}>
+            <span className="banda" style={{ display: 'block', ['--g' as string]: j.imagen_url ? `url("${j.imagen_url.replace(/"/g, '%22')}") center / cover no-repeat` : BANDA[j.tipo] ?? BANDA.siembra }}>
               <span className="fecha"><b>{dia(j.inicio)}</b><small>{mes(j.inicio)}</small></span>
             </span>
             <span className="cuerpo" style={{ display: 'block' }}>

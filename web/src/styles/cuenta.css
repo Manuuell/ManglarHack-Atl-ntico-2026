@@ -126,3 +126,7 @@
   font-size: 14.5px; text-decoration: none; border-bottom: 1px solid var(--c-linea-suave);
 }
 .cuenta-dialogo .cuenta-atajos a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.cuenta-dialogo .cuenta-check-apagado { opacity: .55; cursor: not-allowed; }
+.cuenta-dialogo .cuenta-atajos .cuenta-atajo-admin { gap: 8px; font-weight: 700; color: var(--color-dorado-500, #edb512); }
+.cuenta-dialogo .cuenta-atajos .cuenta-atajo-admin svg { width: 18px; height: 18px; flex: none; }

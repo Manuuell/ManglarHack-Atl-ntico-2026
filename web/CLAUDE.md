@@ -39,6 +39,10 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 |---|---|
 | `/` | Portada comunitaria en vivo (`src/styles/portada.css` + `src/scripts/portada.ts` + `src/components/comunidad/`): cabecera que pasa a cápsula al bajar; hero con el mapa satelital y la lista «Ahora en el manglar» (reportes de la comunidad y jornadas); «Reportar un problema» (tipo, ubicación en el mapa con la regla del área de reporte, foto, detalles, consentimiento); próximas jornadas con inscritos; avisos en tiempo real (otras pestañas incluidas, vía `lib/comunidad/reportesLocales.ts`); **monitoreo comunitario** (`#monitoreo`: mapa público con filtros y datos abiertos CSV/GeoJSON/KML), **seguimiento de siembras** (`#siembras`: plántulas vivas, altura y fotos ubicadas) y **guardianes del manglar** (`#guardianes`: ranking de colegios y pasaporte), en `components/comunidad/MonitoreoComunitario.astro` y `GuardianesManglar.astro` con `styles/monitoreo-portada.css`. Sin texto del reto: solo lo que hace la comunidad |
 | `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
+| `/visores` | Índice de los visores (cada mapa en su propia página, `layouts/VisorLayout.astro` con pestañas entre visores) |
+| `/visores/reportes` | Reportes de la comunidad a pantalla completa (`MapaMonitoreo`, el mismo de `#monitoreo`) |
+| `/visores/riesgo` | Puntos críticos y focos de calor de la C.R.A. cerca del manglar: mapa + lista ordenada por distancia (`components/visores/VisorCapasCRA.tsx`, `modo="riesgo"`) |
+| `/visores/agua` | Calidad del agua (ICA) de las ciénagas con manglar: mapa + fichas por ciénaga (`VisorCapasCRA`, `modo="agua"`) |
 | `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
 | `/plataforma/registro` | Registro de actor |
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
@@ -50,6 +54,12 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
 
 Todas las páginas de la plataforma usan `src/layouts/PlataformaLayout.astro` (cabecera con logo C.R.A., título y barra de pestañas).
+
+**Navegación:** los enlaces viven en `src/lib/navegacion.ts` (`VISORES`, `PLATAFORMA`).
+- `CabeceraCRA` lleva «Portada» y los desplegables «Visores» y «Plataforma». La portada (`.cab`) agrega «Visores» y «Plataforma» a sus secciones.
+- Los desplegables son `components/layout/MenuDesplegable.astro`: botón con `aria-expanded` y lista de enlaces; se cierran con Escape o con un clic fuera.
+- En el teléfono hay un botón con ícono que abre la hoja de `MenuMovil.astro`. Su comportamiento está en `scripts/menus.ts` y sus estilos en `styles/menu-desplegable.css`.
+- Con un menú abierto, la cabecera sube a z-index 2100, por encima de la burbuja (1900) y de los avisos (2000).
 
 ## Arquitectura
 
@@ -116,6 +126,28 @@ La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se
 - La web lee la copia con `cargarCRA()` (`src/lib/cra.ts`) y `useWorkflowCRA()`; `construirWorkflow()` arma cifras, sectores y pestañas. Si la copia no responde, se usan `RESPALDO_CRA` (cifras del 27-11-2026) y se dice en pantalla.
 - `/workflow` incrusta además el visor original de la C.R.A. (capas, vista 3D y audios) desde manglarcra.netlify.app.
 - Instalar o actualizar en el VPS: copiar `copiar-cra.mjs` a `~/mimanglar-cra/`, `sudo install -m 644 scripts/vps/mimanglar-cra.* /etc/systemd/system/`, `sudo systemctl daemon-reload && sudo systemctl enable --now mimanglar-cra.timer`. Registro: `journalctl -u mimanglar-cra.service`.
+
+## Capas oficiales y noticias de la C.R.A. (API en vivo)
+
+- `src/lib/craApi.ts` lee desde el navegador, solo con GET, la API pública de gestión del riesgo de la C.R.A. (`https://api-791856053294.us-central1.run.app`, acepta cualquier origen):
+  - puntos críticos de riesgo (`/critical_points/items?format=geojson`);
+  - focos de calor por satélite (`/wildfire-clusters/items?format=geojson`);
+  - calidad del agua de las ciénagas (`/water_bodies/sampling_points` y `/measurements`, con la escala ICA del IDEAM).
+- Lee también las noticias de crautonoma.gov.co (WordPress REST, que ya acepta el origen de mimanglar y de localhost).
+- `components/mapa/CapasOficialesCRA.tsx` las pinta en el mapa de `#monitoreo` con interruptores y leyenda. Solo muestra lo que está a 2 km o menos de la cobertura de manglar (más los puntos de muestreo de Mallorquín, Totumo, Manatíes y Balboa), con la distancia en cada ventana.
+- `components/comunidad/NoticiasCRA.tsx` muestra «La C.R.A. en el manglar» debajo del mapa.
+- Si la C.R.A. no responde, el mapa sigue sin sus capas y lo dice.
+- En JSON la API devuelve la geometría en EPSG:9377; usar siempre `format=geojson`. No llamar a sus rutas de escritura ni a `/users`.
+
+## Alertas del manglar (`#alertas` en la portada)
+
+- `components/comunidad/AlertasManglar.tsx` (con `styles/alertas.css`) lee `GET https://zanqui.sentralabs.co/alertas` (variable `PUBLIC_ALERTAS_URL`). Ese endpoint es el motor del bot (`bot/src/alertas/`, rama `zanqui-bot`).
+- Cada 10 minutos, el motor cruza las estaciones automáticas del IDEAM (WIS2), el pronóstico (WRF y WW3) y las tablas de marea de DIMAR, los focos de calor de la C.R.A. y la vista `reportes_publicos`.
+- Siete alertas, con nivel amarillo, naranja o rojo: mar de leva, pleamar con oleaje, lluvia fuerte, viento fuerte, riesgo de incendio, fuego cerca del manglar y varios reportes de la misma amenaza en una zona. Los umbrales están en `UMBRALES`, en `motor.ts`.
+- `modo="aviso"` es la píldora del hero. La sección muestra «Ahora» (viento, lluvia, ola máxima, próxima pleamar y calor) y una tarjeta por alerta, con qué hacer, cuándo, la fuente y «Avisar por WhatsApp».
+- «Ver un simulacro» pide `?simulacro=1`: alertas de ejemplo rotuladas SIMULACRO, con las cifras de «Ahora» reales.
+- En WhatsApp, Zanky responde a «alertas» y a «simulacro».
+- Si el servidor no responde, la sección lo dice y la píldora no aparece.
 
 ## Diseño (identidad C.R.A. modernizada)
 

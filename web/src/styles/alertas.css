@@ -1,0 +1,104 @@
+/* Alertas del manglar (#alertas en la portada y la píldora del inicio).
+   Los selectores van con dos clases para ganarle a «.portada p/a/h3», que no está en una capa. */
+
+.al-pildora {
+  --al-color: #f8d86f;
+  display: inline-flex; align-items: center; gap: 10px; max-width: 100%;
+  margin-top: 22px; padding: 10px 18px; min-height: 44px; border-radius: 999px;
+  background: rgba(255, 255, 255, .96); color: #05243a; text-decoration: none;
+  font: 500 14.5px/1.3 var(--f-texto, Inter, system-ui, sans-serif); text-align: left;
+  box-shadow: 0 12px 30px -16px rgba(5, 20, 34, .6); border: 1.5px solid rgba(5, 36, 58, .1);
+  transition: transform .25s cubic-bezier(.16, 1, .3, 1);
+}
+.portada .al-pildora { color: #05243a; }
+.al-pildora:hover { transform: translateY(-2px); }
+.al-pildora[data-nivel="naranja"] { --al-color: #f08a24; }
+.al-pildora[data-nivel="roja"] { --al-color: #d7263d; }
+.al-pildora[data-nivel="calma"] { --al-color: #2e9e5b; }
+.al-pildora strong { font-weight: 700; }
+.al-pildora > span:nth-child(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.al-punto {
+  flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--al-color);
+  box-shadow: 0 0 0 0 var(--al-color); animation: al-latido 1.8s ease-out infinite;
+}
+@keyframes al-latido { 70% { box-shadow: 0 0 0 10px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .al-punto { animation: none; } .al-pildora { transition: none; } }
+
+/* -- sección ---------------------------------------------------------------------- */
+.al { display: grid; gap: 28px; }
+.al .al-cab { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 22px; }
+.al .al-cab > div:first-child { min-width: 0; max-width: 62ch; }
+.al .al-cab h2 { max-width: 18ch; }
+.al .al-intro { margin-top: 16px; color: var(--texto-2); font-size: 16px; line-height: 1.55; }
+.al .al-controles { display: flex; flex-wrap: wrap; gap: 10px; }
+
+.al .al-boton {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 18px;
+  border-radius: 999px; border: 1.5px solid transparent; cursor: pointer; text-decoration: none; white-space: nowrap;
+  font: 600 14px/1 var(--f-texto, Inter, system-ui, sans-serif); background: #05243a; color: #fff;
+  transition: transform .2s cubic-bezier(.16, 1, .3, 1), background .2s;
+}
+.al .al-boton:hover { transform: translateY(-1px); }
+.al .al-boton-claro { background: rgba(255, 255, 255, .85); color: #05243a; border-color: rgba(5, 36, 58, .16); }
+.al .al-boton-claro[aria-pressed="true"] { background: #f8d86f; border-color: #c9a227; }
+
+.al .al-simulacro {
+  margin: 0; padding: 12px 16px; border-radius: 16px; background: #fff4d1; color: #5b4300;
+  border: 1.5px dashed #c9a227; font-size: 14.5px;
+}
+.al .al-cargando, .al .al-vacio {
+  padding: 20px 22px; border-radius: 24px; background: rgba(255, 255, 255, .6); border: 1px solid rgba(5, 36, 58, .1);
+  color: #33424f; font-size: 15px;
+}
+.al .al-cargando { animation: al-pulso 1.6s ease-in-out infinite; }
+@keyframes al-pulso { 50% { opacity: .55; } }
+.al .al-calma { display: flex; align-items: center; gap: 18px; }
+.al .al-calma img { flex: none; width: 84px; height: 84px; }
+
+/* lo que se mide ahora */
+.al .al-ahora { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 128px), 1fr)); }
+.al .al-ahora li {
+  min-width: 0; display: grid; gap: 4px; padding: 16px 18px; border-radius: 22px;
+  background: rgba(255, 255, 255, .72); border: 1px solid rgba(5, 36, 58, .09);
+}
+.al .al-ahora-titulo { font-size: 12.5px; font-weight: 600; color: #5a5446; }
+.al .al-ahora-valor { font: 800 26px/1.1 var(--f-titulo, Figtree, system-ui, sans-serif); letter-spacing: -.03em; color: #05243a; }
+.al .al-ahora-pie { font-size: 12.5px; color: #6b6656; overflow-wrap: anywhere; }
+
+/* tarjetas */
+.al .al-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+.al .al-tarjeta {
+  --al-color: #f8d86f; --al-fondo: #fffaf0;
+  min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 22px 22px 20px; border-radius: 26px;
+  background: var(--al-fondo); border: 1px solid rgba(5, 36, 58, .1); border-top: 7px solid var(--al-color);
+  box-shadow: 0 16px 40px -28px rgba(5, 20, 34, .5); color: #05243a;
+}
+.al .al-tarjeta[data-nivel="naranja"] { --al-color: #f08a24; --al-fondo: #fff6ee; }
+.al .al-tarjeta[data-nivel="roja"] { --al-color: #d7263d; --al-fondo: #fff1f2; }
+.al .al-tarjeta-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.al .al-etiqueta {
+  display: inline-flex; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 800;
+  letter-spacing: .04em; text-transform: uppercase; background: #f8d86f; color: #4a3700;
+}
+.al .al-etiqueta[data-nivel="naranja"] { background: #f08a24; color: #2b1400; }
+.al .al-etiqueta[data-nivel="roja"] { background: #d7263d; color: #fff; }
+.al .al-tipo { font-size: 12.5px; font-weight: 600; color: #5d6b76; }
+.al .al-titulo { margin: 0; font: 800 20px/1.2 var(--f-titulo, Figtree, system-ui, sans-serif); letter-spacing: -.02em; }
+.al .al-detalle { margin: 0; font-size: 15px; line-height: 1.55; color: #24343f; }
+.al .al-hacer { margin: 0; padding: 12px 14px; border-radius: 16px; background: rgba(5, 36, 58, .05); font-size: 14.5px; line-height: 1.5; color: #24343f; }
+.al .al-meta { margin: 0; display: grid; gap: 6px; font-size: 13px; }
+.al .al-meta div { display: grid; grid-template-columns: 64px 1fr; gap: 8px; min-width: 0; }
+.al .al-meta dt { font-weight: 700; color: #5d6b76; }
+.al .al-meta dd { margin: 0; color: #24343f; overflow-wrap: anywhere; }
+.al .al-acciones { margin-top: auto; padding-top: 4px; display: flex; flex-wrap: wrap; gap: 8px; }
+.al .al-acciones .al-boton { flex: 1 1 auto; }
+
+.al .al-pie { display: grid; gap: 6px; font-size: 12.5px; color: #5a5446; }
+.al .al-pie p { margin: 0; color: #5a5446; line-height: 1.5; }
+.al .al-pie a { color: #3d3a2f; text-decoration: underline; text-underline-offset: 3px; }
+
+@media (max-width: 520px) {
+  .al .al-controles, .al .al-controles .al-boton { width: 100%; }
+  .al .al-calma { flex-direction: column; text-align: center; }
+  .al-pildora > span:nth-child(2) { white-space: normal; }
+}

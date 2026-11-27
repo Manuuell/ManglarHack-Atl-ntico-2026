@@ -3,10 +3,10 @@
 // antes de ir a «Reportar» ofrece entrar o crear cuenta, o «Seguir sin cuenta» (reportar nunca la exige).
 // El panel es un <dialog> modal: va en la capa superior, por encima de la burbuja de Zanky y los avisos.
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { CircleUserRound, Eye, EyeOff, LogOut, X } from 'lucide-react';
+import { CircleUserRound, Eye, EyeOff, LogOut, ShieldCheck, X } from 'lucide-react';
 import {
-  ErrorCuenta, SECTORES_CUENTA, actualizarPerfil, cambiarClave, cerrarSesion, cuentasActivas, iniciarSesion,
-  recuperarClave, registrarse, renovarSesion, sesionActual, tomarSesionDelEnlace, useSesion,
+  ErrorCuenta, SECTORES_CUENTA, actualizarPerfil, cambiarClave, celularLegible, cerrarSesion, cuentasActivas, iniciarSesion,
+  normalizarCelular, recuperarClave, registrarse, renovarSesion, rolDeAdmin, sesionActual, tomarSesionDelEnlace, useSesion,
 } from '../../lib/cuenta';
 import '../../styles/cuenta.css';
 
@@ -40,15 +40,24 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
   const [clave, setClave] = useState('');
   const [sector, setSector] = useState('');
   const [acepta, setAcepta] = useState(false);
+  const [celular, setCelular] = useState('');
+  const [whatsappOk, setWhatsappOk] = useState(false);
+  const [esAdmin, setEsAdmin] = useState(false);
 
   const vista: Modo = sesion ? (modo === 'nueva_clave' ? 'nueva_clave' : 'perfil') : (modo === 'perfil' || modo === 'nueva_clave' ? 'entrar' : modo);
 
   function abrir(m: Modo, d: string | null = null, a: Aviso = null) {
     setModo(m); setDestino(d); setAviso(a); setErrores({}); setClave(''); setVerClave(false);
-    if (m === 'perfil') { const s = sesionActual(); setNombre(s?.usuario.nombre ?? ''); setSector(s?.usuario.sector ?? ''); }
+    if (m === 'perfil') cargarPerfil();
     if (!dialogo.current?.open) dialogo.current?.showModal();
   }
   const cerrar = () => dialogo.current?.close();
+  function cargarPerfil() {
+    const s = sesionActual();
+    setNombre(s?.usuario.nombre ?? ''); setSector(s?.usuario.sector ?? '');
+    setCelular(celularLegible(s?.usuario.telefono ?? null)); setWhatsappOk(Boolean(s?.usuario.whatsapp_ok));
+    void rolDeAdmin().then((r) => setEsAdmin(Boolean(r))).catch(() => setEsAdmin(false));
+  }
   function cambiar(m: Modo) { setModo(m); setAviso(null); setErrores({}); setClave(''); }
 
   function irADestino() {
@@ -80,6 +89,14 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Otras partes de la web (por ejemplo, /admin sin sesión) piden abrir el panel con este evento.
+  useEffect(() => {
+    const alPedir = () => abrir(sesionActual() ? 'perfil' : 'entrar');
+    window.addEventListener('zanky-cuenta:abrir', alPedir);
+    return () => window.removeEventListener('zanky-cuenta:abrir', alPedir);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // «Reportar»: sin sesión, antes de ir se ofrece la cuenta (una vez por visita si eligen seguir sin ella).
   useEffect(() => {
     const alClic = (e: MouseEvent) => {
@@ -103,12 +120,17 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
     } finally { setOcupado(false); }
   }
 
-  function validar(campos: ('nombre' | 'correo' | 'clave' | 'acepta')[]): boolean {
+  function validar(campos: ('nombre' | 'correo' | 'clave' | 'acepta' | 'celular')[]): boolean {
     const e: Record<string, string> = {};
     if (campos.includes('nombre') && nombre.trim().length < 2) e.nombre = 'Escribe tu nombre.';
     if (campos.includes('correo') && !CORREO.test(correo.trim())) e.correo = 'Escribe un correo válido.';
     if (campos.includes('clave') && clave.length < (vista === 'entrar' ? 1 : 8)) e.clave = vista === 'entrar' ? 'Escribe tu contraseña.' : 'Usa al menos 8 caracteres.';
     if (campos.includes('acepta') && !acepta) e.acepta = 'Para crear la cuenta hay que aceptar el tratamiento de datos.';
+    if (campos.includes('celular')) {
+      const n = normalizarCelular(celular);
+      if (n === 'invalido') e.celular = 'Revisa el celular: escribe los 10 dígitos, por ejemplo 300 123 4567.';
+      else if (whatsappOk && !n) e.celular = 'Para recibir invitaciones por WhatsApp, escribe tu celular.';
+    }
     setErrores(e);
     return Object.keys(e).length === 0;
   }
@@ -119,12 +141,13 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
       await iniciarSesion(correo, clave);
       setClave('');
       if (destino) irADestino();
-      else { const s = sesionActual(); setNombre(s?.usuario.nombre ?? ''); setSector(s?.usuario.sector ?? ''); setAviso({ tipo: 'ok', texto: `¡Hola, ${s?.usuario.nombre ?? ''}!` }); }
+      else { cargarPerfil(); setAviso({ tipo: 'ok', texto: `¡Hola, ${sesionActual()?.usuario.nombre ?? ''}!` }); }
     });
-    if (vista === 'crear' && validar(['nombre', 'correo', 'clave', 'acepta'])) void ejecutar(async () => {
-      const r = await registrarse({ nombre, correo, clave, sector: sector || null });
+    if (vista === 'crear' && validar(['nombre', 'correo', 'clave', 'acepta', 'celular'])) void ejecutar(async () => {
+      const telefono = normalizarCelular(celular);
+      const r = await registrarse({ nombre, correo, clave, sector: sector || null, telefono: telefono === 'invalido' ? null : telefono, whatsappOk });
       setClave('');
-      if (r === 'sesion') { if (destino) irADestino(); else setAviso({ tipo: 'ok', texto: `¡Bienvenido, ${nombre.trim()}! Ya tienes cuenta.` }); }
+      if (r === 'sesion') { if (destino) irADestino(); else { cargarPerfil(); setAviso({ tipo: 'ok', texto: `¡Bienvenido, ${nombre.trim()}! Ya tienes cuenta.` }); } }
       else { setModo('entrar'); setAviso({ tipo: 'ok', texto: `Te enviamos un correo a ${correo.trim()}. Abre el enlace para activar la cuenta y luego inicia sesión.` }); }
     });
     if (vista === 'olvido' && validar(['correo'])) void ejecutar(async () => {
@@ -136,8 +159,9 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
       setClave(''); setModo('perfil');
       setAviso({ tipo: 'ok', texto: 'Contraseña cambiada.' });
     });
-    if (vista === 'perfil' && validar(['nombre'])) void ejecutar(async () => {
-      await actualizarPerfil({ nombre, sector: sector || null });
+    if (vista === 'perfil' && validar(['nombre', 'celular'])) void ejecutar(async () => {
+      const telefono = normalizarCelular(celular);
+      await actualizarPerfil({ nombre, sector: sector || null, telefono: telefono === 'invalido' ? null : telefono, whatsappOk });
       setAviso({ tipo: 'ok', texto: 'Perfil guardado.' });
     });
   }
@@ -158,6 +182,17 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
   const campoNombre = <Campo id="cuenta-nombre" etiqueta="Nombre" error={errores.nombre}>
     <input id="cuenta-nombre" name="name" autoComplete="name" value={nombre} onChange={(e) => setNombre(e.target.value)} aria-invalid={Boolean(errores.nombre)} aria-describedby={errores.nombre ? 'cuenta-nombre-error' : undefined} />
   </Campo>;
+  const campoCelular = <>
+    <Campo id="cuenta-celular" etiqueta="Celular (WhatsApp, opcional)" error={errores.celular} ayuda="Solo para invitaciones a jornadas. No se publica.">
+      <input id="cuenta-celular" name="tel" type="tel" inputMode="tel" autoComplete="tel" maxLength={20} placeholder="300 123 4567" value={celular}
+        onChange={(e) => { setCelular(e.target.value); if (!e.target.value.trim()) setWhatsappOk(false); }}
+        aria-invalid={Boolean(errores.celular)} aria-describedby={errores.celular ? 'cuenta-celular-error' : undefined} />
+    </Campo>
+    <label className={`cuenta-check${celular.trim() ? '' : ' cuenta-check-apagado'}`}>
+      <input type="checkbox" checked={whatsappOk} disabled={!celular.trim()} onChange={(e) => setWhatsappOk(e.target.checked)} />
+      <span>Acepto recibir por WhatsApp invitaciones a jornadas e información del manglar. Puedo retirarlo en mi perfil.</span>
+    </label>
+  </>;
   const campoSector = <Campo id="cuenta-sector" etiqueta="Tu sector del manglar (opcional)">
     <select id="cuenta-sector" value={sector} onChange={(e) => setSector(e.target.value)}>
       <option value="">Sin elegir</option>
@@ -198,7 +233,7 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
         <form className="cuenta-form" onSubmit={enviar} noValidate>
           {vista === 'entrar' && <>{campoCorreo}{campoClave('current-password')}
             <button type="button" className="cuenta-enlace" onClick={() => cambiar('olvido')}>¿Olvidaste tu contraseña?</button></>}
-          {vista === 'crear' && <>{campoNombre}{campoCorreo}{campoClave('new-password')}{campoSector}
+          {vista === 'crear' && <>{campoNombre}{campoCorreo}{campoClave('new-password')}{campoCelular}{campoSector}
             <div className="cuenta-campo">
               <label className="cuenta-check"><input type="checkbox" checked={acepta} onChange={(e) => setAcepta(e.target.checked)} aria-invalid={Boolean(errores.acepta)} aria-describedby={errores.acepta ? 'cuenta-acepta-error' : undefined} />
                 <span>Acepto que la C.R.A. y el equipo Zanky traten mi nombre, correo y sector para gestionar mi cuenta y mis reportes, según la Ley 1581 de 2012. No se publican; puedo consultarlos y corregirlos en mi perfil.</span></label>
@@ -206,7 +241,7 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
             </div></>}
           {vista === 'olvido' && <>{campoCorreo}<button type="button" className="cuenta-enlace" onClick={() => cambiar('entrar')}>← Volver a iniciar sesión</button></>}
           {vista === 'nueva_clave' && campoClave('new-password')}
-          {vista === 'perfil' && <>{campoNombre}{campoSector}</>}
+          {vista === 'perfil' && <>{campoNombre}{campoCelular}{campoSector}</>}
 
           {aviso && <p className={`cuenta-aviso cuenta-aviso-${aviso.tipo}`} role={aviso.tipo === 'error' ? 'alert' : 'status'}>{aviso.texto}</p>}
 
@@ -217,6 +252,7 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
 
         {vista === 'perfil' && <div className="cuenta-perfil">
           <nav aria-label="Atajos de tu cuenta" className="cuenta-atajos">
+            {esAdmin && <a href="/admin" className="cuenta-atajo-admin"><ShieldCheck aria-hidden="true" />Panel de administración</a>}
             <a href="/#reportar" onClick={cerrar}>Reportar un problema</a>
             <a href="/plataforma/jornadas">Jornadas de tu comunidad</a>
             <a href="/plataforma/registro">¿Representas una organización? Regístrala como actor</a>

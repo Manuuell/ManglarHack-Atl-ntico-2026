@@ -1,0 +1,13 @@
+/* Marcadores de las capas oficiales de la C.R.A. (components/mapa/CapasOficialesCRA.tsx).
+   Más pequeños que los pines de los reportes, para que la comunidad siga al frente. */
+.pin-cra-envoltura { background: none; border: 0; }
+.pin-cra {
+  position: absolute; inset: 3px; display: grid; place-items: center;
+  box-sizing: border-box; border: 2px solid white; border-radius: 50%;
+  box-shadow: 0 2px 6px rgb(0 0 0 / .45); transition: transform 160ms ease;
+}
+.pin-cra--rombo { border-radius: 4px; transform: rotate(45deg); }
+.pin-cra--rombo > svg { transform: rotate(-45deg); }
+.pin-cra-envoltura:hover .pin-cra, .pin-cra-envoltura:focus-visible .pin-cra { transform: scale(1.15); }
+.pin-cra-envoltura:hover .pin-cra--rombo, .pin-cra-envoltura:focus-visible .pin-cra--rombo { transform: rotate(45deg) scale(1.15); }
+@media (prefers-reduced-motion: reduce) { .pin-cra { transition: none; } }

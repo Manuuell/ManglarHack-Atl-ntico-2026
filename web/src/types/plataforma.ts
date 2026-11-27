@@ -30,6 +30,8 @@ export interface Jornada {
   id: string; accion_id: string; titulo: string; tipo: TipoJornada; inicio: string; fin: string;
   punto_encuentro: string; lat: number; lon: number; cupos: number; inscritos: number;
   que_llevar: string[]; descripcion: string;
+  /** Del servidor de Zanky: imagen de la invitación y si es una jornada de ejemplo de la demostración. */
+  imagen_url?: string | null; ejemplo?: boolean;
 }
 /** Sin teléfono ni correo: esos datos se guardan exclusivamente en el servidor. */
 export interface Inscripcion { id: string; jornada_id: string; nombre: string; fecha: string }
