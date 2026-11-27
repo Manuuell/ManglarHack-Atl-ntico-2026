@@ -362,3 +362,30 @@ Nada de esto se ha ejecutado contra un Supabase real ni contra la API de Anthrop
 - La foto sin EXIF se limpia en la función antes de enviarla al modelo, pero **la copia guardada en el bucket sigue con sus metadatos** (la app debe quitarlos al capturar; el panel
   solo la entrega con URL firmada y auditoría).
 - Falta el aviso de privacidad (Ley 1581) que mencione que la foto se analiza con un proveedor externo.
+
+## 9. Estadísticas, ranking de colegios y sensores (`estadisticas.sql`)
+
+**Orden:** `schema.sql` → `zonas-N.sql` → `prioridades-N.sql` → (opcional `seed_demo.sql`) → **`estadisticas.sql`** → (opcional `seed_sensores_demo.sql`).
+Es aditivo e idempotente: se corre encima de la base ya cargada, las veces que haga falta (unos 23 KB). Reemplaza `crear_reporte(p jsonb)` (misma firma y permisos) para que lea la clave opcional `colegio`; si vuelves a correr `schema.sql`, corre `estadisticas.sql` otra vez.
+
+Todas son públicas (`anon` y `authenticated`), `security definer`, y devuelven solo agregados (ni ids, ni coordenadas, ni descripciones, ni reportantes).
+
+| RPC | Devuelve |
+|---|---|
+| `estadisticas(desde timestamptz default now() - interval '30 days')` | json: `total`, `por_estado`, `por_tipo`, `por_zona[]` (`zona`, `nombre`, `municipio`, `reportes`, `validados`), `por_prioridad` (1-5), `por_prioridad_cra` (`alta`/`media`/`baja`/`sin_clasificar`), `por_dia[]` (últimos 30 días, hora de Bogotá), `validados`, `pendientes`, `descartados`, `mediana_validacion_min`, `pct_dentro_manglar` |
+| `ranking_colegios(limite int default 20)` | json array (máx. 100): `puesto`, `colegio`, `validados`, `totales`, `zonas_distintas`, `ultimo_reporte` (solo fecha). Solo los validados dan puesto; sin validados `puesto` es `null` |
+| `asignar_colegio(p_id uuid, p_colegio text)` | `{id, colegio}`. Quien tiene el id del reporte lo pone una vez; el admin lo cambia o quita |
+| `ultimas_lecturas()` | json array: última lectura de cada sensor activo (`valor`, `unidad`, `medido_en`, `umbral_alerta`, `en_alerta`, `vigente`, zona, lat/lon). Sin lecturas, `valor` es `null` |
+
+Validado = `verificado`, `alerta_oficial`, `en_atencion` o `cerrado`; pendiente = `recibido` o `en_verificacion`. `colegio` viaja dentro de `p` en `crear_reporte` (texto, se recorta a 80).
+
+```bash
+curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/estadisticas" -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+  -H "Content-Type: application/json" -d '{"desde": "2026-11-01T00:00:00Z"}'   # sin desde: últimos 30 días ({} vale)
+curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/ranking_colegios" -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
+  -H "Content-Type: application/json" -d '{"limite": 10}'
+```
+
+**Sensores (maqueta):** `sensores` y `lecturas_sensor` con RLS: los sensores activos son públicos; las lecturas crudas solo las lee el panel y solo las escribe un admin (o el service role). No hay lecturas inventadas: `seed_sensores_demo.sql` es aparte y va marcado `[DEMO]` / `-- DEMOSTRACIÓN`.
+
+**Cómo se probó:** PGlite (Postgres en WASM) con un PostGIS de mentira, cargando `schema.sql` + `seed_demo.sql` + `estadisticas.sql` dos veces. **No** con PostGIS real: `por_prioridad_cra` usa `ST_Covers`; comprobar en Supabase con `select public.estadisticas();`.
