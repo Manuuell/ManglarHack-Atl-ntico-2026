@@ -106,7 +106,7 @@ Pasos para repetirla (desde `bot/`):
 | Qué | Bot / servidor / app | Web | Quién decide |
 |---|---|---|---|
 | Ids de sector | `mallorquin`, `tubara`, `juan_de_acosta`, `piojo` (contrato y `zonas` del servidor) | `mallorquin`, `balboa`, `manaties`, `totumo` (`poligonosManglar.json`) | Equipo, con la C.R.A. |
-| Nombre de sector | Ciénaga de Mallorquín · Costa de Tubará · Costa de Juan de Acosta · Ciénaga del Totumo | Mallorquín · Balboa · Manatíes · Totumo (los de la C.R.A.; en main `sectorCra` ya los trae) | Equipo, con la C.R.A. |
+| Nombre de sector | Ciénaga de Mallorquín · Costa de Tubará · Costa de Juan de Acosta · Ciénaga del Totumo (app en main: `sectorCra` Mallorquín · Balboa · Manatíes · Totumo) | Portada (`poligonosManglar.json`): Mallorquín · Balboa · Manatíes · Totumo. Nombres de la C.R.A. en `origin/web:web/src/lib/workflow.ts`: Mallorquín – Bocas de Ceniza · Puerto Colombia – Balboa – Puerto Velero · Tubará – Juan de Acosta · Totumo – Astilleros – Galerazamba (handoff/11: «Manatíes» es una ciénaga, no un sector) | Equipo, con la C.R.A. |
 | Municipio | Barranquilla – Puerto Colombia · Tubará · Juan de Acosta · Piojó | Barranquilla · Puerto Colombia y Tubará · Tubará y Juan de Acosta · Piojó | Equipo |
 | Gravedad de tipo | caño taponado 4, fauna 4, otro 2 (servidor) | 3, 3, 1 | Vale la del servidor; la web solo la muestra |
 | Etiqueta `alerta_oficial` | ahora «Alerta oficial» (igual) | «Alerta oficial» | — |
