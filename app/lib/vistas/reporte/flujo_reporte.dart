@@ -108,7 +108,7 @@ class _FlujoReporteState extends State<FlujoReporte> {
             _? => 'Ese punto queda lejos del manglar. Si lo afecta, repórtalo igual.',
             null when _b.gps == EstadoGps.sinPermiso || _b.gps == EstadoGps.apagado =>
               'Sin GPS también se puede: toca el mapa donde está pasando.',
-            null => '${TextosCanal.pedirUbicacion} El GPS funciona aunque no haya señal.',
+            null => '¿Dónde está pasando? Uso el GPS: funciona aunque no haya señal.',
           },
         2 => _b.foto == null
             ? TextosCanal.pedirFoto
@@ -274,15 +274,32 @@ class _FlujoReporteState extends State<FlujoReporte> {
                 ),
               ),
               Expanded(
-                child: PageView(
-                  controller: _paginas,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    _PasoTransicion(controlador: _paginas, indice: 0, inicial: _paso, child: PasoTipo(borrador: _b, onElegido: () => _ir(1))),
-                    _PasoTransicion(controlador: _paginas, indice: 1, inicial: _paso, child: PasoUbicacion(borrador: _b, zonaId: widget.zonaId)),
-                    _PasoTransicion(controlador: _paginas, indice: 2, inicial: _paso, child: PasoEvidencia(borrador: _b)),
-                    _PasoTransicion(controlador: _paginas, indice: 3, inicial: _paso, child: PasoDetalles(borrador: _b)),
-                  ],
+                // Deslizar entre pasos, como en iOS: a la derecha vuelve, a la izquierda sigue si
+                // se puede. En «¿Dónde?» no: ahí el dedo mueve el mapa (se usa la flecha o el borde).
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onHorizontalDragEnd: _paso == 1
+                      ? null
+                      : (d) {
+                          final v = d.primaryVelocity ?? 0;
+                          if (v > 350 && _paso > primerPaso) {
+                            vibrar(Vibracion.seleccion);
+                            _ir(_paso - 1);
+                          } else if (v < -350 && _paso < 3 && _paso > 0 && _puedeSeguir) {
+                            vibrar(Vibracion.seleccion);
+                            _siguiente();
+                          }
+                        },
+                  child: PageView(
+                    controller: _paginas,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      _PasoTransicion(controlador: _paginas, indice: 0, inicial: _paso, child: PasoTipo(borrador: _b, onElegido: () => _ir(1))),
+                      _PasoTransicion(controlador: _paginas, indice: 1, inicial: _paso, child: PasoUbicacion(borrador: _b, zonaId: widget.zonaId)),
+                      _PasoTransicion(controlador: _paginas, indice: 2, inicial: _paso, child: PasoEvidencia(borrador: _b)),
+                      _PasoTransicion(controlador: _paginas, indice: 3, inicial: _paso, child: PasoDetalles(borrador: _b)),
+                    ],
+                  ),
                 ),
               ),
               _BarraAccion(

@@ -9,6 +9,7 @@ import '../../datos/fotos.dart';
 import '../../datos/metadatos_foto.dart';
 import '../../datos/prioridad.dart';
 import '../../datos/reporte.dart';
+import '../../datos/reporte_canal.dart';
 import '../../datos/tipos.dart';
 import '../../datos/zonas.dart';
 
@@ -253,7 +254,18 @@ class Borrador extends ChangeNotifier {
         prioridad: p.valor,
         prioridadLocal: p.valor,
         motivosPrioridad: p.motivos,
-        confianza: solidez.valor,
+        // Con la regla del bot y de la web, para que el panel compare igual los tres canales.
+        confianza: confianzaCanal(
+          conFoto: foto != null,
+          fotoHash: huella,
+          metodo: metodo,
+          dentro: u.dentro,
+          distanciaM: u.distanciaM,
+          momento: momento,
+          descripcion: descripcion,
+          corroborados: corroboraciones,
+          propios: estado.reportes,
+        ).puntaje,
         anonimo: anonimo,
         reportanteId: estado.perfil?.id,
         fotoRef: ref,

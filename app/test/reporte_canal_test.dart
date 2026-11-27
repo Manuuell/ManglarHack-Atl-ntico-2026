@@ -16,10 +16,14 @@ import 'package:zanky/nucleo/tema.dart';
 import 'package:zanky/vistas/reporte/enviado.dart';
 import 'package:zanky/vistas/reporte/flujo_reporte.dart';
 import 'package:zanky/vistas/reporte/paso_detalles.dart';
+import 'package:zanky/vistas/reporte/borrador.dart';
+import 'package:zanky/vistas/reporte/paso_evidencia.dart';
+
+import 'servidor_contrato_test.dart' show jpegConGps;
 
 late Manglar _manglar;
 
-Reporte _reporte(String id, DateTime cuando, {Envio envio = Envio.enviado, EstadoReporte estado = EstadoReporte.recibido}) =>
+Reporte _reporte(String id, DateTime cuando, {Envio envio = Envio.enviado, EstadoReporte estado = EstadoReporte.recibido, String? fotoHash}) =>
     Reporte(
       id: id,
       tipo: TipoAmenaza.tala,
@@ -42,6 +46,7 @@ Reporte _reporte(String id, DateTime cuando, {Envio envio = Envio.enviado, Estad
       reportanteId: null,
       envio: envio,
       estado: estado,
+      fotoHash: fotoHash,
     );
 
 Future<void> _montar(WidgetTester tester, EstadoZanky estado, Widget hijo, Size tamano) async {
@@ -77,6 +82,51 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   group('Reglas del bot', () {
+    test('confianza con la regla de evaluacion.ts y del formulario web', () {
+      // Foto + GPS + dentro + ahora + descripción: 20+25+20+15+10+5 = 95, el cliente topa en 80.
+      final completo = confianzaCanal(
+          conFoto: true, fotoHash: 'h1', metodo: MetodoUbicacion.gps, dentro: true, distanciaM: 0,
+          momento: Momento.ahora, descripcion: 'Cortan mangle con motosierra');
+      expect(completo.puntaje, 80);
+      expect(completo.motivos, containsAll(['+20 base', '+25 trae foto', '+20 ubicación del GPS', '+15 dentro del manglar']));
+      // Sin foto, por enlace, a 300 m, de hoy y sin detalle: 20+10+10+5 = 45.
+      expect(
+          confianzaCanal(
+                  conFoto: false, metodo: MetodoUbicacion.enlace, dentro: false, distanciaM: 300,
+                  momento: Momento.hoy, descripcion: 'humo')
+              .puntaje,
+          45);
+      // Lejos y de antes: solo base + mapa = 30.
+      expect(
+          confianzaCanal(
+                  conFoto: false, metodo: MetodoUbicacion.mapa, dentro: false, distanciaM: 900,
+                  momento: Momento.antes, descripcion: '')
+              .puntaje,
+          30);
+      // Foto repetida de otro reporte propio: -30; corroboraciones suman de a 10 hasta 20.
+      final previo = _reporte('p1', DateTime(2026, 11, 26), fotoHash: 'h1');
+      expect(
+          confianzaCanal(
+                  conFoto: true, fotoHash: 'h1', metodo: MetodoUbicacion.gps, dentro: true, distanciaM: 0,
+                  momento: Momento.antes, descripcion: '', corroborados: 3, propios: [previo])
+              .puntaje,
+          20 - 30 + 20 + 15 + 20);
+      // Reportante con un verificado: +10; con dos descartados: -20.
+      final verificado = _reporte('v1', DateTime(2026, 11, 20), estado: EstadoReporte.verificado);
+      final d1 = _reporte('d1', DateTime(2026, 11, 20), estado: EstadoReporte.descartado);
+      final d2 = _reporte('d2', DateTime(2026, 11, 21), estado: EstadoReporte.descartado);
+      final base = confianzaCanal(
+          conFoto: false, metodo: MetodoUbicacion.mapa, dentro: false, distanciaM: 900, momento: Momento.antes,
+          descripcion: '', propios: [verificado]);
+      expect(base.puntaje, 40);
+      expect(
+          confianzaCanal(
+                  conFoto: false, metodo: MetodoUbicacion.mapa, dentro: false, distanciaM: 900,
+                  momento: Momento.antes, descripcion: '', propios: [d1, d2])
+              .puntaje,
+          10);
+    });
+
     test('mismos números que bot/src/config.ts', () {
       expect(ReglasCanal.distanciaSospechosaM, 3000);
       expect(ReglasCanal.maxReportesPorHora, 5);
@@ -208,6 +258,30 @@ void main() {
     await _esperar(tester);
     expect(find.text('Varios reportes seguidos'), findsNothing);
     expect(find.byType(FlujoReporte), findsOneWidget);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 30));
+  });
+
+  testWidgets('foto: tocarla la abre en grande; «Quitar» ofrece «Deshacer» y la devuelve', (tester) async {
+    final e = EstadoZanky()..manglar = _manglar;
+    final b = Borrador(e, tipo: TipoAmenaza.tala)..marcarEnMapa(const LatLng(11.05316, -74.85094));
+    addTearDown(b.dispose);
+    b.ponerFoto(base64Decode(jpegConGps), deCamara: true);
+    await _montar(tester, e, Scaffold(body: PasoEvidencia(borrador: b)),
+        const Size(390, 844));
+    await tester.tap(find.bySemanticsLabel('Ver la foto en grande'));
+    await _esperar(tester);
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+    await tester.tap(find.bySemanticsLabel('Cerrar la foto').last);
+    await _esperar(tester);
+    expect(find.byType(InteractiveViewer), findsNothing);
+    await tester.tap(find.text('Quitar'));
+    await _esperar(tester);
+    expect(b.foto, isNull);
+    await tester.tap(find.text('Deshacer'));
+    await _esperar(tester);
+    expect(b.foto, isNotNull);
+    expect(b.fotoDeCamara, isTrue);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 30));
   });

@@ -127,3 +127,59 @@ abstract final class TextosCanal {
   /// ¿Toca recordar la línea 123? Lo que pasa ahora y es de los más graves (fuego, tala).
   static bool pideEmergencia(TipoAmenaza tipo, Momento momento) => momento == Momento.ahora && tipo.gravedad >= 5;
 }
+
+/// Confianza 0-80 que el reporte lleva al servidor, con la MISMA regla del bot
+/// (`bot/src/reportes/evaluacion.ts`, `confianza`) y del formulario web
+/// (`ReportarProblema.tsx`): así un reporte de la app y uno de WhatsApp entran al panel con
+/// el mismo puntaje. El servidor acepta del cliente hasta 80; de ahí lo suben la IA y las
+/// personas. Devuelve el puntaje y sus motivos («+25 trae foto»…).
+({int puntaje, List<String> motivos}) confianzaCanal({
+  required bool conFoto,
+  String? fotoHash,
+  required MetodoUbicacion metodo,
+  required bool dentro,
+  required double distanciaM,
+  required Momento momento,
+  required String descripcion,
+  int corroborados = 0,
+  Iterable<Reporte> propios = const [],
+}) {
+  var puntaje = 20;
+  final motivos = <String>['+20 base'];
+  void sumar(int n, String motivo) {
+    puntaje += n;
+    motivos.add('${n >= 0 ? '+' : ''}$n $motivo');
+  }
+
+  if (conFoto) {
+    final repetida = fotoHash != null && propios.any((r) => r.fotoHash == fotoHash);
+    repetida ? sumar(-30, 'foto repetida de otro reporte') : sumar(25, 'trae foto');
+  } else {
+    motivos.add('+0 sin foto');
+  }
+  metodo == MetodoUbicacion.gps
+      ? sumar(20, 'ubicación del GPS')
+      : sumar(10, 'ubicación por enlace o coordenadas');
+  if (dentro) {
+    sumar(15, 'dentro del manglar');
+  } else if (distanciaM <= ReglasCanal.radioInfluenciaM) {
+    sumar(10, 'a ${distanciaM.round()} m del manglar');
+  } else {
+    motivos.add('+0 lejos del manglar (${distanciaM.round()} m)');
+  }
+  if (momento == Momento.ahora) {
+    sumar(10, 'está pasando ahora');
+  } else if (momento == Momento.hoy) {
+    sumar(5, 'pasó hoy');
+  }
+  if (corroborados > 0) {
+    sumar(corroborados * 10 > 20 ? 20 : corroborados * 10, '$corroborados reporte(s) cercano(s) de otras personas');
+  }
+  if (descripcion.trim().length >= 15) sumar(5, 'descripción con detalle');
+  const buenos = {EstadoReporte.verificado, EstadoReporte.alertaOficial, EstadoReporte.enAtencion, EstadoReporte.cerrado};
+  if (propios.any((r) => buenos.contains(r.estado))) sumar(10, 'reportante con reportes verificados');
+  if (propios.where((r) => r.estado == EstadoReporte.descartado).length >= 2) {
+    sumar(-20, 'reportante con varios reportes descartados');
+  }
+  return (puntaje: puntaje.clamp(0, 80), motivos: motivos);
+}

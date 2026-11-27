@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../datos/prioridad.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import 'borrador.dart';
@@ -157,6 +158,39 @@ class _PasoEvidenciaState extends State<PasoEvidencia> {
         ],
       );
 
+  static const _heroFoto = 'foto-del-reporte';
+
+  /// Quitar la foto no es definitivo: la píldora ofrece «Deshacer» mientras se vacía.
+  void _quitarConDeshacer() {
+    final b = widget.borrador;
+    final previa = b.foto;
+    final deCamara = b.fotoDeCamara;
+    if (previa == null) return;
+    b.quitarFoto();
+    avisar(
+      context,
+      'Quitaste la foto.',
+      accion: AccionAviso('Deshacer', () => b.ponerFoto(previa, deCamara: deCamara)),
+    );
+  }
+
+  /// La foto a pantalla completa: crece desde su sitio (Hero), se acerca con dos dedos y se
+  /// cierra con un toque o deslizando hacia abajo.
+  void _verEnGrande(Uint8List foto) {
+    Navigator.of(context).push(PageRouteBuilder<void>(
+      opaque: false,
+      barrierColor: Colors.black,
+      barrierDismissible: true,
+      barrierLabel: 'Cerrar la foto',
+      transitionDuration: Zm.medio,
+      reverseTransitionDuration: Zm.corto,
+      pageBuilder: (context, anim, _) => FadeTransition(
+        opacity: anim,
+        child: _FotoEnGrande(foto: foto, tag: _heroFoto),
+      ),
+    ));
+  }
+
   Widget _conFoto(TextTheme tt) {
     final b = widget.borrador;
     return Column(
@@ -166,13 +200,39 @@ class _PasoEvidenciaState extends State<PasoEvidencia> {
           borderRadius: BorderRadius.circular(Zr.l),
           child: Stack(
             children: [
-              Image.memory(
-                b.foto!,
-                height: 280,
-                width: double.infinity,
-                fit: BoxFit.cover,
-                gaplessPlayback: true,
-                cacheWidth: 1000,
+              // Tocar o mantener presionado abre la foto en grande, como en Fotos de iOS.
+              Semantics(
+                button: true,
+                label: 'Ver la foto en grande',
+                child: GestureDetector(
+                  onTap: () => _verEnGrande(b.foto!),
+                  onLongPress: () {
+                    vibrar(Vibracion.media);
+                    _verEnGrande(b.foto!);
+                  },
+                  child: Hero(
+                    tag: _heroFoto,
+                    child: Image.memory(
+                      b.foto!,
+                      height: 280,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                      cacheWidth: 1000,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 10,
+                bottom: 10,
+                child: IgnorePointer(
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
+                    child: const Icon(Icons.open_in_full_rounded, size: 16, color: Colors.white),
+                  ),
+                ),
               ),
               Positioned(
                 left: 10,
@@ -210,7 +270,7 @@ class _PasoEvidenciaState extends State<PasoEvidencia> {
                 icono: Icons.delete_outline_rounded,
                 secundario: true,
                 color: Zc.textoSuave,
-                onTap: b.quitarFoto,
+                onTap: _quitarConDeshacer,
               ),
             ),
           ],
@@ -279,6 +339,55 @@ class _MedidorSolidez extends StatelessWidget {
           const SizedBox(height: 8),
           Text('La decisión final la toma una persona de la CRA o un vigía.',
               style: tt.bodySmall?.copyWith(fontSize: 11.5, color: Zc.textoTenue)),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _FotoEnGrande extends StatelessWidget {
+  const _FotoEnGrande({required this.foto, required this.tag});
+  final Uint8List foto;
+  final String tag;
+
+  @override
+  Widget build(BuildContext context) {
+    void cerrar() => Navigator.of(context).maybePop();
+    return Material(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: cerrar,
+              onVerticalDragEnd: (d) {
+                if ((d.primaryVelocity ?? 0) > 300) cerrar();
+              },
+              child: InteractiveViewer(
+                maxScale: 4,
+                child: Center(child: Hero(tag: tag, child: Image.memory(foto, fit: BoxFit.contain))),
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Presionable(
+                  etiqueta: 'Cerrar la foto',
+                  onTap: cerrar,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                    child: const Icon(Icons.close_rounded, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
