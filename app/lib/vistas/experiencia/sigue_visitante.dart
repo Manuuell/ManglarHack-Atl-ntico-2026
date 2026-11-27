@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../../datos/experiencia/instalar_web.dart';
@@ -162,9 +165,38 @@ class SigueConZanky extends StatefulWidget {
 class _SigueConZankyState extends State<SigueConZanky> {
   FaseBoton _fase = FaseBoton.reposo;
 
+  /// El navegador ofreció instalar (Chrome/Edge). Llega cuando el navegador decide, a veces segundos
+  /// después de abrir: se revisa cada segundo durante medio minuto, sin pedir nada a la red.
+  bool _puede = puedeInstalarApp();
+  final bool _ios = esIos();
+  Timer? _espera;
+
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb && !_puede && !_ios && !appInstalada()) {
+      var vueltas = 0;
+      _espera = Timer.periodic(const Duration(seconds: 1), (t) {
+        if (++vueltas >= 30) t.cancel();
+        if (puedeInstalarApp()) {
+          t.cancel();
+          if (mounted) setState(() => _puede = true);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _espera?.cancel();
+    super.dispose();
+  }
+
   Future<void> _instalar() async {
     if (!puedeInstalarApp()) {
-      await _explicarInstalar(context);
+      // iPhone: Safari no tiene aviso; se muestran los pasos. Si el aviso ya se usó, también.
+      await _explicarInstalar(context, ios: _ios);
+      if (!_ios && mounted) setState(() => _puede = false);
       return;
     }
     setState(() => _fase = FaseBoton.cargando);
@@ -176,6 +208,8 @@ class _SigueConZankyState extends State<SigueConZanky> {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final instalada = appInstalada();
+    // El botón solo aparece cuando sirve: aviso del navegador disponible, o iPhone (con los pasos a mano).
+    final mostrarInstalar = kIsWeb && !instalada && (_puede || _ios);
     return Container(
       margin: const EdgeInsets.only(top: 22),
       padding: const EdgeInsets.all(16),
@@ -196,7 +230,9 @@ class _SigueConZankyState extends State<SigueConZanky> {
                     Text(
                       instalada
                           ? 'Ya me tienes en tu pantalla de inicio. Cuéntame lo que veas en el manglar.'
-                          : 'Llévame en tu teléfono: funciono sin señal y casi no ocupo espacio.',
+                          : mostrarInstalar
+                              ? 'Llévame en tu teléfono: funciono sin señal y casi no ocupo espacio.'
+                              : 'Cuéntame lo que veas en el manglar: aquí te espero.',
                       style: tt.bodySmall,
                     ),
                   ],
@@ -205,11 +241,11 @@ class _SigueConZankyState extends State<SigueConZanky> {
             ],
           ),
           const SizedBox(height: 14),
-          if (!instalada) ...[
+          if (mostrarInstalar) ...[
             BotonEstado(
-              texto: 'Instalar Zanky',
+              texto: _ios ? 'Agregar Zanky a inicio' : 'Instalar Zanky',
+              icono: _ios ? Icons.ios_share_rounded : Icons.install_mobile_rounded,
               textoHecho: 'Zanky instalada',
-              icono: Icons.install_mobile_rounded,
               fase: _fase,
               onTap: _instalar,
             ),
@@ -228,7 +264,7 @@ class _SigueConZankyState extends State<SigueConZanky> {
 }
 
 /// iPhone y navegadores sin aviso de instalación: los pasos a mano.
-Future<void> _explicarInstalar(BuildContext context) => mostrarHojaZ<void>(
+Future<void> _explicarInstalar(BuildContext context, {bool ios = false}) => mostrarHojaZ<void>(
       context,
       nombre: 'instalar_zanky',
       contenido: (c) {
@@ -249,10 +285,16 @@ Future<void> _explicarInstalar(BuildContext context) => mostrarHojaZ<void>(
           children: [
             const Center(child: ZankyMascota(tamano: 84, animo: Animo.feliz)),
             const SizedBox(height: 10),
-            Text('Instala Zanky en dos toques', textAlign: TextAlign.center, style: tt.titleLarge),
+            Text(ios ? 'Agrega Zanky a tu inicio' : 'Instala Zanky en dos toques',
+                textAlign: TextAlign.center, style: tt.titleLarge),
             const SizedBox(height: 14),
-            paso(Icons.ios_share_rounded, 'iPhone (Safari): toca Compartir y luego «Agregar a inicio».'),
-            paso(Icons.more_vert_rounded, 'Android (Chrome): abre el menú y toca «Instalar app» o «Agregar a la pantalla principal».'),
+            if (ios) ...[
+              paso(Icons.ios_share_rounded, '1. Abajo en Safari, toca Compartir (el cuadro con la flecha hacia arriba).'),
+              paso(Icons.add_box_outlined, '2. Desliza y toca «Agregar a inicio».'),
+              paso(Icons.check_circle_outline_rounded, '3. Toca «Agregar». Zanky queda con su ícono y abre sin señal.'),
+              paso(Icons.info_outline_rounded, 'Si abriste el enlace desde otra app (WhatsApp, Instagram), primero ábrelo en Safari.'),
+            ] else
+              paso(Icons.more_vert_rounded, 'Abre el menú del navegador y toca «Instalar app» o «Agregar a la pantalla principal».'),
             const SizedBox(height: 6),
             BotonEstado(texto: 'Entendido', onTap: () => Navigator.of(c).pop()),
           ],

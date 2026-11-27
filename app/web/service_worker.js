@@ -21,14 +21,16 @@ const recursos = [
   'assets/assets/datos/jornadas_respaldo.json', 'assets/assets/datos/manglar_zonas.json',
   'assets/assets/datos/prioridades_cra.json',
   'assets/packages/flutter_map/lib/assets/flutter_map_logo.png',
+  // Fotos del manglar (bienvenida, pantalla del punto, próximo evento): sin ellas la app abre gris sin señal.
+  ...['manglar-raices-cartagena', 'garza-mallorquin', 'sendero-mallorquin', 'cano-san-bernardo']
+    .map((f) => `assets/assets/fotos/${f}.webp`),
   ...webp,
 ];
-// CanvasKit es indispensable para la compilación web normal de Flutter.
-const motor = ['canvaskit/canvaskit.js', 'canvaskit/canvaskit.wasm'];
-const motorOpcional = [
-  'canvaskit/canvaskit_chromium.wasm', 'canvaskit/skwasm.js',
-  'canvaskit/skwasm.wasm', 'canvaskit/skwasm.worker.js',
-];
+// CanvasKit es indispensable: se guarda solo la variante que usa este navegador (la elige pwa.js igual que
+// el cargador de Flutter). Antes se bajaba la completa aquí y la de Chrome desde el CDN: 13 MB en vez de 6.
+const carpetaMotor = parametros.get('motor') === 'chromium' ? 'canvaskit/chromium/' : 'canvaskit/';
+const motor = [`${carpetaMotor}canvaskit.js`, `${carpetaMotor}canvaskit.wasm`];
+const motorOpcional = [];
 
 self.addEventListener('install', (evento) => {
   evento.waitUntil((async () => {
@@ -77,7 +79,11 @@ self.addEventListener('fetch', (evento) => {
     evento.respondWith((async () => {
       const cache = await caches.open(nombreCache);
       const control = new AbortController();
-      const limite = setTimeout(() => control.abort(), 3500);
+      // Sin señal no se espera a la red: se abre la copia local al instante. Con señal floja, 1,5 s como
+      // máximo para la portada (antes 3,5 s) y 3 s para las jornadas.
+      const guardada = entrada ? await cache.match(url('index.html')) : null;
+      if (entrada && guardada && self.navigator.onLine === false) return guardada;
+      const limite = setTimeout(() => control.abort(), entrada && guardada ? 1500 : 3000);
       try {
         const respuesta = await fetch(solicitud, { signal: control.signal });
         if (respuesta.ok) {
@@ -86,7 +92,7 @@ self.addEventListener('fetch', (evento) => {
         }
         return respuesta;
       } catch (_) {
-        if (entrada) return await cache.match(url('index.html')) || Response.error();
+        if (entrada) return guardada || Response.error();
         return await cache.match(solicitud) ||
           await cache.match(url('assets/assets/datos/jornadas_respaldo.json')) || Response.error();
       } finally {

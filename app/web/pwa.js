@@ -25,6 +25,9 @@
   let avisoInstalar = null;
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); avisoInstalar = e; });
   window.addEventListener('appinstalled', () => { avisoInstalar = null; });
+  // iPhone/iPad: Safari no ofrece aviso de instalación; se explica «Compartir → Agregar a inicio».
+  window.zankyEsIos = () => /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   window.zankyInstalada = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   window.zankyPuedeInstalar = () => avisoInstalar !== null;
   window.zankyInstalar = async () => {
@@ -64,6 +67,9 @@
       sw.searchParams.set('v', huella);
       sw.searchParams.set('arranque', url.pathname.split('/').pop());
       sw.searchParams.set('principal', principal);
+      // El mismo motor que elige el cargador de Flutter: la copia «chromium» (5,8 MB) en Chrome/Edge y la
+      // completa (7,2 MB) en el resto. Así la copia local guarda solo el que este navegador usa.
+      sw.searchParams.set('motor', motorCanvasKit());
       registro = await navigator.serviceWorker.register(sw.href, { scope: new URL('./', document.baseURI).pathname });
       const revisar = () => { nuevaVersion = Boolean(registro.waiting && navigator.serviceWorker.controller); };
       revisar();
@@ -76,6 +82,11 @@
       // Sin señal, el controlador anterior sigue atendiendo la aplicación.
     }
   }
+  function motorCanvasKit() {
+    const chromium = typeof ImageDecoder !== 'undefined' && typeof Intl.v8BreakIterator !== 'undefined' &&
+      typeof Intl.Segmenter !== 'undefined';
+    return chromium ? 'chromium' : 'completo';
+  }
   async function buscarActualizacion() {
     try {
       const respuesta = await fetch(new URL('index.html', document.baseURI), { cache: 'no-store' });
@@ -86,6 +97,16 @@
     } catch (_) { /* La búsqueda se repite al recuperar señal. */ }
   }
   window.addEventListener('focus', buscarActualizacion);
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', registrar);
-  else registrar();
+  // Primera visita: la copia local se arma DESPUÉS del primer cuadro de Flutter, para no competir por la red
+  // con el motor y el código de la app (en 3G eran ~13 MB a la vez). Si el primer cuadro no llega, a los 8 s.
+  let registrado = false;
+  const registrarUnaVez = () => { if (!registrado) { registrado = true; registrar(); } };
+  if (navigator.serviceWorker.controller) {
+    // Ya hay copia local: se revisa si cambió apenas cargue la página.
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', registrarUnaVez);
+    else registrarUnaVez();
+  } else {
+    window.addEventListener('flutter-first-frame', () => setTimeout(registrarUnaVez, 300), { once: true, capture: true });
+    setTimeout(registrarUnaVez, 8000);
+  }
 })();
