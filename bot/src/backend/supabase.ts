@@ -2,9 +2,10 @@ import { config } from '../config';
 import { Estado } from '../reportes/modelo';
 
 /**
- * Puente al backend común (backend/supabase). Usa la clave anon, como la app: las reglas del servidor
- * solo dejan insertar las 23 columnas del contrato con estado «recibido», subir la foto del propio
- * reporte y consultar el estado por id. La service_role no hace falta aquí.
+ * Puente al backend común (backend/supabase). Usa la clave pública (anon), como la app: el público solo
+ * puede crear reportes con la RPC crear_reporte (valida el contrato y recalcula zona, prioridad y
+ * confianza en el servidor), subir la foto del propio reporte y consultar el estado por id.
+ * La service_role no hace falta aquí.
  */
 
 export function backendActivo(): boolean {
@@ -40,7 +41,7 @@ async function pedir(ruta: string, init: RequestInit): Promise<Response> {
   return res;
 }
 
-/** Las 23 columnas que el contrato deja escribir al cliente (grant insert de schema.sql). */
+/** Las 23 columnas del contrato que manda el cliente (las lee crear_reporte de schema.sql). */
 export interface FilaReporte {
   id: string;
   canal: 'whatsapp';
@@ -67,13 +68,26 @@ export interface FilaReporte {
   sincronizado_tarde: boolean;
 }
 
-/** Inserta el reporte. Con «ignore-duplicates» un reintento del mismo id no falla ni duplica. */
-export async function insertarReporte(fila: FilaReporte): Promise<void> {
-  await pedir('/rest/v1/reportes', {
+export interface ReporteCreado {
+  id: string;
+  /** false si ese id ya estaba (un reintento): el servidor no lo duplica ni lo cuenta otra vez. */
+  nuevo: boolean;
+  /** Id que sale en el mapa público y los datos abiertos; el id interno nunca se publica. */
+  id_publico: string;
+}
+
+/**
+ * Crea el reporte con la RPC crear_reporte, la única puerta de escritura del público. Es idempotente
+ * por id. Si el servidor lo rechaza (400, «motivo: explicación») no se reintenta; un 429 (límite de
+ * 10 por hora) o una caída sí.
+ */
+export async function crearReporte(fila: FilaReporte): Promise<ReporteCreado> {
+  const res = await pedir('/rest/v1/rpc/crear_reporte', {
     method: 'POST',
-    headers: encabezados({ 'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates,return=minimal' }),
-    body: JSON.stringify(fila),
+    headers: encabezados({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ p: fila }),
   });
+  return (await res.json()) as ReporteCreado;
 }
 
 /** Sube la foto al bucket privado como evidencias/<id>.jpg. Si ya estaba (reintento), se da por subida. */

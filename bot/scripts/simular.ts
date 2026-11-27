@@ -1,9 +1,10 @@
 /**
  * Simula una conversación completa con Zanky BOT sin enviar nada a WhatsApp, contra un backend
- * de mentira que aplica las mismas reglas que backend/supabase/schema.sql (columnas permitidas,
- * valores aceptados, recuadro del Atlántico, foto en evidencias/<id>.jpg…).
+ * de mentira que aplica las mismas reglas que backend/supabase/schema.sql (RPC crear_reporte con
+ * las columnas del contrato, valores aceptados, recuadro del Atlántico, foto en evidencias/<id>.jpg…).
  * Uso: npm run simular
  */
+import crypto from 'crypto';
 import fs from 'fs';
 import http from 'http';
 import os from 'os';
@@ -58,12 +59,15 @@ const servidor = http.createServer((req, res) => {
       fallarProximos--;
       return res.writeHead(503).end('{"message":"caído a propósito"}');
     }
-    if (req.method === 'POST' && req.url === '/rest/v1/reportes') {
-      const fila = JSON.parse(cuerpo);
+    if (req.method === 'POST' && req.url === '/rest/v1/rpc/crear_reporte') {
+      const fila = JSON.parse(cuerpo).p ?? {};
+      const previa = filas.find(f => f.id === fila.id);
+      const json = (o: object) => res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(o));
+      if (previa) return json({ id: fila.id, nuevo: false, id_publico: previa._id_publico }); // reintento idempotente
       const errores = validar(fila);
-      if (errores.length) return res.writeHead(400).end(JSON.stringify({ message: errores.join('; ') }));
-      if (!filas.some(f => f.id === fila.id)) filas.push(fila); // ignore-duplicates
-      return res.writeHead(201).end();
+      if (errores.length) return res.writeHead(400).end(JSON.stringify({ code: '22023', message: `reporte_invalido: ${errores.join('; ')}` }));
+      filas.push({ ...fila, _id_publico: crypto.randomUUID() });
+      return json({ id: fila.id, nuevo: true, id_publico: filas[filas.length - 1]._id_publico });
     }
     if (req.method === 'POST' && req.url?.startsWith('/storage/v1/object/evidencias/')) {
       return res.writeHead(req.headers['content-type'] === 'image/jpeg' ? 200 : 400).end('{}');

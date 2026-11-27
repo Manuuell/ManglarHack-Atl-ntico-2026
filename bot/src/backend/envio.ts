@@ -1,6 +1,6 @@
 import * as almacen from '../reportes/almacen';
 import { Reporte } from '../reportes/modelo';
-import { ErrorBackend, FilaReporte, backendActivo, insertarReporte, subirFoto } from './supabase';
+import { ErrorBackend, FilaReporte, backendActivo, crearReporte, estadoDeReportes, subirFoto } from './supabase';
 
 const HEX64 = /^[0-9a-f]{64}$/;
 const DIEZ_MIN = 10 * 60 * 1000;
@@ -57,10 +57,16 @@ export async function enviarReporte(r: Reporte): Promise<ResultadoEnvio> {
         fotoUrl = `evidencias/${r.id}.jpg`;
       }
     }
-    await insertarReporte(aFila(r, fotoUrl));
+    const creado = await crearReporte(aFila(r, fotoUrl));
     r.envio = { estado: 'enviado', intentos, enviadoEn: new Date().toISOString() };
+    // La prioridad y la confianza que valen son las del servidor (zona y prioridad oficial de la C.R.A.,
+    // corroboraciones): se leen apenas se crea. Si esa lectura falla, el reporte igual quedó guardado.
+    try {
+      const [e] = await estadoDeReportes([r.id]);
+      if (e) { r.prioridad = e.prioridad; r.confianza = e.confianza; r.estado = e.estado; }
+    } catch { /* se actualiza la próxima vez que la persona pida «Mis reportes» */ }
     almacen.actualizar(r);
-    console.log(`[backend] ${r.codigo} guardado en el backend común (intento ${intentos})`);
+    console.log(`[backend] ${r.codigo} guardado en el backend común (intento ${intentos}${creado.nuevo ? '' : ', ya estaba'}) · prioridad ${r.prioridad}`);
     return 'enviado';
   } catch (err) {
     const reintentable = !(err instanceof ErrorBackend) || err.reintentable;
