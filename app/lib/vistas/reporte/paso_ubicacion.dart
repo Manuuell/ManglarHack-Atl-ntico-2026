@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -14,18 +15,24 @@ import 'borrador.dart';
 /// corregir tocando el mapa o pegando un enlace de Google Maps. Siempre se ve, en
 /// palabras, si el punto cae dentro del manglar y en qué zona.
 class PasoUbicacion extends StatefulWidget {
-  const PasoUbicacion({super.key, required this.borrador});
+  const PasoUbicacion({super.key, required this.borrador, this.zonaId});
   final Borrador borrador;
+
+  /// Si llega (desde la hoja de una zona) y aún no hay GPS, el mapa arranca centrado ahí.
+  final String? zonaId;
 
   @override
   State<PasoUbicacion> createState() => _PasoUbicacionState();
 }
 
-class _PasoUbicacionState extends State<PasoUbicacion> {
+class _PasoUbicacionState extends State<PasoUbicacion> with WidgetsBindingObserver {
   final _mapa = MapController();
   bool _mapaListo = false;
   bool _tocadoPorPersona = false;
   LatLng? _ultimoCentrado;
+
+  /// La persona salió a Ajustes a dar el permiso o encender el GPS: al volver se reintenta.
+  bool _fueAAjustes = false;
 
   Borrador get b => widget.borrador;
 
@@ -41,14 +48,90 @@ class _PasoUbicacionState extends State<PasoUbicacion> {
         ),
   ];
 
+  /// Las capas pesadas se crean UNA vez y se pasan siempre como la misma instancia:
+  /// así Flutter no llama a didUpdateWidget y flutter_map no vuelve a proyectar ni a
+  /// simplificar los 22 641 vértices en cada lectura del GPS o toque (ver pantalla_mapa).
+  late final Widget _capaZonas = PolygonLayer(polygons: _poligonos, polygonCulling: true);
+  late final Widget _teselas = TileLayer(
+    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    userAgentPackageName: 'co.zanky.app',
+  );
+
+  /// Centro inicial: el punto si ya hay GPS; si no, la zona pedida; si no, la primera.
+  LatLng get _centroInicial {
+    final p = b.punto;
+    if (p != null) return p;
+    final zonas = b.estado.manglar.zonas;
+    final z = widget.zonaId == null ? null : zonas.where((z) => z.id == widget.zonaId).firstOrNull;
+    return (z ?? zonas.first).centro;
+  }
+
+  late final MapOptions _opciones = MapOptions(
+    initialCenter: _centroInicial,
+    initialZoom: b.punto == null ? 12.5 : 16,
+    minZoom: 9,
+    maxZoom: 18.5,
+    backgroundColor: const Color(0xFFE9E3D6),
+    onMapReady: () {
+      _mapaListo = true;
+      _seguirPunto();
+    },
+    onPositionChanged: (_, gesto) {
+      if (gesto) _tocadoPorPersona = true;
+    },
+    onTap: (_, punto) {
+      vibrar(Vibracion.seleccion);
+      b.marcarEnMapa(punto);
+    },
+  );
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     b.addListener(_seguirPunto);
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    if (estado != AppLifecycleState.resumed || !_fueAAjustes) return;
+    _fueAAjustes = false;
+    if (b.gps == EstadoGps.sinPermiso || b.gps == EstadoGps.apagado) {
+      _tocadoPorPersona = false;
+      _ultimoCentrado = null;
+      b.reintentarGps();
+    }
+  }
+
+  /// «Mi ubicación» sin GPS: si el permiso se puede pedir otra vez, se pide; si el
+  /// sistema ya no lo permite (o el GPS está apagado), se manda a Ajustes y se
+  /// reintenta solo al volver.
+  Future<void> _miUbicacion() async {
+    _tocadoPorPersona = false;
+    _ultimoCentrado = null;
+    if (b.gps != EstadoGps.sinPermiso && b.gps != EstadoGps.apagado) {
+      b.reintentarGps();
+      return;
+    }
+    var ajustes = b.gps == EstadoGps.apagado;
+    if (!ajustes) {
+      try {
+        ajustes = await Geolocator.checkPermission() == LocationPermission.deniedForever;
+      } catch (_) {
+        ajustes = true;
+      }
+    }
+    if (!ajustes) {
+      await b.reintentarGps();
+      return;
+    }
+    _fueAAjustes = true;
+    b.abrirAjustesUbicacion();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     b.removeListener(_seguirPunto);
     _mapa.dispose();
     super.dispose();
@@ -95,15 +178,7 @@ class _PasoUbicacionState extends State<PasoUbicacion> {
                 child: _BotonChico(
                   icono: Icons.my_location_rounded,
                   texto: b.gpsActivo ? 'Afinando GPS…' : 'Mi ubicación',
-                  onTap: () {
-                    _tocadoPorPersona = false;
-                    _ultimoCentrado = null;
-                    if (b.gps == EstadoGps.sinPermiso || b.gps == EstadoGps.apagado) {
-                      b.abrirAjustesUbicacion();
-                    } else {
-                      b.reintentarGps();
-                    }
-                  },
+                  onTap: _miUbicacion,
                 ),
               ),
               const SizedBox(width: 10),
@@ -133,30 +208,10 @@ class _PasoUbicacionState extends State<PasoUbicacion> {
           children: [
             FlutterMap(
               mapController: _mapa,
-              options: MapOptions(
-                initialCenter: p ?? b.estado.manglar.zonas.first.centro,
-                initialZoom: p == null ? 12.5 : 16,
-                minZoom: 9,
-                maxZoom: 18.5,
-                backgroundColor: const Color(0xFFE9E3D6),
-                onMapReady: () {
-                  _mapaListo = true;
-                  _seguirPunto();
-                },
-                onPositionChanged: (_, gesto) {
-                  if (gesto) _tocadoPorPersona = true;
-                },
-                onTap: (_, punto) {
-                  vibrar(Vibracion.seleccion);
-                  b.marcarEnMapa(punto);
-                },
-              ),
+              options: _opciones,
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'co.zanky.app',
-                ),
-                PolygonLayer(polygons: _poligonos),
+                _teselas,
+                _capaZonas,
                 if (p != null && b.precisionM != null)
                   CircleLayer(circles: [
                     CircleMarker(
@@ -185,7 +240,9 @@ class _PasoUbicacionState extends State<PasoUbicacion> {
               bottom: 6,
               child: _Atribucion(),
             ),
-            if (p == null)
+            // La rueda solo mientras de verdad se está buscando; sin permiso o con el GPS
+            // apagado la tarjeta de abajo ya dice qué hacer.
+            if (p == null && b.gps == EstadoGps.buscando)
               Positioned.fill(
                 child: IgnorePointer(
                   child: Container(

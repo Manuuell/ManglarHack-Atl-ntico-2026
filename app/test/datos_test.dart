@@ -14,16 +14,18 @@ void main() {
 
   setUpAll(() {
     final j = jsonDecode(File('assets/datos/manglar_zonas.json').readAsStringSync());
-    manglar = Manglar.desdeJson(j as Map<String, dynamic>);
+    final pr = jsonDecode(File('assets/datos/prioridades_cra.json').readAsStringSync());
+    manglar = Manglar.desdeJson(j as Map<String, dynamic>, pr as Map<String, dynamic>);
   });
 
   group('Ubicar un punto contra el manglar', () {
-    // Puntos hallados con un programa aparte (Python, rayo propio), no con este código.
+    // Puntos hallados con un programa aparte (Python, rayo propio, sobre la capa 1:5.000 de la
+    // CRA sin simplificar), a más de 25 m de cualquier borde; no con este código.
     const dentro = {
-      'mallorquin': LatLng(11.05316, -74.85094),
-      'tubara': LatLng(10.9501, -75.02677),
-      'juan_de_acosta': LatLng(10.85258, -75.13677),
-      'piojo': LatLng(10.8162, -75.2035),
+      'mallorquin': LatLng(11.04466, -74.86898),
+      'tubara': LatLng(10.94487, -75.02494),
+      'juan_de_acosta': LatLng(10.85922, -75.12523),
+      'piojo': LatLng(10.79734, -75.21273),
     };
 
     for (final e in dentro.entries) {
@@ -43,17 +45,18 @@ void main() {
       expect(u.enInfluencia, isFalse);
     });
 
-    test('un punto a ~200 m de un polígono está en el área de influencia', () {
-      // 0,0018° de latitud ≈ 200 m al norte del punto dentro de Mallorquín; el
-      // borde puede quedar más cerca, nunca más lejos.
-      final u = manglar.ubicar(const LatLng(11.05316 + 0.0018, -74.85094));
-      expect(u.distanciaM, lessThanOrEqualTo(210));
+    test('un punto a ~90 m de un polígono está en el área de influencia', () {
+      // 0,0018° de latitud (~200 m) al norte del punto dentro de Mallorquín: ya fuera del
+      // polígono; el oráculo de Python mide 85,9 m al borde más cercano.
+      final u = manglar.ubicar(const LatLng(11.04466 + 0.0018, -74.86898));
+      expect(u.dentro, isFalse);
+      expect(u.distanciaM, closeTo(85.9, 5));
       expect(u.enInfluencia, isTrue);
     });
 
     test('el área total y las cuatro zonas coinciden con la capa', () {
       expect(manglar.zonas.map((z) => z.id), ['mallorquin', 'tubara', 'juan_de_acosta', 'piojo']);
-      expect(manglar.areaTotalHa, closeTo(533, 1));
+      expect(manglar.areaTotalHa, closeTo(649.66, 0.1)); // 886 polígonos, capa 1:5.000 de la CRA
     });
   });
 
@@ -64,12 +67,13 @@ void main() {
           distanciaM: distancia,
         );
 
-    test('tala ahora dentro de Mallorquín es crítica (5) y dice por qué', () {
+    test('tala ahora dentro de Mallorquín con prioridad Alta de la CRA es crítica (5) y dice por qué', () {
+      final u = manglar.ubicar(const LatLng(11.04466, -74.86898)); // punto real, prioridad Alta
       final p = Prioridad.calcular(
-          tipo: TipoAmenaza.tala, ubicacion: en('mallorquin'), momento: Momento.ahora, magnitud: Magnitud.pequena);
+          tipo: TipoAmenaza.tala, ubicacion: u, momento: Momento.ahora, magnitud: Magnitud.pequena);
       expect(p.valor, 5);
       expect(p.nombre, 'Crítica');
-      expect(p.motivos.join(' '), contains('conservación prioritaria'));
+      expect(p.motivos.join(' '), contains('Prioridad de conservación CRA: Alta (preservación)'));
     });
 
     test('basuras vistas antes y lejos del manglar es baja (1)', () {
@@ -177,9 +181,10 @@ void main() {
 
   group('Guardián', () {
     test('la cédula nunca queda en claro y la misma cédula da la misma huella', () {
-      final a = Perfil.huellaCedula('1.043.555.777');
+      final p = Perfil(id: '123e4567-e89b-12d3-a456-426614174000', creado: DateTime(2026));
+      final a = p.huellaCedula('1.043.555.777');
       expect(a, isNot(contains('1043555777')));
-      expect(a, Perfil.huellaCedula('1043555777'));
+      expect(a, p.huellaCedula('1043555777'));
       expect(a.length, 64);
     });
 

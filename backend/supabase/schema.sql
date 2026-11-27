@@ -1,5 +1,5 @@
 -- =====================================================================================
--- Zanqui · Manglar Hack Atlántico 2026 · Backend común (Supabase = Postgres 15 + PostGIS 3)
+-- Zanky · Manglar Hack Atlántico 2026 · Backend común (Supabase = Postgres 15 + PostGIS 3)
 -- =====================================================================================
 -- Se pega ENTERO en el SQL Editor de Supabase (rol postgres). Es idempotente: se puede
 -- volver a correr sin romper nada ni duplicar nada.
@@ -8,8 +8,8 @@
 -- Principios (por qué está hecho así; el detalle está en README.md):
 --  1. El permiso se decide en el SERVIDOR y en UN solo lugar: panel_rol_de(uid), que lee la
 --     tabla panel_roles (no el token). Quitar un rol surte efecto al instante.
---  2. El público (anon) solo puede ESCRIBIR un reporte nuevo y leer la vista anonimizada.
---     Nunca lee la tabla reportes. Lo que no manda el servidor, no se confía en el cliente.
+--  2. El público (anon) solo puede crear un reporte nuevo (con crear_reporte) y leer la vista anonimizada.
+--     Nunca lee ni escribe la tabla reportes directamente. Lo que no manda el servidor, no se confía en el cliente.
 --  3. Todo lo sensible que mira el panel (foto, denunciante, ficha) queda en auditoria, que
 --     es solo-INSERT: nadie la edita ni la borra.
 --  4. Nada de secretos aquí: este archivo es público.
@@ -81,13 +81,20 @@ create table if not exists public.reportes (
   corroboraciones    int  not null default 0 check (corroboraciones >= 0),
   nota_publica       text check (nota_publica is null or char_length(nota_publica) <= 280), -- la ve quien reportó
   expediente         text,                                       -- CRA-MH-2026-0001, al pasar a alerta_oficial
+  -- Id que sale al público (vista, datos abiertos). Es otro UUID al azar, sin relación con id: el id interno
+  -- es la llave para consultar el estado (estado_de_reportes) y nunca se publica.
+  id_publico         uuid not null default gen_random_uuid(),
 
   -- No se acepta un reporte capturado "en el futuro" (más de 10 min de margen por el reloj del teléfono).
   constraint reportes_capturado_no_futuro check (capturado_en <= recibido_en + interval '10 minutes'),
   constraint reportes_capturado_razonable check (capturado_en >= timestamptz '2020-01-01 00:00:00+00')
 );
 
+-- Bases creadas antes de id_publico: se agrega sin tocar lo demás (cada fila recibe su propio UUID al azar).
+alter table public.reportes add column if not exists id_publico uuid not null default gen_random_uuid();
+
 create unique index if not exists reportes_expediente_uq on public.reportes (expediente) where expediente is not null;
+create unique index if not exists reportes_id_publico_uq on public.reportes (id_publico);
 create index if not exists reportes_geom_gix        on public.reportes using gist (geom);
 create index if not exists reportes_capturado_ix    on public.reportes (capturado_en desc);
 create index if not exists reportes_estado_ix       on public.reportes (estado, prioridad desc);
@@ -228,8 +235,8 @@ declare
   v_p     int;
 begin
   -- Reintento de un reporte que ya llegó: se ignora en silencio (idempotente) y NO cuenta para
-  -- el límite. (La app usa Prefer: resolution=ignore-duplicates; esto además evita que un
-  -- reintento legítimo reciba un error de límite.)
+  -- el límite. (La app entra por crear_reporte(), que además usa ON CONFLICT (id) DO NOTHING para
+  -- la carrera de dos envíos simultáneos; esto evita que un reintento reciba un error de límite.)
   if exists (select 1 from public.reportes r where r.id = new.id) then
     return null;
   end if;
@@ -311,13 +318,20 @@ begin
     new.foto_hash := null;
   end if;
 
-  -- Reloj del teléfono adelantado: no se pierde el reporte, se corrige a la hora del servidor.
-  -- (El CHECK reportes_capturado_no_futuro queda como respaldo.)
-  if new.capturado_en > now() + interval '10 minutes' then
+  -- Reloj del teléfono adelantado o desconfigurado (p. ej. en 1970 tras quedarse sin batería): no se
+  -- pierde el reporte: se corrige a la hora del servidor.
+  -- (Los CHECK reportes_capturado_no_futuro y reportes_capturado_razonable quedan como respaldo.)
+  if new.capturado_en > now() + interval '10 minutes'
+     or new.capturado_en < timestamptz '2020-01-01 00:00:00+00' then
     new.capturado_en := now();
   end if;
 
-  new.descripcion := btrim(coalesce(new.descripcion, ''));
+  -- La app cuenta letras visibles y Postgres puntos de código (un emoji de familia son 7): se recorta
+  -- aquí en vez de rechazar el reporte por el CHECK de 1000.
+  new.descripcion := left(btrim(coalesce(new.descripcion, '')), 1000);
+
+  -- El id público lo elige siempre el servidor.
+  new.id_publico := gen_random_uuid();
 
   -- Lo que solo fija el servidor.
   new.estado             := 'recibido';
@@ -366,17 +380,21 @@ create trigger reportes_antes_update before update on public.reportes
 -- -------------------------------------------------------------------------------------
 -- 6. VISTA PÚBLICA (sin descripción, sin reportante, sin foto; coordenadas a 3 decimales ≈ 110 m)
 -- -------------------------------------------------------------------------------------
+-- NUNCA publica r.id: ese UUID es la llave para preguntar el estado (estado_de_reportes) y de él sale el
+-- número de caso ZK-XXXX que la persona comparte. Si la vista lo diera, cualquiera listaría todos los ids,
+-- leería la nota pública de reportes ajenos y, con un número de caso visto en WhatsApp, hallaría el punto y la
+-- hora del denunciante. Sale id_publico (otro UUID al azar) y la hora redondeada a la hora en punto.
 drop view if exists public.reportes_publicos;
 create view public.reportes_publicos
   with (security_invoker = false)   -- corre con los permisos del dueño: así anon la lee sin ver la tabla
 as
-select r.id,
+select r.id_publico,
        r.tipo,
        round(r.lat::numeric, 3)::double precision as lat,
        round(r.lon::numeric, 3)::double precision as lon,
        r.prioridad,
        r.estado,
-       r.capturado_en,
+       date_trunc('hour', r.capturado_en) as capturado_en,
        r.zona,
        r.municipio,
        r.canal
@@ -384,14 +402,18 @@ select r.id,
  where r.estado <> 'descartado';
 
 comment on view public.reportes_publicos is
-  'Datos abiertos y mapa público. Sin descripción, foto ni reportante; lat/lon a 3 decimales. CC BY 4.0.';
+  'Datos abiertos y mapa público. Sin id interno, descripción, foto ni reportante; lat/lon a 3 decimales y hora en punto. CC BY 4.0.';
 
 -- -------------------------------------------------------------------------------------
 -- 7. RPC PÚBLICAS
 -- -------------------------------------------------------------------------------------
--- Estado de MIS reportes: solo responde por los ids que se le dan (UUID inadivinables).
-create or replace function public.estado_de_reportes(ids uuid[])
-returns table (id uuid, estado text, prioridad int, confianza int, nota_publica text, actualizado_en timestamptz)
+-- Estado de MIS reportes: solo responde por los ids que se le dan (UUID inadivinables, que ninguna vista
+-- publica). Devuelve también id_publico, para que el teléfono reconozca sus propios reportes en el mapa público.
+-- (drop antes de create: cambió lo que devuelve, y create or replace no puede cambiarlo.)
+drop function if exists public.estado_de_reportes(uuid[]);
+create function public.estado_de_reportes(ids uuid[])
+returns table (id uuid, estado text, prioridad int, confianza int, nota_publica text, actualizado_en timestamptz,
+               id_publico uuid)
 language plpgsql stable security definer
 set search_path = public, extensions, pg_temp as $$
 begin
@@ -400,9 +422,138 @@ begin
     raise exception 'maximo_100_ids' using errcode = '22023';
   end if;
   return query
-    select r.id, r.estado, r.prioridad, r.confianza, r.nota_publica, r.actualizado_en
+    select r.id, r.estado, r.prioridad, r.confianza, r.nota_publica, r.actualizado_en, r.id_publico
       from public.reportes r
      where r.id = any (ids);
+end $$;
+
+-- Crear un reporte: la ÚNICA puerta de escritura del público (anon).
+--
+-- Por qué una función y no POST /rest/v1/reportes: con «Prefer: resolution=ignore-duplicates» PostgREST hace
+-- INSERT ... ON CONFLICT (id) DO NOTHING; ese ON CONFLICT lee la columna id, la orden pasa a exigir SELECT y,
+-- cuando una orden exige SELECT, Postgres aplica las políticas SELECT de RLS como comprobación sobre la fila nueva.
+-- anon no tiene (ni debe tener) política SELECT sobre reportes, así que todo reporte fallaba con 42501.
+-- Esta función corre como su dueño, valida el contrato (handoff/05), inserta con ON CONFLICT (id) DO NOTHING y
+-- responde {id, nuevo, id_publico}. El trigger reportes_antes_insert sigue recalculando todo lo del servidor.
+--
+-- Errores (PostgREST los convierte en HTTP):
+--   22023 con un mensaje «motivo: explicación» -> 400. El teléfono NO reintenta y le muestra el motivo a la persona.
+--   PT429 (límite de 10 por hora, en el trigger)  -> 429. El teléfono reintenta más tarde.
+-- Un reintento del mismo id responde {nuevo: false} sin volver a validar ni a contar para el límite.
+create or replace function public.crear_reporte(p jsonb)
+returns jsonb language plpgsql volatile security definer
+set search_path = public, extensions, pg_temp as $$
+declare
+  v_id    uuid;
+  v_pub   uuid;
+  v_lat   double precision;
+  v_lon   double precision;
+  v_cap   timestamptz;
+  v_canal text;
+  v_tipo  text;
+  v_met   text;
+  v_mom   text;
+  v_mag   text;
+  v_rep   text;
+begin
+  if p is null or jsonb_typeof(p) <> 'object' then
+    raise exception 'reporte_invalido: se esperaba un objeto JSON' using errcode = '22023';
+  end if;
+  if octet_length(p::text) > 16384 then
+    raise exception 'reporte_demasiado_grande: máximo 16 KB' using errcode = '22023';
+  end if;
+
+  if coalesce(jsonb_typeof(p -> 'id'), '') <> 'string'
+     or (p ->> 'id') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    raise exception 'id_invalido: el id debe ser un UUID' using errcode = '22023';
+  end if;
+  v_id := (p ->> 'id')::uuid;
+
+  -- Reintento de uno que ya llegó (la respuesta anterior se perdió): misma respuesta, nada nuevo.
+  select r.id_publico into v_pub from public.reportes r where r.id = v_id;
+  if found then
+    return jsonb_build_object('id', v_id, 'nuevo', false, 'id_publico', v_pub);
+  end if;
+
+  v_tipo := p ->> 'tipo';
+  if v_tipo is null or v_tipo not in ('tala','quema','relleno','vertimiento','basuras','cano_taponado','fauna','otro') then
+    raise exception 'tipo_invalido: el tipo de amenaza no existe' using errcode = '22023';
+  end if;
+
+  if coalesce(jsonb_typeof(p -> 'lat'), '') <> 'number' or coalesce(jsonb_typeof(p -> 'lon'), '') <> 'number' then
+    raise exception 'ubicacion_invalida: faltan la latitud o la longitud' using errcode = '22023';
+  end if;
+  v_lat := (p ->> 'lat')::double precision;
+  v_lon := (p ->> 'lon')::double precision;
+  -- Los mismos límites que el CHECK de la tabla (y que la app en dentroDelAreaDelServidor).
+  if v_lat not between 10.2 and 11.4 or v_lon not between -75.7 and -74.4 then
+    raise exception 'punto_fuera_del_atlantico: el punto queda fuera del departamento del Atlántico' using errcode = '22023';
+  end if;
+
+  begin
+    v_cap := (p ->> 'capturado_en')::timestamptz;
+  exception when others then
+    v_cap := null;
+  end;
+  if v_cap is null then
+    raise exception 'hora_invalida: falta la hora de captura o no se entiende' using errcode = '22023';
+  end if;
+  -- (Una hora en el futuro o antes de 2020 no se rechaza: el trigger la corrige a now().)
+
+  v_canal := coalesce(p ->> 'canal', 'app');
+  if v_canal not in ('app', 'web', 'whatsapp') then
+    raise exception 'canal_invalido: el canal debe ser app, web o whatsapp' using errcode = '22023';
+  end if;
+  v_met := coalesce(p ->> 'metodo_ubicacion', 'gps');
+  if v_met not in ('gps', 'mapa', 'enlace') then
+    raise exception 'metodo_invalido: el método de ubicación no existe' using errcode = '22023';
+  end if;
+  v_mom := coalesce(p ->> 'momento', 'ahora');
+  if v_mom not in ('ahora', 'hoy', 'antes') then
+    raise exception 'momento_invalido: el momento no existe' using errcode = '22023';
+  end if;
+  v_mag := coalesce(p ->> 'magnitud', 'pequena');
+  if v_mag not in ('pequena', 'mediana', 'grande') then
+    raise exception 'magnitud_invalida: la magnitud no existe' using errcode = '22023';
+  end if;
+  v_rep := nullif(btrim(p ->> 'reportante_id'), '');
+  if v_rep is not null and char_length(v_rep) > 64 then
+    raise exception 'reportante_invalido: máximo 64 caracteres' using errcode = '22023';
+  end if;
+
+  insert into public.reportes (
+    id, canal, tipo, descripcion, lat, lon, precision_m, metodo_ubicacion, capturado_en, momento, magnitud,
+    zona, municipio, dentro_poligono, distancia_m, prioridad, confianza, foto_hash, foto_de_camara, foto_url,
+    anonimo, reportante_id, sincronizado_tarde)
+  values (
+    v_id, v_canal, v_tipo,
+    left(btrim(coalesce(p ->> 'descripcion', '')), 1000),
+    v_lat, v_lon,
+    case when jsonb_typeof(p -> 'precision_m') = 'number'
+         then least(greatest((p ->> 'precision_m')::double precision, 0), 100000) end,
+    v_met, v_cap, v_mom, v_mag,
+    left(p ->> 'zona', 64), left(p ->> 'municipio', 120),          -- el trigger los recalcula
+    case when jsonb_typeof(p -> 'dentro_poligono') = 'boolean' then (p ->> 'dentro_poligono')::boolean else false end,
+    case when jsonb_typeof(p -> 'distancia_m') = 'number'
+         then least(greatest(round((p ->> 'distancia_m')::numeric), 0), 2000000000)::int end,
+    3,                                                               -- el trigger la recalcula
+    case when jsonb_typeof(p -> 'confianza') = 'number'
+         then least(greatest(round((p ->> 'confianza')::numeric), 0), 100)::int else 0 end,
+    p ->> 'foto_hash',                                               -- el trigger la limpia
+    case when jsonb_typeof(p -> 'foto_de_camara') = 'boolean' then (p ->> 'foto_de_camara')::boolean else false end,
+    p ->> 'foto_url',                                                -- el trigger solo acepta evidencias/<id>.jpg
+    case when jsonb_typeof(p -> 'anonimo') = 'boolean' then (p ->> 'anonimo')::boolean else false end,
+    v_rep,
+    case when jsonb_typeof(p -> 'sincronizado_tarde') = 'boolean' then (p ->> 'sincronizado_tarde')::boolean else false end)
+  on conflict (id) do nothing
+  returning reportes.id_publico into v_pub;
+
+  if found then
+    return jsonb_build_object('id', v_id, 'nuevo', true, 'id_publico', v_pub);
+  end if;
+  -- Otro envío del mismo id ganó la carrera entre la consulta de arriba y este insert.
+  select r.id_publico into v_pub from public.reportes r where r.id = v_id;
+  return jsonb_build_object('id', v_id, 'nuevo', false, 'id_publico', v_pub);
 end $$;
 
 -- Ayudantes de texto para KML.
@@ -425,26 +576,26 @@ returns text language sql immutable set search_path = public as $$
 $$;
 
 -- Datos abiertos (Gobierno Digital) · GeoJSON · licencia CC BY 4.0.
--- Campos públicos (handoff/03): id, fecha y hora, tipo, municipio, zona, prioridad, estado, lat, lon, canal.
--- Nunca: nombre, teléfono, foto ni metadatos de foto del reportante.
+-- Campos públicos (handoff/03): id (el id_publico, no el interno), fecha y hora (en punto), tipo, municipio, zona,
+-- prioridad, estado, lat, lon, canal. Nunca: el id interno, nombre, teléfono, foto ni metadatos de foto del reportante.
 create or replace function public.datos_abiertos_geojson()
 returns jsonb language sql stable security definer
 set search_path = public, extensions, pg_temp as $$
   select jsonb_build_object(
     'type', 'FeatureCollection',
-    'name', 'zanqui_reportes_manglar_atlantico',
+    'name', 'zanky_reportes_manglar_atlantico',
     'licencia', 'CC BY 4.0',
     'licencia_url', 'https://creativecommons.org/licenses/by/4.0/deed.es',
-    'fuente', 'Zanqui, ciencia ciudadana para el manglar del Atlántico',
-    'aviso', 'Reportes ciudadanos: los de estado «recibido» aún no están verificados. Coordenadas a 3 decimales (~110 m).',
+    'fuente', 'Zanky, ciencia ciudadana para el manglar del Atlántico',
+    'aviso', 'Reportes ciudadanos: los de estado «recibido» aún no están verificados. Coordenadas a 3 decimales (~110 m) y hora redondeada a la hora en punto.',
     'generado_en', now(),
     'features', coalesce(jsonb_agg(
       jsonb_build_object(
         'type', 'Feature',
-        'id', p.id,
+        'id', p.id_publico,
         'geometry', jsonb_build_object('type', 'Point', 'coordinates', jsonb_build_array(p.lon, p.lat)),
         'properties', jsonb_build_object(
-          'id', p.id,
+          'id', p.id_publico,
           'capturado_en', p.capturado_en,
           'tipo', p.tipo,
           'municipio', p.municipio,
@@ -463,13 +614,13 @@ returns text language sql stable security definer
 set search_path = public, extensions, pg_temp as $$
   select '<?xml version="1.0" encoding="UTF-8"?>' || E'\n'
       || '<kml xmlns="http://www.opengis.net/kml/2.2"><Document>'
-      || '<name>Zanqui - reportes del manglar del Atlántico</name>'
+      || '<name>Zanky - reportes del manglar del Atlántico</name>'
       || '<description>Licencia CC BY 4.0. Reportes ciudadanos; los de estado recibido no están verificados. Coordenadas a 3 decimales.</description>'
       || coalesce(string_agg(
            '<Placemark><name>' || public._xml(public._nombre_tipo(p.tipo)) || '</name>'
         || '<TimeStamp><when>' || to_char(p.capturado_en at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') || '</when></TimeStamp>'
         || '<ExtendedData>'
-        || '<Data name="id"><value>' || p.id || '</value></Data>'
+        || '<Data name="id"><value>' || p.id_publico || '</value></Data>'
         || '<Data name="tipo"><value>' || public._xml(p.tipo) || '</value></Data>'
         || '<Data name="municipio"><value>' || public._xml(p.municipio) || '</value></Data>'
         || '<Data name="zona"><value>' || public._xml(p.zona) || '</value></Data>'
@@ -703,17 +854,11 @@ grant select on public.zonas to anon, authenticated;
 drop policy if exists zonas_lectura_publica on public.zonas;
 create policy zonas_lectura_publica on public.zonas for select to anon, authenticated using (true);
 
--- reportes: el público solo INSERTA, y solo las 23 columnas del contrato; el resto lo pone el servidor.
-grant insert (id, canal, tipo, descripcion, lat, lon, precision_m, metodo_ubicacion, capturado_en, momento,
-              magnitud, zona, municipio, dentro_poligono, distancia_m, prioridad, confianza, foto_hash,
-              foto_de_camara, foto_url, anonimo, reportante_id, sincronizado_tarde)
-  on public.reportes to anon, authenticated;
--- (select(id) solo para que ON CONFLICT de «ignore-duplicates» funcione; sin política de SELECT para anon
---  no devuelve ninguna fila.)
-grant select (id) on public.reportes to anon;
+-- reportes: el público NO toca la tabla. Crea reportes solo con crear_reporte() (más abajo), que valida y
+-- corre como el dueño. Por eso ya no hay GRANT INSERT ni la política de INSERT para anon, ni el
+-- «grant select (id)» que pedía el ON CONFLICT de ignore-duplicates (el revoke all de arriba también los
+-- quita de una base donde ya se habían dado).
 drop policy if exists reportes_insertar_publico on public.reportes;
-create policy reportes_insertar_publico on public.reportes
-  for insert to anon, authenticated with check (estado = 'recibido');
 
 -- Panel: lectura directa permitida solo con rol activo confirmado en panel_roles. El reportante_id NO se
 -- concede por columna: se pide con ver_reportante() (auditado). El aliado no lee reportes.
@@ -754,6 +899,7 @@ revoke all on function public._orden_estado(text)                         from p
 revoke all on function public._xml(text)                                  from public, anon, authenticated;
 revoke all on function public._nombre_tipo(text)                          from public, anon, authenticated;
 revoke all on function public.estado_de_reportes(uuid[])                  from public, anon, authenticated;
+revoke all on function public.crear_reporte(jsonb)                        from public, anon, authenticated;
 revoke all on function public.datos_abiertos_geojson()                    from public, anon, authenticated;
 revoke all on function public.datos_abiertos_kml()                        from public, anon, authenticated;
 revoke all on function public.mi_rol()                                    from public, anon, authenticated;
@@ -767,6 +913,7 @@ revoke all on function public.revocar_rol(uuid)                           from p
 
 -- Públicas (anon + authenticated)
 grant execute on function public.estado_de_reportes(uuid[]) to anon, authenticated;
+grant execute on function public.crear_reporte(jsonb)       to anon, authenticated;
 grant execute on function public.datos_abiertos_geojson()   to anon, authenticated;
 grant execute on function public.datos_abiertos_kml()       to anon, authenticated;
 -- Solo con sesión (y cada una comprueba el rol por dentro)

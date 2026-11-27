@@ -5,14 +5,18 @@
     <!-- Ubicar el reporte en el sitio (el GPS funciona sin internet). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Foto de la evidencia tomada en el momento. -->
-    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Foto de la evidencia: image_picker abre la cámara del sistema (ACTION_IMAGE_CAPTURE),
+         que no necesita permiso. NO declarar CAMERA: si está en el manifiesto, el plugin
+         lo pide en ejecución y, si la persona lo niega, la cámara no abre. -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <application
         android:label="Zanky"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/reglas_respaldo"
+        android:dataExtractionRules="@xml/reglas_extraccion">
         <activity
             android:name=".MainActivity"
             android:exported="true"

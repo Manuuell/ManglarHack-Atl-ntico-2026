@@ -160,7 +160,6 @@ class _BienvenidaState extends State<Bienvenida> {
       // Zanky celebra un instante (< 700 ms) antes de que la app cambie de pantalla.
       if (espera > Duration.zero) await Future<void>.delayed(espera);
       final base = estado.perfil ?? estado.perfilNuevo();
-      final cedula = DatosPerfil.soloDigitos(_datos.cedula.text);
       // Se arma un perfil nuevo con el mismo id: si guardar falla, el que ya está en
       // memoria no queda marcado como «con consentimiento» sin estarlo en el disco.
       final perfil = Perfil(
@@ -168,8 +167,9 @@ class _BienvenidaState extends State<Bienvenida> {
         creado: base.creado,
         nombre: _datos.nombre.text.trim(),
         colegio: _datos.colegio.text.trim(),
-        // Solo la huella; el número nunca se guarda.
-        cedulaHash: cedula.isEmpty ? null : Perfil.huellaCedula(cedula),
+        // La cédula ya no se pide aquí; si el perfil previo tenía una huella, se conserva.
+        cedulaHash: base.cedulaHash,
+        sal: base.sal,
         anonimoPorDefecto: _datos.anonimo,
         consentimiento: DateTime.now(),
       );

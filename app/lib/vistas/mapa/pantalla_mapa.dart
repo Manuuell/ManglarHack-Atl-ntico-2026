@@ -460,7 +460,8 @@ class _PantallaMapaState extends State<PantallaMapa>
           )
           .length,
       mios: aqui.where((p) => p.esMio).length,
-      alReportar: _reportar,
+      textoVacio: _textoVacio(Zanky.leer(context), enZona: true),
+      alReportar: () => _reportar(zonaId: z.id),
     );
   }
 
@@ -478,9 +479,25 @@ class _PantallaMapaState extends State<PantallaMapa>
     );
   }
 
-  void _reportar() {
+  void _reportar({String? zonaId}) {
     if (!mounted) return;
-    abrirReporte(context);
+    abrirReporte(context, zonaId: zonaId);
+  }
+
+  /// Qué decir cuando no hay reportes de otras personas: la verdad sobre por qué.
+  /// «Todavía no hay» solo si el servidor respondió con la lista vacía.
+  static String _textoVacio(EstadoZanky e, {bool enZona = false}) {
+    if (!e.servidor.configurado) {
+      return enZona
+          ? 'Modo demostración: aquí solo ves tus reportes; los de otras personas llegan con la versión conectada.'
+          : 'Modo demostración: aquí solo ves tus reportes. Los de otras personas llegan con la versión conectada.';
+    }
+    if (!e.enLinea || e.ultimaSincronizacion == null) {
+      return 'No pude traer los reportes de otras personas. Se actualizan solos cuando hay señal.';
+    }
+    return enZona
+        ? 'Todavía no hay reportes en esta zona.'
+        : 'Todavía no hay reportes aquí. Si ves algo, sé el primero.';
   }
 
   void _abrirFiltro() {
@@ -793,8 +810,7 @@ class _PantallaMapaState extends State<PantallaMapa>
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: TarjetaVaciaMapa(
-                    titulo:
-                        'Todavía no hay reportes aquí. Si ves algo, sé el primero.',
+                    titulo: _textoVacio(estado),
                     boton: 'Reportar',
                     onBoton: _reportar,
                   ),

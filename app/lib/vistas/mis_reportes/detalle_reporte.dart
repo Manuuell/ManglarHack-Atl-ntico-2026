@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../datos/estado.dart';
+import '../../datos/prioridad.dart';
 import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
@@ -281,12 +282,14 @@ class _VisorFoto extends StatefulWidget {
 class _VisorFotoState extends State<_VisorFoto> with SingleTickerProviderStateMixin {
   final _control = TransformationController();
   late final AnimationController _anim = AnimationController(vsync: this);
+  late final CurvedAnimation _curvaZoom = CurvedAnimation(parent: _anim, curve: Zm.entrar);
   Offset _ultimoToque = Offset.zero;
 
   static const _acercado = 2.6;
 
   @override
   void dispose() {
+    _curvaZoom.dispose();
     _anim.dispose();
     _control.dispose();
     super.dispose();
@@ -303,9 +306,7 @@ class _VisorFotoState extends State<_VisorFoto> with SingleTickerProviderStateMi
       _control.value = destino;
       return;
     }
-    final anim = Matrix4Tween(begin: _control.value, end: destino).animate(
-      CurvedAnimation(parent: _anim, curve: Zm.entrar),
-    );
+    final anim = Matrix4Tween(begin: _control.value, end: destino).animate(_curvaZoom);
     void paso() => _control.value = anim.value;
     _anim
       ..duration = Zm.medio
@@ -490,6 +491,24 @@ class _Tarjeta extends StatelessWidget {
   }
 }
 
+/// La prioridad que suman los motivos guardados en el teléfono (los mismos pesos de
+/// `Prioridad.calcular`), para saber si el servidor la cambió después. Null si no hay
+/// motivos. TODO(datos): cuando `Reporte` guarde `prioridadLocal`, usar ese número.
+int? prioridadDeMotivos(Reporte r) {
+  final m = r.motivosPrioridad;
+  if (m.isEmpty) return null;
+  var p = r.tipo.gravedad.toDouble();
+  for (final t in m) {
+    if (t.startsWith('Dentro de ') && t.contains('zona de conservación prioritaria')) p += 1;
+    if (t.startsWith('Lejos del manglar')) p -= 1;
+    if (t.startsWith('Ya pasó')) p -= 1;
+    if (t.startsWith('Afecta un área grande')) p += 1;
+    if (t.startsWith('Viento de')) p += 1;
+    if (t.contains('parecido') && t.contains('cerca en las últimas')) p += 1;
+  }
+  return p.round().clamp(1, 5);
+}
+
 class _Motivos extends StatelessWidget {
   const _Motivos({required this.reporte});
   final Reporte reporte;
@@ -499,6 +518,10 @@ class _Motivos extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final color = Zc.dePrioridad(reporte.prioridad);
     final motivos = reporte.motivosPrioridad;
+    // La prioridad que se muestra es la del servidor; los motivos son los que calculó
+    // el teléfono al crear el reporte. Si no cuadran, se dice.
+    final estimada = prioridadDeMotivos(reporte);
+    final ajustada = reporte.envio == Envio.enviado && estimada != null && estimada != reporte.prioridad;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -520,6 +543,18 @@ class _Motivos extends StatelessWidget {
                 ],
               ),
             ),
+        if (ajustada) ...[
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(Zr.s)),
+            child: Text(
+              'La CRA la ajustó a ${reporte.prioridad} (${Prioridad.nombres[reporte.prioridad] ?? ''}) al revisar el caso. '
+              'Estos motivos son la estimación que hizo tu teléfono: llegaron a $estimada.',
+              style: tt.bodyMedium?.copyWith(color: Zc.texto),
+            ),
+          ),
+        ],
         const SizedBox(height: 4),
         Text(
           'Es una estimación con pesos de prueba. La CRA la ajusta cuando revisa el caso.',
@@ -691,7 +726,7 @@ class _Acciones extends StatelessWidget {
   Widget build(BuildContext context) {
     final e = Zanky.de(context);
     final r = reporte;
-    final conError = r.envio == Envio.error;
+    final conError = r.envio == Envio.error; // un rechazo del servidor no se arregla reintentando
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

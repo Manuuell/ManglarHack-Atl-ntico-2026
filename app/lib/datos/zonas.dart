@@ -1,10 +1,69 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/services.dart';
 import 'package:latlong2/latlong.dart';
 
-/// Una de las cuatro zonas de manglar que nombró la CRA.
+/// Prioridad de conservación del plan de la CRA (campo `Val_Priori` de su capa
+/// «Prioridades de conservación»). El orden importa: de la más alta a la más baja.
+enum PrioridadCRA {
+  alta('Alta', 5),
+  media('Media', 4),
+  baja('Baja', 3);
+
+  const PrioridadCRA(this.nombre, this.puntos);
+
+  /// Texto para mostrar: «Alta», «Media», «Baja».
+  final String nombre;
+
+  /// Equivalente en la escala 1-5 que usaban las pantallas antes de tener la capa oficial:
+  /// alta → 5, media → 4, baja → 3 (fuera de la zonificación también vale 3).
+  final int puntos;
+
+  static PrioridadCRA? desdeTexto(String? t) {
+    for (final p in values) {
+      if (p.name == t) return p;
+    }
+    return null;
+  }
+}
+
+/// Plan de manejo de la CRA en un punto: lo que dice el polígono de prioridades que lo contiene.
+class PlanCRA {
+  const PlanCRA({
+    required this.prioridad,
+    required this.accion,
+    required this.escenario,
+    this.figura = '',
+    this.areaProtegida,
+    this.unidad,
+  });
+
+  final PrioridadCRA prioridad;
+
+  /// «Preservación», «Restauración», «Recuperación» o «Rehabilitación».
+  final String accion;
+
+  /// «Escenario I», «Escenario III»…
+  final String escenario;
+
+  /// Figura legal («Áreas protegidas», «Conectividad», «Sin ninguna figura legal»…).
+  final String figura;
+
+  /// Nombre del área protegida si el polígono está en una (p. ej. «Palmar Titi»); si no, null.
+  final String? areaProtegida;
+
+  /// Unidad hidrográfica (p. ej. «Cienaga del Totumo»).
+  final String? unidad;
+
+  /// «Alta (preservación)»: la prioridad con su acción, como se muestra en los motivos.
+  String get resumen => '${prioridad.nombre} (${accion.toLowerCase()})';
+}
+
+/// Una de las cuatro zonas de manglar que nombró la CRA. El `id` es el contrato común con el
+/// bot y el backend (mallorquin, tubara, juan_de_acosta, piojo): no se cambia.
 class ZonaManglar {
   ZonaManglar({
     required this.id,
@@ -14,20 +73,41 @@ class ZonaManglar {
     required this.nota,
     required this.areaHa,
     required this.poligonos,
-  }) : cajas = poligonos.map(Caja.de).toList();
+    this.sectorCra = '',
+    this.prioridadCra,
+    List<List<List<LatLng>>>? huecos,
+  })  : huecos = huecos ?? [for (final _ in poligonos) const []],
+        cajas = poligonos.map(Caja.de).toList();
 
   final String id;
   final String nombre;
   final String municipio;
 
-  /// 1-5, PROVISIONAL hasta validarlo con los mentores ambientales.
+  /// Nombre oficial del sector en la capa de la CRA y en la web: «Mallorquín», «Balboa»,
+  /// «Manatíes» o «Totumo». Vacío si el archivo no lo trae.
+  final String sectorCra;
+
+  /// Prioridad dominante de la zona (la que cubre más hectáreas de su manglar en la capa de
+  /// prioridades de la CRA), o null si no se pudo calcular.
+  final PrioridadCRA? prioridadCra;
+
+  /// DERIVADO de [prioridadCra] (alta → 5, media → 4, baja → 3; sin dato → 3). Se conserva para
+  /// las pantallas que aún muestran «N de 5»; la fuente de verdad es [prioridadCra].
   final int prioridadConservacion;
   final String nota;
+
+  /// Hectáreas reales de la capa 1:5.000 de la CRA.
   final double areaHa;
 
   /// Anillos exteriores en [lat, lon].
   final List<List<LatLng>> poligonos;
+
+  /// Huecos de cada polígono (mismo orden que [poligonos]); casi siempre vacíos.
+  final List<List<List<LatLng>>> huecos;
   final List<Caja> cajas;
+
+  /// «Sector Balboa (Tubará)»: el nombre de la CRA con el municipio.
+  String get etiquetaSector => sectorCra.isEmpty ? nombre : 'Sector $sectorCra ($municipio)';
 
   LatLng get centro {
     var lat = 0.0, lon = 0.0, n = 0;
@@ -64,16 +144,40 @@ class Caja {
       q.longitude <= maxLon + margenGrados;
 }
 
-/// Resultado de ubicar un punto contra el manglar.
+/// Resultado de ubicar un punto contra el manglar y contra las prioridades de la CRA.
 class Ubicacion {
-  const Ubicacion({required this.zona, required this.dentro, required this.distanciaM});
+  const Ubicacion({
+    required this.zona,
+    required this.dentro,
+    required this.distanciaM,
+    this.plan,
+    this.fueraZonificacion = false,
+  });
 
   /// Zona más cercana (siempre hay una: el reporte se asigna a la más próxima).
   final ZonaManglar zona;
+
+  /// Dentro de algún polígono del manglar 1:5.000 de la CRA.
   final bool dentro;
 
   /// 0 si está dentro.
   final double distanciaM;
+
+  /// Plan de la CRA en el punto (el polígono de mayor prioridad que lo contiene), o null.
+  final PlanCRA? plan;
+
+  /// true si la capa de prioridades estaba cargada y ningún polígono contiene el punto.
+  /// Si la capa no está cargada, [plan] es null y esto es false (no se sabe).
+  final bool fueraZonificacion;
+
+  /// Prioridad de conservación de la CRA en el punto; null si está fuera de la zonificación.
+  PrioridadCRA? get prioridadCra => plan?.prioridad;
+
+  /// DERIVADO de [prioridadCra] en la escala 1-5: alta → 5, media → 4, baja → 3,
+  /// fuera de la zonificación → 3. Sin capa cargada cae a la de la zona. Lo usa
+  /// prioridad.dart hasta que lea [prioridadCra] directamente.
+  int get prioridadConservacion =>
+      plan?.prioridad.puntos ?? (fueraZonificacion ? 3 : zona.prioridadConservacion);
 
   /// Área de influencia: un vertimiento o un caño taponado pueden estar fuera del
   /// polígono y afectarlo igual (handoff/03).
@@ -87,42 +191,181 @@ class Ubicacion {
   }
 }
 
-/// Las zonas de manglar del Atlántico, cargadas del archivo que va dentro de la app:
-/// ubicar un reporte funciona sin internet.
+/// Capa «Prioridades de conservación» de la CRA: polígonos con prioridad, acción y escenario.
+class CapaPrioridadesCra {
+  CapaPrioridadesCra._(this.fuente, this.generado, this._planes, this._idx, this._cajas, this._anillos);
+
+  final String fuente;
+  final String generado;
+  final List<PlanCRA> _planes;
+
+  /// Por polígono: índice en [_planes], su caja [minLon, minLat, maxLon, maxLat] (4 por polígono)
+  /// y sus anillos (el primero es el exterior) como Float64List [lon, lat, lon, lat…].
+  final Int32List _idx;
+  final Float64List _cajas;
+  final List<List<Float64List>> _anillos;
+
+  int get poligonos => _idx.length;
+
+  static CapaPrioridadesCra desdeJson(Map<String, dynamic> j) {
+    final unidad = (j['unidad'] as num).toDouble();
+    String? vacioANulo(Object? t) => (t is String && t.isNotEmpty) ? t : null;
+    final planes = <PlanCRA>[
+      for (final a in j['atributos'] as List)
+        PlanCRA(
+          prioridad: PrioridadCRA.desdeTexto(a['p'] as String) ?? PrioridadCRA.baja,
+          accion: a['a'] as String,
+          escenario: a['e'] as String,
+          figura: a['f'] as String? ?? '',
+          areaProtegida: vacioANulo(a['z']),
+          unidad: vacioANulo(a['u']),
+        ),
+    ];
+    final polis = j['poligonos'] as List;
+    final idx = Int32List(polis.length);
+    final cajas = Float64List(polis.length * 4);
+    final anillos = <List<Float64List>>[];
+    for (var i = 0; i < polis.length; i++) {
+      final p = polis[i] as List;
+      idx[i] = (p[0] as num).toInt();
+      final rings = [for (final r in p[1] as List) _decodificarPlano(r as List, unidad)];
+      anillos.add(rings);
+      final e = rings.first;
+      var a = 1e9, b = 1e9, c = -1e9, d = -1e9;
+      for (var k = 0; k < e.length; k += 2) {
+        a = math.min(a, e[k]);
+        c = math.max(c, e[k]);
+        b = math.min(b, e[k + 1]);
+        d = math.max(d, e[k + 1]);
+      }
+      cajas[i * 4] = a;
+      cajas[i * 4 + 1] = b;
+      cajas[i * 4 + 2] = c;
+      cajas[i * 4 + 3] = d;
+    }
+    return CapaPrioridadesCra._(
+      j['fuente'] as String? ?? '',
+      j['generado'] as String? ?? '',
+      planes,
+      idx,
+      cajas,
+      anillos,
+    );
+  }
+
+  /// Plan de la CRA en [p]; si lo contienen varios polígonos, el de prioridad más alta.
+  /// null = fuera de la zonificación.
+  PlanCRA? en(LatLng p) {
+    final x = p.longitude, y = p.latitude;
+    PlanCRA? mejor;
+    for (var i = 0; i < _idx.length; i++) {
+      final c = i * 4;
+      if (x < _cajas[c] || x > _cajas[c + 2] || y < _cajas[c + 1] || y > _cajas[c + 3]) continue;
+      final plan = _planes[_idx[i]];
+      // El enum va de la más alta (índice 0) a la más baja: solo interesa una más alta.
+      if (mejor != null && plan.prioridad.index >= mejor.prioridad.index) continue;
+      final rings = _anillos[i];
+      if (!_dentroPlano(x, y, rings.first)) continue;
+      var enHueco = false;
+      for (var h = 1; h < rings.length && !enHueco; h++) {
+        enHueco = _dentroPlano(x, y, rings[h]);
+      }
+      if (!enHueco) mejor = plan;
+    }
+    return mejor;
+  }
+
+  static bool _dentroPlano(double x, double y, Float64List r) {
+    var dentro = false;
+    final n = r.length ~/ 2;
+    for (var i = 0, j = n - 1; i < n; j = i++) {
+      final xi = r[i * 2], yi = r[i * 2 + 1], xj = r[j * 2], yj = r[j * 2 + 1];
+      if ((yi > y) != (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) dentro = !dentro;
+    }
+    return dentro;
+  }
+}
+
+/// Anillo codificado [x0, y0, dx1, dy1, …] en unidades de 1/[unidad] grados → [lon, lat, …].
+Float64List _decodificarPlano(List r, double unidad) {
+  final n = r.length ~/ 2;
+  final o = Float64List(n * 2);
+  var x = 0, y = 0;
+  for (var i = 0; i < n; i++) {
+    x += (r[i * 2] as num).toInt();
+    y += (r[i * 2 + 1] as num).toInt();
+    o[i * 2] = x / unidad;
+    o[i * 2 + 1] = y / unidad;
+  }
+  return o;
+}
+
+List<LatLng> _decodificarAnillo(List r, double unidad) {
+  final f = _decodificarPlano(r, unidad);
+  return [for (var i = 0; i < f.length; i += 2) LatLng(f[i + 1], f[i])];
+}
+
+/// Para `compute`: decodifica los dos archivos fuera del hilo de la interfaz.
+Manglar _decodificarCapas(List<String> textos) => Manglar.desdeJson(
+      jsonDecode(textos[0]) as Map<String, dynamic>,
+      jsonDecode(textos[1]) as Map<String, dynamic>,
+    );
+
+/// Las zonas de manglar del Atlántico y las prioridades de la CRA, cargadas de los archivos que
+/// van dentro de la app: ubicar un reporte funciona sin internet.
 class Manglar {
-  Manglar._(this.zonas, this.fuente, this.provisional, this.areaTotalHa);
+  Manglar._(this.zonas, this.fuente, this.provisional, this.areaTotalHa, this.prioridades,
+      {this.fechaDatos = ''});
 
   final List<ZonaManglar> zonas;
   final String fuente;
+
+  /// Rango de fechas de las imágenes de la capa de manglar.
+  final String fechaDatos;
   final bool provisional;
   final double areaTotalHa;
 
+  /// Capa de prioridades de la CRA; null si no se cargó (p. ej. en pruebas que solo usan el manglar).
+  final CapaPrioridadesCra? prioridades;
+
+  /// Lee `manglar_zonas.json` (manglar 1:5.000 de la CRA) y `prioridades_cra.json`. La
+  /// decodificación (~2 MB de JSON) va en otro isolate para no trabar el arranque.
   static Future<Manglar> cargar() async {
-    final texto = await rootBundle.loadString('assets/datos/manglar_zonas.json');
-    return desdeJson(jsonDecode(texto) as Map<String, dynamic>);
+    final textos = await Future.wait([
+      rootBundle.loadString('assets/datos/manglar_zonas.json', cache: false),
+      rootBundle.loadString('assets/datos/prioridades_cra.json', cache: false),
+    ]);
+    return compute(_decodificarCapas, textos);
   }
 
-  static Manglar desdeJson(Map<String, dynamic> j) {
-    final zonas = [
-      for (final z in j['zonas'] as List)
-        ZonaManglar(
-          id: z['id'] as String,
-          nombre: z['nombre'] as String,
-          municipio: z['municipio'] as String,
-          prioridadConservacion: z['prioridadConservacion'] as int,
-          nota: z['nota'] as String,
-          areaHa: (z['areaHa'] as num).toDouble(),
-          poligonos: [
-            for (final p in z['poligonos'] as List)
-              [for (final c in p as List) LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble())],
-          ],
-        ),
-    ];
+  static Manglar desdeJson(Map<String, dynamic> j, [Map<String, dynamic>? prioridades]) {
+    final unidad = (j['unidad'] as num).toDouble();
+    ZonaManglar zona(Map<String, dynamic> z) {
+      final polis = [for (final p in z['poligonos'] as List) p as List];
+      final prCra = PrioridadCRA.desdeTexto(z['prioridadCra'] as String?);
+      return ZonaManglar(
+        id: z['id'] as String,
+        nombre: z['nombre'] as String,
+        municipio: z['municipio'] as String,
+        sectorCra: z['sectorCra'] as String? ?? '',
+        prioridadCra: prCra,
+        prioridadConservacion: (z['prioridadConservacion'] as num?)?.toInt() ?? prCra?.puntos ?? 3,
+        nota: z['nota'] as String,
+        areaHa: (z['areaHa'] as num).toDouble(),
+        poligonos: [for (final p in polis) _decodificarAnillo(p.first as List, unidad)],
+        huecos: [
+          for (final p in polis) [for (final h in p.skip(1)) _decodificarAnillo(h as List, unidad)],
+        ],
+      );
+    }
+
     return Manglar._(
-      zonas,
+      [for (final z in j['zonas'] as List) zona(z as Map<String, dynamic>)],
       j['fuente'] as String,
-      j['provisional'] as bool? ?? true,
+      j['provisional'] as bool? ?? false,
       (j['areaTotalHa'] as num).toDouble(),
+      prioridades == null ? null : CapaPrioridadesCra.desdeJson(prioridades),
+      fechaDatos: j['fechaDatos'] as String? ?? '',
     );
   }
 
@@ -134,13 +377,19 @@ class Manglar {
   }
 
   /// Ubica un punto: ¿está dentro de algún polígono?, ¿a qué distancia del borde más
-  /// cercano?, ¿de qué zona? Primero filtra por caja para no recorrer los 21 000 vértices.
+  /// cercano?, ¿de qué zona?, ¿qué prioridad de conservación le da la CRA? Primero filtra por
+  /// caja para no recorrer todos los vértices.
   Ubicacion ubicar(LatLng p) {
-    // 1) ¿Dentro de algún polígono?
+    final capa = prioridades;
+    final plan = capa?.en(p);
+    final fuera = capa != null && plan == null;
+    // 1) ¿Dentro de algún polígono (y no en un hueco)?
     for (final z in zonas) {
       for (var i = 0; i < z.poligonos.length; i++) {
-        if (z.cajas[i].contiene(p) && _dentro(p, z.poligonos[i])) {
-          return Ubicacion(zona: z, dentro: true, distanciaM: 0);
+        if (z.cajas[i].contiene(p) &&
+            _dentro(p, z.poligonos[i]) &&
+            !z.huecos[i].any((h) => _dentro(p, h))) {
+          return Ubicacion(zona: z, dentro: true, distanciaM: 0, plan: plan, fueraZonificacion: fuera);
         }
       }
     }
@@ -161,7 +410,13 @@ class Manglar {
       }
       if (mejorZona != null) break;
     }
-    return Ubicacion(zona: mejorZona ?? zonas.first, dentro: false, distanciaM: mejor);
+    return Ubicacion(
+      zona: mejorZona ?? zonas.first,
+      dentro: false,
+      distanciaM: mejor,
+      plan: plan,
+      fueraZonificacion: fuera,
+    );
   }
 
   /// Punto en polígono por cruce de rayos (el anillo en grados basta a esta escala).

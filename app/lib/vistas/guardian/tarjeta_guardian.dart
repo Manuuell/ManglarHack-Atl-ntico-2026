@@ -92,6 +92,30 @@ class _TarjetaGuardianState extends State<TarjetaGuardian> with TickerProviderSt
   Offset _desde = _reposo;
   bool _atras = false;
 
+  /// El QR se construye UNA vez (y otra solo si cambia el código): reconstruirlo en cada
+  /// cuadro del giro o del arrastre repetía la codificación y las 8 máscaras. Al ser la
+  /// misma instancia de widget, Flutter no lo vuelve a construir, y el RepaintBoundary
+  /// deja su dibujo en su propia capa mientras la tarjeta gira.
+  late Widget _qr = _construirQr(widget.perfil.codigo);
+
+  static Widget _construirQr(String codigo) => RepaintBoundary(
+        child: QrImageView(
+          // Solo el código público: nada de nombre, cédula ni id interno.
+          data: 'zanky:guardian:$codigo',
+          padding: EdgeInsets.zero,
+          backgroundColor: Colors.white,
+          eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Zc.raiz),
+          dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Zc.raiz),
+          semanticsLabel: 'Código QR de la tarjeta $codigo',
+        ),
+      );
+
+  @override
+  void didUpdateWidget(TarjetaGuardian anterior) {
+    super.didUpdateWidget(anterior);
+    if (anterior.perfil.codigo != widget.perfil.codigo) _qr = _construirQr(widget.perfil.codigo);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -173,7 +197,8 @@ class _TarjetaGuardianState extends State<TarjetaGuardian> with TickerProviderSt
                       ? Transform(
                           alignment: Alignment.center,
                           transform: Matrix4.rotationY(math.pi),
-                          child: _Reverso(perfil: widget.perfil, progreso: widget.progreso, ancho: w, brillo: b),
+                          child: _Reverso(
+                              perfil: widget.perfil, progreso: widget.progreso, ancho: w, brillo: b, qr: _qr),
                         )
                       : _Frente(perfil: widget.perfil, progreso: widget.progreso, ancho: w, brillo: b);
                   return Transform(alignment: Alignment.center, transform: matriz, child: cara);
@@ -323,8 +348,10 @@ class _Frente extends StatelessWidget {
 }
 
 class _Reverso extends StatelessWidget {
-  const _Reverso({required this.perfil, required this.progreso, required this.ancho, required this.brillo});
+  const _Reverso(
+      {required this.perfil, required this.progreso, required this.ancho, required this.brillo, required this.qr});
   final Perfil perfil;
+  final Widget qr;
   final Progreso progreso;
   final double ancho;
   final Offset brillo;
@@ -349,15 +376,7 @@ class _Reverso extends StatelessWidget {
               height: lado,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14)),
-              // Solo el código público: nada de nombre, cédula ni id interno.
-              child: QrImageView(
-                data: 'zanky:guardian:${perfil.codigo}',
-                padding: EdgeInsets.zero,
-                backgroundColor: Colors.white,
-                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: Zc.raiz),
-                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Zc.raiz),
-                semanticsLabel: 'Código QR de la tarjeta ${perfil.codigo}',
-              ),
+              child: qr,
             ),
             SizedBox(width: ancho * 0.05),
             Expanded(

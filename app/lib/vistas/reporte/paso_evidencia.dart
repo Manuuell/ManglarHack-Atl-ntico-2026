@@ -47,7 +47,7 @@ class _PasoEvidenciaState extends State<PasoEvidencia> {
       vibrar(Vibracion.ligera);
     } catch (_) {
       setState(() => _error = origen == ImageSource.camera
-          ? 'No pude abrir la cámara. Revisa el permiso de cámara o elige una foto.'
+          ? 'No pude abrir la cámara. Elige una foto de la galería.'
           : 'No pude abrir la galería.');
     } finally {
       if (mounted) setState(() => _abriendo = false);

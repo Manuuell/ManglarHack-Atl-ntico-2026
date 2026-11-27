@@ -6,6 +6,8 @@ import '../../datos/guardian.dart';
 import '../../nucleo/base/hoja.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
+import '../bienvenida/formulario.dart' show DatosPerfil;
+import 'borrar_datos.dart';
 
 /// Abre la hoja para editar nombre, colegio, cédula (opcional) y anonimato.
 Future<void> mostrarEditarPerfil(BuildContext context) {
@@ -29,7 +31,10 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
   final _cedula = TextEditingController();
   late bool _anonimo;
   late bool _vinculada;
+  String? _errorNombre;
+  String? _errorColegio;
   String? _errorCedula;
+  String? _errorGuardar;
   bool _guardando = false;
 
   @override
@@ -50,34 +55,64 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
     super.dispose();
   }
 
+  /// Mismos límites y validación que la bienvenida (DatosPerfil). Nada se recorta en
+  /// silencio: si algo no cumple, se dice cuál campo y por qué.
   Future<void> _guardar() async {
-    final texto = _cedula.text.trim();
-    String? huella;
-    if (texto.isNotEmpty) {
-      final digitos = texto.replaceAll(RegExp(r'\D'), '');
-      if (digitos.length < 5 || digitos.length > 12) {
-        setState(() => _errorCedula = 'Revisa el número: debe tener entre 5 y 12 dígitos.');
-        vibrar(Vibracion.fuerte);
-        return;
-      }
-      huella = Perfil.huellaCedula(digitos);
+    if (_guardando) return;
+    final errNombre = DatosPerfil.validarNombre(_nombre.text);
+    final errColegio = DatosPerfil.validarColegio(_colegio.text);
+    final errCedula = _vinculada ? null : DatosPerfil.validarCedula(_cedula.text);
+    if (errNombre != null || errColegio != null || errCedula != null) {
+      setState(() {
+        _errorNombre = errNombre;
+        _errorColegio = errColegio;
+        _errorCedula = errCedula;
+        _errorGuardar = null;
+      });
+      vibrar(Vibracion.fuerte);
+      return;
     }
-    setState(() => _guardando = true);
+    setState(() {
+      _guardando = true;
+      _errorGuardar = null;
+    });
     final estado = Zanky.leer(context);
-    final p = estado.perfil ?? estado.perfilNuevo();
-    p
-      ..nombre = _nombre.text.trim()
-      ..colegio = _colegio.text.trim()
-      ..anonimoPorDefecto = _anonimo;
-    if (huella != null) {
-      p.cedulaHash = huella;
-    } else if (!_vinculada) {
-      p.cedulaHash = null;
+    try {
+      final base = estado.perfil ?? estado.perfilNuevo();
+      final digitos = DatosPerfil.soloDigitos(_cedula.text);
+      // Se arma un perfil nuevo con el mismo id y la misma sal: si guardar falla, el
+      // que está en memoria no cambia sin estar en el disco.
+      final nuevo = Perfil(
+        id: base.id,
+        creado: base.creado,
+        sal: base.sal,
+        consentimiento: base.consentimiento,
+        nombre: _nombre.text.trim(),
+        colegio: _colegio.text.trim(),
+        anonimoPorDefecto: _anonimo,
+        cedulaHash: !_vinculada && digitos.isNotEmpty
+            ? base.huellaCedula(digitos)
+            : (_vinculada ? base.cedulaHash : null),
+      );
+      await estado.guardarPerfil(nuevo);
+    } catch (_) {
+      if (!mounted) return;
+      vibrar(Vibracion.fuerte);
+      setState(() {
+        _guardando = false;
+        _errorGuardar = 'No pudimos guardar tu perfil. Revisa que tu teléfono tenga espacio y vuelve a intentarlo.';
+      });
+      return;
     }
-    await estado.guardarPerfil(p);
     if (!mounted) return;
     vibrar(Vibracion.ligera);
     Navigator.of(context).pop();
+  }
+
+  Future<void> _borrar() async {
+    final navegador = Navigator.of(context);
+    final borrado = await confirmarYBorrarDatos(context);
+    if (borrado && mounted) navegador.pop();
   }
 
   @override
@@ -89,24 +124,33 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
       children: [
         Text('Mi perfil de guardián', style: tt.headlineSmall),
         const SizedBox(height: 4),
-        Text('Todo se guarda solo en este teléfono. Nada es obligatorio.', style: tt.bodyMedium),
+        Text('Tu nombre, tu colegio y tu cédula se quedan solo en este teléfono. Nada es obligatorio.',
+            style: tt.bodyMedium),
         const SizedBox(height: 18),
         _Campo(
           controlador: _nombre,
           etiqueta: 'Tu nombre',
           ayuda: 'Es el que sale en tu tarjeta.',
-          maximo: 40,
+          maximo: DatosPerfil.maxNombre,
           capitalizar: TextCapitalization.words,
           icono: Icons.person_rounded,
+          error: _errorNombre,
+          alCambiar: () {
+            if (_errorNombre != null) setState(() => _errorNombre = null);
+          },
         ),
         const SizedBox(height: 12),
         _Campo(
           controlador: _colegio,
           etiqueta: 'Tu colegio (si estudias)',
           ayuda: 'Para tu servicio social y el ranking de colegios.',
-          maximo: 60,
+          maximo: DatosPerfil.maxColegio,
           capitalizar: TextCapitalization.words,
           icono: Icons.school_rounded,
+          error: _errorColegio,
+          alCambiar: () {
+            if (_errorColegio != null) setState(() => _errorColegio = null);
+          },
         ),
         const SizedBox(height: 12),
         if (_vinculada)
@@ -117,15 +161,15 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
               children: [
                 const Icon(Icons.verified_user_rounded, color: Zc.hoja, size: 22),
                 const SizedBox(width: 10),
-                Expanded(child: Text('Cédula vinculada ✓', style: tt.titleSmall)),
+                Expanded(child: Text('Cédula guardada en este teléfono ✓', style: tt.titleSmall)),
                 Presionable(
-                  etiqueta: 'Desvincular mi cédula',
+                  etiqueta: 'Quitar mi cédula',
                   onTap: () => setState(() => _vinculada = false),
                   child: Container(
                     constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('Desvincular', style: tt.labelMedium?.copyWith(color: Zc.prioridad[5])),
+                    child: Text('Quitar', style: tt.labelMedium?.copyWith(color: Zc.prioridad[5])),
                   ),
                 ),
               ],
@@ -135,8 +179,9 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
           _Campo(
             controlador: _cedula,
             etiqueta: 'Cédula (opcional)',
-            ayuda: 'No se guarda tu número: solo una huella que permite reconocerte en la app y en WhatsApp.',
-            maximo: 12,
+            ayuda: 'Se guarda solo en este teléfono, como una huella (nunca tu número). Hoy no se envía a nadie: '
+                'servirá, cuando exista, para que la CRA enlace tu WhatsApp con tu perfil.',
+            maximo: DatosPerfil.maxCedula,
             teclado: TextInputType.number,
             filtro: FilteringTextInputFormatter.digitsOnly,
             error: _errorCedula,
@@ -162,7 +207,7 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
                     children: [
                       Text('Reportar en anónimo', style: tt.titleSmall),
                       const SizedBox(height: 2),
-                      Text('Tu nombre no viaja con tus reportes. Pesan un poco menos, pero te protegen.',
+                      Text('No se envía tu identificador de guardián con el reporte. Pesan un poco menos, pero te protegen.',
                           style: tt.bodySmall),
                     ],
                   ),
@@ -180,8 +225,25 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
             ),
           ),
         ),
+        if (_errorGuardar != null) ...[
+          const SizedBox(height: 14),
+          Semantics(
+            liveRegion: true,
+            child: Text(_errorGuardar!, style: tt.bodyMedium?.copyWith(color: Zc.prioridad[5])),
+          ),
+        ],
         const SizedBox(height: 20),
         BotonZ(texto: 'Guardar', cargando: _guardando, onTap: _guardar),
+        if (Zanky.leer(context).perfil != null) ...[
+          const SizedBox(height: 10),
+          BotonZ(
+            texto: 'Borrar mis datos de este teléfono',
+            icono: Icons.delete_outline_rounded,
+            secundario: true,
+            color: Zc.prioridad[5]!,
+            onTap: _guardando ? null : _borrar,
+          ),
+        ],
       ],
     );
   }

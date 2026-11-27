@@ -12,6 +12,44 @@ import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../raiz.dart';
 
+/// Qué decirle a la persona sobre dónde está su reporte. Separa los casos que antes se
+/// confundían: sin red, el servidor falló, el servidor lo rechazó, en cola con red y
+/// modo demostración. Solo habla de «señal» cuando de verdad no hay red.
+(String, String, Color) textoEnvio({
+  required Reporte r,
+  required bool servidorConfigurado,
+  required bool enLinea,
+}) {
+  const guardado = 'Guardado en tu teléfono';
+  if (r.envio == Envio.enviado) {
+    return ('¡Llegó a la CRA!', 'Cuando la CRA lo revise, lo verás en «Mis reportes».', Zc.hoja);
+  }
+  if (r.envio == Envio.enviando) {
+    return ('Enviando…', 'Un momento: lo estoy subiendo con la foto.', Zc.cienaga);
+  }
+  if (!servidorConfigurado) {
+    return (guardado, 'Modo demostración: en la versión conectada se envía solo a la CRA.', Zc.textoSuave);
+  }
+  if (!enLinea) {
+    return (
+      guardado,
+      'No hay señal ahora. Lo envío solo apenas vuelva, con la hora en que lo viste.',
+      Zc.fango,
+    );
+  }
+  if (r.envio == Envio.error) {
+    final codigo = int.tryParse(RegExp(r'(\d{3})\)').firstMatch(r.ultimoError ?? '')?.group(1) ?? '');
+    if (codigo != null && codigo >= 400 && codigo < 500) {
+      return (guardado, 'El servidor no aceptó el reporte. Sigue guardado y lo reintento solo.', Zc.sol);
+    }
+    if (codigo != null) {
+      return (guardado, 'El servidor falló. No se perdió nada: lo reintento solo.', Zc.sol);
+    }
+    return (guardado, 'No se pudo enviar todavía; lo reintento solo.', Zc.sol);
+  }
+  return (guardado, 'Hay señal: se envía en un momento.', Zc.cienaga);
+}
+
 /// Confirmación. Dice la verdad sobre dónde está el reporte (en el teléfono, enviándose
 /// o ya en la CRA) y se actualiza sola cuando cambia.
 class ReporteEnviado extends StatefulWidget {
@@ -56,20 +94,8 @@ class _ReporteEnviadoState extends State<ReporteEnviado> with SingleTickerProvid
     final estado = Zanky.de(context);
     final r = estado.reportes.where((x) => x.id == widget.reporteId).firstOrNull;
     if (r == null) return const Scaffold(backgroundColor: Zc.arena);
-    final (titulo, detalle, color) = switch (r.envio) {
-      Envio.enviado => ('¡Llegó a la CRA!', 'Te aviso cuando lo revisen. Puedes seguirlo en «Mis reportes».', Zc.hoja),
-      Envio.enviando => ('Enviando…', 'Un momento: lo estoy subiendo con la foto.', Zc.cienaga),
-      _ when !estado.servidor.configurado => (
-          'Guardado en tu teléfono',
-          'Modo demostración: en la versión conectada se envía solo a la CRA.',
-          Zc.textoSuave,
-        ),
-      _ => (
-          'Guardado en tu teléfono',
-          'No hay señal ahora. Lo envío solo apenas vuelva, con la hora en que lo viste.',
-          Zc.fango,
-        ),
-    };
+    final (titulo, detalle, color) = textoEnvio(
+        r: r, servidorConfigurado: estado.servidor.configurado, enLinea: estado.enLinea);
     final abajo = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       backgroundColor: Zc.arena,

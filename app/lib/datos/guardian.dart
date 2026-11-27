@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
@@ -8,9 +9,18 @@ import 'tipos.dart';
 
 /// El perfil del ciudadano, guardado solo en su teléfono.
 ///
-/// La cédula es opcional y NUNCA se guarda en claro: solo su huella (SHA-256 con sal
-/// de la app), que sirve para que el servidor reconozca a la misma persona en la app y
-/// en WhatsApp sin conocer su número de documento (Ley 1581).
+/// La cédula es opcional y NUNCA se guarda en claro: solo su huella, un HMAC-SHA256 con
+/// una [sal] aleatoria de ESTA instalación (no una sal fija escrita en el código, que
+/// cualquiera podría usar para probar los ~10^10 números posibles).
+///
+/// Límites que hay que decir con honestidad: la sal vive junto a la huella en el mismo
+/// teléfono, así que la huella solo protege contra quien lea el perfil sin la sal (por
+/// ejemplo, un volcado de pantalla o un log). No es anonimato frente a quien tenga el
+/// teléfono desbloqueado. Por eso HOY NO SE ENVÍA a ningún servidor. Cuando exista el
+/// enlace con WhatsApp, el vínculo entre canales lo hará el SERVIDOR con un secreto
+/// propio (un HMAC con una clave que solo tiene una función del backend) y la app solo
+/// guardará lo que ese servidor devuelva; esta huella local no sirve de llave entre
+/// canales porque cada instalación tiene otra sal.
 class Perfil {
   Perfil({
     required this.id,
@@ -20,25 +30,50 @@ class Perfil {
     this.anonimoPorDefecto = false,
     this.consentimiento,
     required this.creado,
-  });
+    String? sal,
+  })  : sal = sal ?? generarSal(),
+        salPendiente = sal == null;
 
-  /// Id del guardián (UUID). Va en la tarjeta y en el QR; no revela a la persona.
+  /// Id del guardián (UUID). Es el `reportante_id` de los reportes no anónimos: es el
+  /// único dato que identifica al teléfono ante la CRA. NUNCA se muestra ni se usa como
+  /// prefijo del código público.
   final String id;
   String nombre;
   String colegio;
   String? cedulaHash;
   bool anonimoPorDefecto;
 
+  /// Sal aleatoria de esta instalación (32 bytes en base64). Se guarda en el perfil y se
+  /// borra con él al usar «Borrar mis datos de este teléfono».
+  final String sal;
+
+  /// `true` si la sal se acaba de crear y todavía no está en el disco (un perfil de una
+  /// versión anterior que no tenía sal). Quien guarde el perfil debe dejarla escrita.
+  bool salPendiente;
+
   /// Cuándo aceptó el aviso de privacidad. Sin esto no se envía nada.
   DateTime? consentimiento;
   final DateTime creado;
 
-  String get codigo => 'GM-${id.replaceAll('-', '').substring(0, 6).toUpperCase()}';
+  /// Código público de la tarjeta y del QR. Se deriva del [id] con una función de una
+  /// vía (HMAC con la [sal]): ver el código NO da ninguna parte del `reportante_id`.
+  String get codigo => 'GM-${_hmacHex('codigo:$id').substring(0, 6).toUpperCase()}';
+
   String get nombreVisible => nombre.trim().isEmpty ? 'Guardián del manglar' : nombre.trim();
 
-  static String huellaCedula(String cedula) {
+  /// Huella de la cédula (solo dígitos): HMAC-SHA256 con la [sal] de esta instalación.
+  String huellaCedula(String cedula) {
     final limpia = cedula.replaceAll(RegExp(r'\D'), '');
-    return sha256.convert(utf8.encode('zanky-guardian:$limpia')).toString();
+    return _hmacHex('cedula:$limpia');
+  }
+
+  String _hmacHex(String mensaje) =>
+      Hmac(sha256, base64Decode(sal)).convert(utf8.encode(mensaje)).toString();
+
+  /// 32 bytes aleatorios del generador seguro del sistema, en base64.
+  static String generarSal([Random? azar]) {
+    final r = azar ?? Random.secure();
+    return base64Encode([for (var i = 0; i < 32; i++) r.nextInt(256)]);
   }
 
   Map<String, dynamic> toJson() => {
@@ -46,16 +81,21 @@ class Perfil {
         'nombre': nombre,
         'colegio': colegio,
         'cedula_hash': cedulaHash,
+        'sal': sal,
         'anonimo': anonimoPorDefecto,
         'consentimiento': consentimiento?.toIso8601String(),
         'creado': creado.toIso8601String(),
       };
 
+  /// Un perfil sin `sal` es de la versión anterior: su huella usaba la sal fija y pública
+  /// (se revertía por fuerza bruta), así que se descarta; la cédula es opcional y se
+  /// puede volver a poner en «Editar mi perfil».
   static Perfil fromJson(Map<String, dynamic> j) => Perfil(
         id: j['id'] as String,
         nombre: j['nombre'] as String? ?? '',
         colegio: j['colegio'] as String? ?? '',
-        cedulaHash: j['cedula_hash'] as String?,
+        sal: j['sal'] as String?,
+        cedulaHash: j['sal'] == null ? null : j['cedula_hash'] as String?,
         anonimoPorDefecto: j['anonimo'] as bool? ?? false,
         consentimiento: j['consentimiento'] == null ? null : DateTime.parse(j['consentimiento'] as String),
         creado: DateTime.parse(j['creado'] as String),

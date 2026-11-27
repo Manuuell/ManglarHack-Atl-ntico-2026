@@ -13,6 +13,7 @@ import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
 import 'detalle_reporte.dart';
+import 'linea_tiempo.dart' show envioRechazado;
 import 'tarjeta_reporte.dart';
 
 enum _Filtro { todos, pendientes, validados }
@@ -168,6 +169,8 @@ class _AvisoEnvio extends StatelessWidget {
       texto = 'Modo demostración: estos reportes se quedan en este teléfono, no se envían a nadie.';
     } else if (!e.enLinea) {
       texto = 'Sin señal por ahora. Se envían solos cuando vuelva; no tienes que hacer nada.';
+    } else if (e.reportes.any(envioRechazado)) {
+      texto = 'La CRA no pudo recibir alguno de tus reportes. Ábrelo para ver qué pasó.';
     } else if (conError) {
       texto = 'Alguno no pudo enviarse. Lo vuelvo a intentar solo, y también puedes probar ahora.';
     } else {
