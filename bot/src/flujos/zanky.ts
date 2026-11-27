@@ -8,6 +8,7 @@ import * as almacen from '../reportes/almacen';
 import { confianza, corroboraciones, prioridad } from '../reportes/evaluacion';
 import { FuenteUbicacion, MagnitudId, MomentoId, RolId, TipoId, enAtlantico, esMagnitud, esMomento, esMunicipio, esRol, esTipo, numeroDeCaso } from '../reportes/modelo';
 import { enviarReporte } from '../backend/envio';
+import { enlaceSeguimiento } from '../reportes/seguimiento';
 import { backendActivo, estadoDeReportes } from '../backend/supabase';
 import { buscarJornada, proximasJornadas } from '../jornadas/jornadas';
 import { config as configBot } from '../config';
@@ -281,7 +282,7 @@ async function guardarReporte(de: string, s: Sesion, messageId: string): Promise
   s.borrador = {};
   // Solo se dice «ya está en el panel» cuando el backend común lo guardó.
   const resultado = await enviarReporte(reporte);
-  if (resultado === 'enviado') await whatsapp.texto(de, T.enviado(reporte.codigo));
+  if (resultado === 'enviado') await whatsapp.texto(de, T.enviado(reporte.codigo, enlaceSeguimiento(reporte.id), !!reporte.contacto));
   else if (resultado === 'sin_backend') await whatsapp.texto(de, T.guardadoSinBackend(reporte.codigo));
   else if (resultado === 'rechazado') await whatsapp.texto(de, T.ENVIO_RECHAZADO);
   else {

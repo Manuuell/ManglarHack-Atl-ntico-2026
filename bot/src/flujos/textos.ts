@@ -181,11 +181,13 @@ export const BOTONES_CONFIRMAR: Boton[] = [
 ];
 
 /** Solo se usa cuando el backend común confirmó que guardó el reporte. */
-export function enviado(codigo: string): string {
+export function enviado(codigo: string, enlace?: string, conAvisos = false): string {
   return (
     `🌿 ¡Gracias, vigía! Tu reporte *${codigo}* ya está en el panel de la CRA.\n\n` +
-    `Estado: *${ESTADOS.recibido}*. La CRA lo verifica y decide cómo actuar. También aparece en el mapa de la app y de la web, sin tus datos.\n\n` +
-    'Escribe *menu* para volver al inicio.'
+    `Estado: *${ESTADOS.recibido}*. La CRA lo verifica y decide cómo actuar. En unos minutos aparece en el mapa de la web, sin tus datos y con la ubicación aproximada.\n\n` +
+    (conAvisos ? '🔔 Te escribo aquí cuando la CRA cambie el estado.\n' : '') +
+    (enlace ? `🔎 Sigue tu caso: ${enlace}\n` : '') +
+    `📋 Toca *Mis reportes* para ver el estado de *${codigo}* cuando quieras.`
   );
 }
 
