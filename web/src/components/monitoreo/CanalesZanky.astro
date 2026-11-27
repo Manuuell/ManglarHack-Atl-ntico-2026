@@ -26,25 +26,25 @@ const canales = [
 
 <section aria-labelledby="titulo-canales" class="grid gap-6 lg:grid-cols-[auto_1fr] lg:items-start">
   <div class="flex items-center gap-4 lg:flex-col lg:items-start">
-    <Zanky animo="curioso" class="h-28 w-28 shrink-0" />
+    <Zanky animo="curioso" sizes="(min-width: 1024px) 144px, 112px" class="size-28 shrink-0 lg:size-36" />
     <div>
       <p class="rotulo text-dorado-300">Reporta con Zanky</p>
-      <h2 id="titulo-canales" class="titular mt-2 max-w-xs text-2xl">¡Ajá! ¿Qué viste en el manglar?</h2>
+      <h2 id="titulo-canales" class="titular mt-2 max-w-xs text-3xl">¡Ajá! ¿Qué viste en el manglar?</h2>
     </div>
   </div>
 
   <div>
     <ul class="grid gap-4 md:grid-cols-3">
       {canales.map(({ icono: Icono, titulo, texto }) => (
-        <li class="rounded-sm border border-linea-suave bg-superficie p-5">
-          <Icono className="size-6 text-dorado-300" aria-hidden="true" />
-          <h3 class="rotulo mt-3 text-texto">{titulo}</h3>
+        <li class="rounded-3xl border border-linea-suave bg-superficie p-6 shadow-[var(--c-sombra)]">
+          <span class="grid size-11 place-items-center rounded-full bg-dorado-500 text-cra-950"><Icono className="size-5" aria-hidden="true" /></span>
+          <h3 class="mt-4 font-[family-name:var(--font-titulo)] text-lg font-bold text-texto">{titulo}</h3>
           <p class="mt-2 text-sm leading-relaxed text-suave">{texto}</p>
         </li>
       ))}
     </ul>
 
-    <div class="mt-4 flex gap-3 rounded-sm border border-dorado-300/40 bg-white/5 p-4 text-sm text-suave">
+    <div class="mt-4 flex gap-3 rounded-3xl border border-dorado-500/40 bg-dorado-500/10 p-5 text-sm text-suave">
       <PlugZap className="mt-0.5 size-5 shrink-0 text-dorado-300" aria-hidden="true" />
       <p>
         La conexión en vivo con la app y el bot llega con el backend común. Hoy el mapa muestra
@@ -53,18 +53,18 @@ const canales = [
     </div>
 
     <details class="mt-3 text-sm text-suave">
-      <summary class="etiqueta-campo inline-flex min-h-11 cursor-pointer items-center text-texto hover:text-dorado-300">Ver el contrato común de reportes</summary>
-      <div class="mt-2 grid gap-4 border-t border-linea-suave pt-4 md:grid-cols-2">
+      <summary class="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-linea bg-white/5 px-4 font-semibold text-texto transition-colors hover:border-dorado-300 hover:text-dorado-300">Ver el contrato común de reportes</summary>
+      <div class="mt-3 grid gap-4 rounded-3xl border border-linea-suave bg-fondo-alt p-5 md:grid-cols-2">
         <div>
           <p class="rotulo text-dorado-300">Tipos</p>
           <ul class="mt-2 flex flex-wrap gap-2">
-            {LISTA_TIPOS.map((tipo) => <li class="rounded-sm bg-white/10 px-2 py-1 text-xs">{TIPOS[tipo].etiquetaLarga}</li>)}
+            {LISTA_TIPOS.map((tipo) => <li class="rounded-full bg-white/10 px-3 py-1 text-xs">{TIPOS[tipo].etiquetaLarga}</li>)}
           </ul>
         </div>
         <div>
           <p class="rotulo text-dorado-300">Estados</p>
           <ul class="mt-2 flex flex-wrap gap-2">
-            {LISTA_ESTADOS.map((estado) => <li class="rounded-sm bg-white/10 px-2 py-1 text-xs">{ESTADOS[estado].etiqueta}</li>)}
+            {LISTA_ESTADOS.map((estado) => <li class="rounded-full bg-white/10 px-3 py-1 text-xs">{ESTADOS[estado].etiqueta}</li>)}
           </ul>
         </div>
         <p class="md:col-span-2">
