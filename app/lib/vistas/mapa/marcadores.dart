@@ -7,6 +7,7 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import 'modelo.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Caja de cada marcador: deja sitio al anillo que late y da un área de toque de 56 px.
 const double cajaMarcador = 56;
@@ -85,7 +86,7 @@ class MarcadorPunto extends StatelessWidget {
                   child: CustomPaint(
                     painter: DiscoPainter(color: color, mio: punto.esMio, enCola: punto.enCola),
                     child: Center(
-                      child: Icon(punto.tipo.icono, size: d * 0.5, color: tintaSobre(color)),
+                      child: IconoAmenaza(punto.tipo, tamano: d * 0.6, color: tintaSobre(color)),
                     ),
                   ),
                 ),

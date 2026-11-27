@@ -42,6 +42,7 @@ import '../crecimiento/zanky_crece.dart';
 import '../avisos/bandeja_avisos.dart';
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Inicio: lo urgente arriba (reportar), lo que motiva en medio (tu progreso, la
 /// misión) y lo que enseña abajo (el tiempo de hoy y «¿Sabías que…?»).
@@ -455,28 +456,7 @@ class _Rapidos extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, i) {
               final t = _tipos[i];
-              return Presionable(
-                escala: 0.94,
-                etiqueta: 'Reportar ${t.nombre}',
-                onTap: () => abrirReporte(context, tipo: t),
-                child: Container(
-                  width: 86,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(Zr.m),
-                    border: Border.all(color: Zc.linea.withValues(alpha: 0.7)),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconoTipo(t, tamano: 42),
-                      const SizedBox(height: 7),
-                      Text(t.corto, maxLines: 1, style: tt.labelMedium),
-                    ],
-                  ),
-                ),
-              );
+              return FichaAmenaza(tipo: t, alTocar: () => abrirReporte(context, tipo: t));
             },
           ),
         ),

@@ -13,6 +13,7 @@ import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import 'piezas_admin.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// El reporte completo para decidir: foto grande, datos, mapa y las tres acciones.
 class DetalleAdmin extends StatelessWidget {
@@ -392,7 +393,7 @@ class _MapaAdmin extends StatelessWidget {
                           border: Border.all(color: Colors.white, width: 3),
                           boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 8, offset: Offset(0, 3))],
                         ),
-                        child: Icon(r.tipo.icono, color: Colors.white, size: 20),
+                        child: Center(child: IconoAmenaza(r.tipo, tamano: 23, color: Colors.white)),
                       ),
                     ),
                   ],

@@ -7,6 +7,7 @@ import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import 'borrador.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Paso 1: ¿qué viste? Ocho tarjetas grandes; al elegir, se marca y pasa sola al
 /// siguiente paso (un toque menos, sin perder la confirmación visual).
@@ -98,7 +99,7 @@ class _TarjetaTipo extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(color: tipo.color.withValues(alpha: 0.13), shape: BoxShape.circle),
-                  child: Icon(tipo.icono, color: tipo.color, size: 24),
+                  child: Center(child: IconoAmenaza(tipo, tamano: 30, animado: true, disparo: elegida)),
                 ),
                 const Spacer(),
                 AnimatedScale(

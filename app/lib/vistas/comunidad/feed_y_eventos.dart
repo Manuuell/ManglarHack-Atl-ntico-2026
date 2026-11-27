@@ -20,6 +20,7 @@ import '../mis_reportes/gestos_reporte.dart' show copiarCodigoReporte;
 import '../raiz.dart';
 import 'detalle_evento.dart';
 import 'piezas_comunidad.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Lleva al mapa y lo centra en el punto (el mapa escucha [puntoPedidoMapa]).
 void verEnMapa(BuildContext context, ReporteFeed r) {
@@ -177,7 +178,7 @@ class TarjetaReporte extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(color: p.tipo.color.withValues(alpha: 0.16), shape: BoxShape.circle),
-          child: Icon(p.tipo.icono, size: 20, color: p.tipo.color),
+          child: Center(child: IconoAmenaza(p.tipo, tamano: 25)),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -261,7 +262,7 @@ class _FichaReporte extends StatelessWidget {
           width: 52,
           height: 52,
           decoration: BoxDecoration(color: p.tipo.color.withValues(alpha: 0.16), shape: BoxShape.circle),
-          child: Icon(p.tipo.icono, size: 26, color: p.tipo.color),
+          child: Center(child: IconoAmenaza(p.tipo, tamano: 33)),
         ),
         const SizedBox(width: 14),
         Expanded(

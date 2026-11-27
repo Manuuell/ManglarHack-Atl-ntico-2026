@@ -17,6 +17,7 @@ import '../comun/comunes.dart';
 import 'foto_reporte.dart';
 import 'linea_tiempo.dart';
 import 'mapa_detalle.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Abre el detalle de un reporte con la transición de página de iOS (la del tema).
 /// La usan «Mis reportes» y el mapa.
@@ -242,8 +243,9 @@ class _FondoTipo extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: ExcludeSemantics(
-            child: Icon(tipo.icono, size: 120, color: Zc.superficie.withValues(alpha: 0.35)),
+          child: Opacity(
+            opacity: 0.35,
+            child: IconoAmenaza(tipo, tamano: 130, color: Zc.superficie),
           ),
         ),
       );

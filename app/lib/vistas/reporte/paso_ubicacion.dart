@@ -10,6 +10,8 @@ import '../../datos/zonas.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import 'borrador.dart';
+import '../../datos/tipos.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Lo que se le dice a la persona cuando el punto cae donde el servidor no recibe reportes.
 const textoPuntoFueraDelServidor =
@@ -234,7 +236,7 @@ class _PasoUbicacionState extends State<PasoUbicacion> with WidgetsBindingObserv
                       width: 46,
                       height: 56,
                       alignment: Alignment.topCenter,
-                      child: _Pin(color: b.tipo?.color ?? Zc.hoja, icono: b.tipo?.icono),
+                      child: _Pin(color: b.tipo?.color ?? Zc.hoja, tipo: b.tipo),
                     ),
                   ]),
               ],
@@ -372,9 +374,9 @@ class _Resultado extends StatelessWidget {
 }
 
 class _Pin extends StatelessWidget {
-  const _Pin({required this.color, this.icono});
+  const _Pin({required this.color, this.tipo});
   final Color color;
-  final IconData? icono;
+  final TipoAmenaza? tipo;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -388,7 +390,9 @@ class _Pin extends StatelessWidget {
               border: Border.all(color: Colors.white, width: 3),
               boxShadow: [BoxShadow(color: color.withValues(alpha: 0.45), blurRadius: 12, offset: const Offset(0, 4))],
             ),
-            child: Icon(icono ?? Icons.place_rounded, color: Colors.white, size: 20),
+            child: tipo == null
+                ? const Icon(Icons.place_rounded, color: Colors.white, size: 20)
+                : Center(child: IconoAmenaza(tipo!, tamano: 23, color: Colors.white)),
           ),
           Container(width: 3, height: 12, color: color),
         ],

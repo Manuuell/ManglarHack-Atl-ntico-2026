@@ -8,6 +8,7 @@ import '../../datos/servidor.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/tema.dart';
 import 'zanky_crece.dart';
+import '../../nucleo/kit/icono_amenaza.dart';
 
 /// Pantalla de destino para la tarjeta compacta de Inicio y la entrada de
 /// Guardián. Los parámetros opcionales permiten previsualizarla sin estado global.
@@ -149,7 +150,7 @@ class _HistoriaCrecimiento extends StatelessWidget {
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(width: 38, height: 38, alignment: Alignment.center,
                     decoration: const BoxDecoration(color: Zc.hojaClara, shape: BoxShape.circle),
-                    child: Icon(r.tipo.icono, color: Zc.raiz, size: 20)),
+                    child: IconoAmenaza(r.tipo, tamano: 24)),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('${r.tipo.corto} · ${r.zonaNombre}',
