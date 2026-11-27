@@ -186,10 +186,7 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
                 entra(SeccionEventos(
                   eventos: _jornadas == null ? null : completarCartelera([..._jornadas!, ...jornadasDelPanel()], _respaldo),
                   alInscribirse: (j) async {
-                    if (esJornadaDelPanel(j)) {
-                      avisar(context, 'Sin inscripción en línea: llega al punto de encuentro (${j.puntoEncuentro}).');
-                      return;
-                    }
+                    // Las del panel también: la hoja es la misma y la fila va a Supabase (inscripciones_panel).
                     final ok = await abrirInscripcion(context, j, _fuente);
                     if (ok == true) await _cargar();
                   },

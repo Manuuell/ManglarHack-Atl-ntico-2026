@@ -74,6 +74,8 @@ class JornadaPanel {
     this.fotoUrl = '',
     this.cupos,
     this.cerrada = false,
+    this.lat,
+    this.lon,
   });
 
   final String id;
@@ -84,10 +86,15 @@ class JornadaPanel {
   final int? cupos;
   final bool cerrada;
 
+  /// Punto de encuentro elegido en el mapa del panel (nulo en las jornadas creadas antes del mapa).
+  final double? lat, lon;
+
+  bool get tienePunto => lat != null && lon != null;
+
   String get textoCupos => cupos == null ? 'Sin límite de cupos' : '$cupos cupos';
 
   JornadaPanel copiar({String? titulo, DateTime? fecha, String? lugar, String? fotoUrl, int? cupos,
-          bool sinLimite = false, bool? cerrada}) =>
+          bool sinLimite = false, bool? cerrada, double? lat, double? lon}) =>
       JornadaPanel(
         id: id,
         titulo: titulo ?? this.titulo,
@@ -96,6 +103,8 @@ class JornadaPanel {
         fotoUrl: fotoUrl ?? this.fotoUrl,
         cupos: sinLimite ? null : (cupos ?? this.cupos),
         cerrada: cerrada ?? this.cerrada,
+        lat: lat ?? this.lat,
+        lon: lon ?? this.lon,
       );
 
   Map<String, dynamic> aJson() => {
@@ -106,6 +115,9 @@ class JornadaPanel {
         'foto_url': fotoUrl,
         'cupos': cupos,
         'cerrada': cerrada,
+        // Solo si hay punto: las jornadas viejas guardan el mismo JSON de antes.
+        if (tienePunto) 'lat': lat,
+        if (tienePunto) 'lon': lon,
       };
 
   static JornadaPanel? deJson(Object? o) {
@@ -113,7 +125,9 @@ class JornadaPanel {
     final fecha = DateTime.tryParse('${o['fecha']}');
     final id = o['id'], titulo = o['titulo'];
     if (id is! String || titulo is! String || fecha == null) return null;
-    final c = o['cupos'];
+    final c = o['cupos'], la = o['lat'], lo = o['lon'];
+    // Un punto fuera de rango (o a medias) se descarta entero: mejor sin pin que con uno falso.
+    final punto = la is num && lo is num && la.abs() <= 90 && lo.abs() <= 180 && !(la == 0 && lo == 0);
     return JornadaPanel(
       id: id,
       titulo: titulo,
@@ -122,6 +136,8 @@ class JornadaPanel {
       fotoUrl: (o['foto_url'] as String?) ?? '',
       cupos: c is num && c > 0 ? c.toInt() : null,
       cerrada: o['cerrada'] == true,
+      lat: punto ? la.toDouble() : null,
+      lon: punto ? lo.toDouble() : null,
     );
   }
 

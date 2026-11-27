@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../admin/contenido_publico.dart' show esIdDelPanel, inscribirseEnJornadaDelPanel;
 import '../servidor.dart';
 import '../tipos.dart';
 
@@ -564,6 +565,11 @@ class FuenteComunidad {
   Future<ResultadoInscripcion> inscribirse(String jornadaId,
       {required String nombre, String? telefono, required bool aceptaDatos, bool aceptaWhatsapp = false}) async {
     if (!aceptaDatos) return const ResultadoInscripcion.falla('Para inscribirte, acepta el tratamiento de tus datos (Ley 1581).');
+    // Las jornadas del panel no existen en el bot: se inscriben en Supabase (inscripciones_panel.sql).
+    if (esIdDelPanel(jornadaId)) {
+      return inscribirseEnJornadaDelPanel(jornadaId,
+          nombre: nombre, telefono: telefono, aceptaDatos: aceptaDatos, aceptaWhatsapp: aceptaWhatsapp);
+    }
     try {
       final r = await _lector._http
           .post(Uri.parse('$base/api/jornadas/${Uri.encodeComponent(jornadaId)}/inscripciones'),
