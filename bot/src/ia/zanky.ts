@@ -52,6 +52,8 @@ const LARGO: Record<Canal, string> = {
 
 /** Títulos de las jornadas que la plataforma marca como datos de ejemplo (para rotular la respuesta). */
 let titulosDeEjemplo: string[] = [];
+/** true si TODAS las próximas jornadas son de ejemplo (solo entonces vale rotular por fecha). */
+let todasDeEjemplo = false;
 
 async function contextoJornadas(canal: Canal): Promise<string> {
   try {
@@ -60,7 +62,8 @@ async function contextoJornadas(canal: Canal): Promise<string> {
     // Cada jornada dice si es de ejemplo (almacén del bot); si no lo dice, manda el aviso general.
     const deEjemplo = (j: (typeof jornadas)[number]) => j.ejemplo ?? /ejemplo/i.test(aviso);
     const ejemplo = jornadas.slice(0, 4).some(deEjemplo);
-    titulosDeEjemplo = jornadas.filter(deEjemplo).map(j => j.titulo.toLowerCase());
+    titulosDeEjemplo = jornadas.filter(deEjemplo).map(j => j.titulo);
+    todasDeEjemplo = jornadas.every(deEjemplo);
     const lineas = jornadas.slice(0, 4).map(j =>
       `- ${j.titulo}${deEjemplo(j) ? ' [Datos de ejemplo]' : ''}: ${fmt.larga(j.inicio)}, ${fmt.hora(j.inicio)} a ${fmt.hora(j.fin)}, en ${j.punto_encuentro}. ` +
       `Cupos libres: ${Math.max(0, j.cupos - j.inscritos)} de ${j.cupos}. Inscripción: ${enlaceInvitacion(j)} · Ese día, con Zanky: ${enlaceEventoZanky(j)}` +
@@ -115,8 +118,14 @@ export async function responder(historial: Turno[], canal: Canal): Promise<strin
   if (!texto) throw new ErrorIA('OpenAI respondió vacío');
   // Honestidad del dato: si habla de una jornada de ejemplo y no lo dijo, se agrega aquí (no se deja al modelo).
   const final = aFormato(texto, canal);
-  const nombraEjemplo = titulosDeEjemplo.some(t => final.toLowerCase().includes(t)) || (titulosDeEjemplo.length > 0 && /jornada/i.test(final) && /\d{1,2} de [a-z]+/i.test(final));
-  const nota = nombraEjemplo && !/ejemplo/i.test(final) ? '\n\n(Ojo: por ahora las jornadas son datos de ejemplo de la demostración.)' : '';
+  // Con jornadas reales y de ejemplo mezcladas, solo se rotulan las de ejemplo que nombró; nunca una real.
+  const nombradas = titulosDeEjemplo.filter(t => final.toLowerCase().includes(t.toLowerCase()));
+  const porFecha = todasDeEjemplo && /jornada/i.test(final) && /\d{1,2} de [a-z]+/i.test(final);
+  let nota = '';
+  if (!/ejemplo/i.test(final)) {
+    if (todasDeEjemplo && (nombradas.length || porFecha)) nota = '\n\n(Ojo: por ahora las jornadas son datos de ejemplo de la demostración.)';
+    else if (nombradas.length) nota = `\n\n(Ojo: ${nombradas.map(t => `«${t}»`).join(' y ')} ${nombradas.length > 1 ? 'son' : 'es'} de ejemplo de la demostración.)`;
+  }
   return (final + nota).slice(0, 1500);
 }
 
