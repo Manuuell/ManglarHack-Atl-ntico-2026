@@ -14,7 +14,9 @@ const zona = { timeZone: 'America/Bogota' } as const;
 export function fechaInvitacion(j: JornadaGuardada): string {
   const dia = new Intl.DateTimeFormat('es-CO', { ...zona, weekday: 'long', day: 'numeric', month: 'long' }).format(new Date(j.inicio));
   const hora = new Intl.DateTimeFormat('es-CO', { ...zona, hour: 'numeric', minute: '2-digit' }).format(new Date(j.inicio));
-  return `${dia.charAt(0).toUpperCase()}${dia.slice(1)}, ${hora}`;
+  // «sábado, 28 de noviembre» → «Sábado 28 de noviembre», igual que la vista previa del panel.
+  const sinComa = dia.replace(/^([^,]+),\s*/, '$1 ');
+  return `${sinComa.charAt(0).toUpperCase()}${sinComa.slice(1)}, ${hora}`;
 }
 
 /** Meta rechaza parámetros con saltos de línea, tabulaciones o más de 4 espacios seguidos. */

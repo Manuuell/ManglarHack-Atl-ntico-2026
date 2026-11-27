@@ -37,7 +37,7 @@ api.use((req, res, next) => {
 const falla = (res: Response, status: number, error: string, mensaje: string) => res.status(status).json({ error, mensaje });
 const tokenDe = (req: Request) => (req.header('authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
 
-const AVISO_EJEMPLO = 'Algunas jornadas son datos de ejemplo de la demostración (campo ejemplo).';
+const AVISO_EJEMPLO = 'Algunas jornadas son datos de ejemplo de la demostración.';
 const avisoDe = (lista: J.JornadaGuardada[]) => (lista.some(j => j.ejemplo) ? AVISO_EJEMPLO : '');
 
 // --- públicos -----------------------------------------------------------------------------------
