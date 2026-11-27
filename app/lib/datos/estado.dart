@@ -64,6 +64,8 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> iniciar() async {
     manglar = await Manglar.cargar();
+    // Web: las fotos que quedaron en localStorage pasan a IndexedDB antes de leer nada.
+    await Fotos.migrarDeLocalStorage();
     final prefs = await SharedPreferences.getInstance();
     final p = prefs.getString(_clavePerfil);
     if (p != null) perfil = Perfil.fromJson(jsonDecode(p) as Map<String, dynamic>);
