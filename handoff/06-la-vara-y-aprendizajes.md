@@ -10,7 +10,7 @@ comprobarlo**. Están numeradas para poder decir «esto rompe la 31» en un come
 
 ## 1. Por qué esto va en serio
 
-**1. Son productos con gente real al otro lado.** Un error no se ve en un informe: se ve en el teléfono de alguien. Zanqui
+**1. Son productos con gente real al otro lado.** Un error no se ve en un informe: se ve en el teléfono de alguien. Zanky
 lo va a abrir un pescador de Mallorquín con sol, mala señal y una mano ocupada, y un funcionario de la CRA que decide
 con el panel. Si miente, se cuelga o pierde un reporte, falló lo único que importa.
 *Comprobar:* antes de dar algo por hecho, imaginar a esa persona usándolo en su peor momento y probarlo así.
@@ -96,7 +96,7 @@ clave: un agente investiga primero y su informe queda en el repo.
 voz alta antes de suponer, y confirmarlo con él.
 
 **17. Un valor por defecto que no se puede deshacer debe ser el que no pierde nada.** Una pantalla de reprogramar venía
-con «perdonar» marcado y borraba deuda sin que nadie lo decidiera. En Zanqui: «descartar reporte», «cerrar caso» o
+con «perdonar» marcado y borraba deuda sin que nadie lo decidiera. En Zanky: «descartar reporte», «cerrar caso» o
 «fusionar duplicados» nunca vienen marcados; y el descarte se puede deshacer.
 
 **18. Lo apagado por defecto es para lo NUEVO.** Lo que ya funcionaba conserva su valor. Un agente rehizo una pantalla y
@@ -209,7 +209,7 @@ catálogo). Un mismo nombre en toda la app. Sin jerga. Mensajes de error que dic
 **29. La pantalla no salta bajo el dedo.** Al cambiar de modo, al terminar de cargar un mapa o una imagen, el contenido
 reserva su espacio. Si hay un control que cambia un resultado, el resultado se ve junto al control.
 
-**30. Lo flotante en reposo se recoge al borde.** Un botón flotante (el de Zanqui, el de reportar) acaba sobre la columna de
+**30. Lo flotante en reposo se recoge al borde.** Un botón flotante (el de Zanky, el de reportar) acaba sobre la columna de
 acciones de cada fila. Medir por pantalla qué queda debajo y recoger a una pestaña si estorba.
 
 **31. Un cambio de navegación se prueba hasta el último «atrás».** Una mejora para no apilar pantallas pasó miles de
@@ -252,14 +252,14 @@ la pantalla dice **«falta un índice»**, jamás un 0 (un 0 falso es peor que u
 **40. En un panel con moderadores de turno, endurecer es inmediato y aflojar es del administrador.** Pausar, ocultar o
 bloquear lo hace cualquier moderador al instante; reabrir, mostrar de nuevo o desbloquear lo hace solo el administrador, y
 lo exige el **servidor**, no solo el botón. Así quien está de turno a las 3 a. m. protege a todos y nadie abre la puerta
-sin el dueño. En Zanqui: un moderador puede ocultar una foto sensible al instante; reponerla requiere al administrador.
+sin el dueño. En Zanky: un moderador puede ocultar una foto sensible al instante; reponerla requiere al administrador.
 
 **41. Un bloqueo temporal vencido hay que limpiarlo** con una tarea programada si las reglas solo miran que exista el
 documento, o seguirá bloqueando.
 
 **42. Los textos, opciones y límites que promete el cliente se generan del servidor, no se copian.** Una pantalla tenía su
 propia tabla de «qué bloquea cada directiva» y el motor otra; prometían cosas distintas. Un generador deduce del mismo
-manifiesto lo que la pantalla muestra y una prueba falla si quedó viejo. En Zanqui: tipos, estados y prioridades salen del
+manifiesto lo que la pantalla muestra y una prueba falla si quedó viejo. En Zanky: tipos, estados y prioridades salen del
 contrato común (`05`), no se reescriben a mano en cada capa.
 
 **43. Una cifra que vive en varias tablas se corrige en todas a la vez, con una prueba que las compare.** Un límite estaba
@@ -358,7 +358,7 @@ pendiente.
 
 **66. Un secreto que el empleado debe PEDIR no puede vivir en una tabla que el empleado LEE.** Un código de entrega estaba
 en una tabla legible con la sesión del equipo: el repartidor podía leer lo que debía pedirle al cliente. Va en una tabla
-privada, solo el servidor la lee. Vale para PIN, códigos, llaves. En Zanqui: la cédula nunca se guarda en claro (**solo
+privada, solo el servidor la lee. Vale para PIN, códigos, llaves. En Zanky: la cédula nunca se guarda en claro (**solo
 hash**) y nunca se muestra.
 
 **67. Lo que prueba algo MÁS que tener el enlace no se firma con nada que se calcule desde el enlace.** Un pase de «correo
@@ -410,7 +410,7 @@ leer sus términos, citar la fuente, decir lo honesto.
 
 **78. Los servicios externos fallan sin avisar de formato.** Una fuente oficial cambió el formato interno de su archivo y el
 lector leyó basura; por suerte el bot se detuvo en vez de publicar. El lector acepta los dos formatos con una prueba que
-reproduce el fallo viejo (no relajando la validación). En Zanqui: Open-Meteo, los KMZ de la CRA y la capa de INVEMAR pueden
+reproduce el fallo viejo (no relajando la validación). En Zanky: Open-Meteo, los KMZ de la CRA y la capa de INVEMAR pueden
 cambiar de forma; ante respuesta rara, el sistema **se detiene y avisa**, no inventa.
 
 ---
@@ -573,7 +573,7 @@ de gancho + pausa + respuesta (la pausa es lo que suena humano), números en let
 duraciones reales de la voz reparten las escenas. Ajustar a la duración pedida **antes** de repartir el trabajo: la primera
 versión de un guion salió un 30 % más larga que el máximo y hubo que recortarla.
 
-**114. Pronunciación: lexicón y oído.** El nombre «Zanqui» y los términos del reto (CRA, INVEMAR, manglar, vertimiento, nombres
+**114. Pronunciación: lexicón y oído.** El nombre «Zanky» y los términos del reto (CRA, INVEMAR, manglar, vertimiento, nombres
 de la ciénaga) van en un lexicón de pronunciación; el guion y los subtítulos conservan la ortografía real. Reglas que ya
 resolvió el oído de Ángel con voces gratuitas de edge-tts:
 - las palabras en inglés se dicen en inglés, elegidas a oído entre 4–5 variantes;
@@ -581,7 +581,7 @@ resolvió el oído de Ángel con voces gratuitas de edge-tts:
 - una palabra que no suena bien ni por sílabas **se cambia por otra** (la frase, no la voz);
 - una frase que suena robótica mejora con un artículo, o con un perfil cálido y una pausa; las frases pegadas, con un punto
   y un verbo;
-- «app» al final de una frase se lee como sigla: escribir «la app de Zanqui», no «Zanqui, app»;
+- «app» al final de una frase se lee como sigla: escribir «la app de Zanky», no «Zanky, app»;
 - marcas de perfil solo al inicio de la línea (a mitad se leen en voz alta); una pausa no va entre una palabra y su «que»;
 - siglas deletreadas como se dicen; puntos suspensivos evitados.
 
