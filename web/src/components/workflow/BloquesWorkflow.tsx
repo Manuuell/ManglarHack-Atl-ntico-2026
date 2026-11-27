@@ -95,7 +95,7 @@ function Tabla({ titulo, columnas, filas, decimales = 0, colores, total, nota }:
         </tr></thead>
         <tbody>{filas.map(f => <tr key={f.etiqueta} className="border-b border-linea-suave">
           <th scope="row" className="py-2 pr-2 text-left font-normal">{f.etiqueta}</th>
-          {f.valores.map((v, i) => <td key={i} className={`px-1.5 py-2 text-right tabular-nums ${total && i === f.valores.length - 1 ? 'font-semibold' : ''}`}>{v === null ? '—' : num(v, decimales)}</td>)}
+          {f.valores.map((v, i) => <td key={i} className={`whitespace-nowrap px-1.5 py-2 text-right tabular-nums ${total && i === f.valores.length - 1 ? 'font-semibold' : ''}`}>{v === null ? '—' : num(v, decimales)}</td>)}
         </tr>)}</tbody>
       </table>
     </div>
@@ -180,7 +180,7 @@ function GraficaSerie({ titulo, unidad, decimales, desdeCero, grupos, bandas, no
           </tr></thead>
           <tbody>{filas.map(x => <tr key={String(x)} className="border-b border-linea-suave">
             <th scope="row" className="px-3 py-1.5 text-left font-normal tabular-nums">{etiquetaPeriodo(x)}</th>
-            {grupo.series.map(s => { const v = valor(s, x); return <td key={s.nombre} className="px-3 py-1.5 text-right tabular-nums">{v == null ? 'sin dato' : conSigno(v, decimales)}</td>; })}
+            {grupo.series.map(s => { const v = valor(s, x); return <td key={s.nombre} className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">{v == null ? 'sin dato' : conSigno(v, decimales)}</td>; })}
           </tr>)}</tbody>
         </table>
       </div>
