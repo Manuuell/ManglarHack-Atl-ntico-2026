@@ -9,6 +9,7 @@ Aquí está la información común del equipo para que todos trabajemos con lo m
 | 03 | [Solución Zanqui](03-solucion-zanqui.md) | Mascota, las tres piezas, cómo respondemos las 3 preguntas, datos abiertos, seguridad, modelo de datos y reparto |
 | 04 | [Datos](04-datos.md) | Polígonos del manglar (KMZ de la CRA y capa de INVEMAR), cómo convertirlos y fuentes públicas opcionales |
 | 05 | [Coordinación y reglas](05-coordinacion-y-reglas.md) | Reparto, alcance pedido, correo de agentes de Mesa, reglas del repo, contrato común, la vara y los hitos del día |
+| 06 | [Identidad de Zanqui](06-zanqui-identidad.md) | Paleta, prompts de diseño (personaje, poses, ícono, stickers, letrero QR) y de video de la mascota |
 
 ## Lo esencial en 30 segundos
 
