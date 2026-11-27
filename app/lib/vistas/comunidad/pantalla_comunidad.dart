@@ -21,6 +21,7 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 import '../../datos/comunidad/feed.dart';
+import 'datos_abiertos.dart';
 import 'feed_y_eventos.dart';
 import 'piezas_comunidad.dart';
 import '../../datos/admin/contenido_publico.dart';
@@ -192,7 +193,7 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
                 const SizedBox(height: 26),
                 entra(_SeccionGuardianes(ranking: _ranking, web: _colegiosWeb, fallo: _rankingFallo)),
                 const SizedBox(height: 26),
-                entra(_DatosAbiertos(base: _fuente.base)),
+                entra(DatosAbiertos(base: _fuente.base)),
               ],
             ),
           ),
@@ -519,49 +520,4 @@ class SeccionNoticias extends StatelessWidget {
 
 // ------------------------------------------------------------------ datos abiertos
 
-class _DatosAbiertos extends StatelessWidget {
-  const _DatosAbiertos({required this.base});
-  final String base;
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: Cra.azul, borderRadius: BorderRadius.circular(Zr.m)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('DATOS ABIERTOS', style: tt.seccion.copyWith(color: Cra.dorado)),
-          const SizedBox(height: 4),
-          Text('Los reportes de la comunidad, libres (CC BY 4.0)',
-              style: tt.titleMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text('Sin nombres, fotos ni descripciones; coordenadas a ~110 m. Toca un formato para copiar su enlace.',
-              style: tt.bodySmall?.copyWith(color: Cra.textoSuave)),
-          const SizedBox(height: 12),
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final f in ['geojson', 'csv', 'kml'])
-              Presionable(
-                etiqueta: 'Copiar enlace ${f.toUpperCase()}',
-                onTap: () async {
-                  await Clipboard.setData(ClipboardData(text: '$base/datos-abiertos/reportes.$f'));
-                  if (context.mounted) avisar(context, 'Enlace ${f.toUpperCase()} copiado');
-                },
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 44),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Cra.borde),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(f.toUpperCase(), style: tt.labelLarge?.copyWith(color: Colors.white)),
-                ),
-              ),
-          ]),
-        ]),
-      ),
-    );
-  }
-}
+// La tarjeta vive en datos_abiertos.dart (descargar y copiar enlace).
