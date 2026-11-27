@@ -770,7 +770,7 @@ class Asistentes extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'inscritos de ${j.cupos} cupos',
+                              j.sinLimite ? 'inscritos · sin límite de cupos' : 'inscritos de ${j.cupos} cupos',
                               style: tt.bodyMedium,
                             ),
                           ),
