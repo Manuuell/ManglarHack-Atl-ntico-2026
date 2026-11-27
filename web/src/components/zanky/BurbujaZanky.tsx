@@ -18,8 +18,20 @@ function conFormato(texto: string): ReactNode {
     /^\*\*[^*\n]+\*\*$/.test(p) ? <strong key={i}>{conEnlaces(p.slice(2, -2))}</strong> : <Fragment key={i}>{conEnlaces(p)}</Fragment>);
 }
 
-/** Texto con enlaces tocables, sin insertar HTML. */
+/** Enlace con el texto que escribió Zanky; los del propio sitio abren aquí mismo. */
+function enlace(url: string, texto: string, key: number): ReactNode {
+  return <a key={key} href={url} target={url.includes('mimanglar.sentralabs.co') ? undefined : '_blank'} rel="noopener noreferrer">{texto}</a>;
+}
+
+/** Texto con enlaces tocables (sueltos o [texto](url)), sin insertar HTML. */
 function conEnlaces(texto: string): ReactNode {
+  const conTexto = texto.split(/(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\))/g);
+  if (conTexto.length > 1) {
+    return conTexto.map((p, i) => {
+      const m = /^\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)$/.exec(p);
+      return m ? enlace(m[2], m[1], i) : <Fragment key={i}>{conEnlaces(p)}</Fragment>;
+    });
+  }
   const partes = texto.split(/(https?:\/\/[^\s)»"]+)/g);
   return partes.map((p, i) => {
     if (!/^https?:\/\//.test(p)) return <Fragment key={i}>{p}</Fragment>;
