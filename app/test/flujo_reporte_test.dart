@@ -309,4 +309,24 @@ void main() {
       expect(pega('hola').text, 'hola');
     });
   });
+
+  testWidgets('en «¿Dónde?» el mapa se queda el dedo, pero el borde y la barra de pasos cambian de paso', (tester) async {
+    final e = EstadoZanky()..manglar = _manglar;
+    final z = _manglar.zonas.first;
+    await _montar(tester, e, FlujoReporte(estado: e, tipo: TipoAmenaza.quema, punto: LatLng(z.centro.latitude, z.centro.longitude)));
+    expect(find.byKey(const ValueKey('borde-izquierdo')), findsOneWidget);
+    // Deslizar sobre el mapa no cambia de paso.
+    await tester.flingFrom(tester.getCenter(find.byType(FlutterMap)), const Offset(-250, 0), 1500);
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('Usar este punto'), findsOneWidget);
+    // Desde el borde derecho, sí.
+    final borde = tester.getCenter(find.byKey(const ValueKey('borde-derecho')));
+    await tester.flingFrom(borde, const Offset(-250, 0), 1500);
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 250));
+    }
+    expect(find.text('Seguir sin foto'), findsOneWidget);
+    expect(find.byKey(const ValueKey('borde-derecho')), findsNothing);
+    await _cerrar(tester);
+  });
 }

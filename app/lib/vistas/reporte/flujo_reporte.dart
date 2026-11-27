@@ -179,6 +179,18 @@ class _FlujoReporteState extends State<FlujoReporte> {
   }
 
   /// El ✓ del botón ya se dibujó: se pasa a la confirmación.
+  /// Deslizar entre pasos, como en iOS: a la derecha vuelve, a la izquierda sigue si se puede.
+  void _alDeslizar(DragEndDetails d, int primerPaso) {
+    final v = d.primaryVelocity ?? 0;
+    if (v > 350 && _paso > primerPaso) {
+      vibrar(Vibracion.seleccion);
+      _ir(_paso - 1);
+    } else if (v < -350 && _paso < 3 && _paso > 0 && _puedeSeguir) {
+      vibrar(Vibracion.seleccion);
+      _siguiente();
+    }
+  }
+
   Future<void> _irAEnviado() async {
     final r = _guardado;
     if (r == null || !mounted) return;
@@ -257,19 +269,30 @@ class _FlujoReporteState extends State<FlujoReporte> {
           builder: (context, _) => Column(
             children: [
               SizedBox(height: arriba + 6),
-              _Cabecera(
-                paso: _paso,
-                pasos: _pasos,
-                onCerrar: _cerrar,
-                onAtras: _paso > 0 ? () => _ir(_paso - 1) : null,
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 20, 4),
-                child: Row(
+              // La barra de pasos y Zanky también se deslizan: así se cambia de paso aunque abajo
+              // haya un mapa que se lleva el dedo.
+              GestureDetector(
+                key: const ValueKey('barra-deslizable'),
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragEnd: (d) => _alDeslizar(d, primerPaso),
+                child: Column(
                   children: [
-                    ZankyMascota(tamano: 62, animo: _animo),
-                    const SizedBox(width: 12),
-                    Expanded(child: BurbujaZanky(texto: _frase)),
+                    _Cabecera(
+                      paso: _paso,
+                      pasos: _pasos,
+                      onCerrar: _cerrar,
+                      onAtras: _paso > 0 ? () => _ir(_paso - 1) : null,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 8, 20, 4),
+                      child: Row(
+                        children: [
+                          ZankyMascota(tamano: 62, animo: _animo),
+                          const SizedBox(width: 12),
+                          Expanded(child: BurbujaZanky(texto: _frase)),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -280,24 +303,42 @@ class _FlujoReporteState extends State<FlujoReporte> {
                   behavior: HitTestBehavior.translucent,
                   onHorizontalDragEnd: _paso == 1
                       ? null
-                      : (d) {
-                          final v = d.primaryVelocity ?? 0;
-                          if (v > 350 && _paso > primerPaso) {
-                            vibrar(Vibracion.seleccion);
-                            _ir(_paso - 1);
-                          } else if (v < -350 && _paso < 3 && _paso > 0 && _puedeSeguir) {
-                            vibrar(Vibracion.seleccion);
-                            _siguiente();
-                          }
-                        },
-                  child: PageView(
-                    controller: _paginas,
-                    physics: const NeverScrollableScrollPhysics(),
+                      : (d) => _alDeslizar(d, primerPaso),
+                  child: Stack(
                     children: [
-                      _PasoTransicion(controlador: _paginas, indice: 0, inicial: _paso, child: PasoTipo(borrador: _b, onElegido: () => _ir(1))),
-                      _PasoTransicion(controlador: _paginas, indice: 1, inicial: _paso, child: PasoUbicacion(borrador: _b, zonaId: widget.zonaId)),
-                      _PasoTransicion(controlador: _paginas, indice: 2, inicial: _paso, child: PasoEvidencia(borrador: _b)),
-                      _PasoTransicion(controlador: _paginas, indice: 3, inicial: _paso, child: PasoDetalles(borrador: _b)),
+                      PageView(
+                        controller: _paginas,
+                        physics: const NeverScrollableScrollPhysics(),
+                        children: [
+                          _PasoTransicion(controlador: _paginas, indice: 0, inicial: _paso, child: PasoTipo(borrador: _b, onElegido: () => _ir(1))),
+                          _PasoTransicion(controlador: _paginas, indice: 1, inicial: _paso, child: PasoUbicacion(borrador: _b, zonaId: widget.zonaId)),
+                          _PasoTransicion(controlador: _paginas, indice: 2, inicial: _paso, child: PasoEvidencia(borrador: _b)),
+                          _PasoTransicion(controlador: _paginas, indice: 3, inicial: _paso, child: PasoDetalles(borrador: _b)),
+                        ],
+                      ),
+                      // En «¿Dónde?» el mapa se queda el dedo; solo los bordes (20 px) cambian de paso.
+                      if (_paso == 1) ...[
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: 20,
+                          child: _BordeDeslizar(
+                            key: const ValueKey('borde-izquierdo'),
+                            onDeslizar: (d) => _alDeslizar(d, primerPaso),
+                          ),
+                        ),
+                        Positioned(
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: 20,
+                          child: _BordeDeslizar(
+                            key: const ValueKey('borde-derecho'),
+                            onDeslizar: (d) => _alDeslizar(d, primerPaso),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -510,6 +551,34 @@ class _PasoTransicion extends StatelessWidget {
           child: Transform.scale(scale: 1 - 0.04 * d.abs(), child: hijo),
         );
       },
+    );
+  }
+}
+
+/// Franja del borde que cambia de paso sobre el mapa: atrapa el arrastre horizontal antes que el
+/// mapa y deja ver una asa tenue para que se note que ahí se desliza.
+class _BordeDeslizar extends StatelessWidget {
+  const _BordeDeslizar({super.key, required this.onDeslizar});
+  final GestureDragEndCallback onDeslizar;
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragEnd: onDeslizar,
+        child: Center(
+          child: Container(
+            width: 4,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(2),
+              boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 3)],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
