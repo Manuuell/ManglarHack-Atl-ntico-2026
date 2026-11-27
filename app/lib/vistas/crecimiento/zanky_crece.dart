@@ -363,13 +363,20 @@ class ZankyCreceCompacto extends StatelessWidget {
               Text('Zanky está creciendo', style: tt.titleMedium),
               Text(avance.etapa.nombre, style: tt.bodySmall),
               const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: LinearProgressIndicator(
-                  value: avance.fraccion,
-                  minHeight: 6,
-                  color: Zc.hoja,
-                  backgroundColor: Zc.hojaClara,
+              // La barra se llena al aparecer (600 ms); con «reducir movimiento» sale ya llena.
+              RepaintBoundary(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: MediaQuery.disableAnimationsOf(context)
+                      ? LinearProgressIndicator(
+                          value: avance.fraccion, minHeight: 6, color: Zc.hoja, backgroundColor: Zc.hojaClara)
+                      : TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: avance.fraccion),
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutCubic,
+                          builder: (_, v, _) => LinearProgressIndicator(
+                              value: v, minHeight: 6, color: Zc.hoja, backgroundColor: Zc.hojaClara),
+                        ),
                 ),
               ),
               const SizedBox(height: 6),
