@@ -210,11 +210,11 @@ void main() {
       expect(cuerpo, {'nombre': 'Ana', 'telefono': '3001234567', 'acepta_datos': true, 'acepta_whatsapp': true});
     });
 
-    test('sin cupos o sin red lo dice en palabras', () async {
+    test('un 409 o sin red lo dice en palabras (y nunca «sin cupos»: el bot no los limita)', () async {
       final llena = await FuenteComunidad(cliente: MockClient((_) async => utf('{}', 409)))
           .inscribirse('j', nombre: 'Ana', aceptaDatos: true);
       expect(llena.ok, isFalse);
-      expect(llena.mensaje, contains('cupos'));
+      expect(llena.mensaje, isNot(contains('cupos')));
       final caida = await FuenteComunidad(cliente: sinRed).inscribirse('j', nombre: 'Ana', aceptaDatos: true);
       expect(caida.mensaje, contains('conexión'));
     });

@@ -48,6 +48,7 @@ class Jornada {
     this.imagenUrl = '',
     this.ejemplo = false,
     this.estado = '',
+    this.limitaCupos = false,
   });
 
   final String id, accionId, titulo, tipo, puntoEncuentro, descripcion, imagenUrl, estado;
@@ -74,13 +75,14 @@ class Jornada {
       puntoEncuentro: s('punto_encuentro'),
       lat: d('lat'),
       lon: d('lon'),
-      cupos: n('cupos'),
+      cupos: j['limite_cupos'] == true ? n('cupos') : 0,
       inscritos: n('inscritos'),
       queLlevar: [for (final x in (j['que_llevar'] as List? ?? const [])) x.toString()],
       descripcion: s('descripcion'),
       imagenUrl: s('imagen_url').trim(),
       ejemplo: j['ejemplo'] == true,
       estado: s('estado').trim().toLowerCase(),
+      limitaCupos: j['limite_cupos'] == true,
     );
   }
 
@@ -101,6 +103,7 @@ class Jornada {
         'imagen_url': imagenUrl,
         'ejemplo': ejemplo,
         'estado': estado,
+        if (limitaCupos) 'limite_cupos': true,
       };
 
   String get tipoLegible => switch (tipo) {
@@ -112,8 +115,25 @@ class Jornada {
         final t => '${t[0].toUpperCase()}${t.substring(1).replaceAll('_', ' ')}',
       };
 
-  bool get llena => cupos > 0 && inscritos >= cupos;
-  int get cuposLibres => (cupos - inscritos).clamp(0, cupos);
+  /// Contrato del bot desplegado (`zanqui-bot` 2b1f7e9, «jornadas sin límite de cupos»): la inscripción
+  /// nunca se cierra por cupo. El servidor conserva `cupos` solo por compatibilidad (0 o nulo = sin límite)
+  /// y las jornadas viejas todavía traen un número (p. ej. 60) que el bot ya no usa. Por eso [Jornada.fromJson]
+  /// deja `cupos = 0` salvo que el servidor mande `limite_cupos: true`: así ninguna vista dice «59 cupos libres».
+  final bool limitaCupos;
+
+  bool get sinLimite => cupos <= 0;
+  bool get llena => !sinLimite && inscritos >= cupos;
+  int get cuposLibres => sinLimite ? 0 : (cupos - inscritos).clamp(0, cupos);
+
+  /// La frase de inscritos, igual que el bot (`textos.ts`) y la web (`JornadasEnVivo.tsx`):
+  /// «1 persona inscrita · gratis y sin límite de cupos».
+  String get textoInscritos {
+    final quienes = inscritos <= 0
+        ? 'Sé de las primeras personas en inscribirte'
+        : '$inscritos ${inscritos == 1 ? 'persona inscrita' : 'personas inscritas'}';
+    if (sinLimite) return '$quienes · gratis y sin límite de cupos';
+    return llena ? '$quienes · cupos llenos' : '$quienes · $cuposLibres de $cupos cupos libres';
+  }
   bool get esEjemplo => ejemplo || descripcion.toLowerCase().contains(_marcaEjemplo);
 
   /// El servidor la dio de baja (`estado: cancelada`).

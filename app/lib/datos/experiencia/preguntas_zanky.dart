@@ -439,8 +439,8 @@ RespuestaZanky responderSinConexion(String pregunta, {EventoZanky? evento}) {
   final sobreEvento = RegExp(r'(cuando|hora|fecha|donde|punto de encuentro|cupo|inscri|esta jornada|este evento)')
       .hasMatch(sn);
   if (j != null && sobreEvento && !sn.contains('mallorquin') && !sn.contains('zona')) {
-    final cupos = j.cupos <= 0
-        ? ''
+    final cupos = j.sinLimite
+        ? ' Es gratis y sin límite de cupos${j.inscritos > 0 ? ': ya van ${j.inscritos}' : ''}.'
         : j.llena
             ? ' Los cupos están llenos.'
             : ' Quedan ${j.cuposLibres} de ${j.cupos} cupos.';

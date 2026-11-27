@@ -19,7 +19,7 @@ enum TipoAmenaza {
   quema(
     slug: 'quema',
     nombre: 'Quema o incendio',
-    corto: 'Fuego',
+    corto: 'Quema',
     ayuda: 'Humo, llamas o mangle quemado.',
     pregunta: '¿Ves llamas o solo humo?',
     icono: Icons.local_fire_department_rounded,
@@ -38,7 +38,7 @@ enum TipoAmenaza {
   ),
   vertimiento(
     slug: 'vertimiento',
-    nombre: 'Vertimiento o contaminación',
+    nombre: 'Vertimiento o contaminación del agua',
     corto: 'Vertimiento',
     ayuda: 'Agua sucia, aceite, espuma o mal olor.',
     pregunta: '¿De dónde sale? ¿Tiene color u olor?',
@@ -48,7 +48,7 @@ enum TipoAmenaza {
   ),
   canoTaponado(
     slug: 'cano_taponado',
-    nombre: 'Caño taponado o agua alterada',
+    nombre: 'Caño taponado o alteración del agua',
     corto: 'Caño',
     ayuda: 'Un caño cerrado: le falta agua dulce.',
     pregunta: '¿El agua todavía corre o está quieta?',
@@ -78,7 +78,7 @@ enum TipoAmenaza {
   ),
   otro(
     slug: 'otro',
-    nombre: 'Otra situación',
+    nombre: 'Otro',
     corto: 'Otro',
     ayuda: 'Algo raro que lo pone en riesgo.',
     pregunta: 'Cuéntame qué está pasando.',
@@ -111,15 +111,17 @@ enum TipoAmenaza {
       values.firstWhere((t) => t.slug == s, orElse: () => TipoAmenaza.otro);
 }
 
-/// Estados del contrato común (handoff/05).
+/// Estados del contrato común (handoff/05). `nombre` y `explicacion` son las MISMAS frases que el bot
+/// manda por WhatsApp (`bot/src/reportes/modelo.ts`: ESTADOS y DESCRIPCION_ESTADO) y la web
+/// (`web/src/lib/catalogos.ts`): quien reporta por WhatsApp y mira la app lee lo mismo.
 enum EstadoReporte {
-  recibido('recibido', 'Recibido', 'La CRA ya lo tiene.'),
-  enVerificacion('en_verificacion', 'En verificación', 'Un vigía o funcionario lo está revisando.'),
-  verificado('verificado', 'Verificado', 'Se confirmó que es real. ¡Gracias!'),
-  alertaOficial('alerta_oficial', 'Alerta oficial', 'Se abrió un expediente en la CRA.'),
-  enAtencion('en_atencion', 'En atención', 'Hay un operativo en camino o en el sitio.'),
-  cerrado('cerrado', 'Cerrado', 'El caso se atendió y se cerró.'),
-  descartado('descartado', 'Descartado', 'No se pudo confirmar o no era una amenaza.');
+  recibido('recibido', 'Recibido', 'Recibido para revisión.'),
+  enVerificacion('en_verificacion', 'En verificación', 'Una persona de la C.R.A. revisa la evidencia.'),
+  verificado('verificado', 'Verificado', 'Hallazgo confirmado por una persona.'),
+  alertaOficial('alerta_oficial', 'Alerta oficial', 'Alerta emitida con apertura de expediente.'),
+  enAtencion('en_atencion', 'En atención', 'Caso en atención por el equipo.'),
+  cerrado('cerrado', 'Cerrado', 'Seguimiento finalizado.'),
+  descartado('descartado', 'Descartado', 'La evidencia no confirma el reporte.');
 
   const EstadoReporte(this.slug, this.nombre, this.explicacion);
   final String slug;

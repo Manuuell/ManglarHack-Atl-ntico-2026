@@ -92,7 +92,9 @@ void main() {
       expect(e.generico, isFalse);
       expect(e.titulo, 'Siembra real');
       expect(e.jornada!.esEjemplo, isFalse);
-      expect(e.jornada!.cuposLibres, 7);
+      // `cupos: 10` sin `limite_cupos`: el bot ya no limita (2b1f7e9), la app tampoco.
+      expect(e.jornada!.sinLimite, isTrue);
+      expect(e.jornada!.cuposLibres, 0);
       // Sin red: sale de la caché.
       final sinRed = FuenteJornadas(cliente: MockClient((_) async => http.Response('x', 500)));
       expect((await sinRed.cargar()).single.id, 'real-1');

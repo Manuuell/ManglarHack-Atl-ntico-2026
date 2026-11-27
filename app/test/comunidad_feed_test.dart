@@ -85,7 +85,7 @@ void main() {
     test('sin cupo definido: «sin límite de cupos», nunca bloquea', () {
       final j = Jornada.fromJson({...todas.first.aJson(), 'cupos': 0, 'inscritos': 1});
       expect(textoCupos(j), '1 inscrito · sin límite de cupos');
-      final llena = Jornada.fromJson({...todas.first.aJson(), 'cupos': 2, 'inscritos': 2});
+      final llena = Jornada.fromJson({...todas.first.aJson(), 'cupos': 2, 'inscritos': 2, 'limite_cupos': true});
       expect(textoCupos(llena), contains('igual puedes apuntarte'));
     });
 

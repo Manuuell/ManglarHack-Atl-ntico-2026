@@ -16,6 +16,7 @@ import '../tipos.dart';
 /// | Reportes de la comunidad (WhatsApp y web) | `GET zanqui.sentralabs.co/datos-abiertos/reportes.geojson` | servidor `reportes/datosAbiertos.ts` |
 /// | Noticias del manglar | WordPress de la CRA (`/wp-json/wp/v2/posts`, búsquedas «manglar» y «Mallorquín») | `lib/craApi.ts` |
 /// | Inscripción a jornadas | `POST zanqui.sentralabs.co/api/jornadas/:id/inscripciones` | `lib/plataforma/jornadasApi.ts` |
+/// | Propuestas hechas por WhatsApp | `GET zanqui.sentralabs.co/api/propuestas` | `lib/plataforma/propuestasBot.ts` |
 ///
 /// Las jornadas salen de `FuenteJornadas` (`experiencia/jornada.dart`) y el ranking de colegios de
 /// `RankingColegios` (`crecimiento/ranking_colegios.dart`): no se duplican aquí.
@@ -93,7 +94,7 @@ const iconoAlerta = {
   'foco_calor': '🛰️',
   'amenaza_ciudadana': '📣',
 };
-const nombreFuente = {'ideam': 'IDEAM', 'dimar': 'DIMAR', 'mareas': 'DIMAR · CIOH', 'cra': 'CRA', 'comunidad': 'Comunidad'};
+const nombreFuente = {'ideam': 'IDEAM', 'dimar': 'DIMAR', 'mareas': 'DIMAR · CIOH', 'cra': 'C.R.A.', 'comunidad': 'Comunidad'};
 
 class AlertaManglar {
   const AlertaManglar({
@@ -340,6 +341,94 @@ List<ReportePublico> sumarSinDuplicar(List<ReportePublico> a, List<ReportePublic
   ];
 }
 
+// ------------------------------------------------------------------ propuestas por WhatsApp
+
+/// Tipos de propuesta del bot (`bot/src/api/almacenPropuestas.ts`: TIPOS_PROPUESTA), con su nombre y emoji.
+const tiposPropuesta = {
+  'siembra': ('Siembra', '🌱'),
+  'restauracion': ('Restauración', '💧'),
+  'limpieza': ('Limpieza', '🧹'),
+  'monitoreo': ('Monitoreo', '📏'),
+  'emprendimiento': ('Emprendimiento', '🧺'),
+  'educacion': ('Educación', '🎒'),
+  'otra': ('Otra', '💡'),
+};
+
+/// Quién propone (PROPONENTES del bot; la web escribe «C.R.A.» en `propuestasBot.ts`).
+const proponentesPropuesta = {
+  'comunidad': 'Comunidad',
+  'universidad': 'Universidad o colegio',
+  'empresa': 'Empresa',
+  'persona': 'Persona',
+  'cra': 'C.R.A.',
+};
+
+/// Una propuesta hecha por WhatsApp (`GET /api/propuestas`). Código `PROP-XXXX`, como el `ZK-` de los reportes.
+/// Hoy el bot solo publica el estado «propuesta» (la revisión vive en el panel web, sin tabla en Supabase).
+class PropuestaWhatsapp {
+  const PropuestaWhatsapp({
+    required this.id,
+    required this.codigo,
+    required this.tipo,
+    required this.tipoAccion,
+    required this.proponente,
+    required this.tipoActor,
+    required this.descripcion,
+    required this.punto,
+    required this.zona,
+    required this.zonaNombre,
+    required this.dentroManglar,
+    required this.creadaEn,
+  });
+  final String id, codigo, tipo, tipoAccion, proponente, tipoActor, descripcion;
+  final LatLng punto;
+  final String? zona, zonaNombre;
+  final bool dentroManglar;
+  final DateTime creadaEn;
+
+  String get tipoNombre => tiposPropuesta[tipo]?.$1 ?? 'Otra';
+  String get emoji => tiposPropuesta[tipo]?.$2 ?? '💡';
+  String get proponenteNombre => proponentesPropuesta[proponente] ?? 'Ciudadanía';
+
+  /// El mismo título que la web: «Siembra propuesta por WhatsApp · PROP-1A2B».
+  String get titulo => '${tipo == 'otra' ? 'Acción' : tipoNombre} propuesta por WhatsApp · $codigo';
+
+  /// Mismas validaciones que `leerPropuesta` de la web: lo que no cumple el contrato se descarta.
+  static PropuestaWhatsapp? deJson(Object? v) {
+    if (v is! Map) return null;
+    final id = v['id'], codigo = v['codigo'], tipo = v['tipo'], lat = v['lat'], lon = v['lon'];
+    final creada = DateTime.tryParse('${v['creada_en']}');
+    if (id is! String || id.isEmpty || codigo is! String || !RegExp(r'^PROP-[A-Z0-9]+$', caseSensitive: false).hasMatch(codigo)) {
+      return null;
+    }
+    if (v['canal'] != 'whatsapp' || v['estado'] != 'propuesta' || tipo is! String || !tiposPropuesta.containsKey(tipo)) return null;
+    if (lat is! num || lon is! num || lat.abs() > 90 || lon.abs() > 180 || creada == null) return null;
+    if (v['descripcion'] is! String) return null;
+    return PropuestaWhatsapp(
+      id: id,
+      codigo: codigo.toUpperCase(),
+      tipo: tipo,
+      tipoAccion: '${v['tipo_accion'] ?? ''}',
+      proponente: '${v['proponente'] ?? ''}',
+      tipoActor: '${v['tipo_actor'] ?? ''}',
+      descripcion: (v['descripcion'] as String).trim(),
+      punto: LatLng(lat.toDouble(), lon.toDouble()),
+      zona: v['zona'] as String?,
+      zonaNombre: v['zona_nombre'] as String?,
+      dentroManglar: v['dentro_poligono'] == true,
+      creadaEn: creada.toLocal(),
+    );
+  }
+}
+
+/// `{"propuestas":[…]}` de `GET /api/propuestas`, de la más nueva a la más vieja.
+List<PropuestaWhatsapp> propuestasDeTexto(String texto) {
+  final j = jsonDecode(texto);
+  if (j is! Map || j['propuestas'] is! List) throw const FormatException('sin propuestas');
+  return [for (final p in j['propuestas'] as List) ?PropuestaWhatsapp.deJson(p)]
+    ..sort((a, b) => b.creadaEn.compareTo(a.creadaEn));
+}
+
 // ------------------------------------------------------------------ noticias
 
 class NoticiaManglar {
@@ -435,6 +524,11 @@ class FuenteComunidad {
   Future<Lote<List<ReporteComunidad>>> reportes() => _lector.leer(
       'reportes', Uri.parse('$base/datos-abiertos/reportes.geojson'), reportesDeGeoJson, const <ReporteComunidad>[]);
 
+  /// Propuestas de acción hechas por WhatsApp («💡 Proponer»), las mismas que la web muestra en
+  /// Seguimiento y en el panel de la C.R.A. Sin datos personales.
+  Future<Lote<List<PropuestaWhatsapp>>> propuestas() => _lector.leer(
+      'propuestas', Uri.parse('$base/api/propuestas'), propuestasDeTexto, const <PropuestaWhatsapp>[]);
+
   Future<Lote<List<NoticiaManglar>>> noticias() async {
     const campos = '_fields=id,date,title,link,excerpt,content,_links,_embedded&_embed=wp:featuredmedia';
     final [a, b] = await Future.wait([
@@ -478,7 +572,8 @@ class FuenteComunidad {
       final porEstado = {
         400: 'Revisa los datos: el servidor no los aceptó.',
         404: 'No encontramos esa jornada.',
-        409: 'Esta jornada ya no tiene cupos.',
+        // Desde 2b1f7e9 el bot no cierra por cupo: un 409 ya no significa «sin cupos».
+        409: 'No pudimos inscribirte en esta jornada ahora. Inténtalo de nuevo en un momento.',
         429: 'Hiciste varias inscripciones seguidas. Espera unos minutos.',
       };
       return ResultadoInscripcion.falla(j?['mensaje'] as String? ?? porEstado[r.statusCode] ?? 'El servidor respondió ${r.statusCode}.');
