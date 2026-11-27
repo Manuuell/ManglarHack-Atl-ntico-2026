@@ -60,7 +60,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
               </div>
             ))}
           </dl>
-          <p className="mt-3 text-xs text-tenue">Manglar probable, no confirmado: requiere verificación en campo. Fuente: {FUENTE_WORKFLOW}{estadoDatos === 'en_vivo' && espejo ? `; datos revisados el ${fechaCRA(espejo.revisado_en)}` : estadoDatos === 'respaldo' ? '; cifras del 27 de noviembre de 2026 (no se pudo leer la copia en vivo)' : ''}.</p>
+          <p className="mt-3 text-xs text-tenue">Manglar probable, no confirmado: requiere verificación en campo. Fuente: {FUENTE_WORKFLOW}{estadoDatos === 'en_vivo' && espejo ? ` (datos revisados el ${fechaCRA(espejo.revisado_en)})` : estadoDatos === 'respaldo' ? ' (cifras del 27 de noviembre de 2026: no se pudo leer la copia en vivo)' : ''}.</p>
         </section>
 
         <section aria-labelledby="titulo-acciones">

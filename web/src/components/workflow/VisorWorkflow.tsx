@@ -190,7 +190,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
         <p className="mt-2 flex items-center gap-2 text-xs text-tenue" aria-live="polite">
           <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${estadoDatos === 'en_vivo' ? 'bg-baja' : estadoDatos === 'respaldo' ? 'bg-dorado-500' : 'bg-white/40'}`} />
           {estadoDatos === 'cargando' && 'Leyendo los datos de la C.R.A.…'}
-          {estadoDatos === 'en_vivo' && <>Datos del workflow de la C.R.A.{espejo ? `, revisados el ${fechaCRA(espejo.revisado_en)}` : ''}. Se actualizan solos cuando la C.R.A. publica cambios.</>}
+          {estadoDatos === 'en_vivo' && <>Datos del workflow de la C.R.A.{espejo ? ` (revisados el ${fechaCRA(espejo.revisado_en)})` : ''}. Se actualizan solos cuando la C.R.A. publica cambios.</>}
           {estadoDatos === 'respaldo' && 'No se pudo leer la copia de los datos de la C.R.A.: se muestran las cifras del 27 de noviembre de 2026.'}
         </p>
       </div>
