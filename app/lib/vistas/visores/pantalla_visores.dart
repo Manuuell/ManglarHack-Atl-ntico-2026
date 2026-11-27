@@ -19,6 +19,7 @@ import '../../nucleo/kit/segmentado.dart';
 import '../../nucleo/kit/tirar_actualizar.dart';
 import '../../nucleo/tema.dart';
 import '../admin/piezas_admin.dart' show BotonIcono;
+import '../comunidad/alertas_diseno.dart' show verEnElMapa;
 import '../comun/zanky_mascota.dart';
 import 'piezas_visores.dart';
 
@@ -432,6 +433,11 @@ class _FilaPunto extends StatelessWidget {
           icono: Icons.info_outline_rounded,
           alEjecutar: () => abrirFichaPunto(context, punto),
         ),
+        AccionGesto(
+          etiqueta: 'Ver en el mapa',
+          icono: Icons.map_rounded,
+          alEjecutar: () => verEnElMapa(context, LatLng(punto.lat, punto.lon)),
+        ),
       ],
       child: Semantics(
         button: true,
@@ -823,6 +829,12 @@ class _TarjetaCienaga extends StatelessWidget {
           icono: Icons.info_outline_rounded,
           alEjecutar: () => abrirFichaCienaga(context, cienaga),
         ),
+        if (puntoCienaga(cienaga) case final p?)
+          AccionGesto(
+            etiqueta: 'Ver en el mapa',
+            icono: Icons.map_rounded,
+            alEjecutar: () => verEnElMapa(context, p),
+          ),
         AccionGesto(
           etiqueta: 'Copiar resumen',
           icono: Icons.copy_rounded,
@@ -1251,6 +1263,15 @@ String textoFoco(FocoCalor f) =>
     'Fuente: visor de focos de calor de la CRA';
 
 /// Texto para copiar el resumen de una ciénaga.
+/// Centro de las estaciones de muestreo de la ciénaga (para «Ver en el mapa»); `null` si no hay ninguna con coordenadas.
+LatLng? puntoCienaga(CienagaAgua c) {
+  final con = [for (final m in c.muestras) if (m.lat != 0 || m.lon != 0) m];
+  if (con.isEmpty) return null;
+  final lat = con.fold<double>(0, (s, m) => s + m.lat) / con.length;
+  final lon = con.fold<double>(0, (s, m) => s + m.lon) / con.length;
+  return LatLng(lat, lon);
+}
+
 String textoCienaga(CienagaAgua c) {
   final cat = categoriaIca(c.ica);
   return 'Ciénaga ${c.nombre}: calidad del agua ${cat?.etiqueta.toLowerCase() ?? 'sin dato'}'
@@ -1279,6 +1300,11 @@ class _FilaFoco extends StatelessWidget {
           etiqueta: 'Ver ficha',
           icono: Icons.info_outline_rounded,
           alEjecutar: () => abrirFichaFoco(context, f, distanciaM),
+        ),
+        AccionGesto(
+          etiqueta: 'Ver en el mapa',
+          icono: Icons.map_rounded,
+          alEjecutar: () => verEnElMapa(context, LatLng(f.lat, f.lon)),
         ),
         AccionGesto(
           etiqueta: 'Copiar datos',

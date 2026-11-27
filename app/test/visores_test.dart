@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -48,13 +49,13 @@ ServicioVisores servicio({bool caido = false, bool conServidor = true}) => Servi
       reloj: () => ahora,
     );
 
-Future<void> montar(WidgetTester t, Widget w, Size tam, {double letra = 1}) async {
+Future<void> montar(WidgetTester t, Widget w, Size tam, {double letra = 1, bool reducir = false}) async {
   t.view.physicalSize = tam;
   t.view.devicePixelRatio = 1;
   addTearDown(t.view.reset);
   await t.pumpWidget(MaterialApp(
     theme: temaZanky(),
-    home: MediaQuery(data: MediaQueryData(size: tam, textScaler: TextScaler.linear(letra)), child: w),
+    home: MediaQuery(data: MediaQueryData(size: tam, textScaler: TextScaler.linear(letra), disableAnimations: reducir), child: w),
   ));
   for (var i = 0; i < 6; i++) {
     await t.pump(const Duration(milliseconds: 300));
@@ -294,6 +295,55 @@ void main() {
     await abrirPrimero(t, 'cienaga-');
     expect(find.byKey(const ValueKey('ficha-cienaga')), findsOneWidget);
     expect(find.text('ESTACIONES DE MUESTREO'), findsOneWidget);
+  });
+
+  /// Mantiene presionada la primera fila con [prefijo] y devuelve cuántas vibraciones pidió.
+  Future<int> mantenerPrimero(WidgetTester t, String prefijo) async {
+    var vibraciones = 0;
+    t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (c) async {
+      if (c.method == 'HapticFeedback.vibrate') vibraciones++;
+      return null;
+    });
+    addTearDown(() => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final fila = porClave(prefijo).first;
+    await t.ensureVisible(fila);
+    await t.pump(const Duration(milliseconds: 300));
+    await t.longPress(fila);
+    for (var i = 0; i < 6; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+    return vibraciones;
+  }
+
+  for (final reducir in [false, true]) {
+    final modo = reducir ? ' (reducir movimiento)' : '';
+    testWidgets('focos: mantener da háptica, vista previa y «Ver en el mapa»$modo', (t) async {
+      await montar(t, PantallaVisores(servicio: servicio()), const Size(390, 844), reducir: reducir);
+      await irA(t, 'Focos');
+      expect(await mantenerPrimero(t, 'foco-'), greaterThan(0));
+      expect(find.byKey(const Key('peek')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Ver ficha')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Ver en el mapa')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Copiar datos')), findsOneWidget);
+    });
+
+    testWidgets('ciénagas: mantener da háptica, vista previa y «Ver en el mapa»$modo', (t) async {
+      await montar(t, PantallaVisores(servicio: servicio()), const Size(390, 844), reducir: reducir);
+      await irA(t, 'Agua');
+      expect(await mantenerPrimero(t, 'cienaga-'), greaterThan(0));
+      expect(find.byKey(const Key('peek')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Ver en el mapa')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Copiar resumen')), findsOneWidget);
+    });
+  }
+
+  test('ciénaga: «Ver en el mapa» va al centro de sus estaciones', () {
+    MuestraAgua m(double lat, double lon) => MuestraAgua(id: 1, codigo: 'X', cuerpoId: 7, cuerpo: 'Mallorquín', lat: lat, lon: lon);
+    final c = CienagaAgua(7, 'Mallorquín', [m(11.0, -74.8), m(11.2, -74.9)]);
+    final p = puntoCienaga(c)!;
+    expect(p.latitude, closeTo(11.1, 1e-9));
+    expect(p.longitude, closeTo(-74.85, 1e-9));
+    expect(puntoCienaga(const CienagaAgua(7, 'X', [])), isNull);
   });
 
   test('textos para copiar: sin puntos en CRA y con la fuente', () {
