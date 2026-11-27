@@ -37,7 +37,14 @@ class _ComunidadInicioState extends State<ComunidadInicio> {
   @override
   void initState() {
     super.initState();
+    recargaComunidadInicio.addListener(_cargar);
     _cargar();
+  }
+
+  @override
+  void dispose() {
+    recargaComunidadInicio.removeListener(_cargar);
+    super.dispose();
   }
 
   Future<void> _cargar() async {

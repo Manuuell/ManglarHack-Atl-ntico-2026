@@ -32,6 +32,7 @@ import '../admin/contenido/franja_portada.dart';
 import '../guardian/editar_perfil.dart';
 import '../configuracion/pantalla_configuracion.dart';
 import '../comunidad/comunidad_inicio.dart';
+import '../comunidad/feed_y_eventos.dart' show recargaComunidadInicio;
 import '../sensores/sensores_compacto.dart';
 import '../visores/visores_compacto.dart';
 import 'que_hago_ya.dart';
@@ -70,6 +71,8 @@ class _InicioState extends State<Inicio> {
     SeccionInicio.asistentes,
     SeccionInicio.jornadasCerca,
     SeccionInicio.misJornadas,
+    // Alertas, próximo evento y noticias traen su propio mantener (vista previa y acciones).
+    SeccionInicio.pronostico,
   };
 
   static String _nombre(SeccionInicio s) => switch (s) {
@@ -279,6 +282,7 @@ class _InicioState extends State<Inicio> {
     var i = 0;
     return TirarActualizar(
       alActualizar: () async {
+        recargaComunidadInicio.value++;
         await Future.wait([estado.sincronizar(), estado.cargarClima()]);
       },
       child: ListView(

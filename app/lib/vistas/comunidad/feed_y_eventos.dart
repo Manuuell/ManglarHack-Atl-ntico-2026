@@ -310,6 +310,10 @@ String textoCupos(Jornada j) => '${j.inscritos} ${j.inscritos == 1 ? 'inscrito' 
 /// no repetirla.
 final proximoEventoMostrado = ValueNotifier<String?>(null);
 
+/// Tirar para actualizar en Inicio lo sube: alertas, noticias y «Próximo evento» se vuelven a pedir
+/// sin volver a mostrar esqueletos (lo que ya se ve se queda hasta que llega lo nuevo).
+final recargaComunidadInicio = ValueNotifier<int>(0);
+
 /// Tarjeta de un evento: foto, tipo, fecha, lugar, inscritos e inscripción.
 /// - Tocar: abre el detalle (la foto viaja con Hero).
 /// - Mantener: vista previa con Inscribirme / Al calendario, Ver en el mapa, Compartir y Abrir.
@@ -622,11 +626,13 @@ class _ProximoEventoInicioState extends State<ProximoEventoInicio> {
   void initState() {
     super.initState();
     jornadasInscritas.cargar();
+    recargaComunidadInicio.addListener(_cargar);
     _cargar();
   }
 
   @override
   void dispose() {
+    recargaComunidadInicio.removeListener(_cargar);
     if (proximoEventoMostrado.value == _proximo?.jornada.id) proximoEventoMostrado.value = null;
     super.dispose();
   }
