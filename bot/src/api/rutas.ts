@@ -223,6 +223,12 @@ api.post('/admin/invitaciones', async (req: ConAdmin, res) => {
   } else if (destino === 'uno') {
     const c = J.contacto(String(b.cuenta_id ?? ''));
     if (c?.whatsapp_ok && c.telefono) lista = [{ nombre: c.nombre, telefono: c.telefono }];
+  } else if (destino === 'numero') {
+    // Un número que escribe quien administra (para probar o para alguien que pidió la invitación).
+    const telefono = normalizarTelefono(String(b.telefono ?? ''));
+    if (!telefono) return falla(res, 400, 'telefono', 'Revisa el celular: escribe los 10 dígitos, por ejemplo 300 123 4567.');
+    const nombre = (typeof b.nombre === 'string' ? b.nombre.trim().replace(/\s+/g, ' ').slice(0, 60) : '') || 'amigo del manglar';
+    lista = [{ nombre, telefono }];
   } else {
     return falla(res, 400, 'destino', 'Elige a quién enviar la invitación.');
   }
