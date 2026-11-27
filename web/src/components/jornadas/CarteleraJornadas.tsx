@@ -9,6 +9,7 @@ import { TIPOS_JORNADA } from '../../lib/plataforma/catalogos';
 import { copiarEnlace, descargarICS, enlaceInvitacionWhatsApp } from '../../lib/plataforma/calendario';
 import { crearJornada, enlaceComoLlegar, enlaceGoogleCalendar, fmt, urlInvitacion, type DatosJornada } from '../../lib/plataforma/jornadas';
 import { cn } from '../../lib/utils';
+import AvisoZanky from '../marca/AvisoZanky';
 
 interface Props { jornadas: Jornada[]; acciones: Accion[]; aviso: string }
 
@@ -164,7 +165,9 @@ function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; acci
         <section aria-labelledby={`inscripcion-${j.id}`} className="rounded-3xl border border-dorado-500/40 bg-dorado-500/10 p-5 sm:p-6">
           <h3 id={`inscripcion-${j.id}`} className="titular text-2xl">¿Vas a ir?</h3>
           {inscrito || mensaje?.ok ? (
-            <p className="mt-3 flex items-center gap-2 font-semibold text-emerald-200"><Check className="size-5" aria-hidden="true" />{mensaje?.texto ?? 'Ya estás inscrito en esta jornada desde este navegador.'}</p>
+            <div role="status"><AvisoZanky animo="celebrando" className="mt-3" titulo={mensaje?.ok ? '¡Listo! Quedaste en la lista.' : 'Ya estás inscrito en esta jornada.'}>
+              <p className="flex items-center gap-1.5 text-sm text-emerald-200"><Check className="size-4 shrink-0" aria-hidden="true" />{mensaje?.ok ? 'Te esperamos. Invita a tu gente con los botones de abajo.' : 'Te inscribiste desde este navegador.'}</p>
+            </AvisoZanky></div>
           ) : pasada || lleno ? (
             <p className="mt-3 text-suave">{pasada ? 'Esta jornada ya se realizó.' : 'Esta jornada ya no tiene cupos. Comparte la invitación: pueden abrir más cupos.'}</p>
           ) : (
@@ -245,7 +248,7 @@ function FormularioJornada({ acciones, onCreada, onCerrar }: { acciones: Accion[
           <p className="mt-2 text-sm text-suave">La jornada se liga a una acción aprobada o en ejecución, y toma su punto en el mapa.</p>
         </header>
         {elegibles.length === 0 ? (
-          <p className="rounded-2xl bg-superficie p-4 text-suave">Todavía no hay acciones aprobadas o en ejecución. Propón una en <a href="/plataforma/proponer" className="font-semibold text-dorado-300 underline">Proponer acción</a>.</p>
+          <AvisoZanky animo="curioso" className="rounded-2xl bg-superficie p-4 text-suave"><p>Todavía no hay acciones aprobadas o en ejecución. Propón una en <a href="/plataforma/proponer" className="font-semibold text-dorado-300 underline">Proponer acción</a>.</p></AvisoZanky>
         ) : (
           <>
             <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Nombre de la jornada</span><input className={campo} value={d.titulo} onChange={(e) => cambiar('titulo', e.target.value)} maxLength={90} placeholder="Ej.: Siembra de mangle rojo en el caño" /><Error k="titulo" /></label>
@@ -327,10 +330,10 @@ export default function CarteleraJornadas(props: Props) {
       <p className="text-xs text-tenue">{props.aviso}</p>
 
       {visibles.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-linea p-10 text-center">
-          <p className="titular text-2xl">{cuando === 'proximas' ? 'No hay jornadas próximas con este filtro' : 'Todavía no hay jornadas realizadas'}</p>
-          <p className="mt-2 text-suave">{cuando === 'proximas' ? 'Crea una y comparte la invitación con tu comunidad.' : 'Aquí aparecerán las jornadas cuando pasen.'}</p>
-        </div>
+        <AvisoZanky animo="curioso" forma="bloque" className="rounded-3xl border border-dashed border-linea p-10"
+          titulo={cuando === 'proximas' ? 'No hay jornadas próximas con este filtro' : 'Todavía no hay jornadas realizadas'}>
+          <p>{cuando === 'proximas' ? 'Crea una y comparte la invitación con tu comunidad.' : 'Aquí aparecerán las jornadas cuando pasen.'}</p>
+        </AvisoZanky>
       ) : (
         <ul className="grid gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
           {visibles.map((j) => {
