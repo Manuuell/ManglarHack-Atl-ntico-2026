@@ -10,7 +10,10 @@ import 'package:zanky/datos/experiencia/jornada.dart';
 import 'package:zanky/datos/servidor.dart';
 import 'package:zanky/datos/tipos.dart';
 import 'package:zanky/nucleo/tema.dart';
+import 'package:zanky/datos/comunidad/marcas_comunidad.dart';
+import 'package:zanky/vistas/comunidad/detalle_evento.dart';
 import 'package:zanky/vistas/comunidad/feed_y_eventos.dart';
+import 'package:zanky/vistas/comunidad/piezas_comunidad.dart' show fotoLocalPara, sinPuntosCra;
 
 List<Jornada> jornadasDe(String ruta) {
   final j = jsonDecode(File(ruta).readAsStringSync());
@@ -82,11 +85,29 @@ void main() {
       expect(c.first.jornada.inicio.isAfter(c.last.jornada.inicio), isFalse);
     });
 
-    test('sin cupo definido: «sin límite de cupos», nunca bloquea', () {
+    test('cupos sin límite, como el bot y la web: nunca «de 60» ni «cupo completo»', () {
       final j = Jornada.fromJson({...todas.first.aJson(), 'cupos': 0, 'inscritos': 1});
-      expect(textoCupos(j), '1 inscrito · sin límite de cupos');
-      final llena = Jornada.fromJson({...todas.first.aJson(), 'cupos': 2, 'inscritos': 2, 'limite_cupos': true});
-      expect(textoCupos(llena), contains('igual puedes apuntarte'));
+      expect(textoCupos(j), '1 inscrito · cupos sin límite');
+      final con60 = Jornada.fromJson({...todas.first.aJson(), 'cupos': 60, 'inscritos': 3});
+      expect(textoCupos(con60), '3 inscritos · cupos sin límite');
+    });
+
+    test('cuenta regresiva: días, horas, minutos, en curso y terminó', () {
+      final ini = DateTime(2026, 11, 28, 8);
+      final fin = DateTime(2026, 11, 28, 11);
+      expect(textoCuentaRegresiva(ini, fin, DateTime(2026, 11, 26, 4)), 'Empieza en 2 d 4 h');
+      expect(textoCuentaRegresiva(ini, fin, DateTime(2026, 11, 28, 4, 48)), 'Empieza en 3 h 12 min');
+      expect(textoCuentaRegresiva(ini, fin, DateTime(2026, 11, 28, 7, 47, 55)), 'Empieza en 12:05');
+      expect(textoCuentaRegresiva(ini, fin, DateTime(2026, 11, 28, 9)), 'En curso ahora');
+      expect(textoCuentaRegresiva(ini, fin, DateTime(2026, 11, 28, 12)), 'Terminó');
+    });
+
+    test('foto de respaldo según el tipo o el lugar, y siempre una', () {
+      expect(fotoLocalPara('avistamiento de aves Mallorquín'), contains('garza'));
+      expect(fotoLocalPara('recoleccion Recolección de basura'), contains('cano'));
+      expect(fotoLocalPara('siembra Siembra de mangle'), contains('raices'));
+      expect(fotoLocalPara('xyz'), startsWith('assets/fotos/'));
+      expect(sinPuntosCra('visita de la C.R.A. hoy'), 'visita de la CRA hoy');
     });
 
     test('con suficientes del servidor no se agrega respaldo; las pasadas no salen', () {
@@ -125,6 +146,32 @@ void main() {
         expect(t.takeException(), isNull);
       });
     }
+
+    testWidgets('tocar un evento abre su detalle (Hero) con cuenta regresiva, cupos y botón fijo; inscrito: ✓',
+        (t) async {
+      jornadasInscritas.reiniciar();
+      t.view.physicalSize = const Size(390 * 3, 844 * 3);
+      t.view.devicePixelRatio = 3;
+      addTearDown(t.view.reset);
+      final e = EventoCartelera(todas.first);
+      await t.pumpWidget(app(SeccionEventos(eventos: [e], alInscribirse: (_) {}), 390));
+      await t.pump();
+      await t.tap(find.text(e.jornada.titulo).first);
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 500));
+      expect(find.byType(DetalleEvento), findsOneWidget);
+      expect(find.byType(CuentaRegresiva), findsOneWidget);
+      expect(find.textContaining('sin límite'), findsWidgets);
+      expect(find.text('Inscribirme'), findsWidgets);
+      jornadasInscritas.poner(e.jornada.id, true);
+      await t.pump(const Duration(milliseconds: 600));
+      expect(find.text('Estás inscrito'), findsWidgets);
+      expect(find.text('Al calendario'), findsWidgets);
+      expect(t.takeException(), isNull);
+      jornadasInscritas.reiniciar();
+      await t.pumpWidget(const SizedBox());
+      await t.pump(const Duration(seconds: 1));
+    });
 
     testWidgets('sin reportes: estado vacío; cargando: esqueleto', (t) async {
       await t.pumpWidget(app(const SeccionFeed(feed: [], origen: OrigenDato.cache, cuando: null), 390));

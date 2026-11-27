@@ -27,8 +27,11 @@ String heroEvento(Jornada j) => 'evento-${j.id}';
 
 /// Abre el detalle de un evento: la foto viaja desde la tarjeta (Hero), deslizar desde el borde vuelve.
 Future<void> abrirDetalleEvento(BuildContext context, EventoCartelera e, {FuenteComunidad? fuente}) =>
-    abrirConBorde<void>(context, (_) => DetalleEvento(e: e, fuente: fuente),
-        settings: RouteSettings(name: 'evento/${e.jornada.id}'));
+    abrirConBorde<void>(
+      context,
+      (_) => DetalleEvento(e: e, fuente: fuente),
+      settings: RouteSettings(name: 'evento/${e.jornada.id}'),
+    );
 
 /// Inscripción con la hoja del formulario; si queda hecha, la marca en el teléfono.
 Future<bool> inscribirEnJornada(BuildContext context, Jornada j, {FuenteComunidad? fuente}) async {
@@ -68,7 +71,8 @@ Future<void> agregarJornadaAlCalendario(BuildContext context, Jornada j) async {
     abrirEnlace(u.toString());
     return;
   }
-  String esc(String s) => s.replaceAll('\\', '\\\\').replaceAll(';', '\\;').replaceAll(',', '\\,').replaceAll('\n', '\\n');
+  String esc(String s) =>
+      s.replaceAll('\\', '\\\\').replaceAll(';', '\\;').replaceAll(',', '\\,').replaceAll('\n', '\\n');
   final ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -86,19 +90,25 @@ Future<void> agregarJornadaAlCalendario(BuildContext context, Jornada j) async {
     'END:VCALENDAR',
   ].join('\r\n');
   try {
-    await SharePlus.instance.share(ShareParams(
-      files: [XFile.fromData(utf8.encode(ics), mimeType: 'text/calendar', name: 'jornada.ics')],
-      fileNameOverrides: const ['jornada.ics'],
-      subject: j.titulo,
-    ));
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile.fromData(utf8.encode(ics), mimeType: 'text/calendar', name: 'jornada.ics')],
+        fileNameOverrides: const ['jornada.ics'],
+        subject: j.titulo,
+      ),
+    );
   } catch (_) {
     if (context.mounted) avisar(context, 'No pude abrir el calendario', tipo: TipoAviso.error);
   }
 }
 
-Future<void> compartirJornada(Jornada j) => SharePlus.instance.share(ShareParams(
-    text: '${j.titulo}\n${cuandoTexto(j.inicio.toLocal())} · ${j.puntoEncuentro}\n'
-        'Inscríbete en Zanky: https://mimanglar.sentralabs.co/#jornadas'));
+Future<void> compartirJornada(Jornada j) => SharePlus.instance.share(
+  ShareParams(
+    text:
+        '${j.titulo}\n${cuandoTexto(j.inicio.toLocal())} · ${j.puntoEncuentro}\n'
+        'Inscríbete en Zanky: https://mimanglar.sentralabs.co/#jornadas',
+  ),
+);
 
 /// Detalle de un evento: foto que viaja desde la tarjeta, cuenta regresiva, cupos, qué llevar, mapa
 /// pequeño del punto de encuentro y un botón fijo de inscripción que pasa a «Inscrito ✓».
@@ -114,108 +124,140 @@ class DetalleEvento extends StatelessWidget {
     final arriba = MediaQuery.paddingOf(context).top;
     final sinMov = MediaQuery.disableAnimationsOf(context);
     Widget fila(IconData i, String titulo, String valor) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(color: Zc.cienagaClara, borderRadius: BorderRadius.circular(Zr.s)),
-              child: Icon(i, size: 18, color: Cra.azul),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: Zc.cienagaClara, borderRadius: BorderRadius.circular(Zr.s)),
+            child: Icon(i, size: 18, color: Cra.azul),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(titulo, style: tt.labelMedium?.copyWith(color: Zc.textoSuave)),
                 const SizedBox(height: 2),
                 Text(valor, style: tt.bodyMedium?.copyWith(color: Zc.texto, height: 1.35)),
-              ]),
+              ],
             ),
-          ]),
-        );
+          ),
+        ],
+      ),
+    );
     return Scaffold(
       backgroundColor: Zc.arena,
       bottomNavigationBar: _BarraInscripcion(j: j, fuente: fuente),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
-          child: CustomScrollView(slivers: [
-            SliverToBoxAdapter(
-              child: Stack(children: [
-                AspectRatio(
-                  aspectRatio: 16 / 10,
-                  child: Hero(
-                    tag: heroEvento(j),
-                    child: FotoNoticia(url: j.imagen?.toString()),
-                  ),
-                ),
-                // Velo arriba para que «Volver» se lea sobre cualquier foto.
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  height: arriba + 70,
-                  child: const IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [Color(0x66000000), Color(0x00000000)],
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Stack(
+                  children: [
+                    AspectRatio(
+                      aspectRatio: 16 / 10,
+                      child: Hero(
+                        tag: heroEvento(j),
+                        child: FotoNoticia(url: j.imagen?.toString()),
+                      ),
+                    ),
+                    // Velo arriba para que «Volver» se lea sobre cualquier foto.
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      height: arriba + 70,
+                      child: const IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Color(0x66000000), Color(0x00000000)],
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                    Positioned(
+                      left: 8,
+                      top: arriba + 4,
+                      child: _BotonRedondo(
+                        icono: Icons.arrow_back_ios_new_rounded,
+                        etiqueta: 'Volver',
+                        alTocar: () => Navigator.of(context).maybePop(),
+                      ),
+                    ),
+                    Positioned(
+                      right: 8,
+                      top: arriba + 4,
+                      child: _BotonRedondo(
+                        icono: Icons.ios_share_rounded,
+                        etiqueta: 'Compartir',
+                        alTocar: () => compartirJornada(j),
+                      ),
+                    ),
+                  ],
                 ),
-                Positioned(
-                  left: 8,
-                  top: arriba + 4,
-                  child: _BotonRedondo(
-                    icono: Icons.arrow_back_ios_new_rounded,
-                    etiqueta: 'Volver',
-                    alTocar: () => Navigator.of(context).maybePop(),
-                  ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+                sliver: SliverList.list(
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(j.tipoLegible.toUpperCase(), style: tt.seccion.copyWith(color: Zc.cienaga)),
+                        if (j.esEjemplo || e.respaldo)
+                          _Chip(j.esEjemplo ? 'Ejemplo' : 'Respaldo · por confirmar', color: Cra.recuperacion),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      j.titulo,
+                      style: tt.headlineSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800, height: 1.2),
+                    ),
+                    const SizedBox(height: 14),
+                    RepaintBoundary(
+                      child: CuentaRegresiva(inicio: j.inicio, fin: j.fin),
+                    ),
+                    const SizedBox(height: 14),
+                    _Cupos(j: j, sinMovimiento: sinMov),
+                    const SizedBox(height: 8),
+                    fila(Icons.schedule_rounded, 'Cuándo', cuandoTexto(j.inicio.toLocal())),
+                    fila(
+                      Icons.place_rounded,
+                      'Punto de encuentro',
+                      j.puntoEncuentro.isEmpty ? 'Por confirmar' : j.puntoEncuentro,
+                    ),
+                    if (j.queLlevar.isNotEmpty) fila(Icons.backpack_rounded, 'Qué llevar', j.queLlevar.join(' · ')),
+                    if (j.descripcion.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'De qué se trata',
+                        style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(j.descripcion, style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.5)),
+                    ],
+                    if (tieneLugar(j)) ...[const SizedBox(height: 18), _MapaLugar(j: j)],
+                    const SizedBox(height: 14),
+                    Text(
+                      'Inscribirse es gratis. Tu nombre solo lo ve quien organiza, según la Ley 1581.',
+                      style: tt.labelSmall?.copyWith(color: Zc.textoSuave, height: 1.4),
+                    ),
+                  ],
                 ),
-                Positioned(
-                  right: 8,
-                  top: arriba + 4,
-                  child: _BotonRedondo(icono: Icons.ios_share_rounded, etiqueta: 'Compartir', alTocar: () => compartirJornada(j)),
-                ),
-              ]),
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
-              sliver: SliverList.list(children: [
-                Wrap(spacing: 8, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                  Text(j.tipoLegible.toUpperCase(), style: tt.seccion.copyWith(color: Zc.cienaga)),
-                  if (j.esEjemplo || e.respaldo)
-                    _Chip(j.esEjemplo ? 'Ejemplo' : 'Respaldo · por confirmar', color: Cra.recuperacion),
-                ]),
-                const SizedBox(height: 6),
-                Text(j.titulo, style: tt.headlineSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800, height: 1.2)),
-                const SizedBox(height: 14),
-                RepaintBoundary(child: CuentaRegresiva(inicio: j.inicio, fin: j.fin)),
-                const SizedBox(height: 14),
-                _Cupos(j: j, sinMovimiento: sinMov),
-                const SizedBox(height: 8),
-                fila(Icons.schedule_rounded, 'Cuándo', cuandoTexto(j.inicio.toLocal())),
-                fila(Icons.place_rounded, 'Punto de encuentro', j.puntoEncuentro.isEmpty ? 'Por confirmar' : j.puntoEncuentro),
-                if (j.queLlevar.isNotEmpty) fila(Icons.backpack_rounded, 'Qué llevar', j.queLlevar.join(' · ')),
-                if (j.descripcion.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Text('De qué se trata', style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 6),
-                  Text(j.descripcion, style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.5)),
-                ],
-                if (tieneLugar(j)) ...[
-                  const SizedBox(height: 18),
-                  _MapaLugar(j: j),
-                ],
-                const SizedBox(height: 14),
-                Text('Inscribirse es gratis. Tu nombre solo lo ve quien organiza, según la Ley 1581.',
-                    style: tt.labelSmall?.copyWith(color: Zc.textoSuave, height: 1.4)),
-              ]),
-            ),
-          ]),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -228,10 +270,13 @@ class _Chip extends StatelessWidget {
   final Color color;
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(99)),
-        child: Text(texto, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(color: color.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(99)),
+    child: Text(
+      texto,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800),
+    ),
+  );
 }
 
 class _BotonRedondo extends StatelessWidget {
@@ -241,20 +286,20 @@ class _BotonRedondo extends StatelessWidget {
   final VoidCallback alTocar;
   @override
   Widget build(BuildContext context) => Presionable(
-        etiqueta: etiqueta,
-        onTap: alTocar,
-        escala: 0.9,
-        child: Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.92),
-            shape: BoxShape.circle,
-            boxShadow: const [BoxShadow(color: Color(0x290B2E24), blurRadius: 10, offset: Offset(0, 3))],
-          ),
-          child: Icon(icono, size: 19, color: Cra.azul),
-        ),
-      );
+    etiqueta: etiqueta,
+    onTap: alTocar,
+    escala: 0.9,
+    child: Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        shape: BoxShape.circle,
+        boxShadow: const [BoxShadow(color: Color(0x290B2E24), blurRadius: 10, offset: Offset(0, 3))],
+      ),
+      child: Icon(icono, size: 19, color: Cra.azul),
+    ),
+  );
 }
 
 /// Texto de la cuenta regresiva (puro, para probar): «Empieza en 2 d 4 h», «en 3 h 12 min»,
@@ -327,15 +372,22 @@ class _CuentaRegresivaState extends State<CuentaRegresiva> {
           borderRadius: BorderRadius.circular(Zr.m),
           border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
-        child: Row(children: [
-          Icon(vivo ? Icons.circle : Icons.timer_outlined, size: vivo ? 12 : 20, color: color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(texto,
+        child: Row(
+          children: [
+            Icon(vivo ? Icons.circle : Icons.timer_outlined, size: vivo ? 12 : 20, color: color),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                texto,
                 style: tt.titleMedium?.copyWith(
-                    color: color, fontWeight: FontWeight.w800, fontFeatures: const [FontFeature.tabularFigures()])),
-          ),
-        ]),
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -348,28 +400,38 @@ class _Cupos extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
-    final ins = '${j.inscritos} ${j.inscritos == 1 ? 'persona inscrita' : 'personas inscritas'}';
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Row(children: [
-        const Icon(Icons.groups_rounded, size: 18, color: Zc.hoja),
-        const SizedBox(width: 6),
-        Expanded(child: Text(ins, style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800))),
-        Text(j.cupos <= 0 ? 'sin límite de cupos' : '${j.cuposLibres} libres de ${j.cupos}',
-            style: tt.labelMedium?.copyWith(color: Zc.textoSuave)),
-      ]),
-      if (j.cupos > 0) ...[
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(99),
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: (j.inscritos / j.cupos).clamp(0.0, 1.0)),
-            duration: sinMovimiento ? Duration.zero : Zm.largo,
-            curve: Zm.entrar,
-            builder: (_, v, _) => LinearProgressIndicator(value: v, minHeight: 8, backgroundColor: Zc.linea, color: Zc.hoja),
+    // Como el bot y la web: las jornadas no tienen límite de cupos. La cifra sube contando al entrar.
+    final n = j.inscritos;
+    return Semantics(
+      label: '$n ${n == 1 ? 'persona inscrita' : 'personas inscritas'}, cupos sin límite',
+      excludeSemantics: true,
+      child: Row(
+        children: [
+          const Icon(Icons.groups_rounded, size: 18, color: Zc.hoja),
+          const SizedBox(width: 6),
+          Expanded(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: n.toDouble()),
+              duration: sinMovimiento ? Duration.zero : Zm.largo,
+              curve: Zm.entrar,
+              builder: (_, v, _) => Text(
+                '${v.round()} ${n == 1 ? 'persona inscrita' : 'personas inscritas'}',
+                style: tt.titleSmall?.copyWith(
+                  color: Zc.texto,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
           ),
-        ),
-      ],
-    ]);
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(color: Zc.hojaClara, borderRadius: BorderRadius.circular(99)),
+            child: Text('cupos sin límite', style: tt.labelMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -389,56 +451,72 @@ class _MapaLugar extends StatelessWidget {
         borderRadius: BorderRadius.circular(Zr.m),
         child: SizedBox(
           height: 160,
-          child: Stack(children: [
-            IgnorePointer(
-              child: FlutterMap(
-                options: MapOptions(
-                  backgroundColor: Zc.cienagaClara,
-                  initialCenter: p,
-                  initialZoom: 15,
-                  interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
-                ),
-                children: [
-                  TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'co.zanky.app'),
-                  MarkerLayer(markers: [
-                    Marker(
-                      point: p,
-                      width: 40,
-                      height: 40,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Zc.hoja,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: const [BoxShadow(color: Color(0x330B2E24), blurRadius: 8, offset: Offset(0, 3))],
-                        ),
-                        child: const Icon(Icons.flag_rounded, size: 18, color: Colors.white),
-                      ),
+          child: Stack(
+            children: [
+              IgnorePointer(
+                child: FlutterMap(
+                  options: MapOptions(
+                    backgroundColor: Zc.cienagaClara,
+                    initialCenter: p,
+                    initialZoom: 15,
+                    interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'co.zanky.app',
                     ),
-                  ]),
-                ],
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: p,
+                          width: 40,
+                          height: 40,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Zc.hoja,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 3),
+                              boxShadow: const [
+                                BoxShadow(color: Color(0x330B2E24), blurRadius: 8, offset: Offset(0, 3)),
+                              ],
+                            ),
+                            child: const Icon(Icons.flag_rounded, size: 18, color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Positioned(
-              left: 10,
-              bottom: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(99)),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.map_rounded, size: 15, color: Cra.azul),
-                  const SizedBox(width: 6),
-                  Text('Ver en el mapa',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Cra.azul, fontWeight: FontWeight.w800)),
-                ]),
+              Positioned(
+                left: 10,
+                bottom: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(99)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.map_rounded, size: 15, color: Cra.azul),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Ver en el mapa',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.labelMedium?.copyWith(color: Cra.azul, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            Positioned(
-              right: 6,
-              bottom: 4,
-              child: Text('© OpenStreetMap', style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
-            ),
-          ]),
+              Positioned(
+                right: 6,
+                bottom: 4,
+                child: Text('© OpenStreetMap', style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10)),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -497,27 +575,41 @@ class _BarraInscripcionState extends State<_BarraInscripcion> {
                   child: ScaleTransition(scale: Tween(begin: 0.94, end: 1.0).animate(a), child: hijo),
                 ),
                 child: ya
-                    ? Row(key: const ValueKey('ya'), children: [
-                        CheckDibujado(tamano: 36, animar: _recien && !sinMov, etiqueta: 'Estás inscrito'),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                            Text('Estás inscrito', style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
-                            Text('Te esperamos. Agrégalo para no olvidarlo.',
-                                maxLines: 2, overflow: TextOverflow.ellipsis, style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
-                          ]),
-                        ),
-                        const SizedBox(width: 8),
-                        SizedBox(
-                          width: 150,
-                          child: BotonZ(
-                            texto: 'Al calendario',
-                            icono: Icons.event_available_rounded,
-                            secundario: true,
-                            onTap: () => agregarJornadaAlCalendario(context, widget.j),
+                    ? Row(
+                        key: const ValueKey('ya'),
+                        children: [
+                          CheckDibujado(tamano: 36, animar: _recien && !sinMov, etiqueta: 'Estás inscrito'),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Estás inscrito',
+                                  style: tt.titleSmall?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800),
+                                ),
+                                Text(
+                                  'Te esperamos. Agrégalo para no olvidarlo.',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tt.labelSmall?.copyWith(color: Zc.textoSuave),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ])
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 150,
+                            child: BotonZ(
+                              texto: 'Al calendario',
+                              icono: Icons.event_available_rounded,
+                              secundario: true,
+                              onTap: () => agregarJornadaAlCalendario(context, widget.j),
+                            ),
+                          ),
+                        ],
+                      )
                     : BotonZ(
                         key: const ValueKey('no'),
                         texto: termino ? 'Esta jornada ya terminó' : 'Inscribirme',

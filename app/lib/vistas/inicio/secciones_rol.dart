@@ -15,6 +15,7 @@ import '../../nucleo/tema.dart';
 import '../admin/panel_cra.dart';
 import '../admin/piezas_admin.dart';
 import '../comun/zanky_mascota.dart';
+import '../comunidad/feed_y_eventos.dart' show proximoEventoMostrado;
 import '../experiencia/organizadores_evento.dart';
 import '../experiencia/puerta_evento.dart';
 import '../experiencia/reto_zanky.dart';
@@ -557,99 +558,115 @@ class SeccionJornadas extends StatelessWidget {
   Widget build(BuildContext context) {
     final org = vista == VistaJornadas.organizador;
     return _ConJornadas(
-      construir: (context, lista) {
-        final tt = Theme.of(context).textTheme;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _Titulo(
-              org ? 'Mis jornadas' : 'Próximas jornadas',
-              nota: org
-                  ? 'Las que están programadas. Toca una para abrir su evento y grabar su etiqueta NFC.'
-                  : 'Pregunta en el punto de encuentro si puedes sumarte.',
-            ),
-            _Caja(
-              child: lista == null
-                  ? const SizedBox(
-                      height: 72,
-                      child: Center(
-                        child: SizedBox.square(
-                          dimension: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.4,
-                            color: Zc.hoja,
+      construir: (context, todas) => ValueListenableBuilder<String?>(
+        // La que «Próximo evento» ya muestra en grande no se repite aquí.
+        valueListenable: proximoEventoMostrado,
+        builder: (context, yaArriba, _) {
+          final saltar = org ? null : yaArriba;
+          final lista = todas?.where((j) => j.id != saltar).toList();
+          if (saltar != null && lista != null && lista.isEmpty) {
+            return const SizedBox(width: double.infinity);
+          }
+          final tt = Theme.of(context).textTheme;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Titulo(
+                org
+                    ? 'Mis jornadas'
+                    : (saltar != null ? 'Más jornadas' : 'Próximas jornadas'),
+                nota: org
+                    ? 'Las que están programadas. Toca una para abrir su evento y grabar su etiqueta NFC.'
+                    : 'Pregunta en el punto de encuentro si puedes sumarte.',
+              ),
+              _Caja(
+                child: lista == null
+                    ? const SizedBox(
+                        height: 72,
+                        child: Center(
+                          child: SizedBox.square(
+                            dimension: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              color: Zc.hoja,
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                  : lista.isEmpty
-                  ? EstadoVacio(
-                      titulo: 'Sin jornadas próximas',
-                      texto: org
-                          ? 'Cuando programes una, aparece aquí con su QR.'
-                          : 'Cuando haya una nueva, la verás aquí.',
-                      tamanoZanky: 72,
-                      relleno: EdgeInsets.zero,
-                    )
-                  : Column(
-                      children: [
-                        for (final (i, j) in lista.take(3).indexed) ...[
-                          if (i > 0) const Divider(height: 18, color: Zc.linea),
-                          MenuMantenido(
-                            etiqueta: j.titulo,
-                            acciones: accionesJornada(context, j),
-                            alTocar: () => abrirEvento(context, j.id),
-                            escala: 0.98,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(minHeight: 48),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: Zc.hojaClara,
-                                      borderRadius: BorderRadius.circular(Zr.s),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '${aHoraColombia(j.inicio).day}',
-                                        style: tt.titleMedium?.copyWith(
-                                          color: Zc.hoja,
+                      )
+                    : lista.isEmpty
+                    ? EstadoVacio(
+                        titulo: 'Sin jornadas próximas',
+                        texto: org
+                            ? 'Cuando programes una, aparece aquí con su QR.'
+                            : 'Cuando haya una nueva, la verás aquí.',
+                        tamanoZanky: 72,
+                        relleno: EdgeInsets.zero,
+                      )
+                    : Column(
+                        children: [
+                          for (final (i, j) in lista.take(3).indexed) ...[
+                            if (i > 0)
+                              const Divider(height: 18, color: Zc.linea),
+                            MenuMantenido(
+                              etiqueta: j.titulo,
+                              acciones: accionesJornada(context, j),
+                              alTocar: () => abrirEvento(context, j.id),
+                              escala: 0.98,
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minHeight: 48,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: Zc.hojaClara,
+                                        borderRadius: BorderRadius.circular(
+                                          Zr.s,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          '${aHoraColombia(j.inicio).day}',
+                                          style: tt.titleMedium?.copyWith(
+                                            color: Zc.hoja,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(j.titulo, style: tt.titleSmall),
-                                        Text(
-                                          '${fechaLarga(j.inicio)} · ${horaCorta(j.inicio)}'
-                                          '${j.esEjemplo ? ' · Datos de ejemplo' : ''}',
-                                          style: tt.bodySmall,
-                                        ),
-                                      ],
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(j.titulo, style: tt.titleSmall),
+                                          Text(
+                                            '${fechaLarga(j.inicio)} · ${horaCorta(j.inicio)}'
+                                            '${j.esEjemplo ? ' · Datos de ejemplo' : ''}',
+                                            style: tt.bodySmall,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  const Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: Zc.textoTenue,
-                                  ),
-                                ],
+                                    const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: Zc.textoTenue,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
-            ),
-          ],
-        );
-      },
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
