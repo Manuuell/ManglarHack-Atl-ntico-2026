@@ -16,6 +16,7 @@ import 'permisos/pantalla_permisos.dart';
 import 'piezas_admin.dart';
 import '../../datos/permisos/permisos_rol.dart';
 import '../../datos/permisos/repositorio_permisos.dart';
+import 'propuestas_admin.dart';
 import 'resumen_admin.dart';
 import 'contenido/seccion_contenido_admin.dart';
 import '../../datos/admin/contenido_panel.dart';
@@ -33,7 +34,7 @@ Future<void> abrirPanelCra(BuildContext context) {
   );
 }
 
-enum _Vista { bandeja, resumen, sensores, contenido }
+enum _Vista { bandeja, resumen, propuestas, sensores, contenido }
 
 /// El panel: acceso → bandeja y resumen. Una sola pantalla con cabecera propia.
 class PanelCra extends StatefulWidget {
@@ -260,6 +261,7 @@ class _Dentro extends StatelessWidget {
     final cont = contenido;
     PermisosScope.de(context); // se reconstruye si cambia la matriz
     final conContenido = cont != null && SeccionContenido.values.any(cont.puedeEditar);
+    final verPropuestas = puedeEnPanel(context, c.rol, Permiso.verReportes);
     return Column(
       children: [
         const SizedBox(height: 4),
@@ -268,11 +270,13 @@ class _Dentro extends StatelessWidget {
           valores: [
             _Vista.bandeja,
             _Vista.resumen,
+            // Las propuestas de WhatsApp las ve quien ve los reportes.
+            if (verPropuestas) _Vista.propuestas,
             if (RolPanel.puede(c.rol, Gestion.sensores)) _Vista.sensores,
             if (conContenido) _Vista.contenido,
           ],
           actual: vista,
-          nombre: (v) => switch (v) { _Vista.bandeja => 'Bandeja', _Vista.resumen => 'Resumen', _Vista.sensores => 'Sensores', _Vista.contenido => 'Contenido' },
+          nombre: (v) => switch (v) { _Vista.bandeja => 'Bandeja', _Vista.resumen => 'Resumen', _Vista.propuestas => 'Propuestas', _Vista.sensores => 'Sensores', _Vista.contenido => 'Contenido' },
           cuenta: (v) => v == _Vista.bandeja ? c.conteos[FiltroBandeja.pendientes] : null,
           alCambiar: alCambiarVista,
         ),
@@ -281,6 +285,7 @@ class _Dentro extends StatelessWidget {
           child: switch (vista) {
             _Vista.bandeja => BandejaAdmin(controlador: c),
             _Vista.resumen => ResumenAdmin(controlador: c),
+            _Vista.propuestas => verPropuestas ? const PropuestasAdmin() : BandejaAdmin(controlador: c),
             _Vista.sensores =>
               RolPanel.puede(c.rol, Gestion.sensores) ? const SeccionSensoresAdmin() : BandejaAdmin(controlador: c),
             _Vista.contenido => conContenido ? SeccionContenidoAdmin(controlador: cont) : BandejaAdmin(controlador: c),
