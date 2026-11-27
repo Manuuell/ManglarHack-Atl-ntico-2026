@@ -9,7 +9,6 @@ import '../../datos/experiencia/entrada_evento.dart' hide EntradaEvento;
 import '../../datos/resumen_reportes.dart';
 import '../../datos/roles.dart';
 import '../../datos/guardian.dart';
-import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/esqueleto.dart';
 import '../../nucleo/base/movimiento.dart';
@@ -42,7 +41,7 @@ import '../crecimiento/zanky_crece.dart';
 import '../avisos/bandeja_avisos.dart';
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
-import '../../nucleo/kit/icono_amenaza.dart';
+import 'reporte_rapido.dart';
 
 /// Inicio: lo urgente arriba (reportar), lo que motiva en medio (tu progreso, la
 /// misión) y lo que enseña abajo (el tiempo de hoy y «¿Sabías que…?»).
@@ -425,44 +424,8 @@ class _TarjetaReportar extends StatelessWidget {
 class _Rapidos extends StatelessWidget {
   const _Rapidos();
 
-  static const _tipos = [
-    TipoAmenaza.tala,
-    TipoAmenaza.quema,
-    TipoAmenaza.vertimiento,
-    TipoAmenaza.canoTaponado,
-    TipoAmenaza.relleno,
-    TipoAmenaza.fauna,
-    TipoAmenaza.basuras,
-  ];
-
   @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Text('Reporte rápido', style: tt.titleMedium),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          // La altura crece con la letra: 42 de ícono + espacios fijos y una línea de texto.
-          height: 80 + 16 * (MediaQuery.textScalerOf(context).scale(12) / 12).clamp(1.0, 2.0),
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _tipos.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (context, i) {
-              final t = _tipos[i];
-              return FichaAmenaza(tipo: t, alTocar: () => abrirReporte(context, tipo: t));
-            },
-          ),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => ReporteRapido(alElegir: (t) => abrirReporte(context, tipo: t));
 }
 
 class _TarjetaClima extends StatefulWidget {
