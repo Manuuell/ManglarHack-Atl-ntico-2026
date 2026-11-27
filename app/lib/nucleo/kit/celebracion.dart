@@ -429,7 +429,8 @@ class _EscenaCelebracionState extends State<_EscenaCelebracion> with SingleTicke
     if (_arrancada) return;
     _arrancada = true;
     _reloj.addListener(() {
-      if (!_vibro && _reloj.value >= 0.2) {
+      // Sin ✓ propio, la pantalla que dibuja el suyo vibra cuando él aterriza.
+      if (widget.conCheck && !_vibro && _reloj.value >= 0.2) {
         _vibro = true;
         vibrarExito();
       }

@@ -207,13 +207,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.textContaining('Guardar reporte'));
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600)); // la hoja se monta en el cuadro siguiente y sube
 
     expect(find.text('No pude guardar tu reporte'), findsOneWidget);
     expect(e.llamadas, 1);
 
     await tester.tap(find.text('Reintentar'));
-    await tester.pump(const Duration(milliseconds: 600));
-    await tester.pump(const Duration(milliseconds: 600));
+    // Se cierra la hoja, guarda, el ✓ del botón se dibuja y pasa a la confirmación.
+    for (var i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(e.llamadas, 2);
     expect(find.text('No pude guardar tu reporte'), findsNothing);
     expect(find.byType(ReporteEnviado), findsOneWidget);
@@ -232,6 +235,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.textContaining('Guardar reporte'));
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600)); // la hoja se monta en el cuadro siguiente y sube
 
     expect(find.textContaining('No pude guardar el reporte en'), findsOneWidget, reason: 'el mensaje real, no uno genérico');
     expect(find.text('Seguir sin foto'), findsNothing);
@@ -249,6 +253,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.textContaining('Guardar reporte'));
     await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(const Duration(milliseconds: 600)); // la hoja se monta en el cuadro siguiente y sube
     expect(find.textContaining('No queda espacio'), findsOneWidget);
     await _cerrar(tester);
   });

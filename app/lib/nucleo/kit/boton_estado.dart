@@ -51,6 +51,7 @@ class BotonEstado extends StatefulWidget {
     this.textoHecho = 'Listo',
     this.textoError = 'No se pudo',
     this.textoCargando = 'Cargando',
+    this.alHecho,
   });
 
   final String texto;
@@ -63,6 +64,11 @@ class BotonEstado extends StatefulWidget {
   final String textoHecho;
   final String textoError;
   final String textoCargando;
+
+  /// Se llama cuando el ✓ ya se dibujó (≈0,5 s después de que termina la acción):
+  /// para seguir adelante —cerrar, pasar a otra pantalla— sin cortar el gesto.
+  /// No se llama si la acción lanzó.
+  final VoidCallback? alHecho;
 
   /// Se llama al tocar, una vez. Si lanza, el botón pasa a error. Nulo:
   /// botón apagado.
@@ -81,10 +87,12 @@ class _BotonEstadoState extends State<BotonEstado> {
   bool _ocupado = false;
   int _errores = 0;
   Timer? _vuelta;
+  Timer? _siguiente;
 
   @override
   void dispose() {
     _vuelta?.cancel();
+    _siguiente?.cancel();
     super.dispose();
   }
 
@@ -103,6 +111,13 @@ class _BotonEstadoState extends State<BotonEstado> {
       vibrarExito();
       anunciar(context, widget.textoHecho);
       setState(() => _estado = EstadoBoton.hecho);
+      if (widget.alHecho != null) {
+        // El trazo del ✓ (o su fundido, con movimiento reducido) más un respiro.
+        final trazo = context.animationsDisabled ? AppMotion.fast : AppMotion.trazoCheck;
+        _siguiente = Timer(trazo + AppMotion.micro, () {
+          if (mounted) widget.alHecho!();
+        });
+      }
     } else {
       // La sacudida ya vibra con error por su cuenta (vibrar: false abajo, y
       // aquí una sola vez para que con reducir movimiento también vibre).

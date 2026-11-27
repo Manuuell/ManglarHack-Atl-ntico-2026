@@ -4,6 +4,10 @@ import '../../datos/estado.dart';
 import '../../datos/fotos.dart';
 import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
+import '../../nucleo/base/hoja.dart';
+import '../../nucleo/base/movimiento.dart';
+import '../../nucleo/kit/boton_estado.dart';
+import '../../nucleo/kit/confirmar.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
@@ -51,6 +55,9 @@ class _FlujoReporteState extends State<FlujoReporte> {
   late final PageController _paginas = PageController(initialPage: widget.tipo == null ? 0 : 1);
   late int _paso = widget.tipo == null ? 0 : 1;
 
+  /// Lo que devolvió el guardado, para abrir la confirmación cuando el ✓ termine.
+  Reporte? _guardado;
+
   static const _pasos = ['Qué viste', 'Dónde', 'Foto', 'Detalles'];
 
   @override
@@ -94,25 +101,36 @@ class _FlujoReporteState extends State<FlujoReporte> {
   void _ir(int paso) {
     FocusScope.of(context).unfocus();
     setState(() => _paso = paso);
-    _paginas.animateToPage(paso, duration: Zm.medio, curve: Zm.entrar);
+    _paginas.animateToPage(paso, duration: context.resolveDuration(Zm.medio), curve: Zm.entrar);
   }
 
-  Future<void> _siguiente() async {
-    if (_paso < 3) {
-      _ir(_paso + 1);
-      return;
+  void _siguiente() {
+    if (_paso < 3) _ir(_paso + 1);
+  }
+
+  /// Último paso: guarda (y envía si hay señal). Lo corre el botón con su ciclo
+  /// cargando → hecho; si lanza, el botón se sacude. Un fallo de guardado no
+  /// pierde nada (el borrador sigue aquí): se ofrece reintentar y, solo si falta
+  /// espacio y hay foto, seguir sin ella.
+  Future<void> _enviar() async {
+    while (true) {
+      try {
+        _guardado = await _b.enviar();
+        return;
+      } catch (e) {
+        if (!mounted) rethrow;
+        final error = e is ErrorAlGuardar ? e : ErrorAlGuardar.de(e, conFoto: _b.foto != null);
+        final decision = await _avisarFalloGuardado(error);
+        if (decision == null) rethrow; // cerró la hoja sin elegir: el botón lo muestra
+        if (decision) _b.quitarFoto();
+      }
     }
-    vibrar(Vibracion.media);
-    final Reporte r;
-    try {
-      r = await _b.enviar();
-    } catch (e) {
-      // Casi siempre es el guardado (sin espacio en el navegador o el teléfono): se muestra
-      // el mensaje real, no uno genérico.
-      if (mounted) await _avisarFalloGuardado(e is ErrorAlGuardar ? e : ErrorAlGuardar.de(e, conFoto: _b.foto != null));
-      return;
-    }
-    if (!mounted) return;
+  }
+
+  /// El ✓ del botón ya se dibujó: se pasa a la confirmación.
+  Future<void> _irAEnviado() async {
+    final r = _guardado;
+    if (r == null || !mounted) return;
     await Navigator.of(context).pushReplacement(PageRouteBuilder<void>(
       transitionDuration: Zm.largo,
       pageBuilder: (_, _, _) => ReporteEnviado(reporteId: r.id),
@@ -120,25 +138,33 @@ class _FlujoReporteState extends State<FlujoReporte> {
     ));
   }
 
-  /// El guardado falló: nada se perdió (el borrador sigue aquí). Se ofrece reintentar y,
-  /// solo si falta espacio y hay foto, seguir sin ella (la foto es lo que más espacio pide).
-  Future<void> _avisarFalloGuardado(ErrorAlGuardar error) async {
+  /// Hoja de fallo de guardado. `true` = seguir sin foto, `false` = reintentar, nulo = cerrada.
+  Future<bool?> _avisarFalloGuardado(ErrorAlGuardar error) {
     final conFoto = _b.foto != null && error.sinEspacio;
-    final seguirSinFoto = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('No pude guardar tu reporte'),
-        content: Text(error.mensaje),
-        actions: [
-          if (conFoto) TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Seguir sin foto')),
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Reintentar')),
-        ],
-      ),
+    vibrar(Vibracion.media);
+    return mostrarHojaZ<bool>(
+      context,
+      nombre: 'FalloGuardado',
+      contenido: (ctx) {
+        final tt = Theme.of(ctx).textTheme;
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const ZankyMascota(tamano: 70, animo: Animo.preocupado),
+            const SizedBox(height: 10),
+            Text('No pude guardar tu reporte', style: tt.titleLarge, textAlign: TextAlign.center),
+            const SizedBox(height: 6),
+            Text(error.mensaje, style: tt.bodyMedium, textAlign: TextAlign.center),
+            const SizedBox(height: 18),
+            BotonZ(texto: 'Reintentar', onTap: () => Navigator.pop(ctx, false)),
+            if (conFoto) ...[
+              const SizedBox(height: 8),
+              BotonZ(texto: 'Seguir sin foto', secundario: true, onTap: () => Navigator.pop(ctx, true)),
+            ],
+          ],
+        );
+      },
     );
-    if (!mounted) return;
-    if (seguirSinFoto == true) _b.quitarFoto();
-    if (seguirSinFoto != null) await _siguiente();
   }
 
   Future<void> _cerrar() async {
@@ -147,15 +173,15 @@ class _FlujoReporteState extends State<FlujoReporte> {
     }
   }
 
-  Future<bool> _confirmarDescartar() async {
-    vibrar(Vibracion.media);
-    final r = await showDialog<bool>(
-      context: context,
-      barrierColor: const Color(0x8C0B2E24),
-      builder: (_) => const _DialogoDescartar(),
-    );
-    return r ?? false;
-  }
+  Future<bool> _confirmarDescartar() => confirmarEnHoja(
+        context,
+        titulo: '¿Descartar este reporte?',
+        texto: 'Lo que llevas no se guarda. Si algo está pasando, la CRA necesita saberlo.',
+        textoConfirmar: 'Descartar',
+        textoCancelar: 'Seguir reportando',
+        destructivo: true,
+        seguroPrimero: true,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -201,10 +227,10 @@ class _FlujoReporteState extends State<FlujoReporte> {
                   controller: _paginas,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    PasoTipo(borrador: _b, onElegido: () => _ir(1)),
-                    PasoUbicacion(borrador: _b, zonaId: widget.zonaId),
-                    PasoEvidencia(borrador: _b),
-                    PasoDetalles(borrador: _b),
+                    _PasoTransicion(controlador: _paginas, indice: 0, inicial: _paso, child: PasoTipo(borrador: _b, onElegido: () => _ir(1))),
+                    _PasoTransicion(controlador: _paginas, indice: 1, inicial: _paso, child: PasoUbicacion(borrador: _b, zonaId: widget.zonaId)),
+                    _PasoTransicion(controlador: _paginas, indice: 2, inicial: _paso, child: PasoEvidencia(borrador: _b)),
+                    _PasoTransicion(controlador: _paginas, indice: 3, inicial: _paso, child: PasoDetalles(borrador: _b)),
                   ],
                 ),
               ),
@@ -222,7 +248,10 @@ class _FlujoReporteState extends State<FlujoReporte> {
                 },
                 icono: _paso == 3 ? Icons.send_rounded : Icons.arrow_forward_rounded,
                 secundario: _paso == 2 && _b.foto == null,
-                cargando: _b.enviando,
+                ultimo: _paso == 3,
+                textoHecho: widget.estado.servidor.configurado && widget.estado.enLinea ? 'Enviado' : 'Guardado',
+                alEnviar: _enviar,
+                alHecho: _irAEnviado,
                 onTap: _puedeSeguir ? _siguiente : null,
               ),
             ],
@@ -283,10 +312,13 @@ class _Cabecera extends StatelessWidget {
                       borderRadius: BorderRadius.circular(99),
                       child: Stack(children: [
                         Container(height: 5, color: Zc.linea),
-                        AnimatedFractionallySizedBox(
-                          duration: Zm.medio,
+                        // Se llena con scaleX (transform): sin relayout por cuadro.
+                        TweenAnimationBuilder<double>(
+                          tween: Tween(end: i <= paso ? 1.0 : 0.0),
+                          duration: context.resolveDuration(Zm.medio),
                           curve: Zm.entrar,
-                          widthFactor: i <= paso ? 1 : 0,
+                          builder: (_, v, hijo) =>
+                              Transform(alignment: Alignment.centerLeft, transform: Matrix4.diagonal3Values(v, 1, 1), child: hijo),
                           child: Container(height: 5, color: Zc.hoja),
                         ),
                       ]),
@@ -336,15 +368,23 @@ class _BarraAccion extends StatelessWidget {
     required this.texto,
     required this.icono,
     required this.onTap,
+    required this.alEnviar,
+    required this.alHecho,
+    required this.textoHecho,
+    this.ultimo = false,
     this.secundario = false,
-    this.cargando = false,
   });
   final double abajo;
   final String texto;
   final IconData icono;
   final VoidCallback? onTap;
+  final Future<void> Function() alEnviar;
+  final VoidCallback alHecho;
+  final String textoHecho;
+
+  /// Último paso: el botón es [BotonEstado] (cargando → ✓ → seguir).
+  final bool ultimo;
   final bool secundario;
-  final bool cargando;
 
   @override
   Widget build(BuildContext context) {
@@ -357,45 +397,50 @@ class _BarraAccion extends StatelessWidget {
       ),
       child: SizedBox(
         width: double.infinity,
-        child: BotonZ(texto: texto, icono: icono, secundario: secundario, cargando: cargando, onTap: onTap),
+        child: ultimo
+            ? BotonEstado(
+                texto: texto,
+                icono: icono,
+                textoHecho: textoHecho,
+                textoError: 'No se guardó',
+                textoCargando: 'Guardando',
+                alPresionar: onTap == null ? null : alEnviar,
+                alHecho: alHecho,
+              )
+            : BotonZ(texto: texto, icono: icono, secundario: secundario, onTap: onTap),
       ),
     );
   }
 }
 
-class _DialogoDescartar extends StatelessWidget {
-  const _DialogoDescartar();
+/// Parallax suave entre pasos: la página que se va y la que llega se desplazan un
+/// poco menos que el dedo y se achican apenas. Solo `transform` (nada de opacidad
+/// sobre un mapa); con movimiento reducido no hace nada.
+class _PasoTransicion extends StatelessWidget {
+  const _PasoTransicion({required this.controlador, required this.indice, required this.inicial, required this.child});
+  final PageController controlador;
+  final int indice;
+  final int inicial;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    return Dialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Zr.l)),
-      // Con letra muy grande en un teléfono chico no cabe: se desplaza en vez de cortarse.
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ZankyMascota(tamano: 70, animo: Animo.preocupado),
-            const SizedBox(height: 10),
-            Text('¿Descartar este reporte?', style: tt.titleLarge, textAlign: TextAlign.center),
-            const SizedBox(height: 6),
-            Text('Lo que llevas no se guarda. Si algo está pasando, la CRA necesita saberlo.',
-                style: tt.bodyMedium, textAlign: TextAlign.center),
-            const SizedBox(height: 18),
-            BotonZ(texto: 'Seguir reportando', onTap: () => Navigator.pop(context, false)),
-            const SizedBox(height: 8),
-            BotonZ(
-              texto: 'Descartar',
-              secundario: true,
-              color: Zc.prioridad[5]!,
-              onTap: () => Navigator.pop(context, true),
-            ),
-          ],
-        ),
-      ),
+    if (context.animationsDisabled) return child;
+    return AnimatedBuilder(
+      animation: controlador,
+      child: child,
+      builder: (context, hijo) {
+        final pos = controlador.hasClients && controlador.position.haveDimensions
+            ? (controlador.page ?? inicial.toDouble())
+            : inicial.toDouble();
+        final d = (pos - indice).clamp(-1.0, 1.0);
+        if (d == 0) return hijo!;
+        final ancho = MediaQuery.sizeOf(context).width;
+        return Transform.translate(
+          offset: Offset(d * ancho * 0.18, 0),
+          child: Transform.scale(scale: 1 - 0.04 * d.abs(), child: hijo),
+        );
+      },
     );
   }
 }
