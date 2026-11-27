@@ -9,6 +9,7 @@ import MapaEnVivo from '../components/comunidad/MapaEnVivo';
 import ReportarProblema from '../components/comunidad/ReportarProblema';
 import JornadasEnVivo from '../components/comunidad/JornadasEnVivo';
 import AvisosEnVivo from '../components/comunidad/AvisosEnVivo';
+import AlertasManglar from '../components/comunidad/AlertasManglar';
 import PanelCuenta from '../components/cuenta/PanelCuenta';
 import MonitoreoComunitario from '../components/comunidad/MonitoreoComunitario.astro';
 import GuardianesManglar from '../components/comunidad/GuardianesManglar.astro';
@@ -18,6 +19,7 @@ import { PLATAFORMA, VISORES } from '../lib/navegacion';
 
 const SECCIONES_PORTADA = [
   { id: 'mapa', href: '#mapa', texto: 'Mapa en vivo' },
+  { id: 'alertas', href: '#alertas', texto: 'Alertas' },
   { id: 'reportar', href: '#reportar', texto: 'Reportar' },
   { id: 'jornadas', href: '#jornadas', texto: 'Jornadas' },
   { id: 'monitoreo', href: '#monitoreo', texto: 'Monitoreo' },
@@ -51,11 +53,20 @@ const publicos = reportes.map(aReportePublico);
           <a class="boton boton-tinta" href="#reportar" data-cuenta-reportar>Reportar un problema <span aria-hidden="true">→</span></a>
           <a class="boton boton-claro" href="#jornadas">Ver jornadas</a>
         </div>
+        <AlertasManglar client:only="react" modo="aviso" />
       </div>
       <div class="hero-envivo" id="mapa">
         <MapaEnVivo client:only="react" reportes={publicos} sectores={sectores} jornadas={jornadas}>
           <div slot="fallback" class="envivo envivo-cargando"><p>Cargando el mapa del manglar…</p></div>
         </MapaEnVivo>
+      </div>
+    </section>
+
+    <section class="panel" data-tono="arena" id="alertas">
+      <div class="panel-dentro">
+        <AlertasManglar client:only="react">
+          <div slot="fallback" class="al-cargando">Leyendo las estaciones y el pronóstico…</div>
+        </AlertasManglar>
       </div>
     </section>
 

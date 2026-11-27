@@ -139,6 +139,16 @@ La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se
 - Si la C.R.A. no responde, el mapa sigue sin sus capas y lo dice.
 - En JSON la API devuelve la geometría en EPSG:9377; usar siempre `format=geojson`. No llamar a sus rutas de escritura ni a `/users`.
 
+## Alertas del manglar (`#alertas` en la portada)
+
+- `components/comunidad/AlertasManglar.tsx` (con `styles/alertas.css`) lee `GET https://zanqui.sentralabs.co/alertas` (variable `PUBLIC_ALERTAS_URL`). Ese endpoint es el motor del bot (`bot/src/alertas/`, rama `zanqui-bot`).
+- Cada 10 minutos, el motor cruza las estaciones automáticas del IDEAM (WIS2), el pronóstico (WRF y WW3) y las tablas de marea de DIMAR, los focos de calor de la C.R.A. y la vista `reportes_publicos`.
+- Siete alertas, con nivel amarillo, naranja o rojo: mar de leva, pleamar con oleaje, lluvia fuerte, viento fuerte, riesgo de incendio, fuego cerca del manglar y varios reportes de la misma amenaza en una zona. Los umbrales están en `UMBRALES`, en `motor.ts`.
+- `modo="aviso"` es la píldora del hero. La sección muestra «Ahora» (viento, lluvia, ola máxima, próxima pleamar y calor) y una tarjeta por alerta, con qué hacer, cuándo, la fuente y «Avisar por WhatsApp».
+- «Ver un simulacro» pide `?simulacro=1`: alertas de ejemplo rotuladas SIMULACRO, con las cifras de «Ahora» reales.
+- En WhatsApp, Zanky responde a «alertas» y a «simulacro».
+- Si el servidor no responde, la sección lo dice y la píldora no aparece.
+
 ## Diseño (identidad C.R.A. modernizada)
 
 - Fondo azul institucional profundo (`bg-fondo` #082B45, `bg-fondo-alt`), tarjetas azul intermedio (`bg-superficie`, `bg-superficie-alta`), texto blanco (`text-texto`, `text-suave`, `text-tenue`), líneas finas translúcidas (`border-linea`, `border-linea-suave`). Los tokens semánticos viven en `src/styles/global.css`: no escribir hex sueltos en un componente.
