@@ -41,6 +41,7 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | `/plataforma/registro` | Registro de actor |
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
 | `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
+| `/plataforma/jornadas` | Jornadas comunitarias: cartelera con tarjetas, invitación por enlace (`?jornada=`) con inscripción y consentimiento, WhatsApp, compartir, Google Calendar, `.ics`, QR y cartel imprimible; crear jornada ligada a una acción |
 | `/plataforma/monitoreo` | Monitoreo comunitario: reportes de Zanky (app/bot/web) y fotos georreferenciadas |
 | `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada, nota conceptual) |
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
@@ -93,12 +94,14 @@ La capa de manglar de INVEMAR 2020 se importa con `?url` desde `../datos/` (por 
 
 775 ha de manglar probable en 2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Balboa 197, Totumo 148, Manatíes 742 · pérdida −34,7 ha entre 2016 y 2025 · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
 
-## Diseño (identidad C.R.A.)
+## Diseño (identidad C.R.A. modernizada)
 
-- Fondo azul institucional oscuro (`bg-fondo` #0B3A58, `bg-fondo-alt`), tarjetas azul intermedio (`bg-superficie`, `bg-superficie-alta`), texto blanco (`text-texto`, `text-suave`, `text-tenue`), líneas finas blancas translúcidas (`border-linea`, `border-linea-suave`).
-- Acento **dorado** (`dorado-500` #EDB512, `dorado-300` #F8D86F): rótulos, pestaña activa (subrayado dorado de 3 px), botones primarios (`bg-dorado-500 text-cra-950 hover:bg-dorado-300`). Azul C.R.A. `cra-950…100` (`cra-700` = #005F96).
-- Tipografía **Lato** (400/700/900). Utilidades: `titular` (900, mayúsculas, interlineado apretado), `rotulo` (12 px, 900, mayúsculas, espaciado 0.14em, normalmente `text-dorado-300`), `etiqueta-campo` (etiquetas de formulario).
-- Esquinas rectas o casi (`rounded-none`/`rounded-sm`), tablas con filetes blancos finos, campos translúcidos (`bg-white/5 border-b border-white/60`).
-- Capas: `capa-manglar` magenta (manglar probable), `capa-dosel` verde, `capa-agua` azul, `capa-recuperacion` naranja, `capa-riesgo` rojo. Plan de manejo: `plan-preservacion`, `plan-restauracion`, `plan-recuperacion`, `plan-rehabilitacion`.
-- Prioridad de reportes: semáforo `alta`/`media`/`baja`/`critica` con `-texto` y `-suave` pensados para fondo oscuro.
-- Toques de 44 px o más, letra legible al sol, estados vacío/carga/error en cada pantalla, `prefers-reduced-motion` respetado.
+- Fondo azul institucional profundo (`bg-fondo` #082B45, `bg-fondo-alt`), tarjetas azul intermedio (`bg-superficie`, `bg-superficie-alta`), texto blanco (`text-texto`, `text-suave`, `text-tenue`), líneas finas translúcidas (`border-linea`, `border-linea-suave`). Los tokens semánticos viven en `src/styles/global.css`: no escribir hex sueltos en un componente.
+- Acento **dorado** (`dorado-500` #EDB512, `dorado-300`): rótulos, pestaña activa (píldora dorada), botones primarios (`rounded-full bg-dorado-500 text-cra-950`). Azul C.R.A. `cra-950…100` (`cra-700` = #005F96).
+- Tipografía: titulares en **Figtree** (`titular`: 800, interlineado apretado, sin mayúsculas forzadas), texto en **Inter**. `rotulo` para eyebrows (mayúsculas, espaciado 0.16em, normalmente `text-dorado-300`). `resalte` para una palabra destacada del titular (píldora dorada girada). `vidrio` para la barra flotante.
+- Esquinas redondeadas: `rounded-sm` vale 14 px en toda la web; tarjetas `rounded-3xl`, paneles grandes `rounded-[2rem]`, botones y pestañas `rounded-full`.
+- Navegación: barra flotante tipo píldora (`CabeceraCRA`), pegada arriba, con «Reportar con Zanky». La plataforma usa pestañas en píldora desplazables.
+- Entrada al bajar: clase `revelar` (solo se oculta si corrió el JavaScript; respeta `prefers-reduced-motion`).
+- A 360 px nada mueve la página a lo ancho: los hijos de `.grid`/`.flex` en `main` tienen `min-width: 0` y `html, body` usan `overflow-x: clip`. Las tablas anchas van dentro de `overflow-x-auto`.
+- Capas, plan de manejo y semáforo de prioridad: igual que antes (`capa-*`, `plan-*`, `alta`/`media`/`baja`/`critica`).
+- Toques de 44 px o más, letra legible al sol, estados vacío/carga/error en cada pantalla.

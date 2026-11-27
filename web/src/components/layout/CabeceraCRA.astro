@@ -1,25 +1,35 @@
 ---
-interface Props { rotulo?: string; activo?: 'portada' | 'workflow' | 'plataforma'; }
-const { rotulo, activo } = Astro.props;
+// Barra de navegación flotante (píldora de vidrio) con el logo de la C.R.A.
+interface Props { rotulo?: string; activo?: 'portada' | 'workflow' | 'plataforma'; fija?: boolean; }
+const { rotulo, activo, fija = true } = Astro.props;
 const enlaces = [
- { id: 'portada', href: '/', texto: 'PORTADA' },
- { id: 'workflow', href: '/workflow', texto: 'WORKFLOW' },
- { id: 'plataforma', href: '/plataforma', texto: 'PLATAFORMA' },
+ { id: 'portada', href: '/', texto: 'Portada' },
+ { id: 'workflow', href: '/workflow', texto: 'Workflow' },
+ { id: 'plataforma', href: '/plataforma', texto: 'Plataforma' },
 ];
 ---
-<header class="border-b border-linea bg-fondo-alt">
- <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-  <div class="flex min-w-0 flex-wrap items-center gap-5">
-   <a href="/" class="inline-flex min-h-11 items-center"><img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" class="h-12 w-auto" /></a>
-   {rotulo && <p class="rotulo text-dorado-300">{rotulo}</p>}
-  </div>
-  <nav aria-label="Navegación principal" class="hidden gap-6 md:flex">
-   {enlaces.map(({ id, href, texto }) => <a href={href} aria-current={activo === id ? 'page' : undefined} class:list={['rotulo inline-flex min-h-11 items-center border-b-[3px] text-texto hover:text-dorado-300', activo === id ? 'border-dorado-300' : 'border-transparent']}>{texto}</a>)}
+<header class:list={['z-40 px-3 pt-3 sm:px-5', fija ? 'sticky top-0' : 'relative']}>
+ <div class="vidrio mx-auto flex max-w-7xl items-center justify-between gap-3 rounded-full py-2 pr-2 pl-4 shadow-[var(--c-sombra)] sm:pl-5">
+  <a href="/" class="inline-flex min-h-11 min-w-0 items-center gap-3">
+   <img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" class="h-8 w-auto sm:h-9" />
+   {rotulo && <span class="hidden truncate border-l border-linea pl-3 text-sm font-semibold text-suave lg:inline">{rotulo}</span>}
+  </a>
+  <nav aria-label="Navegación principal" class="hidden items-center gap-1 md:flex">
+   {enlaces.map(({ id, href, texto }) => (
+    <a href={href} aria-current={activo === id ? 'page' : undefined}
+       class:list={['inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors',
+        activo === id ? 'bg-white/12 text-texto' : 'text-suave hover:bg-white/8 hover:text-texto']}>{texto}</a>
+   ))}
+   <a href="/plataforma/monitoreo" class="ml-1 inline-flex min-h-11 items-center rounded-full bg-dorado-500 px-5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">Reportar con Zanky</a>
   </nav>
-  <details class="w-full md:hidden">
-   <summary class="rotulo min-h-11 cursor-pointer py-3 text-texto">Menú</summary>
-   <nav aria-label="Navegación móvil" class="flex flex-col items-start gap-1 pb-2">
-    {enlaces.map(({ id, href, texto }) => <a href={href} aria-current={activo === id ? 'page' : undefined} class:list={['rotulo inline-flex min-h-11 items-center border-b-[3px] px-2 text-texto hover:text-dorado-300', activo === id ? 'border-dorado-300' : 'border-transparent']}>{texto}</a>)}
+  <details class="relative md:hidden">
+   <summary class="inline-flex min-h-11 cursor-pointer list-none items-center rounded-full bg-white/10 px-4 text-sm font-semibold text-texto [&::-webkit-details-marker]:hidden">Menú</summary>
+   <nav aria-label="Navegación móvil" class="vidrio absolute right-0 mt-2 flex w-56 flex-col gap-1 rounded-3xl p-2 shadow-[var(--c-sombra-alta)]">
+    {enlaces.map(({ id, href, texto }) => (
+     <a href={href} aria-current={activo === id ? 'page' : undefined}
+        class:list={['inline-flex min-h-11 items-center rounded-2xl px-4 text-sm font-semibold', activo === id ? 'bg-white/12 text-texto' : 'text-suave hover:bg-white/8']}>{texto}</a>
+    ))}
+    <a href="/plataforma/monitoreo" class="inline-flex min-h-11 items-center justify-center rounded-2xl bg-dorado-500 px-4 text-sm font-bold text-cra-950">Reportar con Zanky</a>
    </nav>
   </details>
  </div>

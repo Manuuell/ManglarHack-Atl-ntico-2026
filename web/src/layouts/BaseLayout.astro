@@ -10,7 +10,7 @@ const { title = 'El manglar del Atlántico · C.R.A.', description = 'Monitoreo 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content={description} />
-  <meta name="theme-color" content="#0b3a58" />
+  <meta name="theme-color" content="#082b45" />
   <meta property="og:locale" content="es_CO" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
@@ -23,11 +23,23 @@ const { title = 'El manglar del Atlántico · C.R.A.', description = 'Monitoreo 
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script is:inline>document.documentElement.classList.add('js');</script>
   <title>{title}</title>
  </head>
  <body class:list={['bg-fondo text-texto font-sans', clase]}>
   <slot />
   {!sinPie && <Footer />}
+  <script is:inline>
+   // Las secciones con .revelar entran al aparecer en pantalla (una sola vez).
+   (() => {
+    const els = document.querySelectorAll('.revelar');
+    if (!('IntersectionObserver' in window)) { els.forEach((e) => e.classList.add('visto')); return; }
+    const io = new IntersectionObserver((entradas) => {
+     for (const e of entradas) if (e.isIntersecting) { e.target.classList.add('visto'); io.unobserve(e.target); }
+    }, { rootMargin: '0px 0px -8% 0px' });
+    els.forEach((e) => io.observe(e));
+   })();
+  </script>
  </body>
 </html>

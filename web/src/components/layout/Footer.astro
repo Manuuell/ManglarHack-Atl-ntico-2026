@@ -1,13 +1,20 @@
 ---
-const enlaces = [['/', 'Portada'], ['/workflow', 'Workflow'], ['/plataforma', 'Plataforma']];
+const enlaces = [['/', 'Portada'], ['/workflow', 'Workflow'], ['/plataforma', 'Plataforma'], ['/plataforma/monitoreo', 'Monitoreo comunitario'], ['/plataforma/jornadas', 'Jornadas comunitarias']];
 ---
-<footer class="border-t border-linea-suave bg-fondo-alt py-8 text-sm text-tenue">
- <div class="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
-  <p>ManglarHack Atlántico 2026 · Equipo SENTRALABS · UTB · Para la Corporación Autónoma Regional del Atlántico (C.R.A.)</p>
-  <nav aria-label="Navegación del pie de página" class="flex flex-wrap gap-x-6">
-   {enlaces.map(([href, texto]) => <a href={href} class="inline-flex min-h-11 items-center hover:text-dorado-300 hover:underline">{texto}</a>)}
-  </nav>
-  <p>Cifras: workflow de monitoreo de la C.R.A. (Sentinel-2, programa Copernicus) · Capa Nacional de Manglares INVEMAR 2020 · Mapa base © colaboradores de OpenStreetMap</p>
-  <p>Datos abiertos con licencia CC BY 4.0 · Lo rotulado «Datos de ejemplo» es de demostración · Tratamiento de datos según la Ley 1581 de 2012</p>
+<footer class="mt-16 px-3 pb-3 sm:px-5">
+ <div class="mx-auto max-w-7xl rounded-[2rem] border border-linea-suave bg-fondo-alt px-6 py-10 text-sm text-tenue sm:px-10">
+  <div class="grid gap-8 md:grid-cols-[1.4fr_1fr]">
+   <div class="space-y-4">
+    <img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" class="h-10 w-auto" />
+    <p class="max-w-md leading-relaxed text-suave">ManglarHack Atlántico 2026 · Equipo SENTRALABS · UTB · Prototipo para la Corporación Autónoma Regional del Atlántico (C.R.A.).</p>
+   </div>
+   <nav aria-label="Navegación del pie de página" class="grid grid-cols-2 gap-x-6">
+    {enlaces.map(([href, texto]) => <a href={href} class="inline-flex min-h-11 items-center font-medium text-suave hover:text-dorado-300">{texto}</a>)}
+   </nav>
+  </div>
+  <div class="mt-8 space-y-2 border-t border-linea-suave pt-6 text-xs leading-relaxed">
+   <p>Cifras: workflow de monitoreo de la C.R.A. (Sentinel-2, programa Copernicus) · Capa Nacional de Manglares INVEMAR 2020 · Mapa base © colaboradores de OpenStreetMap</p>
+   <p>Datos abiertos con licencia CC BY 4.0 · Lo rotulado «Datos de ejemplo» es de demostración · Tratamiento de datos según la Ley 1581 de 2012</p>
+  </div>
  </div>
 </footer>

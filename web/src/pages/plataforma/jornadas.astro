@@ -1,0 +1,30 @@
+---
+import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
+import CarteleraJornadas from '../../components/jornadas/CarteleraJornadas';
+import { AVISO_DATOS_PLATAFORMA, obtenerAcciones, obtenerJornadas } from '../../lib/plataforma/datos';
+
+const [jornadas, acciones] = await Promise.all([obtenerJornadas(), obtenerAcciones()]);
+---
+
+<PlataformaLayout title="Jornadas comunitarias · Plataforma abierta del manglar" activa="jornadas">
+  <CarteleraJornadas client:load jornadas={jornadas} acciones={acciones} aviso={AVISO_DATOS_PLATAFORMA} />
+</PlataformaLayout>
+
+<style is:global>
+  /* Cartel de la jornada para imprimir: solo se imprime la invitación abierta, en blanco y negro legible. */
+  @media print {
+    @page { size: A4 portrait; margin: 16mm; }
+    body * { visibility: hidden !important; }
+    #cartel-jornada, #cartel-jornada * { visibility: visible !important; }
+    #cartel-jornada {
+      display: block !important; position: fixed; inset: 0; background: #fff; color: #05243a;
+      font-family: 'Figtree', 'Inter', sans-serif; text-align: center; padding: 8mm 4mm;
+    }
+    .cartel-rotulo { font-size: 13pt; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #005f96; }
+    .cartel-titulo { font-size: 34pt; font-weight: 800; line-height: 1.05; margin: 6mm 0 6mm; }
+    .cartel-dato { font-size: 15pt; margin: 2mm 0; }
+    .cartel-qr { width: 85mm; height: 85mm; margin: 8mm auto 4mm; }
+    .cartel-qr svg { width: 100%; height: 100%; }
+    .cartel-pie { font-size: 12pt; margin-top: 3mm; }
+  }
+</style>
