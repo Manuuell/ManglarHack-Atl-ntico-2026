@@ -83,14 +83,10 @@ function haceCuanto(iso: string): string {
 }
 
 const MAX_TARJETAS = 6;
-type AlertaVista = Alerta & { simulado: boolean };
-
-/** Lo que se publica: de las alertas de la comunidad queda una sola, rotulada SIMULADO (los reportes de la
- *  demostración las generan); las de IDEAM, DIMAR y la C.R.A. van todas. Solo las 6 más recientes. */
-function publicadas(alertas: Alerta[]): AlertaVista[] {
-  const comunidad = alertas.filter((a) => a.tipo === 'amenaza_ciudadana').slice(0, 1).map((a) => ({ ...a, simulado: true }));
-  const reales = alertas.filter((a) => a.tipo !== 'amenaza_ciudadana').map((a) => ({ ...a, simulado: false }));
-  return [...reales, ...comunidad].sort((x, y) => Date.parse(y.desde) - Date.parse(x.desde)).slice(0, MAX_TARJETAS);
+/** Lo que se publica: las alertas de IDEAM, DIMAR y la C.R.A. Las de la comunidad (`amenaza_ciudadana`) no se
+ *  muestran: hoy salen de los reportes de la demostración. Solo las 6 más recientes. */
+function publicadas(alertas: Alerta[]): Alerta[] {
+  return alertas.filter((a) => a.tipo !== 'amenaza_ciudadana').sort((x, y) => Date.parse(y.desde) - Date.parse(x.desde)).slice(0, MAX_TARJETAS);
 }
 
 /** Imagen del sector donde pasa la alerta: las vistas satelitales del workflow de la C.R.A. (copia en /cra/img,
@@ -128,7 +124,7 @@ function Aviso() {
   return (
     <a className="al-pildora" data-nivel={a.nivel} href="#alertas">
       <span className="al-punto" aria-hidden="true" />
-      <span><strong>{NIVEL_TEXTO[a.nivel]}{a.simulado ? ' (simulado)' : ''}:</strong> {a.titulo}{n > 1 ? ` · y ${n - 1} más` : ''}</span>
+      <span><strong>{NIVEL_TEXTO[a.nivel]}:</strong> {a.titulo}{n > 1 ? ` · y ${n - 1} más` : ''}</span>
       <span aria-hidden="true">→</span>
     </a>
   );
@@ -157,14 +153,14 @@ function Ahora({ a }: { a: Resultado['ahora'] }) {
   );
 }
 
-function Tarjeta({ a, simulacro }: { a: AlertaVista; simulacro: boolean }) {
-  const origen = simulacro ? 'Simulacro' : a.simulado ? 'Simulado' : a.medido ? 'Medido' : 'Pronóstico';
+function Tarjeta({ a, simulacro }: { a: Alerta; simulacro: boolean }) {
+  const origen = simulacro ? 'Simulacro' : a.medido ? 'Medido' : 'Pronóstico';
   return (
     <li className="al-tarjeta" data-nivel={a.nivel}>
       <div className="al-foto">
         <img src={imagenDe(a)} alt="" loading="lazy" decoding="async" />
         <span className="al-etiqueta" data-nivel={a.nivel}>{NIVEL_TEXTO[a.nivel]}</span>
-        {(a.simulado || simulacro) && <span className="al-sello">{simulacro ? 'Simulacro' : 'Simulado'}</span>}
+        {simulacro && <span className="al-sello">Simulacro</span>}
         <span className="al-icono" aria-hidden="true">{ICONO[a.tipo]}</span>
       </div>
       <div className="al-cuerpo">
