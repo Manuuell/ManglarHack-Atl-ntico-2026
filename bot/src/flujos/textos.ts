@@ -226,7 +226,12 @@ export function guardadoSinBackend(codigo: string): string {
   );
 }
 
-export const CANCELADO = 'Listo, cancelé el reporte. Escribe *menu* cuando quieras.';
+/** Tocó un botón de un reporte que ya no está en curso (venció a los 30 minutos o ya se envió). */
+export const REPORTE_VENCIDO =
+  'Ese botón era de un reporte que ya no está en curso (se envió, se canceló o pasaron más de 30 minutos) 🙈.\n\n' +
+  'Si quieres reportar algo, toca *🚨 Reportar* y empezamos de nuevo.';
+
+export const CANCELADO ='Listo, cancelé el reporte. Escribe *menu* cuando quieras.';
 
 export const DEMASIADOS = 'Has enviado varios reportes seguidos 🙏. Espera un rato antes de enviar otro. Si hay peligro, llama al *123*.';
 

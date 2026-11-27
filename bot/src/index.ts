@@ -8,7 +8,8 @@ import { cargarAreaReporte, cargarZonas } from './geo/zonas';
 import * as almacen from './reportes/almacen';
 import { aCSV, aGeoJSON, aKML } from './reportes/datosAbiertos';
 import { esEstado } from './reportes/modelo';
-import { atender, avisarCambio } from './flujos/zanky';
+import { atender, avisarCambio, guardarSesiones } from './flujos/zanky';
+import { MapaPersistente } from './reportes/persistente';
 import { enviarReporte } from './backend/envio';
 import { backendActivo } from './backend/supabase';
 import { sondearEstados } from './backend/avisos';
@@ -58,7 +59,9 @@ app.get('/webhook', (req, res) => {
   res.sendStatus(403);
 });
 
-const vistos = new Map<string, number>();
+// Ids de mensaje ya atendidos (una hora), guardados en DATA_DIR/vistos.json: si Meta reenvía un mensaje justo
+// después de un reinicio, no se responde dos veces.
+const vistos = new MapaPersistente<number>('vistos', t => Date.now() - t < 3600_000);
 const colas = new Map<string, Promise<void>>();
 
 /** Procesa los mensajes de una misma persona en orden, uno detrás de otro. */
@@ -102,7 +105,7 @@ app.post('/webhook', (req: ConCuerpoCrudo, res: Response) => {
   // Se responde de inmediato: Meta reintenta si tardamos.
   res.sendStatus(200);
   const ahora = Date.now();
-  for (const [id, t] of vistos) if (ahora - t > 3600_000) vistos.delete(id);
+  vistos.limpiar();
   for (const m of parsearWebhook(req.body)) {
     // El número puede compartir cuenta con otros bots: solo se atiende el de Zanky.
     if (config.phoneNumberId && m.phoneNumberId !== config.phoneNumberId) {
@@ -286,6 +289,14 @@ export function iniciar(): void {
   if (backendActivo()) {
     setInterval(() => void sondearEstados().catch(err => console.warn(`[avisos] ${(err as Error).message}`)), config.sondeoEstadosMs);
     console.log(`[avisos] se pregunta por cambios de estado cada ${Math.round(config.sondeoEstadosMs / 1000)} s`);
+  }
+  // systemd manda SIGTERM al reiniciar: se guarda lo pendiente para que la conversación siga después.
+  for (const senal of ['SIGTERM', 'SIGINT'] as const) {
+    process.once(senal, () => {
+      guardarSesiones();
+      vistos.guardarYa();
+      process.exit(0);
+    });
   }
   app.listen(config.port, () => {
     console.log(`Zanky BOT escuchando en el puerto ${config.port} · ${n} zonas de manglar · ${nArea} polígonos de la cobertura C.R.A. (área de reporte)`);

@@ -10,6 +10,7 @@ import { FuenteUbicacion, MagnitudId, MomentoId, RolId, TipoId, enAtlantico, esM
 import { enviarReporte } from '../backend/envio';
 import { enlaceSeguimiento } from '../reportes/seguimiento';
 import { detectarAmenaza } from './amenaza';
+import { MapaPersistente } from '../reportes/persistente';
 import { backendActivo, estadoDeReportes } from '../backend/supabase';
 import { buscarJornada, proximasJornadas } from '../jornadas/jornadas';
 import { config as configBot } from '../config';
@@ -65,16 +66,29 @@ interface Sesion {
   registro?: Registro;
   /** Si dijo "Ahora no" al registro, no se le vuelve a ofrecer en esta conversación. */
   rechazoRegistro?: boolean;
+  /** Último botón tocado y cuándo: un doble toque no debe repetir el mismo mensaje. */
+  ultimoBoton?: { id: string; t: number };
   actualizada: number;
 }
 
-const sesiones = new Map<string, Sesion>();
+/** Un mismo botón tocado otra vez dentro de este tiempo se toma como doble toque y se ignora. */
+const DOBLE_TOQUE_MS = 15_000;
+
+// La conversación en curso de cada persona se guarda en DATA_DIR/sesiones.json, con el hash del número como
+// llave: así un reinicio o un despliegue no la corta a mitad de un reporte (antes vivía solo en memoria).
+const sesiones = new MapaPersistente<Sesion>('sesiones', s => Date.now() - s.actualizada < config.sesionTtlMs);
+
+/** Guarda en disco las sesiones pendientes (al apagar el proceso). */
+export function guardarSesiones(): void {
+  sesiones.guardarYa();
+}
 
 function sesionDe(de: string): Sesion {
-  const s = sesiones.get(de);
+  const llave = almacen.hashDe(de);
+  const s = sesiones.get(llave);
   if (s && Date.now() - s.actualizada < config.sesionTtlMs) return s;
   const nueva: Sesion = { paso: 'menu', borrador: {}, actualizada: Date.now() };
-  sesiones.set(de, nueva);
+  sesiones.set(llave, nueva);
   return nueva;
 }
 
@@ -158,7 +172,8 @@ async function empezarReporte(de: string, s: Sesion, previo: Pick<Borrador, 'tip
     return;
   }
   s.borrador = { ...previo };
-  if (previo.tipo) await whatsapp.texto(de, T.amenazaReconocida(previo.tipo));
+  // Solo cuando el tipo salió del texto de la persona (si tocó un tipo de la lista, ya sabe cuál eligió).
+  if (previo.tipo && previo.descripcion) await whatsapp.texto(de, T.amenazaReconocida(previo.tipo));
   if (!almacen.usuario(hash)) {
     ir(s, 'consentimiento');
     await whatsapp.botones(de, T.CONSENTIMIENTO.cuerpo, T.CONSENTIMIENTO.botones, undefined, T.CONSENTIMIENTO.pie);
@@ -423,10 +438,54 @@ async function conversar(de: string, texto: string): Promise<void> {
   }
 }
 
+const BOTONES_DE_REPORTE = new Set(['sin_foto', 'omitir', 'ahora', 'hoy', 'antes', 'pequena', 'mediana', 'grande', 'enviar', 'reiniciar', 'otra_ubicacion']);
+
+/**
+ * Un botón de un mensaje anterior que llega cuando la conversación ya está en el menú (la persona volvió a un
+ * mensaje viejo, o el reporte a medias venció tras 30 minutos). Se atiende con sentido en vez de repetir el menú.
+ */
+async function botonDeOtroPaso(m: MensajeEntrante, s: Sesion, opcion: string): Promise<void> {
+  const { de } = m;
+  // Un tipo de la lista «¿Qué está pasando?»: sigue el reporte con ese tipo.
+  if (esTipo(opcion)) return empezarReporte(de, s, { tipo: opcion });
+  // Los botones del consentimiento y del registro siguen valiendo.
+  if (opcion === 'acepto' || opcion === 'anonimo' || opcion === 'no_acepto') {
+    ir(s, 'consentimiento');
+    return atenderPaso(m, s);
+  }
+  if (opcion === 'registrarme' || opcion === 'reg_anonimo' || opcion === 'ahora_no') {
+    ir(s, 'registro_inicio');
+    return atenderPaso(m, s);
+  }
+  if (BOTONES_DE_REPORTE.has(opcion)) {
+    await whatsapp.botones(de, T.REPORTE_VENCIDO, T.MENU.botones);
+    return;
+  }
+  return enviarMenu(de, s);
+}
+
 /** Atiende un mensaje entrante según el paso en que va la conversación. */
 export async function atender(m: MensajeEntrante): Promise<void> {
+  const s = sesionDe(m.de);
+  if (m.entrada.tipo === 'opcion') {
+    const previo = s.ultimoBoton;
+    const ahora = Date.now();
+    if (previo && previo.id === m.entrada.id && ahora - previo.t < DOBLE_TOQUE_MS) {
+      console.log(`[flujo] doble toque de «${m.entrada.id}» ignorado`);
+      return;
+    }
+    s.ultimoBoton = { id: m.entrada.id, t: ahora };
+  }
+  try {
+    await atenderPaso(m, s);
+  } finally {
+    s.actualizada = Date.now();
+    sesiones.set(almacen.hashDe(m.de), s);
+  }
+}
+
+async function atenderPaso(m: MensajeEntrante, s: Sesion): Promise<void> {
   const { de, entrada } = m;
-  const s = sesionDe(de);
   const texto = entrada.tipo === 'texto' ? normalizar(entrada.texto) : '';
   const opcion = entrada.tipo === 'opcion' ? entrada.id : '';
 
@@ -521,6 +580,7 @@ export async function atender(m: MensajeEntrante): Promise<void> {
         await whatsapp.botones(de, '¿Qué quieres hacer?', T.MENU.botones);
         return;
       }
+      if (opcion) return botonDeOtroPaso(m, s, opcion);
       // Una pregunta o comentario libre: Zanky conversa (OpenAI) y deja a mano el menú.
       if (entrada.tipo === 'texto' && iaActiva() && entrada.texto.trim().length >= 2) return conversar(de, entrada.texto);
       return enviarMenu(de, s);

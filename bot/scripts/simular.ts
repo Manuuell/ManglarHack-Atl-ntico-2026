@@ -220,6 +220,25 @@ async function main() {
   const avisado = almacen.todos().find(r => r.id === filas[0].id);
   console.log(`Último estado avisado guardado: ${avisado?.estadoAvisado} · id público guardado: ${avisado?.idPublico === filas[0]._id_publico ? 'sí' : 'no'}`);
 
+  // 4) Lo que pasó en la prueba real: dobles toques, botones viejos y un reinicio a mitad del reporte.
+  console.log('\n\n=== Doble toque, botón viejo y conversación guardada en disco ===');
+  persona = '573005554433';
+  await correr([
+    ['toca Reportar', boton('reportar')],
+    ['toca Reportar otra vez (doble toque): no debe repetir el consentimiento', boton('reportar')],
+    ['toca Anónimo', boton('anonimo')],
+  ]);
+  const { guardarSesiones } = await import('../src/flujos/zanky');
+  guardarSesiones();
+  const guardadas = JSON.parse(fs.readFileSync(path.join(config.dataDir, 'sesiones.json'), 'utf8'));
+  const enDisco = Object.values(guardadas) as { paso: string }[];
+  console.log(`Sesiones en disco: ${enDisco.length} · pasos: ${enDisco.map(x => x.paso).join(', ')} · ¿número en claro? ${JSON.stringify(guardadas).includes(persona) ? 'SÍ (mal)' : 'no'}`);
+  await correr([
+    ['toca Cancelar', { type: 'text', text: { body: 'cancelar' } }],
+    ['toca un botón viejo «Grande» del reporte cancelado', boton('grande')],
+    ['toca un tipo de la lista vieja («Basuras»)', lista('basuras')],
+  ]);
+
   console.log('\n--- Filas que recibió el backend de prueba (todas pasaron las reglas del esquema) ---');
   for (const f of filas) console.log(JSON.stringify({ ...f, reportante_id: String(f.reportante_id).slice(0, 12) + '…' }));
   servidor.close();
