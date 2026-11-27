@@ -3,10 +3,9 @@
 // y por el camino sin gesto (acciones del lector de pantalla y botones). Más los gestos de las
 // pantallas: panel (deslizar, atajos j/k/a/r, botones a 1280x800) y Mis reportes.
 import 'package:flutter/gestures.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zanky/datos/admin/controlador_admin.dart';
@@ -54,7 +53,8 @@ void _accionDeLector(WidgetTester t, Finder f, String etiqueta) {
   final nodo = t.getSemantics(f);
   final ids = nodo.getSemanticsData().customSemanticsActionIds ?? const [];
   final id = ids.firstWhere((i) => CustomSemanticsAction.getAction(i)!.label == etiqueta);
-  RendererBinding.instance.rootPipelineOwner.semanticsOwner!.performAction(nodo.id, SemanticsAction.customAction, id);
+  // ignore: deprecated_member_use
+  t.binding.pipelineOwner.semanticsOwner!.performAction(nodo.id, SemanticsAction.customAction, id);
 }
 
 void main() {
