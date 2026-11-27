@@ -10,8 +10,9 @@ Base de datos con PostGIS, reglas de seguridad, funciones del panel y almacenami
 | Archivo | Para qué |
 |---|---|
 | `schema.sql` | Todo el esquema: tablas, trigger de recepción, auditoría, roles, RPC, RLS, storage, datos abiertos. Idempotente. |
-| `generar_zonas.mjs` | Lee `app/assets/datos/manglar_zonas.json` y escribe `zonas.sql` (`node backend/supabase/generar_zonas.mjs`). |
-| `zonas.sql` | Las 4 zonas de manglar (INVEMAR 2020, provisional) como `MultiPolygon`. Generado, ~500 KB. |
+| `generar_zonas.mjs` | Lee `app/assets/datos/manglar_zonas.json` y `prioridades_cra.json` y escribe `zonas-N.sql` y `prioridades-N.sql` en partes de ≤ 900 KB (`node backend/supabase/generar_zonas.mjs`). Es la única fuente: no hay `zonas.sql` ni `prioridades.sql` de una pieza. |
+| `zonas-1.sql` … `zonas-3.sql` | Las 4 zonas del manglar del Atlántico, capa oficial de la CRA a escala 1:5.000 (649,66 ha, 886 polígonos) como `MultiPolygon`. Generados. |
+| `prioridades-1.sql` … `prioridades-6.sql` | Prioridades de conservación de la CRA (Alta/Media/Baja): 458 filas, 9.274 polígonos. La 1 crea la tabla y la vacía; las demás solo insertan. Generados. |
 | `seed_demo.sql` | 15 reportes de **demostración** (`[DEMO] …`). Opcional; no son datos reales. |
 | `../.env.example` | Nombres de las variables. |
 
@@ -20,12 +21,65 @@ Base de datos con PostGIS, reglas de seguridad, funciones del panel y almacenami
 1. Entra a <https://supabase.com>, crea una cuenta y un proyecto nuevo (plan Free). Región cercana (p. ej. São Paulo). Guarda la
    contraseña de la base de datos en tu gestor de contraseñas, no en el repo.
 2. En **Settings → API** copia la **Project URL** y la clave **anon**. La **service_role** es secreta: solo para el bot.
-3. **SQL Editor → New query**, pega y ejecuta **en este orden** (cada uno entero):
-   1. `schema.sql`
-   2. `zonas.sql` (si el editor se queja del tamaño, pégalo por partes: cada zona es un `insert` independiente; o
-      usa `psql "$SUPABASE_DB_URL" -f zonas.sql`). Al final debe decir `zonas_cargadas = 4`.
-   3. `seed_demo.sql` (opcional, solo para demostrar). Al final muestra los reportes por zona.
-4. Si cambian los polígonos: `node backend/supabase/generar_zonas.mjs` y vuelve a pegar `zonas.sql` (hace *upsert*).
+3. **SQL Editor → New query**, pega y ejecuta **en este orden**, un archivo por consulta y cada uno entero (ninguno pasa de 900 KB,
+   que es lo que aguanta el editor; si te pide confirmar el `delete` de `prioridades-1.sql`, confírmalo: es la tabla vacía de esa carga):
+
+   | # | Archivo | Peso | Qué hace / qué debe decir al final |
+   |---|---|---|---|
+   | 1 | `schema.sql` | 56 KB | Todo el esquema. Termina sin error. |
+   | 2 | `zonas-1.sql` | 463 KB | Inserta zonas (sin comprobación al final). |
+   | 3 | `zonas-2.sql` | 612 KB | Inserta zonas. |
+   | 4 | `zonas-3.sql` | 363 KB | Última: `zonas_cargadas = 4`, `hectareas ≈ 649,7`. |
+   | 5 | `prioridades-1.sql` | 894 KB | Crea `prioridades_cra` si falta, la **vacía** e inserta. |
+   | 6 | `prioridades-2.sql` | 898 KB | Solo inserta. |
+   | 7 | `prioridades-3.sql` | 894 KB | Solo inserta. |
+   | 8 | `prioridades-4.sql` | 893 KB | Solo inserta. |
+   | 9 | `prioridades-5.sql` | 898 KB | Solo inserta. |
+   | 10 | `prioridades-6.sql` | 251 KB | Última: `filas = 458`, `poligonos = 9274`. |
+   | 11 | `seed_demo.sql` | 10 KB | Opcional, solo para demostrar: 15 reportes `[DEMO]`. Muestra los reportes por zona. |
+
+   `ia.sql` (IA en la validación) va aparte, cuando se despliegue la función (ver «IA en la validación»).
+   Las partes de `zonas-N` y `prioridades-N` se pueden repetir sin duplicar nada (zonas: *upsert*; prioridades: la parte 1 vacía y
+   las otras vuelven a llenar). Si repites prioridades, corre **todas** las partes, empezando por la 1. Si una parte se cae a la mitad,
+   vuelve a pegar desde `prioridades-1.sql`. Mientras `prioridades_cra` esté vacía, el servidor no suma la prioridad de conservación
+   (los reportes no fallan; solo les falta ese +1 en los puntos de prioridad Alta).
+4. Si cambian los polígonos: `node backend/supabase/generar_zonas.mjs` (reescribe las partes y borra las viejas) y vuelve a pegarlas en orden.
+   También sirve `psql "$SUPABASE_DB_URL" -f archivo.sql` por archivo.
+
+### Cómo comprobar que cargó
+
+En el SQL Editor (una consulta por bloque):
+
+```sql
+select count(*) as zonas from public.zonas;                                  -- 4
+select round((sum(ST_Area(geog)) / 10000)::numeric, 1) as hectareas from public.zonas;   -- ~649,7
+select count(*) as filas, sum(ST_NumGeometries(geom)) as poligonos from public.prioridades_cra;   -- 458 y 9274
+select count(*) as reportes_demo from public.reportes where descripcion like '[DEMO]%';  -- 15 (si cargaste seed_demo.sql)
+```
+
+Prueba de `crear_reporte` con un punto válido (dentro del manglar de Mallorquín; el UUID es de prueba) y otro en Bogotá:
+
+```sql
+select public.crear_reporte(jsonb_build_object(
+  'id', '99999999-0000-4000-8000-000000000001', 'tipo', 'basuras', 'lat', 11.05617, 'lon', -74.84053,
+  'capturado_en', now()::text, 'descripcion', '[PRUEBA] borrar'));
+-- debe responder {"id": ..., "nuevo": true, "id_publico": ...}; el mismo id otra vez responde "nuevo": false.
+
+select public.crear_reporte(jsonb_build_object(
+  'id', '99999999-0000-4000-8000-000000000002', 'tipo', 'basuras', 'lat', 4.65, 'lon', -74.07,
+  'capturado_en', now()::text));
+-- debe fallar: punto_fuera_del_atlantico: el punto queda fuera del departamento del Atlántico
+```
+
+Y para ver lo que calculó el servidor con el de prueba (zona, dentro del polígono y prioridad):
+
+```sql
+select zona, municipio, dentro_poligono, distancia_m, prioridad from public.reportes
+ where id = '99999999-0000-4000-8000-000000000001';
+```
+
+Para borrar la prueba, mismo procedimiento que para quitar la demostración (el historial es solo-INSERT; ver el encabezado de `seed_demo.sql`),
+cambiando el filtro por `descripcion like '[PRUEBA]%'`.
 
 ## 2. Crear el primer administrador
 
@@ -179,7 +233,9 @@ dentro_poligono,distancia_m,corroboraciones,foto_url,expediente,nota_publica,ia_
 ## 7. Pendientes y límites (dichos con honestidad)
 
 - **No se ha ejecutado contra una base real** (no hay Postgres aquí): el SQL está revisado a mano para Postgres 15 + PostGIS 3.
-  Hay que correr `schema.sql`, `zonas.sql`, `seed_demo.sql` y la prueba de punta a punta (una vez, con el proyecto real).
+  Hay que correr `schema.sql`, `zonas-N.sql`, `prioridades-N.sql`, `seed_demo.sql` y la prueba de punta a punta (una vez, con el proyecto real).
+  Lo que sí se probó: `schema.sql` corre dos veces seguidas sin error en Postgres 17 (PGlite) con un PostGIS de mentira, y la regla de prioridad
+  del trigger (alta +1, sin zonificación no suma, tabla vacía no falla); lo que **no** se probó es PostGIS de verdad ni los datos geométricos reales.
 - La **IA** (`ia_tipo_detectado`, `ia_confianza`, `ia_motivo`) está escrita pero **no desplegada ni probada contra Supabase ni contra la
   API real** (ver «IA en la validación», al final). La **prioridad** no usa viento de Open-Meteo (la app sí lo suma en su cálculo local).
 - No se quitan los metadatos EXIF de la foto en el servidor (haría falta una Edge Function). La app sí los quita al capturar
@@ -188,7 +244,9 @@ dentro_poligono,distancia_m,corroboraciones,foto_url,expediente,nota_publica,ia_
   (una fila; `nuevo` true y luego false), un punto en Bogotá (400 `punto_fuera_del_atlantico`) y que `anon` ya no pueda hacer
   `POST /rest/v1/reportes` (401/403).
 - Anónimos sin límite en base (ver 7 arriba).
-- Los polígonos son la capa INVEMAR 2020 (provisional) y las prioridades de conservación, provisionales hasta validarlas con los mentores.
+- Los polígonos del manglar son la capa oficial de la CRA a escala 1:5.000 (imágenes 2021-2022, verificación en campo) y las prioridades de
+  conservación son las de la CRA (Alta/Media/Baja); el peso de cada una en la prioridad del reporte (+1 solo si es Alta) sigue siendo provisional
+  hasta validarlo con los mentores.
 
 
 ## 8. IA en la validación
