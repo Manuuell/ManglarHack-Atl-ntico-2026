@@ -30,6 +30,7 @@ import '../contenido/bloques_contenido.dart';
 import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../admin/contenido/franja_portada.dart';
+import '../configuracion/pantalla_configuracion.dart' show BotonConfiguracion;
 import '../guardian/editar_perfil.dart';
 import '../comunidad/comunidad_inicio.dart';
 import '../comunidad/feed_y_eventos.dart' show recargaComunidadInicio;
@@ -342,6 +343,9 @@ class _InicioState extends State<Inicio> {
                   ),
                 ),
                 const CampanaAvisos(),
+                const SizedBox(width: 8),
+                // Engranaje junto a Zanky (decisión de Ángel): abre Configuración y gestión.
+                const BotonConfiguracion(),
                 const SizedBox(width: 4),
                 ZankyMascota(
                   tamano: 74,
