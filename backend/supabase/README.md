@@ -59,14 +59,16 @@ usa el JWT del usuario. **La `service_role` nunca va en la web ni en la app.**
 
 | Quién | Puede | No puede |
 |---|---|---|
-| **Cualquiera** (clave anon) | Crear un reporte; subir `evidencias/<uuid>.jpg`; consultar el estado de **sus** ids; leer la vista `reportes_publicos`; bajar datos abiertos; leer las zonas | Leer la tabla `reportes`, ver fotos, ver descripciones, ver quién reportó |
+| **Cualquiera** (clave anon) | Crear un reporte (solo con `crear_reporte`); subir `evidencias/<uuid>.jpg`; consultar el estado de **sus** ids; leer la vista `reportes_publicos`; bajar datos abiertos; leer las zonas | Leer la tabla `reportes`, ver fotos, ver descripciones, ver quién reportó |
 | **vigia** | Leer la cola de reportes; `en_verificacion` y `verificado`; ver fotos y fichas (auditado) | Alerta oficial, descartar, ver el reportante, gestionar roles |
 | **moderador_cra** | Todo el flujo de estados, descartar, abrir expediente, ver el reportante (auditado) | Gestionar roles, leer la auditoría |
 | **admin** | Todo lo anterior + roles + leer la auditoría | Modificar o borrar la auditoría (nadie puede) |
 | **aliado** | Nada de reportes | — |
 
-Lo que nunca sale al público: descripción, foto, `foto_hash`, `reportante_id`, metadatos de foto, coordenadas exactas
-(la vista las redondea a 3 decimales, unos 110 m).
+Lo que nunca sale al público: el **id interno** del reporte (con él se consulta el estado y de él sale el número de caso
+ZK-XXXX), descripción, foto, `foto_hash`, `reportante_id`, metadatos de foto, coordenadas exactas (la vista las redondea a
+3 decimales, unos 110 m) y la hora exacta (la vista la da en punto). La vista y los datos abiertos usan `id_publico`, otro UUID al
+azar sin relación con el id interno.
 
 ## 5. RPC y endpoints
 
@@ -74,9 +76,9 @@ Con `SUPABASE_URL` y `ANON` como variables de entorno (nunca pegues los valores 
 
 | Qué | Quién | Llamada |
 |---|---|---|
-| Crear reporte | anon | `POST /rest/v1/reportes` |
+| `crear_reporte(p jsonb)` | anon | `POST /rest/v1/rpc/crear_reporte` con `{"p": {...}}` → `{id, nuevo, id_publico}` |
 | Subir foto | anon | `POST /storage/v1/object/evidencias/<id>.jpg` |
-| `estado_de_reportes(ids)` | anon | `POST /rest/v1/rpc/estado_de_reportes` |
+| `estado_de_reportes(ids)` | anon | `POST /rest/v1/rpc/estado_de_reportes` (devuelve también `id_publico`) |
 | `reportes_publicos` | anon | `GET /rest/v1/reportes_publicos` |
 | `datos_abiertos_geojson()` | anon | `POST /rest/v1/rpc/datos_abiertos_geojson` |
 | `datos_abiertos_kml()` | anon | `POST /rest/v1/rpc/datos_abiertos_kml` |
@@ -93,11 +95,12 @@ Los parámetros de las RPC del panel llevan prefijo `p_` (para no chocar con los
 
 ```bash
 # Crear un reporte (lo que hace la app). El servidor recalcula zona, prioridad, estado y hora de recepción.
-curl -s -X POST "$SUPABASE_URL/rest/v1/reportes" \
-  -H "apikey: $ANON" -H "Authorization: Bearer $ANON" \
-  -H "Content-Type: application/json" -H "Prefer: resolution=ignore-duplicates,return=minimal" \
-  -d '{"id":"11111111-2222-4333-8444-555555555555","canal":"web","tipo":"tala","descripcion":"Prueba",
-       "lat":11.056,"lon":-74.84,"capturado_en":"2026-11-27T15:00:00Z","momento":"ahora","magnitud":"pequena"}'
+# Responde 200 {"id":..., "nuevo": true|false, "id_publico": ...}. Repetirlo da nuevo=false y una sola fila.
+# Un dato inválido da 400 con «motivo: explicación» (p. ej. punto_fuera_del_atlantico): la app no lo reintenta.
+curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/crear_reporte" \
+  -H "apikey: $ANON" -H "Authorization: Bearer $ANON" -H "Content-Type: application/json" \
+  -d '{"p":{"id":"11111111-2222-4333-8444-555555555555","canal":"web","tipo":"tala","descripcion":"Prueba",
+       "lat":11.056,"lon":-74.84,"capturado_en":"2026-11-27T15:00:00Z","momento":"ahora","magnitud":"pequena"}}'
 
 # Estado de mis reportes (máx. 100 ids)
 curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/estado_de_reportes" \
@@ -109,7 +112,7 @@ curl -s "$SUPABASE_URL/rest/v1/reportes_publicos?select=*&order=capturado_en.des
   -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
 
 # Datos abiertos: CSV (directo de PostgREST), GeoJSON y KML (licencia CC BY 4.0)
-curl -s "$SUPABASE_URL/rest/v1/reportes_publicos?select=id,capturado_en,tipo,municipio,zona,prioridad,estado,lat,lon,canal" \
+curl -s "$SUPABASE_URL/rest/v1/reportes_publicos?select=id_publico,capturado_en,tipo,municipio,zona,prioridad,estado,lat,lon,canal" \
   -H "apikey: $ANON" -H "Authorization: Bearer $ANON" -H "Accept: text/csv" -o zanky_reportes.csv
 curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/datos_abiertos_geojson" \
   -H "apikey: $ANON" -H "Authorization: Bearer $ANON" -o zanky_reportes.geojson
@@ -147,11 +150,15 @@ dentro_poligono,distancia_m,corroboraciones,foto_url,expediente,nota_publica,ia_
    mismo (nadie puede listar quién es admin).
 2. **El servidor no se fía del cliente.** El trigger `BEFORE INSERT` recalcula zona, municipio, `dentro_poligono`, `distancia_m`,
    `prioridad`, `corroboraciones`; fuerza `estado='recibido'` y `recibido_en=now()`; anula `ia_*`, `expediente` y `nota_publica`;
-   acota la `confianza` (máx. 80 del teléfono, +10 por corroboración); solo acepta `foto_url = evidencias/<su id>.jpg`. Además,
-   `anon` solo tiene permiso de INSERT sobre las 23 columnas del contrato.
+   acota la `confianza` (máx. 80 del teléfono, +10 por corroboración); solo acepta `foto_url = evidencias/<su id>.jpg`; recorta la
+   descripción a 1000 puntos de código y corrige a `now()` una hora de captura en el futuro o anterior a 2020. Además, `anon` **no
+   tiene ningún permiso sobre la tabla**: crea reportes solo con `crear_reporte(p jsonb)` (SECURITY DEFINER, `search_path` fijo), que
+   valida el contrato e inserta con `ON CONFLICT (id) DO NOTHING`. Antes se insertaba directo con `Prefer: resolution=ignore-duplicates`:
+   ese `ON CONFLICT` exige SELECT y, con SELECT, Postgres aplica las políticas SELECT de RLS a la fila nueva; como `anon` no tiene
+   ninguna, todo reporte fallaba con 42501.
 3. **El público solo escribe.** No hay política de SELECT para `anon` en `reportes`. Lo público sale de una vista (`reportes_publicos`)
-   sin descripción, foto ni reportante, con coordenadas a ~110 m y sin descartados. Los ids de reporte son UUID: `estado_de_reportes`
-   solo responde por los que se le pasan (máx. 100).
+   sin id interno, descripción, foto ni reportante, con coordenadas a ~110 m, hora en punto y sin descartados. Los ids internos son
+   UUID que no se publican en ninguna parte: `estado_de_reportes` solo responde por los que se le pasan (máx. 100).
 4. **Auditoría solo-INSERT.** Sin permisos de UPDATE/DELETE para nadie por la API, y un trigger impide modificar o borrar (ni el
    dueño por error). Registra quién, qué, sobre qué, cuándo y detalle, incluidos `miro_foto`, `miro_reporte` y `miro_reportante`.
    Las funciones del panel auditan **dentro de la misma transacción**: si la auditoría falla, la acción no ocurre.
@@ -164,7 +171,7 @@ dentro_poligono,distancia_m,corroboraciones,foto_url,expediente,nota_publica,ia_
    (`reportante_id` nulo) no se limitan en la base**: ese límite va en el borde (reglas de tasa por IP de Cloudflare, o una Edge Function
    delante). Un `reportante_id` lo elige el cliente, así que es un freno suave, no una defensa contra un atacante decidido; la defensa
    real es que **una persona decide** antes de cualquier alerta oficial.
-8. **Reintentos sin duplicar.** El `id` lo genera el teléfono; un reintento se ignora en silencio y no gasta el límite.
+8. **Reintentos sin duplicar.** El `id` lo genera el teléfono; un reintento responde `nuevo: false`, no duplica y no gasta el límite.
 9. **Roles mínimos.** El vigía solo llega a `verificado`; descartar y abrir expediente son del moderador/admin; el aliado no ve reportes.
 10. **Protección del que denuncia.** Anónimo real (`reportante_id` se borra si `anonimo`), `reportante_id` fuera de la lectura del panel
     salvo `ver_reportante()` (auditado), coordenadas a 3 decimales en lo público.
@@ -175,7 +182,11 @@ dentro_poligono,distancia_m,corroboraciones,foto_url,expediente,nota_publica,ia_
   Hay que correr `schema.sql`, `zonas.sql`, `seed_demo.sql` y la prueba de punta a punta (una vez, con el proyecto real).
 - La **IA** (`ia_tipo_detectado`, `ia_confianza`, `ia_motivo`) está escrita pero **no desplegada ni probada contra Supabase ni contra la
   API real** (ver «IA en la validación», al final). La **prioridad** no usa viento de Open-Meteo (la app sí lo suma en su cálculo local).
-- No se quitan los metadatos EXIF de la foto en el servidor (haría falta una Edge Function): la app debe quitarlos al capturar.
+- No se quitan los metadatos EXIF de la foto en el servidor (haría falta una Edge Function). La app sí los quita al capturar
+  (`app/lib/datos/metadatos_foto.dart`) y también de fotos viejas al subirlas; otro cliente (web propia, bot) debe hacerlo él.
+- `crear_reporte` y la vista con `id_publico` **no se han ejecutado** contra Postgres: hay que probar el `curl` dos veces con el mismo id
+  (una fila; `nuevo` true y luego false), un punto en Bogotá (400 `punto_fuera_del_atlantico`) y que `anon` ya no pueda hacer
+  `POST /rest/v1/reportes` (401/403).
 - Anónimos sin límite en base (ver 7 arriba).
 - Los polígonos son la capa INVEMAR 2020 (provisional) y las prioridades de conservación, provisionales hasta validarlas con los mentores.
 
