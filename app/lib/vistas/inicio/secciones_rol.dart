@@ -562,7 +562,8 @@ class SeccionJornadas extends StatelessWidget {
         // La que «Próximo evento» ya muestra en grande no se repite aquí.
         valueListenable: proximoEventoMostrado,
         builder: (context, yaArriba, _) {
-          final saltar = org ? null : yaArriba;
+          // Solo se salta (y se retitula) si de verdad está en esta lista.
+          final saltar = (org || todas == null || !todas.any((j) => j.id == yaArriba)) ? null : yaArriba;
           final lista = todas?.where((j) => j.id != saltar).toList();
           if (saltar != null && lista != null && lista.isEmpty) {
             return const SizedBox(width: double.infinity);
