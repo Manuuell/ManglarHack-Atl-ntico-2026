@@ -3,6 +3,7 @@ import { crearAlmacen } from './almacen';
 import { TIPOS_ACTOR, PAPELES, SECTORES, TIPOS_ACCION, TRANSICIONES_ACCION, REQUERIMIENTOS_POR_TIPO, puede } from './catalogos';
 import { heredarPlan } from './geo';
 import { useSincronizarJornadas } from './jornadasApi';
+import { useSincronizarPropuestasBot } from './propuestasBot';
 
 export const actores = crearAlmacen<Actor[]>('actores');
 export const acciones = crearAlmacen<Accion[]>('acciones');
@@ -13,7 +14,7 @@ export const monitoreos = crearAlmacen<ReporteMonitoreo[]>('monitoreos');
 export const rolDemo = crearAlmacen<Rol>('rolDemo');
 const SIN_INSCRIPCIONES: Inscripcion[] = [];
 export const useActores = (iniciales: Actor[]) => actores.usar(iniciales);
-export const useAcciones = (iniciales: Accion[]) => acciones.usar(iniciales);
+export const useAcciones = (iniciales: Accion[]) => { const lista = acciones.usar(iniciales); useSincronizarPropuestasBot(); return lista; };
 export const useCambiosAccion = (iniciales: CambioAccion[]) => cambiosAccion.usar(iniciales);
 // Las jornadas viven en el servidor de Zanky: quien las usa las recibe al día (ver jornadasApi.ts).
 export const useJornadas = (iniciales: Jornada[]) => { useSincronizarJornadas(); return jornadas.usar(iniciales); };
@@ -23,7 +24,8 @@ export const useRolDemo = () => rolDemo.usar('moderador');
 
 export type Resultado<T extends object> = ({ ok: true } & T) | { ok: false; errores: Record<string, string> };
 type DatosActor = Omit<Actor, 'id' | 'verificado' | 'creado_en'>;
-export type DatosAccion = Omit<Accion, 'id' | 'estado' | 'observaciones' | 'creada_en' | 'requerimientos' | 'accion_plan' | 'prioridad_plan' | 'plan_aproximado'> & {
+export type DatosAccion = Omit<Accion, 'id' | 'estado' | 'observaciones' | 'creada_en' | 'requerimientos' | 'accion_plan' | 'prioridad_plan' | 'plan_aproximado' | 'sector' | 'codigo_bot' | 'canal' | 'proponente' | 'tipo_actor'> & {
+  sector: NonNullable<Accion['sector']>;
   requerimientos?: Requerimiento[];
   requerimientos_cumplidos?: string[];
   /** Plan leído de la capa de la C.R.A. en el sitio; sin él se usa el respaldo por sector. */
@@ -96,7 +98,6 @@ export function inscribirseEnJornada(jornada_id: string, nombre: string): Result
   if (!jornada) return fallar({ jornada_id: 'No se encontró la jornada.' });
   inscripciones.inicializar(SIN_INSCRIPCIONES);
   if (inscripciones.obtener().some((item) => item.jornada_id === jornada_id)) return fallar({ jornada_id: 'Ya estás inscrito en esta jornada desde este navegador. ¡Te esperamos!' });
-  if (jornada.inscritos >= jornada.cupos) return fallar({ cupos: 'Esta jornada ya no tiene cupos disponibles.' });
   const inscripcion: Inscripcion = { id: crypto.randomUUID(), jornada_id, nombre: nombre.trim(), fecha: new Date().toISOString() };
   jornadas.establecer((previo) => previo.map((item) => item.id === jornada_id ? { ...item, inscritos: item.inscritos + 1 } : item));
   inscripciones.establecer((previo) => [...previo, inscripcion]);

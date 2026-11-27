@@ -1,6 +1,7 @@
 // Reporte de monitoreo de una acción con fotografías ubicadas.
 // Se monta con client:only="react" (usa Leaflet y APIs del navegador).
 import 'leaflet/dist/leaflet.css';
+import '../../lib/popupsQueCaben';
 import '../../styles/mapa.css';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { divIcon, latLngBounds } from 'leaflet';
@@ -221,7 +222,7 @@ export default function ReporteMonitoreo({ acciones: accionesIniciales, monitore
             <label className="block">
               <span className="etiqueta-campo">Acción</span>
               <select id="monitoreo-accion_id" value={accionId} onChange={(e) => setAccionId(e.target.value)} className={campo} aria-invalid={!!errores.accion_id} aria-describedby={errores.accion_id ? 'error-accion_id' : undefined}>
-                {elegibles.map((a) => <option key={a.id} value={a.id} className="bg-cra-900">{a.nombre} · {SECTORES[a.sector].nombre}</option>)}
+                {elegibles.map((a) => <option key={a.id} value={a.id} className="bg-cra-900">{a.nombre} · {a.sector ? SECTORES[a.sector].nombre : 'Sin sector confirmado'}</option>)}
               </select>
               {error('accion_id')}
             </label>
@@ -314,7 +315,7 @@ export default function ReporteMonitoreo({ acciones: accionesIniciales, monitore
               <AlHacerClic activo={marcando !== null} alMarcar={marcarEnMapa} />
               {elegibles.map((a) => (
                 <Marker key={a.id} position={[a.lat, a.lon]} icon={iconoAccion} title={a.nombre}>
-                  <Popup><strong>{a.nombre}</strong><br />{SECTORES[a.sector].largo}</Popup>
+                  <Popup><strong>{a.nombre}</strong><br />{a.sector ? SECTORES[a.sector].largo : 'Sin sector confirmado'}</Popup>
                 </Marker>
               ))}
               {fotos.filter((f) => f.lat !== null && f.lon !== null).map((f) => (

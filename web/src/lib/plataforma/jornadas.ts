@@ -11,11 +11,16 @@ export const fmt = {
   larga: (iso: string) => new Intl.DateTimeFormat('es-CO', { ...zona, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso)),
 };
 
-/** Enlace público de la invitación: abre la ficha de la jornada. */
+/** Enlace público de la invitación: abre la ficha de la jornada. Los enlaces viejos
+ *  (/plataforma/jornadas?jornada=<id>, en QR ya impresos y en el bot) redirigen a este. */
 export function urlInvitacion(id: string): string {
   const base = typeof window === 'undefined' ? '' : window.location.origin;
-  return `${base}/plataforma/jornadas?jornada=${encodeURIComponent(id)}`;
+  return `${base}/plataforma/jornada?id=${encodeURIComponent(id)}`;
 }
+
+/** Las jornadas no tienen límite de cupos. El servidor de Zanky todavía pide un número entre 1 y
+ *  5.000 al crear una jornada: se manda el máximo, que en la práctica es «sin límite». */
+export const CUPOS_SIN_LIMITE = 5000;
 
 // La experiencia «Interactúa con Zanky» es la versión web de la app (en /app/ del mismo sitio): en la
 // jornada la gente registra su asistencia, habla con Zanky, hace el reto del manglar y reporta.

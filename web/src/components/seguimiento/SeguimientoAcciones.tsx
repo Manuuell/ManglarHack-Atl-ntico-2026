@@ -30,8 +30,6 @@ function TarjetaJornada({ jornada, accion, resaltada, inscrito }: { jornada: Jor
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
   const Icono = TIPOS_JORNADA[jornada.tipo].icono;
-  const libres = Math.max(0, jornada.cupos - jornada.inscritos);
-  const lleno = libres === 0;
   const pasada = Date.parse(jornada.fin) < Date.now();
   const url = typeof window === 'undefined' ? `/plataforma/seguimiento?jornada=${jornada.id}` : `${window.location.origin}/plataforma/seguimiento?jornada=${jornada.id}`;
 
@@ -60,8 +58,7 @@ function TarjetaJornada({ jornada, accion, resaltada, inscrito }: { jornada: Jor
         </div>
       </div>
       <div className="px-4">
-        <div className="flex items-center justify-between text-xs text-suave"><span className="flex items-center gap-1"><Users className="size-3.5" aria-hidden="true" />{jornada.inscritos} de {jornada.cupos} inscritos</span><span>{lleno ? 'Cupos agotados' : `${libres} cupos libres`}</span></div>
-        <div className="mt-1 h-1.5 bg-white/10" role="meter" aria-valuemin={0} aria-valuemax={jornada.cupos} aria-valuenow={jornada.inscritos} aria-label="Cupos ocupados"><div className="h-full bg-dorado-400" style={{ width: `${Math.min(100, (jornada.inscritos / Math.max(1, jornada.cupos)) * 100)}%` }} /></div>
+        <div className="flex items-center justify-between text-xs text-suave"><span className="flex items-center gap-1"><Users className="size-3.5" aria-hidden="true" />{jornada.inscritos} {jornada.inscritos === 1 ? 'inscrito' : 'inscritos'}</span><span>Sin límite de cupos</span></div>
         {jornada.que_llevar.length > 0 && (
           <details className="mt-2 text-xs text-suave"><summary className="inline-flex min-h-9 cursor-pointer items-center font-bold uppercase tracking-wider hover:text-texto">Qué llevar</summary><ul className="ml-4 list-disc pb-1">{jornada.que_llevar.map((x) => <li key={x}>{x}</li>)}</ul></details>
         )}
@@ -76,7 +73,7 @@ function TarjetaJornada({ jornada, accion, resaltada, inscrito }: { jornada: Jor
             <button type="submit" className="min-h-11 bg-dorado-500 px-4 text-xs font-black uppercase text-cra-950 hover:bg-dorado-300">Confirmar</button>
           </form>
         ) : (
-          <button type="button" disabled={lleno || pasada} onClick={() => setAbierto(true)} className="min-h-11 bg-dorado-500 text-xs font-black uppercase tracking-[0.08em] text-cra-950 hover:bg-dorado-300 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-tenue">{pasada ? 'Jornada realizada' : lleno ? 'Sin cupos' : 'Inscribirme'}</button>
+          <button type="button" disabled={pasada} onClick={() => setAbierto(true)} className="min-h-11 bg-dorado-500 text-xs font-black uppercase tracking-[0.08em] text-cra-950 hover:bg-dorado-300 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-tenue">{pasada ? 'Jornada realizada' : 'Inscribirme'}</button>
         )}
         <div className="grid grid-cols-3 gap-2">
           <a href={enlaceInvitacionWhatsApp(jornada, url)} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center justify-center gap-1 border border-white/40 text-[11px] font-bold uppercase hover:border-dorado-300 hover:text-dorado-300" aria-label={`Invitar por WhatsApp a ${jornada.titulo}`}><MessageCircle className="size-3.5" aria-hidden="true" />Invitar</a>
@@ -122,7 +119,7 @@ export default function SeguimientoAcciones(props: Props) {
 
   const filtradas = filtro === 'todas' ? acciones : acciones.filter((a) => a.estado === filtro);
   const accion = acciones.find((a) => a.id === seleccion) ?? null;
-  const actorDe = (id: string) => actores.find((a) => a.id === id)?.nombre ?? 'Actor no disponible';
+  const actorDe = (a: Accion) => a.proponente || actores.find((actor) => actor.id === a.actor_id)?.nombre || 'Actor no disponible';
   const linea = useMemo(() => (accion ? cambios.filter((c) => c.accion_id === accion.id).sort((x, y) => x.fecha.localeCompare(y.fecha)) : []), [accion, cambios]);
   const ahora = new Date().toISOString();
   const proximas = [...jornadas].sort((a, b) => a.inicio.localeCompare(b.inicio));
@@ -149,8 +146,8 @@ export default function SeguimientoAcciones(props: Props) {
                   {filtradas.map((a) => (
                     <tr key={a.id} className={cn('border-b border-white/25', seleccion === a.id && 'bg-white/10')}>
                       <td className="py-2 pr-3 font-bold">{a.nombre}</td>
-                      <td className="py-2 pr-3 text-suave">{actorDe(a.actor_id)}</td>
-                      <td className="py-2 pr-3 text-suave">{ACCIONES_PLAN[a.accion_plan].etiqueta}{a.prioridad_plan ? ` · ${NIVEL[a.prioridad_plan]}` : ''}</td>
+                      <td className="py-2 pr-3 text-suave">{actorDe(a)}</td>
+                      <td className="py-2 pr-3 text-suave">{a.accion_plan ? ACCIONES_PLAN[a.accion_plan].etiqueta : 'Pendiente de verificar'}{a.prioridad_plan ? ` · ${NIVEL[a.prioridad_plan]}` : ''}</td>
                       <td className="py-2 pr-3"><Chip estado={a.estado} /></td>
                       <td className="py-2"><button type="button" onClick={() => ver(a.id)} className="min-h-11 px-3 text-xs font-black uppercase tracking-wider text-dorado-300 hover:underline" aria-label={`Ver detalle de ${a.nombre}`}>Ver</button></td>
                     </tr>
@@ -171,11 +168,11 @@ export default function SeguimientoAcciones(props: Props) {
                 <div className="mt-2"><Chip estado={accion.estado} /></div>
               </div>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
-                <div><dt className="etiqueta-campo text-suave">Actor</dt><dd>{actorDe(accion.actor_id)}</dd></div>
-                <div><dt className="etiqueta-campo text-suave">Sector</dt><dd>{SECTORES[accion.sector].largo}</dd></div>
-                <div><dt className="etiqueta-campo text-suave">Hectáreas</dt><dd>{accion.hectareas.toLocaleString('es-CO')} ha</dd></div>
+                <div><dt className="etiqueta-campo text-suave">Actor</dt><dd>{actorDe(accion)}</dd></div>
+                <div><dt className="etiqueta-campo text-suave">Sector</dt><dd>{accion.sector ? SECTORES[accion.sector].largo : 'Pendiente de verificar'}</dd></div>
+                <div><dt className="etiqueta-campo text-suave">Hectáreas</dt><dd>{accion.canal === 'whatsapp' ? 'Sin informar' : `${accion.hectareas.toLocaleString('es-CO')} ha`}</dd></div>
                 <div><dt className="etiqueta-campo text-suave">Sitio</dt><dd>{accion.lat.toFixed(5)}, {accion.lon.toFixed(5)}</dd></div>
-                <div className="col-span-2"><dt className="etiqueta-campo text-suave">Plan de manejo heredado</dt><dd>{ACCIONES_PLAN[accion.accion_plan].etiqueta}{accion.prioridad_plan ? ` · prioridad ${NIVEL[accion.prioridad_plan].toLowerCase()}` : ''}{accion.plan_aproximado ? ' (aproximado)' : ' · capa de prioridades de la C.R.A.'}</dd></div>
+                <div className="col-span-2"><dt className="etiqueta-campo text-suave">Plan de manejo</dt><dd>{accion.accion_plan ? ACCIONES_PLAN[accion.accion_plan].etiqueta : 'Pendiente de verificar'}{accion.prioridad_plan ? ` · prioridad ${NIVEL[accion.prioridad_plan].toLowerCase()}` : ''}{accion.accion_plan ? (accion.plan_aproximado ? ' (aproximado)' : ' · capa de prioridades de la C.R.A.') : ''}</dd></div>
                 {accion.comunidad_coparticipante && <div className="col-span-2"><dt className="etiqueta-campo text-suave">Comunidad coparticipante</dt><dd>{accion.comunidad_coparticipante}</dd></div>}
               </dl>
               {accion.descripcion && <p className="text-suave">{accion.descripcion}</p>}

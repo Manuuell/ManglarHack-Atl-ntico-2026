@@ -2,10 +2,11 @@
 // referencia, sectores, acciones y reportes ciudadanos. Solo cliente
 // (client:only="react"): importa Leaflet.
 import 'leaflet/dist/leaflet.css';
+import '../../lib/popupsQueCaben';
 import '../../styles/mapa.css';
 import { useEffect, useMemo, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { divIcon, geoJSON, type Layer, type LeafletMouseEvent, type PathOptions } from 'leaflet';
+import { divIcon, geoJSON, svg, type Layer, type LeafletMouseEvent, type PathOptions } from 'leaflet';
 import { CircleMarker, GeoJSON, MapContainer, Marker, Pane, Popup, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import type { Feature, Geometry } from 'geojson';
 import type { CapaPrioridades, PropiedadesPrioridad, ReportePublico, ZonasManglar } from '../../types/manglar';
@@ -74,6 +75,12 @@ export default function MapaPlataforma({ zonas, acciones = [], reportes = [], mo
   const [plan, setPlan] = useState<EstadoCapa<CapaPrioridades>>({ estado: 'cargando' });
   const [manglar, setManglar] = useState<EstadoCapa<Awaited<ReturnType<typeof obtenerCapaManglarCRA>>>>({ estado: 'cargando' });
   const [ver, setVer] = useState({ plan: true, manglar: true, sectores: true, acciones: true, reportes: true });
+  // Con preferCanvas, cada panel lleva un lienzo del tamaño del mapa, y el de más arriba se queda
+  // con todos los clics: la ventana del plan no se abría nunca. Solo el plan (el panel más bajo)
+  // usa lienzo con clics; los paneles de encima no reciben el puntero, y sectores y reportes van
+  // en SVG, donde solo el trazo interactivo lo atrapa.
+  const enSvgSectores = useMemo(() => ({ renderer: svg({ pane: 'sectores' }) }), []);
+  const svgReportes = useMemo(() => svg({ pane: 'reportes' }), []);
 
   useEffect(() => {
     let vivo = true;
@@ -135,33 +142,36 @@ export default function MapaPlataforma({ zonas, acciones = [], reportes = [], mo
               <GeoJSON data={plan.capa} style={estiloPlan as (f?: Feature) => PathOptions} interactive={!marcar} onEachFeature={marcar ? undefined : (popupPlan as (f: Feature, l: Layer) => void)} />
             )}
           </Pane>
-          <Pane name="manglar" style={{ zIndex: 350 }}>
+          <Pane name="manglar" style={{ zIndex: 350, pointerEvents: 'none' }}>
             {ver.manglar && manglar.estado === 'lista' && (
               <GeoJSON data={manglar.capa} interactive={false} style={{ color: '#f0abfc', weight: 0.8, fillColor: '#d946ef', fillOpacity: 0.55 }} />
             )}
           </Pane>
-          <Pane name="sectores" style={{ zIndex: 360 }}>
+          <Pane name="sectores" style={{ zIndex: 360, pointerEvents: 'none' }}>
+            {/* Sin relleno: el nombre del sector sale al pasar por su borde y el interior deja pasar el clic al plan. */}
             {ver.sectores && zonas.features.map((z) => (
-              <GeoJSON key={z.properties.id} data={z} interactive={!marcar} style={{ color: '#ffffff', weight: 1.5, dashArray: '6 4', fillOpacity: 0 }}>
+              <GeoJSON key={z.properties.id} {...enSvgSectores} data={z} interactive={!marcar} style={{ color: '#ffffff', weight: 1.5, dashArray: '6 4', fill: false }}>
                 {!marcar && <Tooltip sticky>{SECTORES[z.properties.id as keyof typeof SECTORES]?.largo ?? z.properties.nombre}</Tooltip>}
               </GeoJSON>
             ))}
           </Pane>
-          {ver.reportes && reportes.filter(enAreaDeReporte).map((r) => (
-            <CircleMarker key={r.id} center={[r.lat, r.lon]} radius={6} interactive={!marcar} pathOptions={{ color: '#ffffff', weight: 1.5, fillColor: PRIORIDADES[nivelPrioridad(r.prioridad)].color, fillOpacity: 0.95 }}>
-              <Popup>
-                <strong>{TIPOS[r.tipo].etiquetaLarga}</strong><br />
-                {r.zona ?? 'Fuera de sector'} · {ESTADOS[r.estado].etiqueta}<br />
-                <span style={{ opacity: 0.75 }}>Reporte ciudadano · ubicación aproximada</span>
-              </Popup>
-            </CircleMarker>
-          ))}
+          <Pane name="reportes" style={{ zIndex: 400, pointerEvents: 'none' }}>
+            {ver.reportes && reportes.filter(enAreaDeReporte).map((r) => (
+              <CircleMarker key={r.id} renderer={svgReportes} center={[r.lat, r.lon]} radius={6} interactive={!marcar} pathOptions={{ color: '#ffffff', weight: 1.5, fillColor: PRIORIDADES[nivelPrioridad(r.prioridad)].color, fillOpacity: 0.95 }}>
+                <Popup>
+                  <strong>{TIPOS[r.tipo].etiquetaLarga}</strong><br />
+                  {r.zona ?? 'Fuera de sector'} · {ESTADOS[r.estado].etiqueta}<br />
+                  <span style={{ opacity: 0.75 }}>Reporte ciudadano · ubicación aproximada</span>
+                </Popup>
+              </CircleMarker>
+            ))}
+          </Pane>
           {ver.acciones && acciones.map((a) => (
             <Marker key={a.id} position={[a.lat, a.lon]} icon={iconoAccion(a.tipo)} title={a.nombre} interactive={!marcar}>
               <Popup>
                 <strong>{a.nombre}</strong><br />
-                {TIPOS_ACCION[a.tipo].etiqueta} · {SECTORES[a.sector].nombre} · {a.hectareas.toLocaleString('es-CO')} ha<br />
-                Plan: {ACCIONES_PLAN[a.accion_plan].etiqueta}{a.prioridad_plan ? ` · prioridad ${a.prioridad_plan}` : ''}<br />
+                {TIPOS_ACCION[a.tipo].etiqueta} · {a.sector ? SECTORES[a.sector].nombre : 'Sin sector confirmado'} · {a.canal === 'whatsapp' ? 'Área sin informar' : `${a.hectareas.toLocaleString('es-CO')} ha`}<br />
+                Plan: {a.accion_plan ? ACCIONES_PLAN[a.accion_plan].etiqueta : 'Pendiente de verificar'}{a.prioridad_plan ? ` · prioridad ${a.prioridad_plan}` : ''}<br />
                 <span style={{ color: '#f8d86f', fontWeight: 900, fontSize: 11 }}>{ESTADOS_ACCION[a.estado].etiqueta}</span><br />
                 <a href={`/plataforma/seguimiento?accion=${a.id}`}>Ver seguimiento</a>
               </Popup>

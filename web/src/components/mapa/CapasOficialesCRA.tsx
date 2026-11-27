@@ -7,6 +7,7 @@
 // useCapasCRA() da el estado; InterruptoresCRA va en el panel de filtros, CapasCRAEnMapa
 // dentro del MapContainer y LeyendaCRA en la leyenda. `claves` elige qué capas se ofrecen.
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import '../../lib/popupsQueCaben';
 import { renderToStaticMarkup } from 'react-dom/server';
 import L from 'leaflet';
 import { GeoJSON, Marker, Popup, Tooltip } from 'react-leaflet';

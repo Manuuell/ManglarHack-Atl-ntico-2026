@@ -28,3 +28,5 @@
 .leaflet-tooltip-bottom::before { border-bottom-color: #082d45; }
 .leaflet-container .leaflet-control-attribution { background: rgb(8 45 69 / .85); color: var(--c-texto-suave); }
 .leaflet-container .leaflet-control-attribution a { color: var(--color-dorado-300); }
+/* Ventana abierta hacia abajo del punto (lib/popupsQueCaben.ts): la punta pasa arriba. */
+.leaflet-popup-abajo .leaflet-popup-tip-container { top: -20px; transform: rotate(180deg); }

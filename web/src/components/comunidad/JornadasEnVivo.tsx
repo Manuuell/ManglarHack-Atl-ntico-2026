@@ -27,9 +27,8 @@ export default function JornadasEnVivo({ jornadas: iniciales }: { jornadas: Jorn
     <div className="jornadas-grid">
       {proximas.map((j) => {
         const T = TIPOS_JORNADA[j.tipo];
-        const pct = Math.min(100, (j.inscritos / Math.max(1, j.cupos)) * 100);
         return (
-          <a key={j.id} className="jornada-mini" href={`/plataforma/jornadas?jornada=${j.id}`}>
+          <a key={j.id} className="jornada-mini" href={`/plataforma/jornada?id=${encodeURIComponent(j.id)}`}>
             <span className="banda" style={{ display: 'block', ['--g' as string]: j.imagen_url ? `url("${j.imagen_url.replace(/"/g, '%22')}") center / cover no-repeat` : BANDA[j.tipo] ?? BANDA.siembra }}>
               <span className="fecha"><b>{dia(j.inicio)}</b><small>{mes(j.inicio)}</small></span>
             </span>
@@ -37,8 +36,7 @@ export default function JornadasEnVivo({ jornadas: iniciales }: { jornadas: Jorn
               <small>{T.etiqueta}</small>
               <b>{j.titulo}</b>
               <span>{cuando(j.inicio)} · {j.punto_encuentro}</span>
-              <span className="cupos"><Users className="inline size-3.5" aria-hidden="true" /> {j.inscritos} de {j.cupos} inscritos</span>
-              <span className="barra" aria-hidden="true"><i style={{ width: `${pct}%` }} /></span>
+              <span className="cupos"><Users className="inline size-3.5" aria-hidden="true" /> {j.inscritos} {j.inscritos === 1 ? 'inscrito' : 'inscritos'} · sin límite de cupos</span>
             </span>
           </a>
         );

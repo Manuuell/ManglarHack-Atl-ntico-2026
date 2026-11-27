@@ -26,7 +26,7 @@ function ConHuecos({ texto }: { texto: string }) {
 const nombreArchivo = (texto: string) => texto.toLocaleLowerCase('es-CO').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export default function ProyectosPlantillas({ acciones: accionesIniciales, actores: actoresIniciales }: Props) {
-  const acciones = useAcciones(accionesIniciales);
+  const acciones = useAcciones(accionesIniciales).filter((a) => a.canal !== 'whatsapp' && a.sector !== null && a.accion_plan !== null);
   const actores = useActores(actoresIniciales);
   const [accionId, setAccionId] = useState(acciones[0]?.id ?? '');
   const [tipo, setTipo] = useState<Tipo>('mga');
@@ -35,7 +35,7 @@ export default function ProyectosPlantillas({ acciones: accionesIniciales, actor
   const accion = acciones.find((a) => a.id === accionId) ?? acciones[0];
   const actor = accion ? actores.find((a) => a.id === accion.actor_id) : undefined;
   const plantilla = useMemo(() => {
-    if (!accion) return null;
+    if (!accion || !accion.sector) return null;
     const proponente = actor ?? { id: '', nombre: '[actor proponente]', tipo: 'ciudadano', correo: '', sector: accion.sector, papeles: [], verificado: false, acepta_datos: true, creado_en: '' } satisfies Actor;
     return tipo === 'mga' ? plantillaMGA(accion, proponente, accion.sector) : notaConceptual(accion, proponente, accion.sector);
   }, [accion, actor, tipo]);
@@ -62,7 +62,7 @@ export default function ProyectosPlantillas({ acciones: accionesIniciales, actor
         <label className="block">
           <span className="etiqueta-campo">Acción</span>
           <select value={accion.id} onChange={(e) => setAccionId(e.target.value)} className="mt-1 min-h-11 w-full border-0 border-b border-white/60 bg-white/5 px-3 text-texto focus:border-dorado-300 focus:outline-none">
-            {acciones.map((a) => <option key={a.id} value={a.id} className="bg-cra-900">{a.nombre} · {SECTORES[a.sector].nombre}</option>)}
+            {acciones.map((a) => <option key={a.id} value={a.id} className="bg-cra-900">{a.nombre} · {a.sector ? SECTORES[a.sector].nombre : 'Sin sector confirmado'}</option>)}
           </select>
         </label>
         <fieldset>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import '../../lib/popupsQueCaben';
 import type { KeyboardEvent } from 'react';
 import { geoJSON, circleMarker } from 'leaflet';
 import type { FeatureCollection, Geometry } from 'geojson';
@@ -7,6 +8,8 @@ import { obtenerCapaManglarCRA } from '../../lib/datos';
 import { LIMITES_MANGLAR } from '../../lib/areaReporte';
 import { FUENTE_WORKFLOW, PESTANAS_WORKFLOW, SECTORES_WORKFLOW, URL_WORKFLOW_CRA, VERSION_WORKFLOW } from '../../lib/workflow';
 import { BloqueWorkflow } from './BloquesWorkflow';
+import { useWorkflowCRA } from '../../lib/useWorkflowCRA';
+import { fechaCRA } from '../../lib/cra';
 import type { PropiedadesZona, ZonasManglar } from '../../types/manglar';
 import ZankyImg from '../marca/ZankyImg';
 import 'leaflet/dist/leaflet.css';
@@ -83,6 +86,9 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   const pestana = PESTANAS_WORKFLOW[indice]!;
   const etiquetas = Boolean(pestana.rotuloSector);
   const pendiente = pestana.bloques.find(b => b.tipo === 'pendiente');
+  // Copia en vivo de los datos de la C.R.A.: fecha de revisión y audio de cada pestaña.
+  const { workflow: vivo, espejo, estado: estadoDatos } = useWorkflowCRA();
+  const audio = vivo.pestanas.find(p => p.id === pestana.id)?.audio;
 
   useEffect(() => {
     let vigente = true;
@@ -111,7 +117,9 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
     // Con #pestaña en la URL, mostrar esa pestaña en la barra sin mover la página.
     const boton = botones.current[indice];
     const barra = boton?.parentElement;
-    if (boton && barra) barra.scrollLeft = boton.offsetLeft - (barra.clientWidth - boton.clientWidth) / 2;
+    // Posición del botón medida desde la barra (offsetLeft cuenta desde el visor entero, mapa incluido,
+    // y en pantallas anchas dejaba la pestaña activa fuera de la vista).
+    if (boton && barra) barra.scrollLeft = boton.getBoundingClientRect().left - barra.getBoundingClientRect().left + barra.scrollLeft - (barra.clientWidth - boton.clientWidth) / 2;
     // Un enlace a otra pestaña del mismo visor (#carbono) cambia de pestaña.
     const alCambiarHash = () => setIndice(indiceDeHash());
     window.addEventListener('hashchange', alCambiarHash);
@@ -201,6 +209,12 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
       <div className="shrink-0 border-b border-linea bg-fondo-alt p-4">
         <p className="rotulo text-dorado-300">Manglar probable, no confirmado</p>
         <p className="mt-1 text-sm text-suave">Requiere verificación en campo. {VERSION_WORKFLOW}.</p>
+        <p className="mt-2 flex items-center gap-2 text-xs text-tenue" aria-live="polite">
+          <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${estadoDatos === 'en_vivo' ? 'bg-baja' : estadoDatos === 'respaldo' ? 'bg-dorado-500' : 'bg-white/40'}`} />
+          {estadoDatos === 'cargando' && 'Leyendo los datos de la C.R.A.…'}
+          {estadoDatos === 'en_vivo' && <>Copia en vivo de los datos de la C.R.A.{espejo ? ` (revisados el ${fechaCRA(espejo.revisado_en)})` : ''}; las pestañas muestran lo transcrito de su visor el 27-11-2026.</>}
+          {estadoDatos === 'respaldo' && 'No se pudo leer la copia de los datos de la C.R.A.: se muestra lo transcrito de su visor el 27-11-2026.'}
+        </p>
       </div>
       <div role="tablist" aria-label="Temas del workflow" className="flex shrink-0 overflow-x-auto border-b border-linea">
         {PESTANAS_WORKFLOW.map((p, i) => <button key={p.id} ref={el => { botones.current[i] = el; }} id={`tab-${p.id}`} role="tab" aria-selected={i === indice} aria-controls={`panel-${p.id}`} tabIndex={i === indice ? 0 : -1} onClick={() => seleccionar(i)} onKeyDown={e => teclado(e, i)} className={`rotulo min-h-11 shrink-0 border-b-[3px] px-4 py-3 text-white ${i === indice ? 'border-dorado-500' : 'border-transparent hover:bg-white/5'}`}>{p.etiqueta}</button>)}
@@ -208,6 +222,10 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
       <div ref={contenido} className="min-h-0 flex-1 overflow-y-auto">
         <section key={pestana.id} role="tabpanel" id={`panel-${pestana.id}`} aria-labelledby={`tab-${pestana.id}`} tabIndex={0} className="space-y-6 p-5">
           <h2 className="titular text-2xl">{pestana.titulo}</h2>
+          {audio && <div className="space-y-2">
+            <p className="rotulo text-dorado-300">Escuchar esta sección · {Math.round(audio.dur)} s</p>
+            <audio key={audio.src} controls preload="none" src={audio.src} className="w-full" aria-label={`Audio de la sección ${pestana.etiqueta}`} />
+          </div>}
           <details className="rounded-sm border border-linea-suave">
             <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm text-dorado-300">Resumen de la sección (texto del audio de la C.R.A.)</summary>
             <p className="px-3 pb-3 text-sm leading-relaxed text-suave">{pestana.narracion}</p>

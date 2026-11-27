@@ -3,7 +3,7 @@
 // navegador (localStorage) y se renueva sola. Reportar NO exige cuenta: la cuenta solo suma (seguir
 // los reportes propios, el perfil). Sin web/.env no hay servidor y el panel lo dice.
 import { useSyncExternalStore } from 'react';
-import { pedirBot } from './bot';
+import { ErrorBot, pedirBot } from './bot';
 
 const URL_BASE = String(import.meta.env.PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, '');
 const CLAVE = String(import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '');
@@ -14,7 +14,7 @@ export const cuentasActivas = Boolean(URL_BASE && CLAVE);
 const CLAVE_SESION = 'zanky-web:v1:sesion';
 const EVENTO = 'zanky-cuenta';
 
-export const SECTORES_CUENTA = ['Mallorquín', 'Balboa', 'Manatíes', 'Totumo'] as const;
+export const SECTORES_CUENTA = ['Mallorquín', 'Puerto Colombia', 'Tubará', 'Totumo'] as const;
 
 export interface Usuario {
   id: string;
@@ -224,10 +224,15 @@ export async function rolDeAdmin(): Promise<{ correo: string; rol: string } | nu
   const s = await renovarSesion().catch(() => null);
   if (!s) return null;
   if (adminCache?.token === s.access_token) return adminCache.yo;
-  let yo: { correo: string; rol: string } | null = null;
-  try { yo = await pedirBot<{ correo: string; rol: string }>('/api/admin/yo', { token: s.access_token }); } catch { yo = null; }
-  adminCache = { token: s.access_token, yo };
-  return yo;
+  try {
+    const yo = await pedirBot<{ correo: string; rol: string }>('/api/admin/yo', { token: s.access_token });
+    adminCache = { token: s.access_token, yo };
+    return yo;
+  } catch (e) {
+    // Solo un «no» del servidor (401 o 403) se recuerda; si no respondió, se vuelve a preguntar la próxima vez.
+    if (e instanceof ErrorBot && (e.status === 401 || e.status === 403)) adminCache = { token: s.access_token, yo: null };
+    return null;
+  }
 }
 
 export async function cambiarClave(clave: string): Promise<void> {

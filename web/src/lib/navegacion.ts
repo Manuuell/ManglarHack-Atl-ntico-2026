@@ -5,7 +5,7 @@ export interface EnlaceNav { id: string; href: string; texto: string; detalle?: 
 
 /** Visores: cada mapa en su propia página. */
 export const VISORES: EnlaceNav[] = [
-  { id: 'reportes', href: '/visores/reportes', texto: 'Reportes de la comunidad', detalle: 'Lo que reporta la gente, con filtros y datos abiertos' },
+  { id: 'reportes', href: '/visores/reportes', texto: 'Monitoreo comunitario', detalle: 'Los reportes de la comunidad, con filtros y datos abiertos' },
   { id: 'riesgo', href: '/visores/riesgo', texto: 'Puntos críticos y focos de calor', detalle: 'Riesgos que registra la C.R.A. cerca del manglar' },
   { id: 'agua', href: '/visores/agua', texto: 'Calidad del agua', detalle: 'Índice de calidad de las ciénagas con manglar' },
   { id: 'workflow', href: '/workflow', texto: 'Estado del manglar', detalle: 'Extensión, cambios, altura y carbono, según la C.R.A.' },
@@ -14,11 +14,12 @@ export const VISORES: EnlaceNav[] = [
 /** Secciones de la plataforma abierta (también son las pestañas de PlataformaLayout). */
 export const PLATAFORMA: EnlaceNav[] = [
   { id: 'inicio', href: '/plataforma', texto: 'Inicio' },
+  { id: 'acerca', href: '/plataforma/acerca', texto: 'Acerca de la plataforma' },
   { id: 'registro', href: '/plataforma/registro', texto: 'Registro de actor' },
   { id: 'proponer', href: '/plataforma/proponer', texto: 'Proponer acción' },
   { id: 'seguimiento', href: '/plataforma/seguimiento', texto: 'Seguimiento' },
   { id: 'jornadas', href: '/plataforma/jornadas', texto: 'Jornadas comunitarias' },
-  { id: 'monitoreo', href: '/#monitoreo', texto: 'Monitoreo comunitario' },
+  { id: 'monitoreo', href: '/visores/reportes', texto: 'Monitoreo comunitario' },
   { id: 'proyectos', href: '/plataforma/proyectos', texto: 'Proyectos' },
   { id: 'panel', href: '/plataforma/panel', texto: 'Panel de la Corporación' },
 ];

@@ -9,7 +9,7 @@ export default defineConfig({
   integrations: [react()],
 
   // El monitoreo comunitario vive en la portada.
-  redirects: { '/plataforma/monitoreo': '/#monitoreo' },
+  redirects: { '/plataforma/monitoreo': '/visores/reportes' },
 
   vite: {
     plugins: [tailwindcss()],

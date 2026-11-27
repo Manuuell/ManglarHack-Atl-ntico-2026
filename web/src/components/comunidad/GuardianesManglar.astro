@@ -1,5 +1,5 @@
 ---
-// Guardianes del manglar en la portada: ranking de colegios y pasaporte del turista.
+// Guardianes del manglar en la portada: el pasaporte del turista (el ranking de colegios no se muestra aquí).
 import Comunidad from '../sections/Comunidad.astro';
 import type { Colegio } from '../../types/manglar';
 import '../../styles/monitoreo-portada.css';
@@ -12,10 +12,10 @@ const { colegios } = Astro.props;
     <div class="mon-cab" data-reveal>
       <p class="kicker">Sostenibilidad y comunidad</p>
       <h2 id="titulo-guardianes">Guardianes <span class="tono">del manglar</span>.</h2>
-      <p class="mon-sub">Colegios, viajeros y comunidades que convierten pequeños gestos en un futuro para el manglar.</p>
+      <p class="mon-sub">Viajeros y comunidades que convierten pequeños gestos en un futuro para el manglar.</p>
     </div>
     <div class="mon" data-reveal>
-      <Comunidad colegios={colegios} incrustada />
+      <Comunidad colegios={colegios} incrustada conRanking={false} />
     </div>
   </div>
 </section>

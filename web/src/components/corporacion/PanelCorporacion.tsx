@@ -41,7 +41,7 @@ export default function PanelCorporacion(props: Props) {
 
   const conteo = useMemo(() => Object.fromEntries(LISTA_ESTADOS_ACCION.map((e) => [e, acciones.filter((a) => a.estado === e).length])) as Record<EstadoAccion, number>, [acciones]);
   const hectareas = acciones.reduce((s, a) => s + a.hectareas, 0);
-  const actor = (id: string) => actores.find((a) => a.id === id)?.nombre ?? 'Actor no disponible';
+  const actor = (a: Accion) => a.proponente || actores.find((item) => item.id === a.actor_id)?.nombre || 'Actor no disponible';
 
   const alertas = useMemo(() => {
     const hoy = Date.now();
@@ -151,9 +151,9 @@ export default function PanelCorporacion(props: Props) {
                   return (
                     <tr key={a.id} className="border-b border-white/25 align-top">
                       <td className="py-3 pr-3"><a href={`/plataforma/seguimiento?accion=${a.id}`} className="font-bold hover:text-dorado-300 hover:underline">{a.nombre}</a></td>
-                      <td className="py-3 pr-3 text-suave">{actor(a.actor_id)}</td>
-                      <td className="py-3 pr-3 text-suave">{SECTORES[a.sector].nombre}</td>
-                      <td className="py-3 pr-3 text-right tabular-nums">{ha(a.hectareas)}</td>
+                      <td className="py-3 pr-3 text-suave">{actor(a)}</td>
+                      <td className="py-3 pr-3 text-suave">{a.sector ? SECTORES[a.sector].nombre : 'Sin sector confirmado'}</td>
+                      <td className="py-3 pr-3 text-right tabular-nums">{a.canal === 'whatsapp' ? 'Sin informar' : ha(a.hectareas)}</td>
                       <td className="py-3 pr-3"><span className={cn('inline-block whitespace-nowrap px-2 py-0.5 text-[10px] font-black tracking-[0.1em]', ESTADOS_ACCION[a.estado].clase)}>{ESTADOS_ACCION[a.estado].etiqueta}</span></td>
                       <td className="py-2">
                         {TRANSICIONES_ACCION[a.estado].length === 0 ? <span className="text-xs text-tenue">Sin decisiones pendientes</span> : (

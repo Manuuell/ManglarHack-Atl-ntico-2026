@@ -11,7 +11,6 @@ import JornadasEnVivo from '../components/comunidad/JornadasEnVivo';
 import AvisosEnVivo from '../components/comunidad/AvisosEnVivo';
 import AlertasManglar from '../components/comunidad/AlertasManglar';
 import PanelCuenta from '../components/cuenta/PanelCuenta';
-import MonitoreoComunitario from '../components/comunidad/MonitoreoComunitario.astro';
 import GuardianesManglar from '../components/comunidad/GuardianesManglar.astro';
 import NoticiasPortada from '../components/comunidad/NoticiasPortada.astro';
 import MenuDesplegable from '../components/layout/MenuDesplegable.astro';
@@ -23,7 +22,7 @@ const SECCIONES_PORTADA = [
   { id: 'jornadas', href: '#jornadas', texto: 'Jornadas' },
   { id: 'alertas', href: '#alertas', texto: 'Alertas' },
   { id: 'reportar', href: '#reportar', texto: 'Reportar' },
-  { id: 'monitoreo', href: '#monitoreo', texto: 'Monitoreo' },
+  { id: 'monitoreo', href: '/visores/reportes', texto: 'Monitoreo' },
 ];
 
 // Lo público pasa por aReportePublico: sin foto, sin quién reporta y con la ubicación difuminada.
@@ -104,7 +103,6 @@ const publicos = reportes.map(aReportePublico);
       </div>
     </section>
 
-    <MonitoreoComunitario reportes={publicos} sectores={sectores} />
 
     <GuardianesManglar colegios={colegios} />
 
@@ -135,7 +133,7 @@ const publicos = reportes.map(aReportePublico);
           <a href="#mapa">Mapa en vivo</a>
           <a href="#reportar">Reportar un problema</a>
           <a href="#jornadas">Jornadas</a>
-          <a href="#monitoreo">Monitoreo y datos abiertos</a>
+          <a href="/visores/reportes">Monitoreo y datos abiertos</a>
         </nav>
         <nav aria-label="Plataforma">
           <h3>Plataforma</h3>

@@ -4,6 +4,7 @@
 // común con la RPC crear_reporte, que recalcula zona, prioridad y confianza; sin él, queda en este
 // navegador (modo demostración). En los dos casos aparece al instante en el mapa en vivo.
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import '../../lib/popupsQueCaben';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Camera, Check, Crosshair, ImagePlus, LoaderCircle, MapPin, X } from 'lucide-react';

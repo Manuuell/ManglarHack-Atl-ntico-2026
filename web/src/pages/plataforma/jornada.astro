@@ -1,0 +1,19 @@
+---
+// Ficha de una jornada: /plataforma/jornada?id=<id> (el enlace de cada invitación y de sus QR).
+// La jornada se busca en el navegador porque las jornadas viven en el servidor de Zanky.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CabeceraCRA from '../../components/layout/CabeceraCRA.astro';
+import FichaJornada from '../../components/jornadas/FichaJornada';
+import { AVISO_DATOS_PLATAFORMA, obtenerAcciones, obtenerJornadas } from '../../lib/plataforma/datos';
+
+const [jornadas, acciones] = await Promise.all([obtenerJornadas(), obtenerAcciones()]);
+---
+<BaseLayout title="Jornada comunitaria · El manglar del Atlántico" description="Jornada comunitaria del manglar del Atlántico: cuándo, dónde, qué llevar e inscripción gratis y sin límite de cupos.">
+  <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 rounded-full bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
+  <CabeceraCRA activo="plataforma" pagina="jornadas" />
+  <main id="contenido">
+    <FichaJornada client:only="react" jornadas={jornadas} acciones={acciones} aviso={AVISO_DATOS_PLATAFORMA}>
+      <p slot="fallback" role="status" class="mx-auto max-w-6xl px-4 py-24 text-center text-suave sm:px-6">Cargando la jornada…</p>
+    </FichaJornada>
+  </main>
+</BaseLayout>

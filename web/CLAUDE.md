@@ -37,19 +37,21 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 
 | Ruta | Qué es |
 |---|---|
-| `/` | Portada comunitaria en vivo (`src/styles/portada.css` + `src/scripts/portada.ts` + `src/components/comunidad/`): cabecera que pasa a cápsula al bajar; hero con el mapa satelital y la lista «Ahora en el manglar» (reportes de la comunidad y jornadas); «Reportar un problema» (tipo, ubicación en el mapa con la regla del área de reporte, foto, detalles, consentimiento); próximas jornadas con inscritos; avisos en tiempo real (otras pestañas incluidas, vía `lib/comunidad/reportesLocales.ts`); **monitoreo comunitario** (`#monitoreo`: mapa público con filtros y datos abiertos CSV/GeoJSON/KML), **seguimiento de siembras** (`#siembras`: plántulas vivas, altura y fotos ubicadas) y **guardianes del manglar** (`#guardianes`: ranking de colegios y pasaporte), en `components/comunidad/MonitoreoComunitario.astro` y `GuardianesManglar.astro` con `styles/monitoreo-portada.css`. Sin texto del reto: solo lo que hace la comunidad |
-| `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
+| `/` | Portada comunitaria en vivo (`src/styles/portada.css` + `src/scripts/portada.ts` + `src/components/comunidad/`): cabecera que pasa a cápsula al bajar; hero con el mapa satelital y la lista «Ahora en el manglar» (reportes de la comunidad y jornadas); «Reportar un problema» (tipo, ubicación en el mapa con la regla del área de reporte, foto, detalles, consentimiento); próximas jornadas con inscritos; avisos en tiempo real (otras pestañas incluidas, vía `lib/comunidad/reportesLocales.ts`); **seguimiento de siembras** (`#siembras`: plántulas vivas, altura y fotos ubicadas) y **guardianes del manglar** (`#guardianes`: ranking de colegios y pasaporte), en `components/comunidad/MonitoreoComunitario.astro` y `GuardianesManglar.astro` con `styles/monitoreo-portada.css`. Sin texto del reto: solo lo que hace la comunidad |
+| `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método, Fuentes y Metodología (cada una abre con `#id`); contenido en `lib/workflow.ts` y `lib/workflowSeries.ts` |
 | `/visores` | Índice de los visores (cada mapa en su propia página, `layouts/VisorLayout.astro` con pestañas entre visores) |
-| `/visores/reportes` | Reportes de la comunidad a pantalla completa (`MapaMonitoreo`, el mismo de `#monitoreo`) |
+| `/visores/reportes` | **Monitoreo comunitario**: los reportes de la comunidad a pantalla completa (`MapaMonitoreo` con filtros, capas oficiales de la C.R.A. y datos abiertos). Es la página a la que llevan «Monitoreo» de la portada, la pestaña de la plataforma, el pie y `/plataforma/monitoreo` (redirección en `astro.config.mjs`). Ya no está en la portada |
 | `/visores/riesgo` | Puntos críticos y focos de calor de la C.R.A. cerca del manglar: mapa + lista ordenada por distancia (`components/visores/VisorCapasCRA.tsx`, `modo="riesgo"`) |
 | `/visores/agua` | Calidad del agua (ICA) de las ciénagas con manglar: mapa + fichas por ciénaga (`VisorCapasCRA`, `modo="agua"`) |
 | `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
+| `/plataforma/acerca` | «Acerca de la plataforma» de la C.R.A. (plan de manejo, qué hará, fase 2) y lo que agregó el equipo; enlazada desde el pie y el inicio de la plataforma |
 | `/plataforma/registro` | Registro de actor |
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
 | `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
-| `/plataforma/jornadas` | Jornadas comunitarias: cartelera con tarjetas, invitación por enlace (`?jornada=`) con inscripción y consentimiento, WhatsApp, compartir, Google Calendar, `.ics`, QR y cartel imprimible (A4, con dos QR: inscripción e «Interactúa con Zanky»); botón y QR «Interactúa con Zanky» que abren la app en `/app/?evento=<id>` (`urlEventoZanky`, `PUBLIC_URL_APP`); crear jornada ligada a una acción |
+| `/plataforma/jornadas` | Jornadas comunitarias: cartelera con filtros y tarjetas (`components/jornadas/CarteleraJornadas.tsx` y `piezas.tsx`). Cada tarjeta lleva a la ficha de su jornada. Los enlaces viejos `?jornada=<id>` (QR ya impresos, bot) redirigen a la ficha. Las jornadas se crean en `/admin` |
+| `/plataforma/jornada` | Ficha de una jornada (`?id=<id>`, `urlInvitacion`), con la forma de la ficha de un evento de Innvita (`components/jornadas/FichaJornada.tsx`): título, quién publica y la acción a la que pertenece; a la derecha la imagen y los datos (cuándo, dónde, «Gratis · sin límite de cupos», inscritos, compartir), pegados al bajar; detalles, qué llevar, mapa del punto de encuentro, inscripción, «Interactúa con Zanky», QR y cartel imprimible (`styles/cartel-jornada.css`); «Te puede interesar» (las 3 próximas más parecidas: misma acción, mismo tipo, punto a 5 km o menos) y una barra fija con «Asistir» que deja sitio a la burbuja de Zanky |
 | `/app/` | Versión web de la app Flutter (experiencia del evento con Zanky). No la genera Astro: se compila con `flutter build web --release --base-href /app/` y se publica con `web/scripts/publicar-app.sh`, que renombra `main.dart.js` y `flutter_bootstrap.js` con su huella (el servidor guarda los `.js` 30 días). El despliegue de la web excluye `/app/` y `/cra/` |
-| `/plataforma/monitoreo` | Redirige a `/#monitoreo` (`redirects` en `astro.config.mjs`): el monitoreo comunitario vive en la portada. La pestaña de la plataforma, «Reportar con Zanky» y el pie apuntan allí |
+| `/plataforma/monitoreo` | Redirige a `/visores/reportes` (`redirects` en `astro.config.mjs`) |
 | `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada, nota conceptual) |
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
 
@@ -78,7 +80,9 @@ src/
   lib/privacidad.ts             aReportePublico
   lib/reportesStore.ts          estado compartido de reportes + historial
   lib/exportar.ts               CSV, GeoJSON y KML públicos
-  lib/workflow.ts               cifras y pestañas del workflow, construidas del resumen de la C.R.A. (con respaldo fijo)
+  lib/workflow.ts               contenido del workflow de la C.R.A. (sectores, cifras, pestañas en bloques, metodología, plan de manejo), transcrito de su visor
+  lib/workflowSeries.ts         series del workflow (extensión anual, dosel, agua, temperatura)
+  lib/workflowVivo.ts           capa en vivo: cifras, sectores y audios armados del resumen de la C.R.A. (con respaldo fijo)
   lib/cra.ts, useWorkflowCRA.ts lectura en vivo de /cra/data/core.json (ver «Datos de la C.R.A. en vivo»)
   lib/plataforma/               datos.ts, catalogos.ts, almacen.ts (store persistente), …
   layouts/                      BaseLayout.astro, PlataformaLayout.astro
@@ -100,13 +104,13 @@ La capa de manglar de INVEMAR 2020 se importa con `?url` desde `../datos/` (por 
 - **Actor**: tipo (comunidad u organización de base, entidad pública, academia, empresa, ONG, ciudadano), sector de interés y papel (proponer y ejecutar, coparticipar, monitorear y reportar, financiar o cooperar). Tratamiento de datos según Ley 1581 de 2012.
 - **Acción**: tipo (siembra, restauración hidrológica, solución basada en la naturaleza, conservación y vigilancia), sitio en el mapa, hectáreas, acción y prioridad heredadas del plan de manejo, lista de requerimientos, comunidad coparticipante.
 - **Estados de acción**: `propuesta → en_revision → (con_observaciones ↔ en_revision) → aprobada → en_ejecucion → cerrada`.
-- **Jornada** (base Innvita): actividad con fecha, punto de encuentro, cupos e inscritos, ligada a una acción.
+- **Jornada** (base Innvita): actividad con fecha, punto de encuentro e inscritos, ligada a una acción. **No tiene límite de cupos**: la web no muestra cupos libres ni cierra inscripciones; el panel manda `cupos: CUPOS_SIN_LIMITE` (5.000, el máximo que aceptaba el servidor) y el bot ya no rechaza por cupo.
 - **Reporte de monitoreo**: plántulas vivas (%), altura media (cm), fotografías ubicadas, observaciones.
-- **Sectores**: Mallorquín (Mallorquín – Bocas de Ceniza), Balboa (Puerto Colombia – Balboa – Puerto Velero), Manatíes (Tubará – Juan de Acosta; correspondencia por confirmar con la C.R.A.), Totumo (Totumo – Astilleros – Galerazamba).
+- **Sectores** (nombres de la C.R.A.; los ids no cambian): Mallorquín (`mallorquin`, Mallorquín – Bocas de Ceniza), Puerto Colombia (`balboa`, Puerto Colombia – Balboa – Puerto Velero), Tubará (`manaties`, Tubará – Juan de Acosta), Totumo (`totumo`, Totumo – Astilleros – Galerazamba). Ver `../handoff/11-contenido-cra.md`.
 
 ## Cifras del workflow (fuente: workflow de la C.R.A., manglarcra.netlify.app)
 
-775 ha de manglar probable en 2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Balboa 197, Manatíes (Tubará – Juan de Acosta) 148, Totumo 742 · pérdida −34,7 ha entre 2016 y 2025 · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
+775 ha de manglar probable en 2024–2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Puerto Colombia 197, Tubará 148, Totumo 742; manglar probable 348, 91, 45 y 291 · pérdida neta 34,7 ha entre 2016 y 2025 (36,6 perdidas y 1,9 ganadas) · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
 
 ## Cuentas de la comunidad (iniciar sesión y crear cuenta)
 
@@ -123,7 +127,8 @@ La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se
 - `scripts/copiar-cra.mjs` baja `data/core.json` y las imágenes y audios que nombra a `public/cra/` (ignorada en git). Solo baja lo que cambió (ETag), valida la forma de `core.json` y, si llega roto o el sitio no responde, conserva la última copia buena. Escribe `espejo.json` con la fecha de revisión.
 - Corre antes de `dev` y de `build` (con `--suave`: avisa pero no falla sin red), así que `dist/cra/` siempre lleva una copia.
 - En el VPS lo corre cada 15 minutos `mimanglar-cra.timer` (unidades en `scripts/vps/`, script en `~/mimanglar-cra/`) sobre `/var/www/mimanglar/cra`. Si un despliegue con `rsync --delete` la pisa, el temporizador la repone.
-- La web lee la copia con `cargarCRA()` (`src/lib/cra.ts`) y `useWorkflowCRA()`; `construirWorkflow()` arma cifras, sectores y pestañas. Si la copia no responde, se usan `RESPALDO_CRA` (cifras del 27-11-2026) y se dice en pantalla.
+- La web lee la copia con `cargarCRA()` (`src/lib/cra.ts`) y `useWorkflowCRA()`; `construirWorkflow()` (`lib/workflowVivo.ts`) arma cifras, sectores y audios. Si la copia no responde, se usan `RESPALDO_CRA` (cifras del 27-11-2026) y se dice en pantalla.
+- En `/workflow`, las pestañas muestran el contenido transcrito en `lib/workflow.ts`; de la copia en vivo salen la fecha de revisión y el audio de cada pestaña. El inicio de la plataforma toma sus cifras de la copia en vivo.
 - `/workflow` incrusta además el visor original de la C.R.A. (capas, vista 3D y audios) desde manglarcra.netlify.app.
 - Instalar o actualizar en el VPS: copiar `copiar-cra.mjs` a `~/mimanglar-cra/`, `sudo install -m 644 scripts/vps/mimanglar-cra.* /etc/systemd/system/`, `sudo systemctl daemon-reload && sudo systemctl enable --now mimanglar-cra.timer`. Registro: `journalctl -u mimanglar-cra.service`.
 
@@ -134,7 +139,7 @@ La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se
   - focos de calor por satélite (`/wildfire-clusters/items?format=geojson`);
   - calidad del agua de las ciénagas (`/water_bodies/sampling_points` y `/measurements`, con la escala ICA del IDEAM).
 - Lee también las noticias de crautonoma.gov.co (WordPress REST, que ya acepta el origen de mimanglar y de localhost).
-- `components/mapa/CapasOficialesCRA.tsx` las pinta en el mapa de `#monitoreo` con interruptores y leyenda. Solo muestra lo que está a 2 km o menos de la cobertura de manglar (más los puntos de muestreo de Mallorquín, Totumo, Manatíes y Balboa), con la distancia en cada ventana.
+- `components/mapa/CapasOficialesCRA.tsx` las pinta en el mapa de monitoreo (`/visores/reportes`) con interruptores y leyenda. Solo muestra lo que está a 2 km o menos de la cobertura de manglar (más los puntos de muestreo de Mallorquín, Totumo, Manatíes y Balboa), con la distancia en cada ventana.
 - `components/comunidad/NoticiasCRA.tsx` muestra «La C.R.A. en el manglar» debajo del mapa.
 - Si la C.R.A. no responde, el mapa sigue sin sus capas y lo dice.
 - En JSON la API devuelve la geometría en EPSG:9377; usar siempre `format=geojson`. No llamar a sus rutas de escritura ni a `/users`.
@@ -144,7 +149,8 @@ La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se
 - `components/comunidad/AlertasManglar.tsx` (con `styles/alertas.css`) lee `GET https://zanqui.sentralabs.co/alertas` (variable `PUBLIC_ALERTAS_URL`). Ese endpoint es el motor del bot (`bot/src/alertas/`, rama `zanqui-bot`).
 - Cada 10 minutos, el motor cruza las estaciones automáticas del IDEAM (WIS2), el pronóstico (WRF y WW3) y las tablas de marea de DIMAR, los focos de calor de la C.R.A. y la vista `reportes_publicos`.
 - Siete alertas, con nivel amarillo, naranja o rojo: mar de leva, pleamar con oleaje, lluvia fuerte, viento fuerte, riesgo de incendio, fuego cerca del manglar y varios reportes de la misma amenaza en una zona. Los umbrales están en `UMBRALES`, en `motor.ts`.
-- `modo="aviso"` es la píldora del hero. La sección muestra «Ahora» (viento, lluvia, ola máxima, próxima pleamar y calor) y una tarjeta por alerta, con qué hacer, cuándo, la fuente y «Avisar por WhatsApp».
+- `modo="aviso"` es la píldora del hero. La sección muestra «Ahora» (viento, lluvia, ola máxima, próxima pleamar y calor) y **hasta 6 tarjetas cortas** (las más recientes por `desde`): la imagen satelital del sector más cercano (`/cra/img/z1..z4_img.jpg`), el nivel, el tipo (medido, pronóstico o simulado) con la fuente, el título, la primera frase del detalle, dónde · cuándo y «Avisar por WhatsApp».
+- Las alertas de la comunidad (`amenaza_ciudadana`, que hoy salen de reportes de la demostración) **no se muestran**; las de IDEAM, DIMAR y C.R.A. van todas. La píldora cuenta las mismas (`publicadas()`).
 - «Ver un simulacro» pide `?simulacro=1`: alertas de ejemplo rotuladas SIMULACRO, con las cifras de «Ahora» reales.
 - En WhatsApp, Zanky responde a «alertas» y a «simulacro».
 - Si el servidor no responde, la sección lo dice y la píldora no aparece.
