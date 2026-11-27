@@ -27,6 +27,8 @@ async function enviar(payload: Record<string, unknown>): Promise<void> {
   const cuerpo = { messaging_product: 'whatsapp', ...payload };
   if (config.dryRun) {
     bandejaSimulada.push(cuerpo);
+    // En un servidor sin token la bandeja no debe crecer sin límite.
+    if (bandejaSimulada.length > 200) bandejaSimulada.splice(0, bandejaSimulada.length - 200);
     return;
   }
   const res = await fetch(`${graph()}/${config.phoneNumberId}/messages`, {

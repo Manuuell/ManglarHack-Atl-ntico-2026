@@ -6,10 +6,29 @@ import { ubicar } from '../geo/zonas';
 import { ubicacionDesdeTexto } from '../geo/ubicacionTexto';
 import * as almacen from '../reportes/almacen';
 import { confianza, corroboraciones, prioridad } from '../reportes/evaluacion';
-import { CuandoId, FuenteUbicacion, TipoId, esTipo } from '../reportes/modelo';
+import { CuandoId, FuenteUbicacion, RolId, TipoId, esMunicipio, esRol, esTipo } from '../reportes/modelo';
 import * as T from './textos';
 
-type Paso = 'menu' | 'consentimiento' | 'tipo' | 'ubicacion' | 'confirmar_lejos' | 'foto' | 'descripcion' | 'cuando' | 'confirmar';
+type Paso =
+  | 'menu'
+  | 'registro_inicio'
+  | 'registro_nombre'
+  | 'registro_rol'
+  | 'registro_municipio'
+  | 'consentimiento'
+  | 'tipo'
+  | 'ubicacion'
+  | 'confirmar_lejos'
+  | 'foto'
+  | 'descripcion'
+  | 'cuando'
+  | 'confirmar';
+
+interface Registro {
+  modo: 'identificado' | 'anonimo';
+  nombre?: string;
+  rol?: RolId;
+}
 
 interface Borrador {
   tipo?: TipoId;
@@ -30,6 +49,9 @@ interface Borrador {
 interface Sesion {
   paso: Paso;
   borrador: Borrador;
+  registro?: Registro;
+  /** Si dijo "Ahora no" al registro, no se le vuelve a ofrecer en esta conversación. */
+  rechazoRegistro?: boolean;
   actualizada: number;
 }
 
@@ -49,14 +71,62 @@ function ir(s: Sesion, paso: Paso): void {
 }
 
 const normalizar = (t: string) =>
-  t.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
+  t.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim();
 
 const COMANDOS_MENU = new Set(['menu', 'inicio', 'hola', 'buenas', 'buenos dias', 'buenas tardes', 'zanqui', 'empezar', 'start']);
 
 async function enviarMenu(de: string, s: Sesion): Promise<void> {
   ir(s, 'menu');
   s.borrador = {};
-  await whatsapp.botones(de, T.MENU.cuerpo, T.MENU.botones, T.ENCABEZADO);
+  const u = almacen.usuario(almacen.hashDe(de));
+  const cuerpo = u?.vigiaNumero ? T.saludoMenu(u.nombre) : T.MENU.cuerpo;
+  await whatsapp.botones(de, cuerpo, T.MENU.botones, T.ENCABEZADO);
+}
+
+/** Primer contacto: a quien no está registrado se le ofrece ser vigía; a los demás, el menú. */
+async function inicio(de: string, s: Sesion): Promise<void> {
+  const u = almacen.usuario(almacen.hashDe(de));
+  if (!u?.vigiaNumero && !s.rechazoRegistro) return empezarRegistro(de, s);
+  return enviarMenu(de, s);
+}
+
+async function empezarRegistro(de: string, s: Sesion): Promise<void> {
+  s.borrador = {};
+  s.registro = undefined;
+  ir(s, 'registro_inicio');
+  await whatsapp.botones(de, T.BIENVENIDA.cuerpo, T.BIENVENIDA.botones, T.ENCABEZADO);
+}
+
+function nombreValido(texto: string): string | null {
+  const limpio = texto.trim().replace(/\s+/g, ' ');
+  if (limpio.length < 2 || limpio.length > 60) return null;
+  if (!/^[\p{L}][\p{L} .'-]*$/u.test(limpio)) return null;
+  return limpio
+    .split(' ')
+    .map(p => (p ? p[0].toLocaleUpperCase('es') + p.slice(1).toLocaleLowerCase('es') : p))
+    .join(' ');
+}
+
+async function terminarRegistro(de: string, s: Sesion, municipio: Parameters<typeof T.registrado>[3]): Promise<void> {
+  const r = s.registro;
+  if (!r?.rol) return empezarRegistro(de, s);
+  const hash = almacen.hashDe(de);
+  const anterior = almacen.usuario(hash);
+  const numero = anterior?.vigiaNumero ?? almacen.siguienteVigia();
+  const ahora = new Date().toISOString();
+  almacen.guardarUsuario(hash, {
+    consentimiento: r.modo,
+    fecha: anterior?.fecha ?? ahora,
+    ...(r.modo === 'identificado' ? { nombre: r.nombre, contacto: de } : {}),
+    rol: r.rol,
+    municipio,
+    vigiaNumero: numero,
+    registradoEn: ahora,
+  });
+  console.log(`[registro] vigía #${numero} ${r.rol} ${municipio}${r.modo === 'anonimo' ? ' (anónimo)' : ''}`);
+  s.registro = undefined;
+  await whatsapp.texto(de, T.registrado(r.modo === 'identificado' ? r.nombre : undefined, numero, r.rol, municipio));
+  await enviarMenu(de, s);
 }
 
 async function empezarReporte(de: string, s: Sesion): Promise<void> {
@@ -216,13 +286,65 @@ export async function atender(m: MensajeEntrante): Promise<void> {
     await enviarMenu(de, s);
     return;
   }
-  if (COMANDOS_MENU.has(texto)) {
-    await enviarMenu(de, s);
-    return;
-  }
+  if (texto === 'registro' || texto === 'registrarme') return empezarRegistro(de, s);
+  if (COMANDOS_MENU.has(texto)) return inicio(de, s);
 
   switch (s.paso) {
+    case 'registro_inicio': {
+      if (opcion === 'registrarme') {
+        s.registro = { modo: 'identificado' };
+        ir(s, 'registro_nombre');
+        await whatsapp.texto(de, T.PEDIR_NOMBRE);
+        return;
+      }
+      if (opcion === 'reg_anonimo') {
+        s.registro = { modo: 'anonimo' };
+        ir(s, 'registro_rol');
+        await whatsapp.lista(de, T.ROL.cuerpo, T.ROL.boton, T.ROL.filas);
+        return;
+      }
+      if (opcion === 'ahora_no') {
+        s.rechazoRegistro = true;
+        return enviarMenu(de, s);
+      }
+      await whatsapp.botones(de, T.BIENVENIDA.cuerpo, T.BIENVENIDA.botones, T.ENCABEZADO);
+      return;
+    }
+
+    case 'registro_nombre': {
+      const nombre = entrada.tipo === 'texto' ? nombreValido(entrada.texto) : null;
+      if (!nombre || !s.registro) {
+        await whatsapp.texto(de, T.NOMBRE_INVALIDO);
+        return;
+      }
+      s.registro.nombre = nombre;
+      ir(s, 'registro_rol');
+      await whatsapp.lista(de, `Mucho gusto, *${nombre}* 🤝\n\n${T.ROL.cuerpo}`, T.ROL.boton, T.ROL.filas);
+      return;
+    }
+
+    case 'registro_rol': {
+      if (esRol(opcion) && s.registro) {
+        s.registro.rol = opcion;
+        ir(s, 'registro_municipio');
+        await whatsapp.lista(de, T.MUNICIPIO.cuerpo, T.MUNICIPIO.boton, T.MUNICIPIO.filas);
+        return;
+      }
+      await whatsapp.lista(de, T.ROL.cuerpo, T.ROL.boton, T.ROL.filas);
+      return;
+    }
+
+    case 'registro_municipio': {
+      if (esMunicipio(opcion)) return terminarRegistro(de, s, opcion);
+      await whatsapp.lista(de, T.MUNICIPIO.cuerpo, T.MUNICIPIO.boton, T.MUNICIPIO.filas);
+      return;
+    }
+
     case 'menu': {
+      // Primer mensaje de alguien nuevo (cualquier texto): se le ofrece el registro.
+      if (!opcion && !s.rechazoRegistro && !almacen.usuario(almacen.hashDe(de))?.vigiaNumero && entrada.tipo === 'texto' && !texto.includes('report')) {
+        return empezarRegistro(de, s);
+      }
       if (opcion === 'reportar' || texto.includes('report') || texto.includes('denunci')) return empezarReporte(de, s);
       if (opcion === 'mis_reportes' || texto.includes('mis reportes')) {
         await whatsapp.texto(de, T.misReportes(almacen.delReportante(almacen.hashDe(de))));

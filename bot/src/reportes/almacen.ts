@@ -42,6 +42,15 @@ export function guardarUsuario(hash: string, u: Usuario): void {
   guardar();
 }
 
+/** Número del próximo vigía registrado (1, 2, 3…). */
+export function siguienteVigia(): number {
+  return Object.values(datos.usuarios).reduce((max, u) => Math.max(max, u.vigiaNumero ?? 0), 0) + 1;
+}
+
+export function vigias(): Usuario[] {
+  return Object.values(datos.usuarios).filter(u => u.vigiaNumero);
+}
+
 export function siguienteCodigo(): string {
   return `ZQ-${String(datos.reportes.length + 1).padStart(4, '0')}`;
 }

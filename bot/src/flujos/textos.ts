@@ -1,7 +1,50 @@
 import { Boton, Fila } from '../whatsapp/cloudApi';
-import { CUANDO, ESTADOS, Reporte, TIPOS, TipoId } from '../reportes/modelo';
+import { CUANDO, ESTADOS, MUNICIPIOS, MunicipioId, ROLES, Reporte, RolId, TIPOS, TipoId } from '../reportes/modelo';
 
 export const ENCABEZADO = 'Zanqui BOT 🌿';
+
+// --- Registro de vigías -----------------------------------------------------
+
+export const BIENVENIDA = {
+  cuerpo:
+    '¡Ajá! Soy *Zanqui* 🌿, el vigía del manglar del Atlántico.\n\n' +
+    'Aquí puedes avisarle a la CRA cuando algo amenaza el manglar: tala, quemas, basura, vertimientos o un caño tapado.\n\n' +
+    '¿Te registras como *vigía del manglar*? Toma menos de un minuto.\n\n' +
+    '🔒 Tus datos se tratan según la Ley 1581 de 2012 y nunca se publican tu nombre ni tu número.',
+  botones: [
+    { id: 'registrarme', titulo: '✅ Registrarme' },
+    { id: 'reg_anonimo', titulo: '🕶️ Sin mi nombre' },
+    { id: 'ahora_no', titulo: 'Ahora no' },
+  ] as Boton[],
+};
+
+export const PEDIR_NOMBRE = '¿Cómo te llamas? Escríbeme tu nombre 🙂';
+
+export const NOMBRE_INVALIDO = 'Ese nombre no me cuadra 🤔. Escríbelo solo con letras, por ejemplo: *María Pérez*.';
+
+export const ROL = {
+  cuerpo: '¿Qué te une al manglar?',
+  boton: 'Elegir',
+  filas: (Object.keys(ROLES) as RolId[]).map<Fila>(id => ({ id, titulo: `${ROLES[id].emoji} ${ROLES[id].nombre}`, descripcion: ROLES[id].descripcion })),
+};
+
+export const MUNICIPIO = {
+  cuerpo: '¿En qué municipio estás normalmente?',
+  boton: 'Elegir',
+  filas: (Object.keys(MUNICIPIOS) as MunicipioId[]).map<Fila>(id => ({ id, titulo: MUNICIPIOS[id] })),
+};
+
+export function registrado(nombre: string | undefined, numero: number, rol: RolId, municipio: MunicipioId): string {
+  return (
+    `¡Listo${nombre ? `, *${nombre}*` : ''}! 🌿 Ya eres el *vigía #${numero}* del manglar del Atlántico.\n\n` +
+    `${ROLES[rol].emoji} ${ROLES[rol].nombre} · 📍 ${MUNICIPIOS[municipio]}\n\n` +
+    'Cuando veas algo raro en el manglar, escríbeme y toca *🚨 Reportar*.'
+  );
+}
+
+export function saludoMenu(nombre?: string): string {
+  return nombre ? `¡Ajá, *${nombre}*! ¿Qué quieres hacer?` : '¡Ajá! ¿Qué quieres hacer?';
+}
 
 export const MENU = {
   cuerpo:

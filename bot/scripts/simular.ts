@@ -34,8 +34,11 @@ async function main() {
 
   const pasos: [string, Record<string, unknown>][] = [
     ['escribe "hola"', { type: 'text', text: { body: 'hola' } }],
+    ['toca Registrarme', { type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: 'registrarme', title: '✅ Registrarme' } } }],
+    ['escribe su nombre', { type: 'text', text: { body: 'vigía de prueba' } }],
+    ['elige Pescador/a', { type: 'interactive', interactive: { type: 'list_reply', list_reply: { id: 'pescador', title: '🎣 Pescador/a' } } }],
+    ['elige Puerto Colombia', { type: 'interactive', interactive: { type: 'list_reply', list_reply: { id: 'puerto_colombia', title: 'Puerto Colombia' } } }],
     ['toca Reportar', { type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: 'reportar', title: '🚨 Reportar' } } }],
-    ['toca Anónimo', { type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: 'anonimo', title: '🕶️ Anónimo' } } }],
     ['elige Tala', { type: 'interactive', interactive: { type: 'list_reply', list_reply: { id: 'tala', title: '🪓 Tala de mangle' } } }],
     ['manda su ubicación en la Ciénaga de Mallorquín', { type: 'location', location: { latitude: 11.0505, longitude: -74.8668 } }],
     ['manda una foto', { type: 'image', image: { id: 'media-sim-1', mime_type: 'image/jpeg', sha256: 'abc123' } }],

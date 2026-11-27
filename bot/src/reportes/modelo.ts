@@ -79,7 +79,46 @@ export interface Reporte {
   historial: CambioEstado[];
 }
 
+export const ROLES = {
+  pescador: { nombre: 'Pescador/a', emoji: '🎣', descripcion: 'Vivo de la ciénaga o del mar' },
+  habitante: { nombre: 'Habitante de la zona', emoji: '🏠', descripcion: 'Vivo cerca del manglar' },
+  estudiante: { nombre: 'Estudiante o colegio', emoji: '🎒', descripcion: 'Vengo de un colegio o universidad' },
+  turista: { nombre: 'Turista o visitante', emoji: '🧳', descripcion: 'Estoy de paso por la zona' },
+  organizacion: { nombre: 'Organización', emoji: '🌱', descripcion: 'Fundación, empresa o grupo ambiental' },
+  entidad: { nombre: 'Entidad pública', emoji: '🏛️', descripcion: 'Trabajo en una entidad del Estado' },
+  otro: { nombre: 'Otro', emoji: '🙋', descripcion: 'Ninguna de las anteriores' },
+} as const;
+
+export type RolId = keyof typeof ROLES;
+
+export const MUNICIPIOS = {
+  barranquilla: 'Barranquilla',
+  puerto_colombia: 'Puerto Colombia',
+  tubara: 'Tubará',
+  juan_de_acosta: 'Juan de Acosta',
+  piojo: 'Piojó',
+  otro_atlantico: 'Otro del Atlántico',
+  fuera: 'Fuera del Atlántico',
+} as const;
+
+export type MunicipioId = keyof typeof MUNICIPIOS;
+
+export function esRol(id: string): id is RolId {
+  return Object.prototype.hasOwnProperty.call(ROLES, id);
+}
+
+export function esMunicipio(id: string): id is MunicipioId {
+  return Object.prototype.hasOwnProperty.call(MUNICIPIOS, id);
+}
+
 export interface Usuario {
   consentimiento: 'identificado' | 'anonimo';
   fecha: string;
+  /** Datos del registro de vigías. El nombre y el contacto solo si eligió registrarse con su número. */
+  nombre?: string;
+  contacto?: string;
+  rol?: RolId;
+  municipio?: MunicipioId;
+  vigiaNumero?: number;
+  registradoEn?: string;
 }
