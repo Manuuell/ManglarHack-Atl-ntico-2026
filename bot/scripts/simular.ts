@@ -141,16 +141,23 @@ async function main() {
   // Lo que mandan el botón y los globos de la web a alguien que todavía no se registra.
   const desdeLaWeb: [string, Record<string, unknown>][] = [
     ['toca el botón de la web («Hola Zanky»)', { type: 'text', text: { body: 'Hola Zanky' } }],
-    ['toca Ahora no', boton('ahora_no')],
     ['toca el globo de jornadas', { type: 'text', text: { body: 'Hola Zanky, quiero ver las jornadas' } }],
   ];
   const pasos: [string, Record<string, unknown>][] = [
     ['escribe "hola"', { type: 'text', text: { body: 'hola' } }],
+    // El primer texto ya describe la amenaza: directo a reportar (sin menú ni registro antes).
+    ['cuenta lo que ve', { type: 'text', text: { body: 'Están talando mangle en la ciénaga, dos señores con machete cerca del caño' } }],
+    ['toca Con mi número', boton('acepto')],
+    ['manda su ubicación en la Ciénaga de Mallorquín', { type: 'location', location: { latitude: 11.0412, longitude: -74.8706 } }],
+    ['toca Sin foto (la descripción ya vino en su primer mensaje)', boton('sin_foto')],
+    ['toca Ahora mismo', boton('ahora')],
+    ['toca Grande', boton('grande')],
+    ['toca Enviar', boton('enviar')],
+    // El registro de vigía se ofrece después del envío.
     ['toca Registrarme', boton('registrarme')],
     ['escribe su nombre', { type: 'text', text: { body: 'vigía de prueba' } }],
     ['elige Pescador/a', lista('pescador')],
     ['elige Puerto Colombia', lista('puerto_colombia')],
-    ...reporte,
     ['toca Mis reportes', boton('mis_reportes')],
     ['toca Jornadas', boton('jornadas')],
     ['elige la siembra', lista('jor:jornada-1')],

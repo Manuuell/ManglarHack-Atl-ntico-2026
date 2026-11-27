@@ -19,7 +19,12 @@ export const BIENVENIDA = {
   ] as Boton[],
 };
 
-export const PEDIR_NOMBRE = '¿Cómo te llamas? Escríbeme tu nombre 🙂';
+/** Se ofrece después del primer envío: primero se atiende la denuncia, después el registro. */
+export const OFRECER_REGISTRO =
+  '🙌 ¿Te registras como *vigía del manglar*? Toma menos de un minuto y así la CRA sabe quién cuida cada zona.\n\n' +
+  '🔒 Tus datos se tratan según la Ley 1581 de 2012 y nunca se publican tu nombre ni tu número.';
+
+export const PEDIR_NOMBRE ='¿Cómo te llamas? Escríbeme tu nombre 🙂';
 
 export const NOMBRE_INVALIDO = 'Ese nombre no me cuadra 🤔. Escríbelo solo con letras, por ejemplo: *María Pérez*.';
 
@@ -97,6 +102,14 @@ export const TIPO = {
     descripcion: TIPOS[id].descripcion,
   })),
 };
+
+/** El primer mensaje ya describía la amenaza: se va directo a la ubicación. */
+export function amenazaReconocida(tipo: TipoId): string {
+  return (
+    `🚨 Entendí: *${TIPOS[tipo].emoji} ${TIPOS[tipo].nombre}*. Vamos a reportarlo ya, con lo que me contaste como descripción.\n\n` +
+    'Si no es eso, al final toca *✏️ Corregir*.'
+  );
+}
 
 export const PEDIR_UBICACION =
   '📍 *¿Dónde está pasando?*\n\n' +

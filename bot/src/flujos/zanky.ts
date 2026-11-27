@@ -9,6 +9,7 @@ import { confianza, corroboraciones, prioridad } from '../reportes/evaluacion';
 import { FuenteUbicacion, MagnitudId, MomentoId, RolId, TipoId, enAtlantico, esMagnitud, esMomento, esMunicipio, esRol, esTipo, numeroDeCaso } from '../reportes/modelo';
 import { enviarReporte } from '../backend/envio';
 import { enlaceSeguimiento } from '../reportes/seguimiento';
+import { detectarAmenaza } from './amenaza';
 import { backendActivo, estadoDeReportes } from '../backend/supabase';
 import { buscarJornada, proximasJornadas } from '../jornadas/jornadas';
 import { config as configBot } from '../config';
@@ -94,18 +95,22 @@ async function enviarMenu(de: string, s: Sesion): Promise<void> {
   await whatsapp.botones(de, cuerpo, T.MENU.botones, T.ENCABEZADO);
 }
 
-/** Primer contacto: a quien no está registrado se le ofrece ser vigía; a los demás, el menú. */
+/** Primer contacto (un saludo): el menú. El registro de vigía se ofrece después del primer envío, no antes. */
 async function inicio(de: string, s: Sesion): Promise<void> {
-  const u = almacen.usuario(almacen.hashDe(de));
-  if (!u?.vigiaNumero && !s.rechazoRegistro) return empezarRegistro(de, s);
   return enviarMenu(de, s);
 }
 
-async function empezarRegistro(de: string, s: Sesion): Promise<void> {
+async function empezarRegistro(de: string, s: Sesion, cuerpo: string = T.BIENVENIDA.cuerpo): Promise<void> {
   s.borrador = {};
   s.registro = undefined;
   ir(s, 'registro_inicio');
-  await whatsapp.botones(de, T.BIENVENIDA.cuerpo, T.BIENVENIDA.botones, T.ENCABEZADO);
+  await whatsapp.botones(de, cuerpo, T.BIENVENIDA.botones, T.ENCABEZADO);
+}
+
+/** Tras un envío: a quien todavía no es vigía (y no dijo «Ahora no») se le ofrece registrarse. */
+async function ofrecerRegistroTrasEnvio(de: string, s: Sesion): Promise<void> {
+  if (s.rechazoRegistro || almacen.usuario(almacen.hashDe(de))?.vigiaNumero) return;
+  await empezarRegistro(de, s, T.OFRECER_REGISTRO);
 }
 
 function nombreValido(texto: string): string | null {
@@ -140,20 +145,42 @@ async function terminarRegistro(de: string, s: Sesion, municipio: Parameters<typ
   await enviarMenu(de, s);
 }
 
-async function empezarReporte(de: string, s: Sesion): Promise<void> {
+/**
+ * Empieza un reporte. `previo` trae lo que ya se sabe cuando el primer mensaje describe la amenaza
+ * (tipo y descripción): entonces no se pregunta el tipo ni la descripción.
+ */
+async function empezarReporte(de: string, s: Sesion, previo: Pick<Borrador, 'tipo' | 'descripcion'> = {}): Promise<void> {
   const hash = almacen.hashDe(de);
   const recientes = almacen.delReportante(hash).filter(r => Date.now() - Date.parse(r.recibido_en) < 3600 * 1000);
   if (recientes.length >= config.maxReportesPorHora) {
     await whatsapp.texto(de, T.DEMASIADOS);
     return;
   }
-  s.borrador = {};
+  s.borrador = { ...previo };
+  if (previo.tipo) await whatsapp.texto(de, T.amenazaReconocida(previo.tipo));
   if (!almacen.usuario(hash)) {
     ir(s, 'consentimiento');
     await whatsapp.botones(de, T.CONSENTIMIENTO.cuerpo, T.CONSENTIMIENTO.botones, undefined, T.CONSENTIMIENTO.pie);
     return;
   }
-  await pedirTipo(de, s);
+  await seguirConTipo(de, s);
+}
+
+/** Si el tipo ya se reconoció en el primer mensaje se pasa a la ubicación; si no, se pregunta. */
+async function seguirConTipo(de: string, s: Sesion): Promise<void> {
+  if (s.borrador.tipo) return pedirUbicacion(de, s);
+  return pedirTipo(de, s);
+}
+
+/** Después de la foto: la descripción, salvo que ya venga del primer mensaje. */
+async function pedirDescripcion(de: string, s: Sesion, prefijo = ''): Promise<void> {
+  if (s.borrador.descripcion) {
+    ir(s, 'cuando');
+    await whatsapp.botones(de, `${prefijo}${T.PEDIR_CUANDO}`, T.BOTONES_CUANDO);
+    return;
+  }
+  ir(s, 'descripcion');
+  await whatsapp.botones(de, `${prefijo}${T.PEDIR_DESCRIPCION}`, T.BOTON_OMITIR);
 }
 
 async function pedirTipo(de: string, s: Sesion): Promise<void> {
@@ -290,6 +317,7 @@ async function guardarReporte(de: string, s: Sesion, messageId: string): Promise
     almacen.actualizar(reporte);
     await whatsapp.texto(de, T.ENVIO_PENDIENTE);
   }
+  if (resultado !== 'rechazado') await ofrecerRegistroTrasEnvio(de, s);
 }
 
 async function recibirFoto(de: string, s: Sesion, mediaId: string, sha256Meta?: string): Promise<void> {
@@ -309,8 +337,7 @@ async function recibirFoto(de: string, s: Sesion, mediaId: string, sha256Meta?: 
     console.error('[foto] no se pudo descargar:', (err as Error).message);
     s.borrador.conFoto = false;
   }
-  ir(s, 'descripcion');
-  await whatsapp.botones(de, `${s.borrador.conFoto ? '📸 ¡Foto recibida!' : 'No pude guardar la foto, sigamos sin ella.'}\n\n${T.PEDIR_DESCRIPCION}`, T.BOTON_OMITIR);
+  await pedirDescripcion(de, s, `${s.borrador.conFoto ? '📸 ¡Foto recibida!' : 'No pude guardar la foto, sigamos sin ella.'}\n\n`);
 }
 
 const webJornadas = () => `${new URL(configBot.jornadasUrl).origin}/plataforma/jornadas`;
@@ -422,6 +449,12 @@ export async function atender(m: MensajeEntrante): Promise<void> {
         s.rechazoRegistro = true;
         return enviarMenu(de, s);
       }
+      // Escribió otra cosa (una pregunta, otra denuncia) o tocó otro botón: no se le insiste con el registro.
+      if (entrada.tipo === 'texto' || opcion) {
+        s.rechazoRegistro = true;
+        ir(s, 'menu');
+        return atender(m);
+      }
       await whatsapp.botones(de, T.BIENVENIDA.cuerpo, T.BIENVENIDA.botones, T.ENCABEZADO);
       return;
     }
@@ -456,9 +489,10 @@ export async function atender(m: MensajeEntrante): Promise<void> {
     }
 
     case 'menu': {
-      // Primer mensaje de alguien nuevo (cualquier texto): se le ofrece el registro.
-      if (!opcion && !s.rechazoRegistro && !almacen.usuario(almacen.hashDe(de))?.vigiaNumero && entrada.tipo === 'texto' && !texto.includes('report') && !/jornad/.test(texto)) {
-        return empezarRegistro(de, s);
+      // Si el texto ya describe una amenaza («están talando mangle en la ciénaga»), directo a reportar.
+      if (entrada.tipo === 'texto') {
+        const tipo = detectarAmenaza(entrada.texto);
+        if (tipo) return empezarReporte(de, s, { tipo, descripcion: entrada.texto.trim().slice(0, 500) });
       }
       if (opcion === 'reportar' || texto.includes('report') || texto.includes('denunci')) return empezarReporte(de, s);
       if (opcion === 'mis_reportes' || texto.includes('mis reportes')) {
@@ -482,7 +516,7 @@ export async function atender(m: MensajeEntrante): Promise<void> {
           consentimiento: opcion === 'acepto' ? 'identificado' : 'anonimo',
           fecha: new Date().toISOString(),
         });
-        return pedirTipo(de, s);
+        return seguirConTipo(de, s);
       }
       if (opcion === 'no_acepto') {
         await whatsapp.texto(de, T.SIN_CONSENTIMIENTO);
@@ -529,9 +563,7 @@ export async function atender(m: MensajeEntrante): Promise<void> {
       if (entrada.tipo === 'imagen') return recibirFoto(de, s, entrada.mediaId, entrada.sha256);
       if (opcion === 'sin_foto') {
         s.borrador.conFoto = false;
-        ir(s, 'descripcion');
-        await whatsapp.botones(de, T.PEDIR_DESCRIPCION, T.BOTON_OMITIR);
-        return;
+        return pedirDescripcion(de, s);
       }
       await whatsapp.botones(de, T.PEDIR_FOTO, T.BOTON_SIN_FOTO);
       return;
@@ -578,7 +610,11 @@ export async function atender(m: MensajeEntrante): Promise<void> {
 
     case 'confirmar': {
       if (opcion === 'enviar') return guardarReporte(de, s, m.messageId);
-      if (opcion === 'reiniciar') return pedirTipo(de, s);
+      if (opcion === 'reiniciar') {
+        // «Corregir» vuelve a preguntar todo, también el tipo y la descripción que salieron del primer mensaje.
+        s.borrador = {};
+        return pedirTipo(de, s);
+      }
       return enviarResumen(de, s);
     }
   }
