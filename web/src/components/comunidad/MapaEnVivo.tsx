@@ -18,6 +18,15 @@ import { cn } from '../../lib/utils';
 interface Props { reportes: ReportePublico[]; sectores: ZonasManglar; jornadas: Jornada[] }
 
 const zona = { timeZone: 'America/Bogota' } as const;
+/** El servidor publica la hora redondeada a la hora en punto (privacidad): se dice aproximada. */
+function horaAproximada(iso: string, ahora: number): string {
+  const h = Math.floor((ahora - Date.parse(iso)) / 3_600_000);
+  if (h < 1) return 'en la última hora';
+  if (h < 24) return `hace unas ${h + 1} h`;
+  const d = Math.round(h / 24);
+  return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
+}
+
 function hace(iso: string, ahora: number): string {
   const min = Math.max(0, Math.round((ahora - Date.parse(iso)) / 60000));
   if (min < 1) return 'ahora mismo';
@@ -134,7 +143,7 @@ export default function MapaEnVivo({ reportes: iniciales, sectores, jornadas: jo
                   <span className="icono" style={{ background: color }}><Icono className="size-4" aria-hidden="true" /></span>
                   <span className="texto">
                     <b>{TIPOS[r.tipo].etiquetaLarga}</b>
-                    <small><MapPin className="inline size-3" aria-hidden="true" /> {r.zona ?? 'Atlántico'} · {hace(r.capturado_en, ahora)}</small>
+                    <small><MapPin className="inline size-3" aria-hidden="true" /> {r.zona ?? 'Atlántico'} · {r.origen === 'servidor' ? horaAproximada(r.capturado_en, ahora) : hace(r.capturado_en, ahora)}</small>
                   </span>
                   <span className="estado">{nuevos.has(r.id) ? 'Nuevo' : ESTADOS[r.estado].etiqueta}</span>
                 </button>
