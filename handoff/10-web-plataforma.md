@@ -93,5 +93,5 @@ El contrato de la web ya coincide con `backend/supabase/schema.sql` (tipos, esta
 - [x] `/plataforma/proyectos`.
 - [ ] Conexión a Supabase (pasos de arriba) y mapa en vivo.
 - [ ] Formulario ligero para turistas que entran por QR (canal `web`), con UUID generado en el navegador.
-- [ ] Zanky con el arte oficial de Flow (`web/src/components/marca/Zanky.astro` es el único lugar a cambiar).
+- [x] Zanky con el arte oficial (`marca/zanky` → `npm run marca:zanky`; `web/src/components/marca/Zanky.astro` elige el ánimo).
 - [ ] Revisar cada pantalla a 375 px y con letra al 130 %.

@@ -12,7 +12,8 @@
     "astro": "astro",
     "check": "astro check",
     "capas:prioridades": "node scripts/prioridades-cra.mjs",
-    "capas:manglar": "node scripts/manglar-cra.mjs"
+    "capas:manglar": "node scripts/manglar-cra.mjs",
+    "marca:zanky": "node scripts/zanky.mjs"
   },
   "dependencies": {
     "@astrojs/react": "^7.1.9",
