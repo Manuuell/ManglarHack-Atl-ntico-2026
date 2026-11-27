@@ -1,0 +1,56 @@
+name: zanqui
+description: "Zanqui: monitoreo ciudadano del manglar del Atlántico (Manglar Hack Atlántico 2026)."
+publish_to: 'none'
+
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  # Mapa base de OpenStreetMap y polígonos del manglar.
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  # GPS del teléfono: funciona sin internet.
+  geolocator: ^14.0.1
+  # Foto de la evidencia (cámara primero).
+  image_picker: ^1.2.4
+  # Cola de reportes y perfil guardados en el teléfono.
+  shared_preferences: ^2.5.6
+  path_provider: ^2.1.6
+  http: ^1.6.0
+  # Id del reporte generado en el teléfono: reintentar sin señal nunca duplica.
+  uuid: ^4.6.0
+  # Huella de la foto (fotos recicladas) y de la cédula (nunca se guarda en claro).
+  crypto: ^3.0.8
+  connectivity_plus: ^7.3.2
+  flutter_animate: ^4.5.2
+  qr_flutter: ^4.1.0
+  share_plus: ^13.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/datos/
+
+  # Inter va dentro de la app: en el manglar no hay señal para bajar fuentes.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: google_fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: google_fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: google_fonts/Inter-SemiBold.ttf
+          weight: 600
+        - asset: google_fonts/Inter-Bold.ttf
+          weight: 700
