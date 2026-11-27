@@ -2,6 +2,7 @@
 // y jornadas, con la lista de lo que está pasando. Lo nuevo llega en tiempo real (otras pestañas
 // incluidas) y el mapa vuela hasta allá.
 import { useEffect, useMemo, useRef, useState } from 'react';
+import '../../lib/popupsQueCaben';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { CalendarDays, MapPin, Radio } from 'lucide-react';
