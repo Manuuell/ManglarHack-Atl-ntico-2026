@@ -12,27 +12,27 @@ export const TIPOS: Record<TipoReporte, { etiqueta: string; etiquetaLarga: strin
  otro: { etiqueta: 'Otro', etiquetaLarga: 'Otro', icono: CircleHelp, gravedad: 1 },
 };
 export const PRIORIDADES: Record<NivelPrioridad, { etiqueta: string; color: string; chip: string; punto: string }> = {
-  alta: { etiqueta: 'Alta', color: '#dc2626', chip: 'bg-alta-suave text-alta-texto ring-1 ring-inset ring-alta/25', punto: 'bg-alta' },
-  media: { etiqueta: 'Media', color: '#d97706', chip: 'bg-media-suave text-media-texto ring-1 ring-inset ring-media/25', punto: 'bg-media' },
-  baja: { etiqueta: 'Baja', color: '#16a34a', chip: 'bg-baja-suave text-baja-texto ring-1 ring-inset ring-baja/25', punto: 'bg-baja' },
+  alta: { etiqueta: 'Alta', color: '#dc2626', chip: 'bg-alta-suave text-alta-texto border border-alta-texto/40', punto: 'bg-alta' },
+  media: { etiqueta: 'Media', color: '#d97706', chip: 'bg-media-suave text-media-texto border border-media-texto/40', punto: 'bg-media' },
+  baja: { etiqueta: 'Baja', color: '#16a34a', chip: 'bg-baja-suave text-baja-texto border border-baja-texto/40', punto: 'bg-baja' },
 };
 
 export const PRIORIDADES_ZONA: Record<PrioridadZona, { etiqueta: string; color: string; relleno: string; opacidadRelleno: number; chip: string }> = {
-  critica: { etiqueta: 'Crítica', color: '#7f1d1d', relleno: '#dc2626', opacidadRelleno: 0.32, chip: 'bg-critica-suave text-critica-texto ring-1 ring-inset ring-critica/25' },
-  alta: { etiqueta: 'Alta', color: '#dc2626', relleno: '#f87171', opacidadRelleno: 0.24, chip: 'bg-alta-suave text-alta-texto ring-1 ring-inset ring-alta/25' },
-  media: { etiqueta: 'Media', color: '#d97706', relleno: '#fbbf24', opacidadRelleno: 0.24, chip: 'bg-media-suave text-media-texto ring-1 ring-inset ring-media/25' },
-  baja: { etiqueta: 'Baja', color: '#16a34a', relleno: '#4ade80', opacidadRelleno: 0.22, chip: 'bg-baja-suave text-baja-texto ring-1 ring-inset ring-baja/25' },
+  critica: { etiqueta: 'Crítica', color: '#7f1d1d', relleno: '#dc2626', opacidadRelleno: 0.32, chip: 'bg-critica-suave text-critica-texto border border-critica-texto/40' },
+  alta: { etiqueta: 'Alta', color: '#dc2626', relleno: '#f87171', opacidadRelleno: 0.24, chip: 'bg-alta-suave text-alta-texto border border-alta-texto/40' },
+  media: { etiqueta: 'Media', color: '#d97706', relleno: '#fbbf24', opacidadRelleno: 0.24, chip: 'bg-media-suave text-media-texto border border-media-texto/40' },
+  baja: { etiqueta: 'Baja', color: '#16a34a', relleno: '#4ade80', opacidadRelleno: 0.22, chip: 'bg-baja-suave text-baja-texto border border-baja-texto/40' },
 };
 
 
 export const ESTADOS: Record<EstadoReporte, { etiqueta: string; descripcion: string; icono: LucideIcon; chip: string; abierto: boolean }> = {
- recibido: { etiqueta: 'Recibido', descripcion: 'Recibido para revisión.', icono: Inbox, chip: 'bg-fondo-alt text-suave ring-1 ring-linea', abierto: true },
- en_verificacion: { etiqueta: 'En verificación', descripcion: 'Una persona revisa la evidencia.', icono: ScanSearch, chip: 'bg-agua-50 text-agua-700 ring-agua-500/30', abierto: true },
- verificado: { etiqueta: 'Verificado', descripcion: 'Hallazgo confirmado por una persona.', icono: BadgeCheck, chip: 'bg-agua-600 text-white', abierto: true },
- alerta_oficial: { etiqueta: 'Alerta oficial', descripcion: 'Alerta emitida con apertura de expediente.', icono: Siren, chip: 'bg-alta text-white', abierto: true },
+ recibido: { etiqueta: 'Recibido', descripcion: 'Recibido para revisión.', icono: Inbox, chip: 'bg-white/10 text-suave border border-linea', abierto: true },
+ en_verificacion: { etiqueta: 'En verificación', descripcion: 'Una persona revisa la evidencia.', icono: ScanSearch, chip: 'bg-cra-500/20 text-cra-100 border border-cra-300/40', abierto: true },
+ verificado: { etiqueta: 'Verificado', descripcion: 'Hallazgo confirmado por una persona.', icono: BadgeCheck, chip: 'bg-cra-500/30 text-cra-100 ring-1 ring-inset ring-cra-300/40', abierto: true },
+ alerta_oficial: { etiqueta: 'Alerta oficial', descripcion: 'Alerta emitida con apertura de expediente.', icono: Siren, chip: 'bg-dorado-500 text-cra-950', abierto: true },
  en_atencion: { etiqueta: 'En atención', descripcion: 'Caso en atención por el equipo.', icono: HardHat, chip: PRIORIDADES.media.chip, abierto: true },
  cerrado: { etiqueta: 'Cerrado', descripcion: 'Seguimiento finalizado.', icono: CircleCheck, chip: PRIORIDADES.baja.chip, abierto: false },
- descartado: { etiqueta: 'Descartado', descripcion: 'La evidencia no confirma el reporte.', icono: CircleX, chip: 'bg-fondo-alt text-tenue line-through', abierto: false },
+ descartado: { etiqueta: 'Descartado', descripcion: 'La evidencia no confirma el reporte.', icono: CircleX, chip: 'bg-white/5 text-tenue line-through', abierto: false },
 };
 export const TRANSICIONES: Record<EstadoReporte, { a: EstadoReporte; accion: string; tono: 'primaria' | 'peligro' | 'secundaria' }[]> = {
  recibido: [{ a: 'en_verificacion', accion: 'Iniciar verificación', tono: 'primaria' }, { a: 'descartado', accion: 'Descartar', tono: 'peligro' }],

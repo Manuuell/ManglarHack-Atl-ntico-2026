@@ -1,0 +1,86 @@
+[
+  {
+    "id": "jornada-1",
+    "accion_id": "accion-a",
+    "titulo": "Jornada de siembra en el ca?o",
+    "tipo": "siembra",
+    "inicio": "2026-11-29T07:00:00-05:00",
+    "fin": "2026-11-29T11:00:00-05:00",
+    "punto_encuentro": "Ecoparque Ci?naga de Mallorqu?n, entrada principal",
+    "lat": 11.038,
+    "lon": -74.865,
+    "cupos": 40,
+    "inscritos": 23,
+    "que_llevar": [
+      "Agua potable",
+      "Gorra",
+      "Bloqueador solar",
+      "Botas que se puedan mojar",
+      "Guantes de trabajo"
+    ],
+    "descripcion": "Datos de ejemplo. Actividad demostrativa; confirmar convocatoria y condiciones con la organizaci?n."
+  },
+  {
+    "id": "jornada-2",
+    "accion_id": "accion-c",
+    "titulo": "Recorrido de vig?as del Totumo",
+    "tipo": "recorrido_vigias",
+    "inicio": "2026-12-06T06:30:00-05:00",
+    "fin": "2026-12-06T10:00:00-05:00",
+    "punto_encuentro": "Muelle de pescadores del Totumo",
+    "lat": 10.73,
+    "lon": -75.23,
+    "cupos": 15,
+    "inscritos": 9,
+    "que_llevar": [
+      "Agua potable",
+      "Gorra",
+      "Bloqueador solar",
+      "Botas que se puedan mojar",
+      "Guantes de trabajo"
+    ],
+    "descripcion": "Datos de ejemplo. Actividad demostrativa; confirmar convocatoria y condiciones con la organizaci?n. Programaci?n tentativa, sujeta a aprobaci?n de la acci?n."
+  },
+  {
+    "id": "jornada-3",
+    "accion_id": "accion-b",
+    "titulo": "Limpieza del ca?o Balboa",
+    "tipo": "limpieza",
+    "inicio": "2026-12-07T08:00:00-05:00",
+    "fin": "2026-12-07T11:30:00-05:00",
+    "punto_encuentro": "Punto de encuentro del ca?o Balboa [por confirmar]",
+    "lat": 11.0385,
+    "lon": -74.915,
+    "cupos": 30,
+    "inscritos": 30,
+    "que_llevar": [
+      "Agua potable",
+      "Gorra",
+      "Bloqueador solar",
+      "Botas que se puedan mojar",
+      "Guantes de trabajo"
+    ],
+    "descripcion": "Datos de ejemplo. Actividad demostrativa; confirmar convocatoria y condiciones con la organizaci?n."
+  },
+  {
+    "id": "jornada-4",
+    "accion_id": "accion-a",
+    "titulo": "Monitoreo de supervivencia a 3 meses",
+    "tipo": "monitoreo",
+    "inicio": "2026-12-13T07:30:00-05:00",
+    "fin": "2026-12-13T10:00:00-05:00",
+    "punto_encuentro": "Ecoparque Ci?naga de Mallorqu?n, entrada principal",
+    "lat": 11.038,
+    "lon": -74.865,
+    "cupos": 12,
+    "inscritos": 4,
+    "que_llevar": [
+      "Agua potable",
+      "Gorra",
+      "Bloqueador solar",
+      "Botas que se puedan mojar",
+      "Guantes de trabajo"
+    ],
+    "descripcion": "Datos de ejemplo. Actividad demostrativa; confirmar convocatoria y condiciones con la organizaci?n. Seguimiento de una cohorte de reposici?n de septiembre; los registros de agosto y noviembre corresponden a la siembra inicial."
+  }
+]

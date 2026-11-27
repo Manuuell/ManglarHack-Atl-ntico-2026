@@ -1,0 +1,26 @@
+---
+interface Props { rotulo?: string; activo?: 'portada' | 'workflow' | 'plataforma'; }
+const { rotulo, activo } = Astro.props;
+const enlaces = [
+ { id: 'portada', href: '/', texto: 'PORTADA' },
+ { id: 'workflow', href: '/workflow', texto: 'WORKFLOW' },
+ { id: 'plataforma', href: '/plataforma', texto: 'PLATAFORMA' },
+];
+---
+<header class="border-b border-linea bg-fondo-alt">
+ <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+  <div class="flex min-w-0 flex-wrap items-center gap-5">
+   <a href="/" class="inline-flex min-h-11 items-center"><img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" class="h-12 w-auto" /></a>
+   {rotulo && <p class="rotulo text-dorado-300">{rotulo}</p>}
+  </div>
+  <nav aria-label="Navegación principal" class="hidden gap-6 md:flex">
+   {enlaces.map(({ id, href, texto }) => <a href={href} aria-current={activo === id ? 'page' : undefined} class:list={['rotulo inline-flex min-h-11 items-center border-b-[3px] text-texto hover:text-dorado-300', activo === id ? 'border-dorado-300' : 'border-transparent']}>{texto}</a>)}
+  </nav>
+  <details class="w-full md:hidden">
+   <summary class="rotulo min-h-11 cursor-pointer py-3 text-texto">Menú</summary>
+   <nav aria-label="Navegación móvil" class="flex flex-col items-start gap-1 pb-2">
+    {enlaces.map(({ id, href, texto }) => <a href={href} aria-current={activo === id ? 'page' : undefined} class:list={['rotulo inline-flex min-h-11 items-center border-b-[3px] px-2 text-texto hover:text-dorado-300', activo === id ? 'border-dorado-300' : 'border-transparent']}>{texto}</a>)}
+   </nav>
+  </details>
+ </div>
+</header>

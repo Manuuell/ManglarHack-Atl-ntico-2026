@@ -1,0 +1,239 @@
+[
+  {
+    "id": "accion-a",
+    "nombre": "Siembra de mangle rojo en el ca?o",
+    "tipo": "siembra",
+    "actor_id": "pescadores-demo",
+    "sector": "mallorquin",
+    "lat": 11.038,
+    "lon": -74.865,
+    "hectareas": 1.5,
+    "accion_plan": "restauracion",
+    "prioridad_plan": "alta",
+    "plan_aproximado": true,
+    "estado": "en_ejecucion",
+    "descripcion": "Datos de ejemplo. Siembra de mangle rojo en el ca?o. Sitio y plan provisionales; requieren validaci?n de la C.R.A.",
+    "comunidad_coparticipante": "Asociaci?n de pescadores de la ci?naga",
+    "requerimientos": [
+      {
+        "id": "siembra-1",
+        "texto": "Especie y procedencia del material vegetal",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-2",
+        "texto": "Sitio dentro del manglar probable, áreas por revisar o zona de restauración del plan",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-3",
+        "texto": "Temporada de lluvias con salinidad y marea verificadas",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-4",
+        "texto": "Permiso o concepto de la Corporación según la Resolución 1263 de 2018",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-5",
+        "texto": "Participación comunitaria acordada por escrito",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-6",
+        "texto": "Plan de monitoreo a 3, 6 y 12 meses con fotografías ubicadas",
+        "cumplido": true
+      }
+    ],
+    "observaciones": [],
+    "creada_en": "2026-04-15T09:00:00-05:00"
+  },
+  {
+    "id": "accion-b",
+    "nombre": "Siembra del ca?o Balboa",
+    "tipo": "siembra",
+    "actor_id": "fundacion-demo",
+    "sector": "balboa",
+    "lat": 11.0385,
+    "lon": -74.915,
+    "hectareas": 0.8,
+    "accion_plan": "recuperacion",
+    "prioridad_plan": "media",
+    "plan_aproximado": true,
+    "estado": "aprobada",
+    "descripcion": "Datos de ejemplo. Siembra del ca?o Balboa. Sitio y plan provisionales; requieren validaci?n de la C.R.A.",
+    "comunidad_coparticipante": "Asociaci?n de pescadores de la ci?naga",
+    "requerimientos": [
+      {
+        "id": "siembra-1",
+        "texto": "Especie y procedencia del material vegetal",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-2",
+        "texto": "Sitio dentro del manglar probable, áreas por revisar o zona de restauración del plan",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-3",
+        "texto": "Temporada de lluvias con salinidad y marea verificadas",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-4",
+        "texto": "Permiso o concepto de la Corporación según la Resolución 1263 de 2018",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-5",
+        "texto": "Participación comunitaria acordada por escrito",
+        "cumplido": true
+      },
+      {
+        "id": "siembra-6",
+        "texto": "Plan de monitoreo a 3, 6 y 12 meses con fotografías ubicadas",
+        "cumplido": true
+      }
+    ],
+    "observaciones": [],
+    "creada_en": "2026-11-10T09:00:00-05:00"
+  },
+  {
+    "id": "accion-c",
+    "nombre": "Vig?as del manglar del Totumo",
+    "tipo": "conservacion_vigilancia",
+    "actor_id": "pescadores-demo",
+    "sector": "totumo",
+    "lat": 10.73,
+    "lon": -75.23,
+    "hectareas": 40,
+    "accion_plan": "preservacion",
+    "prioridad_plan": "alta",
+    "plan_aproximado": true,
+    "estado": "en_revision",
+    "descripcion": "Datos de ejemplo. Vig?as del manglar del Totumo. Sitio y plan provisionales; requieren validaci?n de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
+    "comunidad_coparticipante": "Asociaci?n de pescadores de la ci?naga",
+    "requerimientos": [
+      {
+        "id": "conservacion_vigilancia-1",
+        "texto": "Delimitación del recorrido y objetivos de conservación",
+        "cumplido": true
+      },
+      {
+        "id": "conservacion_vigilancia-2",
+        "texto": "Acuerdo con la comunidad y responsables de los recorridos",
+        "cumplido": true
+      },
+      {
+        "id": "conservacion_vigilancia-3",
+        "texto": "Protocolo de seguridad sin confrontación y aviso a autoridades",
+        "cumplido": false
+      },
+      {
+        "id": "conservacion_vigilancia-4",
+        "texto": "Registro ubicado de observaciones y protección de datos personales",
+        "cumplido": false
+      },
+      {
+        "id": "conservacion_vigilancia-5",
+        "texto": "Calendario de seguimiento y entrega de reportes a la Corporación",
+        "cumplido": false
+      }
+    ],
+    "observaciones": [],
+    "creada_en": "2026-11-10T09:00:00-05:00"
+  },
+  {
+    "id": "accion-d",
+    "nombre": "Reapertura de ca?o en Puerto Velero",
+    "tipo": "restauracion_hidrologica",
+    "actor_id": "universidad-demo",
+    "sector": "balboa",
+    "lat": 10.95,
+    "lon": -75.03,
+    "hectareas": 3.2,
+    "accion_plan": "restauracion",
+    "prioridad_plan": "alta",
+    "plan_aproximado": true,
+    "estado": "con_observaciones",
+    "descripcion": "Datos de ejemplo. Reapertura de ca?o en Puerto Velero. Sitio y plan provisionales; requieren validaci?n de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
+    "comunidad_coparticipante": "Asociaci?n de pescadores de la ci?naga",
+    "requerimientos": [
+      {
+        "id": "restauracion_hidrologica-1",
+        "texto": "Diagnóstico de conectividad hídrica, salinidad y mareas",
+        "cumplido": true
+      },
+      {
+        "id": "restauracion_hidrologica-2",
+        "texto": "Diseño de intervención y manejo de sedimentos",
+        "cumplido": true
+      },
+      {
+        "id": "restauracion_hidrologica-3",
+        "texto": "Permiso o concepto de la Corporación antes de intervenir",
+        "cumplido": false
+      },
+      {
+        "id": "restauracion_hidrologica-4",
+        "texto": "Acuerdo comunitario y medidas de seguridad",
+        "cumplido": false
+      },
+      {
+        "id": "restauracion_hidrologica-5",
+        "texto": "Plan de seguimiento de caudales y recuperación del manglar",
+        "cumplido": false
+      }
+    ],
+    "observaciones": [
+      "Adjuntar el perfil del ca?o y el manejo de sedimentos para evaluar efectos sobre el intercambio de agua antes de autorizar la reapertura."
+    ],
+    "creada_en": "2026-11-10T09:00:00-05:00"
+  },
+  {
+    "id": "accion-e",
+    "nombre": "Monitoreo escolar del manglar de Santa Ver?nica",
+    "tipo": "conservacion_vigilancia",
+    "actor_id": "colegio-demo",
+    "sector": "manaties",
+    "lat": 10.86,
+    "lon": -75.12,
+    "hectareas": 2,
+    "accion_plan": "preservacion",
+    "prioridad_plan": "media",
+    "plan_aproximado": true,
+    "estado": "propuesta",
+    "descripcion": "Datos de ejemplo. Monitoreo escolar del manglar de Santa Ver?nica. Sitio y plan provisionales; requieren validaci?n de la C.R.A. Propuesta del equipo: la C.R.A. define las listas.",
+    "comunidad_coparticipante": "[comunidad por acordar]",
+    "requerimientos": [
+      {
+        "id": "conservacion_vigilancia-1",
+        "texto": "Delimitación del recorrido y objetivos de conservación",
+        "cumplido": true
+      },
+      {
+        "id": "conservacion_vigilancia-2",
+        "texto": "Acuerdo con la comunidad y responsables de los recorridos",
+        "cumplido": true
+      },
+      {
+        "id": "conservacion_vigilancia-3",
+        "texto": "Protocolo de seguridad sin confrontación y aviso a autoridades",
+        "cumplido": false
+      },
+      {
+        "id": "conservacion_vigilancia-4",
+        "texto": "Registro ubicado de observaciones y protección de datos personales",
+        "cumplido": false
+      },
+      {
+        "id": "conservacion_vigilancia-5",
+        "texto": "Calendario de seguimiento y entrega de reportes a la Corporación",
+        "cumplido": false
+      }
+    ],
+    "observaciones": [],
+    "creada_en": "2026-11-10T09:00:00-05:00"
+  }
+]

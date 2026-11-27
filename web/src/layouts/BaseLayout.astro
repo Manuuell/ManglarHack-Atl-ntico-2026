@@ -1,9 +1,8 @@
 ---
 import '../styles/global.css';
-import Navbar from '../components/layout/Navbar.astro';
 import Footer from '../components/layout/Footer.astro';
-interface Props { title?: string; description?: string; }
-const { title = 'Zanqui · Monitoreo ciudadano de manglares del Atlántico', description = 'Ciencia ciudadana para cuidar los manglares del Atlántico: reportes con Zanqui, seguimiento de la C.R.A. y datos abiertos para todos.' } = Astro.props;
+interface Props { title?: string; description?: string; class?: string; sinPie?: boolean; }
+const { title = 'El manglar del Atlántico · C.R.A.', description = 'Monitoreo del manglar del Atlántico y plataforma abierta para su restauración y conservación con la C.R.A., las comunidades y Zanqui.', class: clase, sinPie = false } = Astro.props;
 ---
 <!doctype html>
 <html lang="es">
@@ -11,7 +10,7 @@ const { title = 'Zanqui · Monitoreo ciudadano de manglares del Atlántico', des
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content={description} />
-  <meta name="theme-color" content="#0b3d2e" />
+  <meta name="theme-color" content="#0b3a58" />
   <meta property="og:locale" content="es_CO" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
@@ -19,11 +18,11 @@ const { title = 'Zanqui · Monitoreo ciudadano de manglares del Atlántico', des
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap" rel="stylesheet" />
   <title>{title}</title>
  </head>
- <body class="bg-fondo text-texto antialiased">
-  <a href="#contenido" class="sr-only fixed left-4 top-20 z-[1200] rounded-xl bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
-  <Navbar /><main id="contenido"><slot /></main><Footer />
+ <body class:list={['bg-fondo text-texto font-sans', clase]}>
+  <slot />
+  {!sinPie && <Footer />}
  </body>
 </html>

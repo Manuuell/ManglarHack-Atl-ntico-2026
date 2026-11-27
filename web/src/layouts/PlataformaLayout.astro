@@ -1,0 +1,46 @@
+---
+import BaseLayout from './BaseLayout.astro';
+interface Props {
+ title: string;
+ activa: 'inicio' | 'registro' | 'proponer' | 'seguimiento' | 'monitoreo' | 'proyectos' | 'panel';
+ ancho?: 'normal' | 'completo';
+}
+const { title, activa, ancho = 'normal' } = Astro.props;
+const secciones = [
+ { id: 'inicio', href: '/plataforma', texto: 'INICIO' },
+ { id: 'registro', href: '/plataforma/registro', texto: 'REGISTRO DE ACTOR' },
+ { id: 'proponer', href: '/plataforma/proponer', texto: 'PROPONER ACCIÓN' },
+ { id: 'seguimiento', href: '/plataforma/seguimiento', texto: 'SEGUIMIENTO' },
+ { id: 'monitoreo', href: '/plataforma/monitoreo', texto: 'MONITOREO COMUNITARIO' },
+ { id: 'proyectos', href: '/plataforma/proyectos', texto: 'PROYECTOS' },
+ { id: 'panel', href: '/plataforma/panel', texto: 'PANEL DE LA CORPORACIÓN' },
+];
+---
+<BaseLayout title={title}>
+ <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
+ <header class="bg-fondo">
+  <div class="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
+   <nav aria-label="Navegación principal" class="flex items-center justify-end gap-4 py-3">
+    <a href="/" class="rotulo inline-flex min-h-11 items-center hover:text-dorado-300">PORTADA</a><span aria-hidden="true" class="text-tenue">·</span><a href="/workflow" class="rotulo inline-flex min-h-11 items-center hover:text-dorado-300">WORKFLOW</a>
+   </nav>
+   <div class="flex flex-col items-start gap-6 lg:flex-row lg:gap-9">
+    <a href="/" class="shrink-0"><img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" class="h-16 w-auto lg:h-20" /></a>
+    <div class="min-w-0">
+     <p class="rotulo mb-4 text-dorado-300">ENTRADA 2 · CORPORACIÓN AUTÓNOMA REGIONAL DEL ATLÁNTICO</p>
+     <h1 class="titular max-w-5xl text-3xl lg:text-[2.6rem]">PLATAFORMA ABIERTA PARA LA RESTAURACIÓN Y CONSERVACIÓN DEL MANGLAR</h1>
+     <p class="mt-5 max-w-5xl font-bold leading-relaxed text-suave">Comunidades, entidades, academia, empresas y ciudadanos proponen, ejecutan y monitorean acciones sobre el manglar, y la autoridad ambiental las revisa y acompaña desde un solo lugar. Aquí llegan también los reportes de la app y del bot de WhatsApp de Zanqui.</p>
+    </div>
+   </div>
+  </div>
+  <div class="border-b border-linea">
+   <nav aria-label="Secciones de la plataforma" class="pestanas mx-auto flex max-w-7xl gap-6 overflow-x-auto px-4 sm:px-6 lg:px-8">
+    {secciones.map(({ id, href, texto }) => <a href={href} aria-current={activa === id ? 'page' : undefined} class:list={['rotulo inline-flex min-h-11 shrink-0 items-center border-b-[3px] py-4 text-texto hover:text-dorado-300', activa === id ? 'border-dorado-300' : 'border-transparent']}>{texto}</a>)}
+   </nav>
+  </div>
+ </header>
+ <main id="contenido" class:list={['mx-auto px-4 py-8 sm:px-6 lg:px-8', ancho === 'normal' && 'max-w-7xl']}><slot /></main>
+</BaseLayout>
+<style>
+ .pestanas { scrollbar-width: none; }
+ .pestanas::-webkit-scrollbar { display: none; }
+</style>

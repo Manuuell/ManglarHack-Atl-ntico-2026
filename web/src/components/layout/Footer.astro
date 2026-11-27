@@ -1,16 +1,13 @@
 ---
-import Zanqui from '../marca/Zanqui.astro';
-const enlaces = [['inicio', 'Inicio'], ['ecosistema', 'Ecosistema'], ['mapa', 'Mapa público'], ['panel', 'Panel C.R.A.'], ['comunidad', 'Comunidad']];
+const enlaces = [['/', 'Portada'], ['/workflow', 'Workflow'], ['/plataforma', 'Plataforma']];
 ---
-<footer class="bg-manglar-950 py-12 text-manglar-100">
- <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-  <div class="flex flex-col justify-between gap-8 sm:flex-row">
-   <div><a href="#inicio" class="inline-flex items-center gap-2 text-2xl font-bold text-white"><Zanqui class="h-12 w-12" />Zanqui</a><p class="mt-4 max-w-lg text-sm leading-relaxed">Hackatón ManglarHack Atlántico 2026 · C.R.A. · Universidad Simón Bolívar</p></div>
-   <nav aria-label="Navegación del pie de página" class="flex flex-wrap items-start gap-x-6 gap-y-3 text-sm">{enlaces.map(([id, texto]) => <a href={`#${id}`} class="hover:text-white hover:underline">{texto}</a>)}</nav>
-  </div>
-  <div class="mt-10 space-y-2 border-t border-manglar-100/15 pt-6 text-xs leading-relaxed">
-   <p>Datos de ejemplo. Zonas de trabajo aproximadas a la espera del KMZ oficial de la C.R.A.</p>
-   <p>Capa de manglar: INVEMAR, Capa Nacional de Manglares, imagen 2020, 1:25.000. No es la capa oficial de la C.R.A.</p><p>Datos abiertos en CSV, GeoJSON y KML · licencia CC BY 4.0 · ubicaciones aproximadas.</p><p>© 2026 Zanqui · Guardianes del manglar.</p>
-  </div>
+<footer class="border-t border-linea-suave bg-fondo-alt py-8 text-sm text-tenue">
+ <div class="mx-auto max-w-7xl space-y-4 px-4 sm:px-6 lg:px-8">
+  <p>ManglarHack Atlántico 2026 · Equipo SENTRALABS · UTB · Para la Corporación Autónoma Regional del Atlántico (C.R.A.)</p>
+  <nav aria-label="Navegación del pie de página" class="flex flex-wrap gap-x-6">
+   {enlaces.map(([href, texto]) => <a href={href} class="inline-flex min-h-11 items-center hover:text-dorado-300 hover:underline">{texto}</a>)}
+  </nav>
+  <p>Cifras: workflow de monitoreo de la C.R.A. (Sentinel-2, programa Copernicus) · Capa Nacional de Manglares INVEMAR 2020 · Mapa base © colaboradores de OpenStreetMap</p>
+  <p>Datos abiertos con licencia CC BY 4.0 · Lo rotulado «Datos de ejemplo» es de demostración · Tratamiento de datos según la Ley 1581 de 2012</p>
  </div>
 </footer>

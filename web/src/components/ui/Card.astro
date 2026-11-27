@@ -4,4 +4,4 @@ import { cn } from '../../lib/utils';
 type Props = HTMLAttributes<'div'>;
 const { class: clase, ...rest } = Astro.props;
 ---
-<div class={cn('rounded-3xl bg-superficie shadow-[var(--c-sombra)] ring-1 ring-linea-suave', clase)} {...rest}><slot /></div>
+<div class={cn('rounded-sm border border-linea-suave bg-superficie', clase)} {...rest}><slot /></div>
