@@ -6,6 +6,7 @@ import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../inicio/pronostico_compacto.dart';
+import 'carrusel_noticias.dart';
 import 'pantalla_comunidad.dart';
 import '../../datos/experiencia/jornada.dart';
 import 'alertas_diseno.dart';
@@ -149,17 +150,19 @@ class _ComunidadInicioState extends State<ComunidadInicio> {
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
         child: Text('DESDE LA CRA', style: tt.seccion.copyWith(color: Cra.azul)),
       ),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: AnimatedSwitcher(
-          duration: Zm.corto,
-          child: _noticias == null
-              ? const Esqueleto.cabecera(key: ValueKey('esq'))
-              : noticia == null
-                  ? Text('Sin noticias guardadas todavía. Con señal aparecen las de la CRA',
-                      key: const ValueKey('vacio'), style: tt.bodyMedium?.copyWith(color: Zc.textoSuave))
-                  : TarjetaNoticia(key: ValueKey(noticia.id), noticia: noticia, destacada: true),
-        ),
+      // Carrusel de borde a borde (carrusel_noticias.dart); el esqueleto tiene su mismo alto.
+      AnimatedSwitcher(
+        duration: Zm.corto,
+        child: _noticias == null
+            ? const EsqueletoCarrusel(key: ValueKey('esq'))
+            : noticia == null
+                ? Padding(
+                    key: const ValueKey('vacio'),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text('Sin noticias guardadas todavía. Con señal aparecen las de la CRA',
+                        style: tt.bodyMedium?.copyWith(color: Zc.textoSuave)),
+                  )
+                : CarruselNoticias(key: const ValueKey('carrusel'), noticias: _noticias!.datos),
       ),
     ]);
   }

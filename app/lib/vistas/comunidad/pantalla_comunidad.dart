@@ -25,6 +25,7 @@ import '../comun/zanky_mascota.dart';
 import '../../datos/comunidad/feed.dart';
 import 'datos_abiertos.dart';
 import 'alertas_diseno.dart';
+import 'carrusel_noticias.dart';
 import 'feed_y_eventos.dart';
 import 'piezas_comunidad.dart';
 import '../../datos/admin/contenido_publico.dart';
@@ -481,7 +482,7 @@ class _SeccionGuardianes extends StatelessWidget {
 
 // ------------------------------------------------------------------ noticias
 
-/// Noticias del manglar: una destacada y el resto en un carrusel (también lo usa Inicio).
+/// Noticias del manglar en un carrusel de borde a borde ([CarruselNoticias]).
 class SeccionNoticias extends StatelessWidget {
   const SeccionNoticias({super.key, required this.lote});
   final Lote<List<NoticiaManglar>>? lote;
@@ -489,12 +490,10 @@ class SeccionNoticias extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = lote;
-    return LayoutBuilder(builder: (context, caja) {
-      final ancho = caja.maxWidth;
-      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const TituloSeccion(antetitulo: 'Desde la CRA', titulo: 'La CRA', tono: 'en el manglar'),
         if (l == null)
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: Esqueleto.cabecera())
+          const EsqueletoCarrusel()
         else ...[
           NotaOrigen(origen: l.origen, cuando: l.cuando),
           if (l.datos.isEmpty)
@@ -504,28 +503,10 @@ class SeccionNoticias extends StatelessWidget {
               tamanoZanky: 90,
               relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
             )
-          else ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TarjetaNoticia(noticia: l.datos.first, destacada: true),
-            ),
-            if (l.datos.length > 1) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 236,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: l.datos.length - 1,
-                  separatorBuilder: (_, _) => const SizedBox(width: 12),
-                  itemBuilder: (_, k) => TarjetaNoticia(noticia: l.datos[k + 1], ancho: ancho < 600 ? 230 : 260),
-                ),
-              ),
-            ],
-          ],
+          else
+            CarruselNoticias(noticias: l.datos),
         ],
       ]);
-    });
   }
 }
 

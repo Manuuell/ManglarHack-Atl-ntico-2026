@@ -3,16 +3,13 @@ import 'package:flutter/material.dart';
 import '../../datos/comunidad/comunidad.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../../datos/comunidad/marcas_comunidad.dart';
 import '../../nucleo/base/hoja.dart';
-import '../../nucleo/kit/accion_gesto.dart';
-import '../../nucleo/kit/aviso.dart';
-import '../../nucleo/kit/fila_deslizable.dart';
 import '../../nucleo/kit/menu_mantenido.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import 'alertas_diseno.dart';
+import 'carrusel_noticias.dart';
 import 'lector_noticia.dart';
 
 /// Colores de los niveles de alerta, con los tonos de la paleta CRA (amarilla = dorado CRA).
@@ -163,47 +160,6 @@ class MarcadorAlerta extends StatelessWidget {
       );
 }
 
-/// La vista previa al mantener presionada una noticia: foto, fecha y el comienzo del texto.
-class _VistaPreviaNoticia extends StatelessWidget {
-  const _VistaPreviaNoticia({required this.noticia});
-  final NoticiaManglar noticia;
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final n = noticia;
-    return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      ClipRRect(
-        borderRadius: BorderRadius.circular(Zr.m),
-        child: AspectRatio(aspectRatio: 16 / 9, child: FotoNoticia(url: n.imagen, semilla: n.titulo)),
-      ),
-      const SizedBox(height: 12),
-      Text('${sinPuntosCra(n.fuente).toUpperCase()} · ${fechaCorta(n.fecha)}',
-          style: tt.seccion.copyWith(color: Cra.azul, fontSize: 10.5)),
-      const SizedBox(height: 6),
-      Text(sinPuntosCra(n.titulo), style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800, height: 1.25)),
-      const SizedBox(height: 8),
-      Text(sinPuntosCra(n.parrafos.take(2).join('\n\n')),
-          maxLines: 7, overflow: TextOverflow.ellipsis, style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.45)),
-    ]);
-  }
-}
-
-/// Guardar o quitar de guardadas, con píldora y «Deshacer».
-void alternarGuardarNoticia(BuildContext context, NoticiaManglar n) {
-  final si = noticiasGuardadas.alternar('${n.id}');
-  vibrar(Vibracion.ligera);
-  avisar(context, si ? 'Noticia guardada' : 'Quitada de guardadas',
-      tipo: si ? TipoAviso.exito : TipoAviso.info,
-      accion: AccionAviso('Deshacer', () => noticiasGuardadas.poner('${n.id}', !si)));
-}
-
-/// Ocultar: sale de Inicio y de Comunidad; la píldora trae «Deshacer».
-void ocultarNoticia(BuildContext context, NoticiaManglar n) {
-  noticiasOcultas.poner('${n.id}', true);
-  vibrar(Vibracion.ligera);
-  avisar(context, 'No verás más esta noticia', accion: AccionAviso('Deshacer', () => noticiasOcultas.poner('${n.id}', false)));
-}
-
 /// Tarjeta de noticia: foto, fuente, fecha y título; se lee dentro de la app.
 /// Tocar: leer. Mantener: vista previa con Leer, Guardar, Compartir y Ocultar. En la destacada,
 /// deslizar a la derecha guarda y a la izquierda oculta (con «Deshacer»); en el carrusel no se
@@ -218,57 +174,17 @@ class TarjetaNoticia extends StatelessWidget {
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
     final n = noticia;
-    final titulo = sinPuntosCra(n.titulo);
-    return ValueListenableBuilder<Set<String>>(
-      valueListenable: noticiasGuardadas,
-      builder: (context, guardadas, _) {
-        final guardada = guardadas.contains('${n.id}');
-        final guardar = AccionGesto(
-          etiqueta: guardada ? 'Quitar de guardadas' : 'Guardar',
-          icono: guardada ? Icons.bookmark_remove_rounded : Icons.bookmark_add_rounded,
-          color: Cra.azul,
-          alEjecutar: () => alternarGuardarNoticia(context, n),
-        );
-        final ocultar = AccionGesto(
-          etiqueta: 'Ocultar',
-          icono: Icons.visibility_off_rounded,
-          destructiva: true,
-          alEjecutar: () => ocultarNoticia(context, n),
-        );
-        final tarjeta = _cuerpo(context, tt, n, titulo, guardada);
-        return SizedBox(
-          width: ancho,
-          child: MenuMantenido(
-            etiqueta: 'Leer: $titulo${guardada ? '. Guardada' : ''}. Mantén presionado para ver la vista previa',
-            radio: BorderRadius.circular(Zr.m),
-            alTocar: () => abrirNoticia(context, n),
-            vistaPrevia: (_) => _VistaPreviaNoticia(noticia: n),
-            acciones: [
-              AccionGesto(etiqueta: 'Leer aquí', icono: Icons.menu_book_rounded, alEjecutar: () => abrirNoticia(context, n)),
-              guardar,
-              AccionGesto(
-                etiqueta: 'Compartir',
-                icono: Icons.ios_share_rounded,
-                alEjecutar: () => SharePlus.instance.share(ShareParams(text: '$titulo\n${n.enlace}', subject: titulo)),
-              ),
-              ocultar,
-            ],
-            child: destacada
-                ? FilaDeslizable(
-                    radio: BorderRadius.circular(Zr.m),
-                    accionesInicio: [guardar],
-                    accionesFin: [ocultar],
-                    hijo: tarjeta,
-                  )
-                : tarjeta,
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _cuerpo(BuildContext context, TextTheme tt, NoticiaManglar n, String titulo, bool guardada) {
-    return Container(
+    return SizedBox(
+      width: ancho,
+      // Tocar abre la noticia dentro de la app; mantener presionado muestra la vista previa (peek)
+      // con «Leer» y «Compartir».
+      child: MenuMantenido(
+        etiqueta: 'Leer: ${n.titulo}. Mantén presionado para ver la vista previa',
+        radio: BorderRadius.circular(Zr.m),
+        alTocar: () => abrirNoticia(context, n),
+        vistaPrevia: (_) => VistaPreviaNoticia(noticia: n),
+        acciones: accionesNoticia(context, n),
+        child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Zc.superficie,
@@ -281,25 +197,7 @@ class TarjetaNoticia extends StatelessWidget {
             children: [
               AspectRatio(
                 aspectRatio: destacada ? 16 / 9 : 16 / 10,
-                child: Stack(fit: StackFit.expand, children: [
-                  Hero(tag: 'noticia-${n.id}', child: FotoNoticia(url: n.imagen, semilla: n.titulo)),
-                  // Marca de guardada: aparece con escala (microdetalle) y no mueve nada más.
-                  Positioned(
-                    right: 10,
-                    top: 10,
-                    child: AnimatedScale(
-                      scale: guardada ? 1 : 0,
-                      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
-                      curve: Curves.easeOutBack,
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        child: const Icon(Icons.bookmark_rounded, size: 18, color: Cra.azul),
-                      ),
-                    ),
-                  ),
-                ]),
+                child: Hero(tag: 'noticia-${n.id}', child: FotoNoticia(url: n.imagen, semilla: n.titulo)),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
@@ -309,7 +207,7 @@ class TarjetaNoticia extends StatelessWidget {
                     Text('${sinPuntosCra(n.fuente).toUpperCase()} · ${fechaCorta(n.fecha)}',
                         style: tt.seccion.copyWith(color: Cra.azul, fontSize: 10.5)),
                     const SizedBox(height: 6),
-                    Text(titulo,
+                    Text(sinPuntosCra(n.titulo),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: (destacada ? tt.titleLarge : tt.titleSmall)
@@ -326,7 +224,9 @@ class TarjetaNoticia extends StatelessWidget {
               ),
             ],
           ),
-        );
+        ),
+      ),
+    );
   }
 }
 
