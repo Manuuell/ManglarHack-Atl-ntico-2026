@@ -285,9 +285,10 @@ export default function CarteleraJornadas(props: Props) {
   const lista = useJornadas(props.jornadas);
   const acciones = useAcciones(props.acciones);
   const inscripciones = useInscripciones();
-  const { origen, aviso: avisoServidor } = useOrigenJornadas();
+  const { origen } = useOrigenJornadas();
+  // El aviso del servidor está pensado para el bot; aquí se dice en palabras de la cartelera.
   const aviso = origen === 'servidor'
-    ? (avisoServidor || 'Jornadas publicadas por la organización.')
+    ? (lista.some((j) => j.ejemplo) ? 'Las jornadas rotuladas «Datos de ejemplo» son de la demostración; las demás son reales.' : 'Jornadas publicadas por la organización.')
     : origen === 'respaldo' ? `${props.aviso}. Sin conexión con el servidor de jornadas: lo que ves y lo que hagas queda solo en este navegador.` : props.aviso;
   const [tipo, setTipo] = useState<TipoJornada | 'todas'>('todas');
   const [cuando, setCuando] = useState<'proximas' | 'realizadas'>('proximas');
