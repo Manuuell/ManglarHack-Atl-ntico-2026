@@ -47,6 +47,8 @@ export function siguienteCodigo(): string {
 }
 
 export function crearReporte(r: Reporte): Reporte {
+  const existente = datos.reportes.find(x => x.id === r.id);
+  if (existente) return existente;
   datos.reportes.push(r);
   guardar();
   return r;

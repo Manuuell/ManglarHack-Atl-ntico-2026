@@ -28,7 +28,7 @@ export function corroboraciones(d: Pick<DatosEvaluacion, 'lat' | 'lon' | 'report
     r =>
       r.reportanteHash !== d.reportanteHash &&
       r.estado !== 'descartado' &&
-      Date.parse(r.recibidoEn) >= limite &&
+      Date.parse(r.recibido_en) >= limite &&
       distanciaM(d.lat, d.lon, r.lat, r.lon) <= 500,
   ).length;
 }

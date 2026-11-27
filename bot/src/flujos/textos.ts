@@ -138,7 +138,7 @@ export function misReportes(reportes: Reporte[]): string {
   return (
     '*Tus últimos reportes* 📋\n\n' +
     ultimos
-      .map(r => `• *${r.codigo}* · ${TIPOS[r.tipo].emoji} ${TIPOS[r.tipo].nombre}\n   ${ESTADOS[r.estado]} · ${r.recibidoEn.slice(0, 10)}`)
+      .map(r => `• *${r.codigo}* · ${TIPOS[r.tipo].emoji} ${TIPOS[r.tipo].nombre}\n   ${ESTADOS[r.estado]} · ${r.recibido_en.slice(0, 10)}`)
       .join('\n')
   );
 }

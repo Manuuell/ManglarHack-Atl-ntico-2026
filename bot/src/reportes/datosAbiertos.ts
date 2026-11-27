@@ -26,7 +26,7 @@ export function filasAbiertas(reportes: Reporte[]): FilaAbierta[] {
     .filter(r => r.estado !== 'descartado')
     .map(r => ({
       codigo: r.codigo,
-      fecha: r.recibidoEn,
+      fecha: r.recibido_en,
       tipo: TIPOS[r.tipo].nombre,
       zona: r.zona ?? '',
       dentro_manglar: r.dentroPoligono,

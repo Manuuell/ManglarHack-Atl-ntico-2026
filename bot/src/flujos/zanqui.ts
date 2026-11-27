@@ -16,7 +16,7 @@ interface Borrador {
   lat?: number;
   lon?: number;
   fuenteUbicacion?: FuenteUbicacion;
-  capturadoEn?: string;
+  capturado_en?: string;
   dentro?: boolean;
   distanciaM?: number;
   zona?: string;
@@ -61,7 +61,7 @@ async function enviarMenu(de: string, s: Sesion): Promise<void> {
 
 async function empezarReporte(de: string, s: Sesion): Promise<void> {
   const hash = almacen.hashDe(de);
-  const recientes = almacen.delReportante(hash).filter(r => Date.now() - Date.parse(r.recibidoEn) < 3600 * 1000);
+  const recientes = almacen.delReportante(hash).filter(r => Date.now() - Date.parse(r.recibido_en) < 3600 * 1000);
   if (recientes.length >= config.maxReportesPorHora) {
     await whatsapp.texto(de, T.DEMASIADOS);
     return;
@@ -96,7 +96,7 @@ async function registrarUbicacion(de: string, s: Sesion, lat: number, lon: numbe
     lat,
     lon,
     fuenteUbicacion: fuente,
-    capturadoEn: new Date(ts * 1000).toISOString(),
+    capturado_en: new Date(ts * 1000).toISOString(),
     dentro: u.dentro,
     distanciaM: u.distanciaM,
     zona: u.zona,
@@ -121,7 +121,13 @@ async function enviarResumen(de: string, s: Sesion): Promise<void> {
   );
 }
 
-async function guardarReporte(de: string, s: Sesion): Promise<void> {
+/** UUID estable a partir del id del mensaje de WhatsApp que confirmó el envío. */
+function uuidDesde(messageId: string): string {
+  const h = createHash('sha256').update(`zanqui:${messageId}`).digest('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-${((parseInt(h[16], 16) & 0x3) | 0x8).toString(16)}${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+async function guardarReporte(de: string, s: Sesion, messageId: string): Promise<void> {
   const b = s.borrador;
   if (!b.tipo || b.lat === undefined || b.lon === undefined || !b.cuando || !b.fuenteUbicacion) {
     await whatsapp.texto(de, T.NO_ENTENDI);
@@ -149,6 +155,7 @@ async function guardarReporte(de: string, s: Sesion): Promise<void> {
   const ahora = new Date().toISOString();
   const u = almacen.usuario(hash);
   const reporte = almacen.crearReporte({
+    id: uuidDesde(messageId),
     codigo: almacen.siguienteCodigo(),
     canal: 'whatsapp',
     tipo: b.tipo,
@@ -160,8 +167,8 @@ async function guardarReporte(de: string, s: Sesion): Promise<void> {
     dentroPoligono: !!b.dentro,
     distanciaM: b.distanciaM ?? 0,
     cuando: b.cuando,
-    capturadoEn: b.capturadoEn ?? ahora,
-    recibidoEn: ahora,
+    capturado_en: b.capturado_en ?? ahora,
+    recibido_en: ahora,
     prioridad: prioridad(datos, corroborados),
     confianza: conf.puntaje,
     motivosConfianza: conf.motivos,
@@ -307,7 +314,7 @@ export async function atender(m: MensajeEntrante): Promise<void> {
     }
 
     case 'confirmar': {
-      if (opcion === 'enviar') return guardarReporte(de, s);
+      if (opcion === 'enviar') return guardarReporte(de, s, m.messageId);
       if (opcion === 'reiniciar') return pedirTipo(de, s);
       return enviarResumen(de, s);
     }

@@ -3,9 +3,9 @@ export const TIPOS = {
   quema: { nombre: 'Quema o incendio', emoji: '🔥', gravedad: 5, descripcion: 'Fuego o humo en el manglar o cerca' },
   relleno: { nombre: 'Relleno o construcción', emoji: '🚧', gravedad: 4, descripcion: 'Echan tierra o escombros, o construyen' },
   vertimiento: { nombre: 'Vertimiento', emoji: '🛢️', gravedad: 4, descripcion: 'Aguas negras, aceite o químicos al agua' },
-  cano: { nombre: 'Caño tapado', emoji: '🚱', gravedad: 3, descripcion: 'Un caño o paso de agua está bloqueado' },
+  cano_taponado: { nombre: 'Caño tapado', emoji: '🚱', gravedad: 3, descripcion: 'Un caño o paso de agua está bloqueado' },
   fauna: { nombre: 'Fauna afectada', emoji: '🐟', gravedad: 3, descripcion: 'Caza, o peces o aves muertos' },
-  basura: { nombre: 'Basuras', emoji: '🗑️', gravedad: 2, descripcion: 'Residuos acumulados en el manglar o la orilla' },
+  basuras: { nombre: 'Basuras', emoji: '🗑️', gravedad: 2, descripcion: 'Residuos acumulados en el manglar o la orilla' },
   otro: { nombre: 'Otra amenaza', emoji: '❓', gravedad: 2, descripcion: 'Algo distinto que pone en riesgo el manglar' },
 } as const;
 
@@ -49,6 +49,9 @@ export interface CambioEstado {
 }
 
 export interface Reporte {
+  /** UUID del reporte (contrato común). Se deriva del mensaje de WhatsApp, así un reintento no lo duplica. */
+  id: string;
+  /** Código corto para la persona y la CRA, ej. ZQ-0001. */
   codigo: string;
   canal: 'whatsapp';
   tipo: TipoId;
@@ -61,9 +64,9 @@ export interface Reporte {
   distanciaM: number;
   cuando: CuandoId;
   /** Hora en que la persona envió la ubicación, según WhatsApp. */
-  capturadoEn: string;
+  capturado_en: string;
   /** Hora en que el reporte quedó guardado. */
-  recibidoEn: string;
+  recibido_en: string;
   prioridad: number;
   confianza: number;
   motivosConfianza: string[];
