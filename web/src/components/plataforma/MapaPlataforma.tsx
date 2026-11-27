@@ -193,7 +193,7 @@ export default function MapaPlataforma({ zonas, acciones = [], reportes = [], mo
           </div>
           <div>
             {conmutador('acciones', `Acciones (${acciones.length})`, 'border-cra-950 bg-dorado-500')}
-            {conmutador('reportes', `Reportes de Zanqui (${reportes.length})`, 'rounded-full border-white bg-alta')}
+            {conmutador('reportes', `Reportes de Zanky (${reportes.length})`, 'rounded-full border-white bg-alta')}
             <p className="mt-1 text-[11px] text-tenue">Fuentes: capa «Prioridades de conservación» entregada por la C.R.A. (KMZ) · cobertura de manglar de la C.R.A. a 1:5.000 (Maxar 2021–2022, verificada en campo) · reportes y acciones de ejemplo.</p>
           </div>
         </div>

@@ -42,7 +42,7 @@ export const TRANSICIONES: Record<EstadoReporte, { a: EstadoReporte; accion: str
  en_atencion: [{ a: 'cerrado', accion: 'Cerrar caso', tono: 'primaria' }], cerrado: [], descartado: [],
 };
 export const CANALES: Record<Canal, { etiqueta: string; icono: LucideIcon }> = {
- app: { etiqueta: 'App móvil', icono: Smartphone }, web: { etiqueta: 'Web · QR', icono: QrCode }, whatsapp: { etiqueta: 'WhatsApp · Zanqui', icono: MessageCircle },
+ app: { etiqueta: 'App móvil', icono: Smartphone }, web: { etiqueta: 'Web · QR', icono: QrCode }, whatsapp: { etiqueta: 'WhatsApp · Zanky', icono: MessageCircle },
 };
 export const LISTA_TIPOS = Object.keys(TIPOS) as TipoReporte[];
 export const LISTA_ESTADOS = Object.keys(ESTADOS) as EstadoReporte[];

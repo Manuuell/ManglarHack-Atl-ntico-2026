@@ -15,7 +15,7 @@ import { descargarArchivo } from '../../lib/exportar';
 import { FUENTE_MANGLAR_CRA, URL_CAPA_MANGLAR_CRA, URL_CAPA_PRIORIDADES } from '../../lib/datos';
 
 interface CapaGuardada { id: string; nombre: string; cargada_en: string; geojson: FeatureCollection }
-const CLAVE = 'zanqui-web:v1:capas-cra';
+const CLAVE = 'zanky-web:v1:capas-cra';
 const LIMITE_GUARDADO = 4 * 1024 * 1024;
 const LIMITE_KML = 40 * 1024 * 1024;
 

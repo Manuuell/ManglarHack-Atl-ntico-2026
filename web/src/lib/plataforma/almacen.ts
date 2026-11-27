@@ -2,7 +2,7 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 /** Almacén de demostración compartido por islas; no sustituye la API ni su autorización. */
 export function crearAlmacen<T>(clave: string) {
-  const claveLocal = 'zanqui-web:v1:' + clave;
+  const claveLocal = 'zanky-web:v1:' + clave;
   const oyentes = new Set<() => void>();
   let listo = false;
   let base: T;

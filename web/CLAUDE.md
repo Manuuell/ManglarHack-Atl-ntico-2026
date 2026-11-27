@@ -2,7 +2,7 @@
 
 Guía para agentes (Claude Code, Codex) que trabajan en `web/`. Las reglas del equipo están en `../CLAUDE.md` y `../handoff/05-coordinacion-y-reglas.md`, y mandan sobre esta guía.
 
-**Qué es:** la aplicación web del reto ManglarHack Atlántico 2026 (equipo SENTRALABS · UTB, para la C.R.A.). Replica la identidad y la información de la plataforma de la Corporación ([manglarcra.netlify.app](https://manglarcra.netlify.app)) y la extiende: aquí se integra todo lo que llega de la **app móvil** y del **bot de WhatsApp de Zanqui** (la mascota; su nombre viene de los zancos del mangle rojo y de los zanqueros del Carnaval).
+**Qué es:** la aplicación web del reto ManglarHack Atlántico 2026 (equipo SENTRALABS · UTB, para la C.R.A.). Replica la identidad y la información de la plataforma de la Corporación ([manglarcra.netlify.app](https://manglarcra.netlify.app)) y la extiende: aquí se integra todo lo que llega de la **app móvil** y del **bot de WhatsApp de Zanky** (la mascota; su nombre viene de los zancos del mangle rojo y de los zanqueros del Carnaval).
 
 Rama de trabajo: **`web`** (nunca `main`). Un commit por punto, en español, **sin trailer de coautoría**. `git pull --rebase` antes de subir; nunca `--force`.
 
@@ -40,7 +40,7 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 | `/plataforma/registro` | Registro de actor |
 | `/plataforma/proponer` | Proponer acción marcando el sitio en el mapa |
 | `/plataforma/seguimiento` | Seguimiento de acciones + jornadas (inscripción, invitación, calendario; base Innvita) |
-| `/plataforma/monitoreo` | Monitoreo comunitario: reportes de Zanqui (app/bot/web) y fotos georreferenciadas |
+| `/plataforma/monitoreo` | Monitoreo comunitario: reportes de Zanky (app/bot/web) y fotos georreferenciadas |
 | `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada, nota conceptual) |
 | `/plataforma/panel` | Panel de la Corporación: acciones, reportes ciudadanos, capas KMZ, auditoría, roles de demostración |
 
@@ -66,7 +66,7 @@ src/
   lib/workflow.ts               cifras del workflow de la C.R.A. con su fuente
   lib/plataforma/               datos.ts, catalogos.ts, almacen.ts (store persistente), …
   layouts/                      BaseLayout.astro, PlataformaLayout.astro
-  components/                   layout/, ui/, marca/ (Zanqui), mapa/, panel/, workflow/, plataforma/
+  components/                   layout/, ui/, marca/ (Zanky), mapa/, panel/, workflow/, plataforma/
   pages/                        rutas de la tabla
 public/marca/logo-cra-blanco.png
 ```

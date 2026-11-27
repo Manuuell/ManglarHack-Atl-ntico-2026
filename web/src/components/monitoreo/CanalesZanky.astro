@@ -1,14 +1,14 @@
 ---
 // Cómo llegan los reportes ciudadanos a la plataforma: los tres canales de
-// Zanqui y el contrato común que comparten la app, el bot y esta web.
+// Zanky y el contrato común que comparten la app, el bot y esta web.
 import { MessageCircle, Smartphone, QrCode, PlugZap } from 'lucide-react';
-import Zanqui from '../marca/Zanqui.astro';
+import Zanky from '../marca/Zanky.astro';
 import { TIPOS, ESTADOS, LISTA_TIPOS, LISTA_ESTADOS } from '../../lib/catalogos';
 
 const canales = [
   {
     icono: MessageCircle,
-    titulo: 'WhatsApp con Zanqui',
+    titulo: 'WhatsApp con Zanky',
     texto: 'El bot guía el reporte: foto, ubicación, audio o texto. La IA propone tipo y prioridad, entrega un número de caso y avisa cuando el caso cambia de estado.',
   },
   {
@@ -26,9 +26,9 @@ const canales = [
 
 <section aria-labelledby="titulo-canales" class="grid gap-6 lg:grid-cols-[auto_1fr] lg:items-start">
   <div class="flex items-center gap-4 lg:flex-col lg:items-start">
-    <Zanqui class="h-24 w-24 shrink-0" />
+    <Zanky class="h-24 w-24 shrink-0" />
     <div>
-      <p class="rotulo text-dorado-300">Reporta con Zanqui</p>
+      <p class="rotulo text-dorado-300">Reporta con Zanky</p>
       <h2 id="titulo-canales" class="titular mt-2 max-w-xs text-2xl">¡Ajá! ¿Qué viste en el manglar?</h2>
     </div>
   </div>

@@ -11,7 +11,7 @@ import '../../styles/workflow.css';
 
 interface CapaCRA { id: string; nombre: string; cargada_en: string; geojson: FeatureCollection }
 const numero = (n: number) => n.toLocaleString('es-CO');
-const claveCapas = 'zanqui-web:v1:capas-cra';
+const claveCapas = 'zanky-web:v1:capas-cra';
 const objeto = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
 const posicion = (v: unknown): boolean => Array.isArray(v) && v.length >= 2 && v.every(n => typeof n === 'number' && Number.isFinite(n));
 function coordenadas(v: unknown, profundidad: number): boolean {

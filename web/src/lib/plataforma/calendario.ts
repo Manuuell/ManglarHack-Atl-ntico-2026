@@ -17,9 +17,9 @@ function plegar(linea: string): string {
 }
 export function generarICS(jornada: Jornada, url: string): string {
   return [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Zanqui//Jornadas del manglar//ES',
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Zanky//Jornadas del manglar//ES',
     'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
-    `UID:${escapar(jornada.id)}@zanqui.ejemplo.org`, `DTSTAMP:${utc(new Date())}`,
+    `UID:${escapar(jornada.id)}@zanky.ejemplo.org`, `DTSTAMP:${utc(new Date())}`,
     `DTSTART:${utc(jornada.inicio)}`, `DTEND:${utc(jornada.fin)}`,
     `SUMMARY:${escapar(jornada.titulo)}`, `LOCATION:${escapar(jornada.punto_encuentro)}`,
     `DESCRIPTION:${escapar(`${jornada.descripcion}\nQué llevar: ${jornada.que_llevar.join(', ')}\nEnlace: ${url}`)}`,

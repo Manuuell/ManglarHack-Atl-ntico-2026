@@ -84,7 +84,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
         </section>
 
         <section aria-labelledby="titulo-reportes">
-          <Rotulo><span id="titulo-reportes">Reportes ciudadanos recientes · Zanqui</span></Rotulo>
+          <Rotulo><span id="titulo-reportes">Reportes ciudadanos recientes · Zanky</span></Rotulo>
           <ul className="mt-2">
             {recientes.map((r) => {
               const Canal = CANALES[r.canal].icono;

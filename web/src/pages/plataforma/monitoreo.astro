@@ -1,6 +1,6 @@
 ---
 import PlataformaLayout from '../../layouts/PlataformaLayout.astro';
-import CanalesZanqui from '../../components/monitoreo/CanalesZanqui.astro';
+import CanalesZanky from '../../components/monitoreo/CanalesZanky.astro';
 import MapaMonitoreo from '../../components/mapa/MapaMonitoreo';
 import ReporteMonitoreo from '../../components/monitoreo/ReporteMonitoreo';
 import Comunidad from '../../components/sections/Comunidad.astro';
@@ -25,10 +25,10 @@ const publicos = reportes.map(aReportePublico);
   <div class="grid gap-14">
     <section aria-labelledby="titulo-reportes" class="grid gap-6">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-linea pb-3">
-        <h2 id="titulo-reportes" class="rotulo text-dorado-300">Reportes ciudadanos · Zanqui</h2>
+        <h2 id="titulo-reportes" class="rotulo text-dorado-300">Reportes ciudadanos · Zanky</h2>
         <Badge tono="ejemplo">Datos de ejemplo</Badge>
       </div>
-      <CanalesZanqui />
+      <CanalesZanky />
       <MapaMonitoreo client:only="react" reportes={publicos} poligonos={zonas}>
         <div slot="fallback" class="grid h-[600px] place-items-center border border-linea bg-fondo-alt text-tenue">Cargando el mapa de reportes…</div>
       </MapaMonitoreo>
