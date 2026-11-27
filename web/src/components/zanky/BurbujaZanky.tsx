@@ -1,162 +1,68 @@
-// Zanky en una burbuja abajo a la derecha: se abre una charla para preguntar por el manglar, cómo reportar o las
-// jornadas. Las respuestas las da el servidor del bot (POST /chat, con OpenAI); la clave nunca está en la web.
-// La charla vive solo en esta pestaña (sessionStorage) y no se manda nada más que lo que la persona escribe.
-import { Fragment, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
-import { ArrowUp, X } from 'lucide-react';
+// Zanky abajo a la derecha: un toque abre WhatsApp con Zanky BOT, donde se reporta (con foto y ubicación),
+// se ven las jornadas y se le pregunta lo que sea. De vez en cuando Zanky dice algo en un globo
+// («¿Tienes un reporte?…»); tocar el globo abre WhatsApp con ese mensaje ya escrito.
+import { useEffect, useRef, useState } from 'react';
+import { MessageCircle, X } from 'lucide-react';
 import './burbuja.css';
 
-interface Turno { rol: 'usuario' | 'zanky'; texto: string; error?: boolean }
+const NUMERO = String(import.meta.env.PUBLIC_ZANKY_WHATSAPP ?? '573104432501');
+const enlaceWhatsApp = (mensaje: string) => `https://wa.me/${NUMERO}?text=${encodeURIComponent(mensaje)}`;
 
-const URL_CHAT = String(import.meta.env.PUBLIC_ZANKY_CHAT_URL ?? 'https://zanqui.sentralabs.co/chat');
-const CLAVE = 'zanky-web:v1:charla';
-const SALUDO: Turno = { rol: 'zanky', texto: '¡Hola! Soy Zanky 🌿. Pregúntame lo que quieras del manglar, cómo reportar algo raro o cuándo es la próxima jornada.' };
-const SUGERENCIAS = ['¿Por qué es importante el manglar?', '¿Cómo reporto una quema?', '¿Cuándo es la próxima jornada?'];
-
-/** Texto con **negritas** y enlaces tocables, sin insertar HTML. */
-function conFormato(texto: string): ReactNode {
-  return texto.split(/(\*\*[^*\n]+\*\*)/g).map((p, i) =>
-    /^\*\*[^*\n]+\*\*$/.test(p) ? <strong key={i}>{conEnlaces(p.slice(2, -2))}</strong> : <Fragment key={i}>{conEnlaces(p)}</Fragment>);
-}
-
-/** Enlace con el texto que escribió Zanky; los del propio sitio abren aquí mismo. */
-function enlace(url: string, texto: string, key: number): ReactNode {
-  return <a key={key} href={url} target={url.includes('mimanglar.sentralabs.co') ? undefined : '_blank'} rel="noopener noreferrer">{texto}</a>;
-}
-
-/** Texto con enlaces tocables (sueltos o [texto](url)), sin insertar HTML. */
-function conEnlaces(texto: string): ReactNode {
-  const conTexto = texto.split(/(\[[^\]\n]+\]\(https?:\/\/[^)\s]+\))/g);
-  if (conTexto.length > 1) {
-    return conTexto.map((p, i) => {
-      const m = /^\[([^\]\n]+)\]\((https?:\/\/[^)\s]+)\)$/.exec(p);
-      return m ? enlace(m[2], m[1], i) : <Fragment key={i}>{conEnlaces(p)}</Fragment>;
-    });
-  }
-  const partes = texto.split(/(https?:\/\/[^\s)»"]+)/g);
-  return partes.map((p, i) => {
-    if (!/^https?:\/\//.test(p)) return <Fragment key={i}>{p}</Fragment>;
-    const limpio = p.replace(/[.,;:]+$/, '');
-    const resto = p.slice(limpio.length);
-    return <Fragment key={i}><a href={limpio} target={limpio.includes('mimanglar.sentralabs.co') ? undefined : '_blank'} rel="noopener noreferrer">{limpio.replace(/^https?:\/\//, '')}</a>{resto}</Fragment>;
-  });
-}
-
-function leerCharla(): Turno[] {
-  try {
-    const datos = JSON.parse(window.sessionStorage.getItem(CLAVE) ?? '[]') as Turno[];
-    return Array.isArray(datos) && datos.length ? datos.slice(-30) : [SALUDO];
-  } catch {
-    return [SALUDO];
-  }
-}
+interface Globo { texto: string; mensaje: string }
+const GLOBOS: Globo[] = [
+  { texto: '¿Tienes un reporte? Mándamelo por WhatsApp 📲', mensaje: 'Hola Zanky, quiero reportar algo en el manglar' },
+  { texto: '¿Viste una quema, tala o basura? Cuéntamelo aquí', mensaje: 'Hola Zanky, quiero reportar algo en el manglar' },
+  { texto: '¿Te sumas a la próxima jornada? 🌱', mensaje: 'Hola Zanky, quiero ver las jornadas' },
+  { texto: 'Pregúntame lo que quieras del manglar', mensaje: 'Hola Zanky' },
+];
+const PRIMERO_MS = 4_000;
+const VISIBLE_MS = 8_000;
+const ENTRE_MS = 45_000;
+const MAXIMO = 4;
+const CALLADO = 'zanky-web:v1:globos-callados';
 
 export default function BurbujaZanky() {
-  const [abierta, setAbierta] = useState(false);
-  const [charla, setCharla] = useState<Turno[]>([SALUDO]);
-  const [texto, setTexto] = useState('');
-  const [pensando, setPensando] = useState(false);
-  const [invita, setInvita] = useState(false);
-  const lista = useRef<HTMLDivElement>(null);
-  const campo = useRef<HTMLTextAreaElement>(null);
-  const boton = useRef<HTMLButtonElement>(null);
+  const [globo, setGlobo] = useState<Globo | null>(null);
+  const mostrados = useRef(0);
 
-  useEffect(() => { setCharla(leerCharla()); }, []);
-  useEffect(() => { try { window.sessionStorage.setItem(CLAVE, JSON.stringify(charla.slice(-30))); } catch { /* sin almacenamiento */ } }, [charla]);
-
-  // Una invitación corta la primera vez que se ve la página en esta pestaña.
   useEffect(() => {
-    let visto = false;
-    try { visto = window.sessionStorage.getItem(`${CLAVE}:invitado`) === '1'; window.sessionStorage.setItem(`${CLAVE}:invitado`, '1'); } catch { /* nada */ }
-    if (visto) return;
-    const a = window.setTimeout(() => setInvita(true), 2500);
-    const b = window.setTimeout(() => setInvita(false), 11_000);
-    return () => { window.clearTimeout(a); window.clearTimeout(b); };
+    let callado = false;
+    try { callado = window.sessionStorage.getItem(CALLADO) === '1'; } catch { /* sin almacenamiento */ }
+    if (callado) return;
+    let indice = Math.floor(Math.random() * GLOBOS.length);
+    let ocultar = 0;
+    const mostrar = () => {
+      if (document.visibilityState !== 'visible' || mostrados.current >= MAXIMO) return;
+      setGlobo(GLOBOS[indice % GLOBOS.length]);
+      indice += 1;
+      mostrados.current += 1;
+      window.clearTimeout(ocultar);
+      ocultar = window.setTimeout(() => setGlobo(null), VISIBLE_MS);
+    };
+    const primero = window.setTimeout(mostrar, PRIMERO_MS);
+    const ciclo = window.setInterval(mostrar, ENTRE_MS);
+    return () => { window.clearTimeout(primero); window.clearTimeout(ocultar); window.clearInterval(ciclo); };
   }, []);
 
-  useEffect(() => {
-    if (!abierta) return;
-    setInvita(false);
-    campo.current?.focus();
-    const tecla = (e: globalThis.KeyboardEvent) => { if (e.key === 'Escape') { setAbierta(false); boton.current?.focus(); } };
-    document.addEventListener('keydown', tecla);
-    return () => document.removeEventListener('keydown', tecla);
-  }, [abierta]);
-
-  useEffect(() => { lista.current?.scrollTo({ top: lista.current.scrollHeight, behavior: 'smooth' }); }, [charla, pensando, abierta]);
-
-  async function preguntar(pregunta: string) {
-    const limpia = pregunta.trim().slice(0, 600);
-    if (!limpia || pensando) return;
-    const nueva = [...charla.filter((t) => !t.error), { rol: 'usuario' as const, texto: limpia }];
-    setCharla(nueva);
-    setTexto('');
-    setPensando(true);
-    try {
-      const res = await fetch(URL_CHAT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // El saludo es de la página, no de la conversación: no se manda.
-        body: JSON.stringify({ mensajes: nueva.filter((t) => t !== SALUDO && t.texto !== SALUDO.texto).slice(-12).map(({ rol, texto: t }) => ({ rol, texto: t })) }),
-        signal: AbortSignal.timeout(30_000),
-      });
-      const datos = (await res.json().catch(() => ({}))) as { respuesta?: string; mensaje?: string };
-      if (!res.ok || !datos.respuesta) throw new Error(datos.mensaje || 'Se me enredó la respuesta. ¿Me lo preguntas otra vez?');
-      setCharla((c) => [...c, { rol: 'zanky', texto: datos.respuesta! }]);
-    } catch (err) {
-      const mensaje = err instanceof Error && err.name !== 'TimeoutError' && err.name !== 'TypeError' ? err.message : 'No pude conectarme. Revisa tu internet e inténtalo otra vez.';
-      setCharla((c) => [...c, { rol: 'zanky', texto: mensaje, error: true }]);
-    } finally {
-      setPensando(false);
-    }
+  function callar() {
+    setGlobo(null);
+    mostrados.current = MAXIMO;
+    try { window.sessionStorage.setItem(CALLADO, '1'); } catch { /* nada */ }
   }
-
-  function enviar(e: FormEvent) { e.preventDefault(); void preguntar(texto); }
-  function alTeclear(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void preguntar(texto); }
-  }
-
-  const soloSaludo = charla.length === 1;
 
   return (
     <div className="zk-burbuja">
-      {abierta && (
-        <section className="zk-panel" role="dialog" aria-label="Charla con Zanky" id="zk-panel">
-          <header className="zk-cab">
-            <img src="/marca/zanky/zanky-feliz-256.webp" alt="" width={44} height={44} />
-            <div className="zk-cab-texto">
-              <strong>Zanky</strong>
-              <span>Pregúntame del manglar</span>
-            </div>
-            <button type="button" className="zk-cerrar" aria-label="Cerrar la charla" onClick={() => { setAbierta(false); boton.current?.focus(); }}><X className="size-5" aria-hidden="true" /></button>
-          </header>
-
-          <div className="zk-lista" ref={lista} aria-live="polite">
-            {charla.map((t, i) => (
-              <div key={i} className={`zk-msg ${t.rol === 'usuario' ? 'zk-yo' : 'zk-el'}${t.error ? ' zk-error' : ''}`}>{conFormato(t.texto)}</div>
-            ))}
-            {pensando && <div className="zk-msg zk-el zk-pensando" aria-label="Zanky está escribiendo"><i /><i /><i /></div>}
-            {soloSaludo && !pensando && (
-              <div className="zk-sugerencias">
-                {SUGERENCIAS.map((s) => <button key={s} type="button" onClick={() => void preguntar(s)}>{s}</button>)}
-              </div>
-            )}
-          </div>
-
-          <form className="zk-form" onSubmit={enviar}>
-            <textarea ref={campo} rows={1} value={texto} maxLength={600} placeholder="Escríbele a Zanky…" aria-label="Tu pregunta para Zanky"
-              onChange={(e) => setTexto(e.target.value)} onKeyDown={alTeclear} />
-            <button type="submit" aria-label="Enviar" disabled={!texto.trim() || pensando}><ArrowUp className="size-5" aria-hidden="true" /></button>
-          </form>
-          <div className="zk-nota">Respuestas generadas con IA: pueden equivocarse. No compartas datos personales.</div>
-        </section>
+      {globo && (
+        <div className="zk-globo" role="status">
+          <a href={enlaceWhatsApp(globo.mensaje)} target="_blank" rel="noopener noreferrer">{globo.texto}</a>
+          <button type="button" aria-label="No mostrar más mensajes de Zanky" onClick={callar}><X className="size-4" aria-hidden="true" /></button>
+        </div>
       )}
-
-      {invita && !abierta && <button type="button" className="zk-invita" onClick={() => setAbierta(true)}>¿Hablamos del manglar? 🌱</button>}
-
-      <button ref={boton} type="button" className={`zk-boton${abierta ? ' zk-activo' : ''}`} aria-expanded={abierta} aria-controls="zk-panel"
-        aria-label={abierta ? 'Cerrar la charla con Zanky' : 'Hablar con Zanky'} onClick={() => setAbierta((a) => !a)}>
-        {abierta ? <X className="size-7" aria-hidden="true" /> : <img src="/marca/zanky/zanky-feliz-256.webp" alt="" width={56} height={56} />}
-      </button>
+      <a className="zk-boton" href={enlaceWhatsApp('Hola Zanky')} target="_blank" rel="noopener noreferrer"
+        aria-label="Escribirle a Zanky por WhatsApp: reportar, ver jornadas o preguntar" title="Escríbele a Zanky por WhatsApp">
+        <img src="/marca/zanky/zanky-feliz-256.webp" alt="" width={56} height={56} />
+        <span className="zk-wa" aria-hidden="true"><MessageCircle className="size-4" strokeWidth={2.5} /></span>
+      </a>
     </div>
   );
 }
