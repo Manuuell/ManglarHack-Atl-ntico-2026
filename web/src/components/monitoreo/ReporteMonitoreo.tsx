@@ -12,6 +12,7 @@ import { useAcciones, useMonitoreos, registrarMonitoreo } from '../../lib/plataf
 import { SECTORES } from '../../lib/plataforma/catalogos';
 import { cn } from '../../lib/utils';
 import { LIMITES_MANGLAR } from '../../lib/areaReporte';
+import AvisoZanky from '../marca/AvisoZanky';
 
 interface Props { acciones: Accion[]; monitoreos: Monitoreo[] }
 
@@ -212,7 +213,9 @@ export default function ReporteMonitoreo({ acciones: accionesIniciales, monitore
       <form onSubmit={enviar} noValidate className="rounded-sm border border-linea-suave bg-superficie p-5 sm:p-6" aria-labelledby="titulo-reporte-monitoreo">
         <h3 id="titulo-reporte-monitoreo" className="rotulo text-dorado-300">Reporte de monitoreo</h3>
         {!elegibles.length ? (
-          <p className="mt-4 text-suave">No hay acciones en ejecución o cerradas para reportar. Cuando la Corporación apruebe e inicie una acción, aparecerá aquí.</p>
+          <AvisoZanky animo="curioso" forma="bloque" titulo="Aún no hay acciones para reportar" className="mt-6 py-4">
+            <p>No hay acciones en ejecución o cerradas. Cuando la Corporación apruebe e inicie una acción, aparecerá aquí.</p>
+          </AvisoZanky>
         ) : (
           <div className="mt-4 grid gap-4">
             <label className="block">
@@ -295,7 +298,9 @@ export default function ReporteMonitoreo({ acciones: accionesIniciales, monitore
           </div>
         )}
         <div aria-live="polite">
-          {mensaje && <p className={cn('mt-4 border-l-4 p-3 text-sm', mensaje.tipo === 'ok' ? 'border-dorado-300 bg-white/5' : 'border-alta bg-alta-suave')}>{mensaje.texto}</p>}
+          {mensaje && (mensaje.tipo === 'ok'
+            ? <AvisoZanky animo="celebrando" titulo="¡Reporte enviado!" className="mt-4 rounded-3xl border border-dorado-500/40 bg-dorado-500/10 p-4 text-sm"><p className="text-suave">{mensaje.texto}</p></AvisoZanky>
+            : <p className="mt-4 border-l-4 border-alta bg-alta-suave p-3 text-sm">{mensaje.texto}</p>)}
         </div>
       </form>
 
@@ -330,7 +335,7 @@ export default function ReporteMonitoreo({ acciones: accionesIniciales, monitore
         <div>
           <p className="rotulo text-dorado-300">Reportes recibidos</p>
           {recibidos.length === 0 ? (
-            <p className="mt-3 text-suave">Aún no hay reportes de monitoreo.</p>
+            <AvisoZanky animo="curioso" className="mt-3 text-suave"><p>Aún no hay reportes de monitoreo. El primero que llegue aparecerá aquí.</p></AvisoZanky>
           ) : (
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[480px] text-left text-sm">

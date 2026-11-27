@@ -9,6 +9,7 @@ import { proponerAccion, useAcciones, useActores, useCambiosAccion } from '../..
 import { ACCIONES_PLAN, NOTA_REQUERIMIENTOS_PROPUESTOS, REQUERIMIENTOS_POR_TIPO, SECTORES, TIPOS_ACCION } from '../../lib/plataforma/catalogos';
 import { heredarPlan, planDesdeCapa, sectorDePunto, type PlanHeredado } from '../../lib/plataforma/geo';
 import MapaPlataforma, { type PuntoMapa } from './MapaPlataforma';
+import AvisoZanky from '../marca/AvisoZanky';
 
 interface Props { zonas: ZonasManglar; actores: Actor[]; acciones: Accion[]; cambios: CambioAccion[] }
 
@@ -177,10 +178,12 @@ export default function ProponerAccion({ zonas, actores: actoresIniciales, accio
         </div>
         <div aria-live="polite">
           {creada && (
-            <p className="border-l-4 border-dorado-300 bg-white/5 p-3 text-sm">
-              Propuesta «{creada.nombre}» enviada (demostración, guardada en este navegador). La Corporación la revisará punto por punto.{' '}
-              <a className="font-bold text-dorado-300 underline" href={`/plataforma/seguimiento?accion=${creada.id}`}>Ver su seguimiento</a>
-            </p>
+            <AvisoZanky animo="celebrando" titulo="¡Propuesta enviada!" className="rounded-3xl border border-dorado-500/40 bg-dorado-500/10 p-4 text-sm">
+              <p className="text-suave">
+                «{creada.nombre}» quedó guardada en este navegador (demostración). La Corporación la revisará punto por punto.{' '}
+                <a className="font-bold text-dorado-300 underline" href={`/plataforma/seguimiento?accion=${creada.id}`}>Ver su seguimiento</a>
+              </p>
+            </AvisoZanky>
           )}
         </div>
       </form>

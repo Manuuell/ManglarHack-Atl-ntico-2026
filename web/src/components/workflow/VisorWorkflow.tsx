@@ -7,6 +7,7 @@ import { obtenerCapaManglarCRA } from '../../lib/datos';
 import { LIMITES_MANGLAR } from '../../lib/areaReporte';
 import { FUENTE_WORKFLOW, PESTANAS_WORKFLOW, SECTORES_WORKFLOW } from '../../lib/workflow';
 import type { PropiedadesZona, ZonasManglar } from '../../types/manglar';
+import ZankyImg from '../marca/ZankyImg';
 import 'leaflet/dist/leaflet.css';
 import '../../styles/workflow.css';
 
@@ -162,7 +163,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
       <div className="pointer-events-none absolute left-3 top-3 z-[500] max-w-[calc(100%-1.5rem)] space-y-2 text-sm" aria-live="polite">
         {!rueda && <p className="bg-fondo-alt/95 px-3 py-2">Haz clic para usar la rueda del ratón</p>}
         {estadoCapa === 'cargando' && <p className="bg-fondo-alt/95 px-3 py-2">Cargando la cobertura de manglar de la C.R.A.…</p>}
-        {estadoCapa === 'error' && <div className="pointer-events-auto bg-fondo-alt/95 px-3 py-2">No se pudo cargar la cobertura de manglar de la C.R.A. Los sectores siguen disponibles. <button className="min-h-11 underline text-dorado-300" onClick={() => setIntento(n => n + 1)}>Reintentar</button></div>}
+        {estadoCapa === 'error' && <div className="pointer-events-auto flex items-start gap-2 bg-fondo-alt/95 px-3 py-2"><ZankyImg animo="preocupado" decorativo sizes="28px" className="mt-1 size-8 shrink-0 drop-shadow-none" /><p>No se pudo cargar la cobertura de manglar de la C.R.A. Los sectores siguen disponibles. <button className="min-h-11 underline text-dorado-300" onClick={() => setIntento(n => n + 1)}>Reintentar</button></p></div>}
         {errorTeselas && <p className="bg-fondo-alt/95 px-3 py-2">No se pudieron cargar algunas teselas de OpenStreetMap.</p>}
         {errorCRA && <p className="bg-fondo-alt/95 px-3 py-2">No se pudieron leer las capas C.R.A. de este navegador.</p>}
         {capasCRA.length > 0 && <label className="pointer-events-auto flex min-h-11 items-center gap-2 bg-fondo-alt/95 px-3 py-2"><input type="checkbox" checked={mostrarCRA} onChange={e => setMostrarCRA(e.target.checked)} />Capas C.R.A. cargadas</label>}

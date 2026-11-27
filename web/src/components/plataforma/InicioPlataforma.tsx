@@ -10,6 +10,7 @@ import { CIFRAS, FUENTE_WORKFLOW } from '../../lib/workflow';
 import { cn } from '../../lib/utils';
 import MapaPlataforma from './MapaPlataforma';
 import { enAreaDeReporte } from '../../lib/areaReporte';
+import AvisoZanky from '../marca/AvisoZanky';
 
 interface Props { zonas: ZonasManglar; acciones: Accion[]; reportes: ReportePublico[]; jornadas: Jornada[] }
 
@@ -63,7 +64,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
         <section aria-labelledby="titulo-acciones">
           <Rotulo><span id="titulo-acciones">Acciones en curso</span></Rotulo>
           {enCurso.length === 0 ? (
-            <p className="mt-3 text-suave">No hay acciones en curso. <a className="text-dorado-300 underline" href="/plataforma/proponer">Proponga la primera</a>.</p>
+            <AvisoZanky animo="curioso" className="mt-3 text-suave"><p>No hay acciones en curso. <a className="text-dorado-300 underline" href="/plataforma/proponer">Proponga la primera</a>.</p></AvisoZanky>
           ) : (
             <table className="mt-2 w-full text-left text-[13px]">
               <thead>
@@ -103,7 +104,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
         <section aria-labelledby="titulo-jornadas">
           <Rotulo><span id="titulo-jornadas">Próximas jornadas</span></Rotulo>
           {proximas.length === 0 ? (
-            <p className="mt-3 text-suave">No hay jornadas programadas.</p>
+            <AvisoZanky animo="curioso" className="mt-3 text-suave"><p>No hay jornadas programadas. <a className="text-dorado-300 underline" href="/plataforma/jornadas">Crea una</a>.</p></AvisoZanky>
           ) : (
             <ul className="mt-3 grid gap-3">
               {proximas.map((j) => (

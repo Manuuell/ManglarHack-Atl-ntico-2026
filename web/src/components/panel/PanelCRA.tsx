@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FileJson, FileSpreadsheet, Inbox, SearchX, Siren, Sparkles, Trees, type LucideIcon } from 'lucide-react';
+import { FileJson, FileSpreadsheet, Inbox, Siren, Sparkles, Trees, type LucideIcon } from 'lucide-react';
 import type { CambioEstado, EstadoReporte, NivelPrioridad, Reporte, ZonasManglar } from '../../types/manglar';
 import { ESTADOS, LISTA_ESTADOS, LISTA_PRIORIDADES, PRIORIDADES, UMBRAL_IA, esAbierto, nivelPrioridad, CANALES, LISTA_CANALES, TRANSICIONES } from '../../lib/catalogos';
 import { cambiarEstado as registrarCambio, useHistorial, useReportes } from '../../lib/reportesStore';
@@ -8,6 +8,7 @@ import { cn } from '../../lib/utils';
 import type { Rol } from '../../types/plataforma';
 import { puede } from '../../lib/plataforma/catalogos';
 import ReportesPanel, { type CampoOrden, type Orden } from './ReportesPanel';
+import ZankyImg from '../marca/ZankyImg';
 
 function KpiCard({ etiqueta, valor, detalle, icono: Icono, acento }: {
   etiqueta: string; valor: number; detalle: string; icono: LucideIcon; acento: string;
@@ -94,7 +95,7 @@ export default function PanelCRA({ reportes: iniciales, poligonos, historial: hi
         <p className="text-xs text-tenue">Mostrando {filtrados.length} de {reportes.length} reportes · la exportación descarga la vista filtrada con campos públicos y coordenadas aproximadas · CC BY 4.0</p>
       </div>
       {filtrados.length > 0 ? <ReportesPanel historial={historial} reportes={filtrados} orden={orden} ordenar={ordenar} cambiarEstado={cambiarEstado} permitido={(a) => motivoBloqueo(rol, a)} /> : <div className="flex flex-col items-center gap-4 px-5 py-14 text-center">
-        <SearchX size={32} className="text-tenue" aria-hidden="true" /><p className="font-medium text-suave">No hay reportes con estos filtros</p>
+        <ZankyImg animo="curioso" decorativo sizes="96px" className="size-24" /><p className="font-medium text-suave">No hay reportes con estos filtros</p>
         <button type="button" onClick={limpiarFiltros} className={cn(boton, 'bg-dorado-500 text-cra-950 hover:bg-dorado-300')}>Limpiar filtros</button>
       </div>}
     </div>

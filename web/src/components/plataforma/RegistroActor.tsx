@@ -5,6 +5,7 @@ import type { Actor, Papel, SectorId, TipoActor } from '../../types/plataforma';
 import { registrarActor, useActores } from '../../lib/plataforma/estado';
 import { PAPELES, SECTORES, TIPOS_ACTOR } from '../../lib/plataforma/catalogos';
 import { cn } from '../../lib/utils';
+import AvisoZanky from '../marca/AvisoZanky';
 
 interface Props { actores: Actor[] }
 
@@ -92,7 +93,7 @@ export default function RegistroActor({ actores: iniciales }: Props) {
         <div>
           <button type="submit" className="inline-flex min-h-11 items-center justify-center bg-dorado-500 px-6 text-xs font-black uppercase tracking-[0.08em] text-cra-950 hover:bg-dorado-300">Registrar</button>
         </div>
-        <div aria-live="polite">{exito && <p className="border-l-4 border-dorado-300 bg-white/5 p-3 text-sm">{exito}</p>}</div>
+        <div aria-live="polite">{exito && <AvisoZanky animo="celebrando" titulo="¡Bienvenido a la plataforma!" className="rounded-3xl border border-dorado-500/40 bg-dorado-500/10 p-4 text-sm"><p className="text-suave">{exito}</p></AvisoZanky>}</div>
       </form>
 
       <section aria-labelledby="titulo-actores">

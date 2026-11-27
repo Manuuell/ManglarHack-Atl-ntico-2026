@@ -15,6 +15,7 @@ import { ACCIONES_PLAN, ESTADOS_ACCION, SECTORES, TIPOS_ACCION } from '../../lib
 import { ESTADOS, PRIORIDADES, TIPOS, nivelPrioridad } from '../../lib/catalogos';
 import { cn } from '../../lib/utils';
 import { LIMITES_MANGLAR, enAreaDeReporte } from '../../lib/areaReporte';
+import ZankyImg from '../marca/ZankyImg';
 
 export interface PuntoMapa { lat: number; lon: number }
 interface Props {
@@ -173,8 +174,8 @@ export default function MapaPlataforma({ zonas, acciones = [], reportes = [], mo
         <div className="pointer-events-none absolute left-3 top-3 z-[500] flex flex-col gap-1 text-xs" aria-live="polite">
           {marcar && <span className="bg-cra-950/90 px-2 py-1 font-bold text-dorado-300">Haga clic en el mapa para marcar el sitio</span>}
           {(plan.estado === 'cargando' || manglar.estado === 'cargando') && <span className="bg-cra-950/90 px-2 py-1 text-suave">Cargando capas…</span>}
-          {plan.estado === 'error' && <span className="bg-cra-950/90 px-2 py-1 text-alta-texto">No se pudo cargar el plan de la C.R.A.</span>}
-          {manglar.estado === 'error' && <span className="bg-cra-950/90 px-2 py-1 text-alta-texto">No se pudo cargar la cobertura de manglar</span>}
+          {plan.estado === 'error' && <span className="flex items-center gap-1.5 rounded-full bg-cra-950/90 py-0.5 pr-3 pl-1 text-alta-texto"><ZankyImg animo="preocupado" decorativo sizes="28px" className="size-7 shrink-0 drop-shadow-none" />No se pudo cargar el plan de la C.R.A.</span>}
+          {manglar.estado === 'error' && <span className="flex items-center gap-1.5 rounded-full bg-cra-950/90 py-0.5 pr-3 pl-1 text-alta-texto"><ZankyImg animo="preocupado" decorativo sizes="28px" className="size-7 shrink-0 drop-shadow-none" />No se pudo cargar la cobertura de manglar</span>}
         </div>
       </div>
 
