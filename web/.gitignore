@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# Copia de los datos del workflow de la C.R.A. (la baja scripts/copiar-cra.mjs)
+public/cra/
