@@ -1,4 +1,4 @@
-﻿---
+---
 import { Map, LayoutDashboard, Sparkles, Camera, MapPin } from 'lucide-react';
 import Sanky from '../marca/Sanky.astro';
 import Button from '../ui/Button.astro';
@@ -18,7 +18,7 @@ const cifras = [[totalReportes, 'reportes ciudadanos'], [totalZonas, 'zonas de m
    <h1 class="text-4xl leading-[1.08] font-extrabold text-manglar-950 sm:text-5xl lg:text-6xl">Los manglares del Atlántico, vigilados por su gente <span class="text-agua-600">en tiempo real</span></h1>
    <p class="mt-6 max-w-xl text-base leading-relaxed text-suave sm:text-lg">Sanky, la mascota del mangle rojo, recibe reportes por WhatsApp con IA y desde una app que funciona sin señal; la C.R.A. los valida en un panel y todo queda como datos abiertos.</p>
    <div class="mt-8 flex flex-wrap gap-3"><Button href="#mapa" size="lg"><Map size={18} aria-hidden="true" />Ver mapa en vivo</Button><Button href="#panel" variant="secondary" size="lg"><LayoutDashboard size={18} aria-hidden="true" />Ir al Panel C.R.A.</Button></div>
-   <dl class="mt-10 grid grid-cols-3 divide-x divide-linea">{cifras.map(([valor, etiqueta], indice) => <div class={indice === 0 ? 'pr-3' : 'px-3 sm:px-5'}><dt class="text-xs leading-relaxed text-suave sm:text-sm">{etiqueta}</dt><dd class="mt-2 text-3xl font-bold tabular-nums text-manglar-900">{valor.toLocaleString('es-CO')}</dd></div>)}</dl>
+   <dl class="mt-10 grid grid-cols-3 divide-x divide-linea">{cifras.map(([valor, etiqueta], indice) => <div class:list={['flex flex-col-reverse', indice === 0 ? 'pr-3' : 'px-3 sm:px-5']}><dt class="mt-1 text-xs leading-snug text-suave sm:text-sm">{etiqueta}</dt><dd class="text-3xl font-bold tabular-nums text-manglar-900 sm:text-4xl">{valor.toLocaleString('es-CO')}</dd></div>)}</dl>
   </div>
   <Card class="relative mx-auto w-full max-w-lg bg-superficie/85 p-5 sm:p-8">
    <div class="flex items-center justify-between"><span class="text-xs font-semibold uppercase tracking-wide text-agua-700">Tu voz cuida el manglar</span><Badge tono="neutro">Demostración</Badge></div>

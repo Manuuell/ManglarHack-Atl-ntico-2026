@@ -1,4 +1,4 @@
-﻿import { TIPOS } from '../../../lib/catalogos';
+import { TIPOS } from '../../../lib/catalogos';
 import { cn } from '../../../lib/utils';
 import type { TipoReporte } from '../../../types/manglar';
 export default function ChipTipo({ tipo }: { tipo: TipoReporte }) {

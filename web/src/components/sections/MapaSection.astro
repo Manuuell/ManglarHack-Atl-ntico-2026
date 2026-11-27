@@ -1,11 +1,15 @@
-﻿---
+---
 import type { Reporte, ZonasManglar } from '../../types/manglar';
 import SectionHeading from '../ui/SectionHeading.astro';
+import MapaMonitoreo from '../mapa/MapaMonitoreo';
 interface Props { reportes: Reporte[]; poligonos: ZonasManglar; }
+const { reportes, poligonos } = Astro.props;
 ---
 <section id="mapa" class="py-20 sm:py-24">
  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
   <SectionHeading eyebrow="Monitoreo en vivo" titulo="Mapa interactivo de manglares" descripcion="Explora los polígonos de la C.R.A. por prioridad de conservación y los reportes ciudadanos geolocalizados por prioridad. Los límites mostrados son aproximados." />
-  <div data-placeholder="mapa" class="relative z-0 h-[560px] rounded-3xl bg-fondo-alt ring-1 ring-linea grid place-items-center text-tenue">Cargando mapa…</div>
+  <MapaMonitoreo client:only="react" reportes={reportes} poligonos={poligonos}>
+   <div slot="fallback" role="status" class="relative z-0 h-[520px] sm:h-[600px] rounded-3xl bg-fondo-alt ring-1 ring-linea grid place-items-center text-tenue">Cargando mapa…</div>
+  </MapaMonitoreo>
  </div>
 </section>

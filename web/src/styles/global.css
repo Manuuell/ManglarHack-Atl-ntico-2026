@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+@import "tailwindcss";
 :root {
  --c-fondo:#f6f9f7; --c-fondo-alt:#eef3f0; --c-superficie:#ffffff; --c-linea:#dde6e1; --c-linea-suave:#e9efec; --c-texto:#0f1f1a; --c-texto-suave:#4b5d56; --c-texto-tenue:#6b7c75;
  --c-sombra:0 1px 2px rgb(11 61 46 / .06),0 12px 28px -12px rgb(11 61 46 / .16);

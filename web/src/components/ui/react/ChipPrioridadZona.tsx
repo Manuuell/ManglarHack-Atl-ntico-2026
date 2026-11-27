@@ -1,4 +1,4 @@
-﻿import { PRIORIDADES_ZONA } from '../../../lib/catalogos';
+import { PRIORIDADES_ZONA } from '../../../lib/catalogos';
 import { cn } from '../../../lib/utils';
 import type { PrioridadZona } from '../../../types/manglar';
 export default function ChipPrioridadZona({ prioridad }: { prioridad: PrioridadZona }) {

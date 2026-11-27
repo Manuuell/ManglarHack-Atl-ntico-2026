@@ -1,4 +1,4 @@
-﻿import { PRIORIDADES } from '../../../lib/catalogos';
+import { PRIORIDADES } from '../../../lib/catalogos';
 import { cn } from '../../../lib/utils';
 import type { PrioridadReporte } from '../../../types/manglar';
 export default function ChipPrioridad({ prioridad }: { prioridad: PrioridadReporte }) {

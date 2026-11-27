@@ -1,4 +1,4 @@
-﻿import { ESTADOS } from '../../../lib/catalogos';
+import { ESTADOS } from '../../../lib/catalogos';
 import { cn } from '../../../lib/utils';
 import type { EstadoReporte } from '../../../types/manglar';
 export default function ChipEstado({ estado }: { estado: EstadoReporte }) {

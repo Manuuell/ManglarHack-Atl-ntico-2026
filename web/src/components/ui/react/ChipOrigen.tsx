@@ -1,4 +1,4 @@
-﻿import { ORIGENES } from '../../../lib/catalogos';
+import { ORIGENES } from '../../../lib/catalogos';
 import { cn } from '../../../lib/utils';
 import type { Origen } from '../../../types/manglar';
 export default function ChipOrigen({ origen }: { origen: Origen }) {

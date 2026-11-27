@@ -1,4 +1,4 @@
-﻿import { nivelConfianza } from '../../../lib/catalogos';
+import { nivelConfianza } from '../../../lib/catalogos';
 import { cn } from '../../../lib/utils';
 export default function BarraConfianza({ valor, compacta = false }: { valor: number; compacta?: boolean }) {
  const porcentaje = Number.isFinite(valor) ? Math.min(100, Math.max(0, valor)) : 0;

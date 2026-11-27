@@ -1,11 +1,13 @@
-﻿---
+---
 import type { Reporte, ZonasManglar } from '../../types/manglar';
 import SectionHeading from '../ui/SectionHeading.astro';
+import PanelCRA from '../panel/PanelCRA';
 interface Props { reportes: Reporte[]; poligonos: ZonasManglar; }
+const { reportes, poligonos } = Astro.props;
 ---
 <section id="panel" class="bg-fondo-alt py-20 sm:py-24">
  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
   <SectionHeading eyebrow="Panel de control C.R.A." titulo="Validación y seguimiento de reportes" descripcion="Revisa los aportes ciudadanos, valida los hallazgos y escala los casos que requieren seguimiento. Consulta y comparte los datos abiertos del territorio." />
-  <div data-placeholder="panel" class="min-h-[400px] rounded-3xl bg-superficie ring-1 ring-linea grid place-items-center text-tenue">Cargando panel…</div>
+  <PanelCRA client:load reportes={reportes} poligonos={poligonos} />
  </div>
 </section>
