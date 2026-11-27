@@ -91,6 +91,7 @@ class _FormularioPerfilState extends State<_FormularioPerfil> {
         nombre: _nombre.text.trim(),
         colegio: _colegio.text.trim(),
         anonimoPorDefecto: _anonimo,
+        rol: base.rol,
         cedulaHash: !_vinculada && digitos.isNotEmpty
             ? base.huellaCedula(digitos)
             : (_vinculada ? base.cedulaHash : null),

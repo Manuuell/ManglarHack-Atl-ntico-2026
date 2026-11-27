@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/guardian.dart';
+import '../../datos/roles.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
 import '../comun/zanky_mascota.dart';
+import '../roles/selector_rol.dart';
 import 'fondo.dart';
 import 'formulario.dart';
 import 'puntos.dart';
@@ -44,8 +46,9 @@ class _Eslabon {
 }
 
 class _BienvenidaState extends State<Bienvenida> {
-  static const _total = 4;
+  static const _total = 5;
   static const _ultima = _total - 1;
+  static const _paginaRol = _ultima - 1;
 
   static final _pasos = [
     const _Paso(
@@ -80,6 +83,7 @@ class _BienvenidaState extends State<Bienvenida> {
     ),
   ];
 
+  static const _burbujaRol = 'Así te muestro lo que más te sirve.';
   static const _burbujaPerfil = 'Casi listo. Cuéntame cómo te llamamos.';
 
   final PageController _ctrl = PageController();
@@ -100,6 +104,7 @@ class _BienvenidaState extends State<Bienvenida> {
       nombre: previo?.nombre ?? '',
       colegio: previo?.colegio ?? '',
       anonimo: previo?.anonimoPorDefecto ?? false,
+      rol: previo?.rol ?? RolUsuario.ciudadano,
     );
   }
 
@@ -112,7 +117,7 @@ class _BienvenidaState extends State<Bienvenida> {
 
   Animo get _animo => _celebrando
       ? Animo.celebrando
-      : const [Animo.feliz, Animo.curioso, Animo.celebrando, Animo.feliz][_indice];
+      : const [Animo.feliz, Animo.curioso, Animo.celebrando, Animo.curioso, Animo.feliz][_indice];
 
   void _alCambiarPagina(int i) {
     if (i == _indice) return;
@@ -171,6 +176,7 @@ class _BienvenidaState extends State<Bienvenida> {
         cedulaHash: base.cedulaHash,
         sal: base.sal,
         anonimoPorDefecto: _datos.anonimo,
+        rol: _datos.rol,
         consentimiento: DateTime.now(),
       );
       await estado.guardarPerfil(perfil);
@@ -310,6 +316,11 @@ class _BienvenidaState extends State<Bienvenida> {
             indice: i,
             child: _PaginaIntro(paso: _pasos[i], frase: i == _indice ? _frase : null),
           ),
+        _Paralaje(
+          controlador: _ctrl,
+          indice: _paginaRol,
+          child: PaginaRol(datos: _datos, burbuja: _indice == _paginaRol ? (_frase ?? _burbujaRol) : _burbujaRol),
+        ),
         _Paralaje(
           controlador: _ctrl,
           indice: _ultima,
@@ -554,6 +565,40 @@ class _BotonEmpezar extends StatelessWidget {
                     ],
                   ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// La cuarta página: cómo participas. Cuatro tarjetas ilustradas; se puede cambiar después en Guardián.
+class PaginaRol extends StatelessWidget {
+  const PaginaRol({super.key, required this.datos, required this.burbuja});
+
+  final DatosPerfil datos;
+  final String burbuja;
+
+  @override
+  Widget build(BuildContext context) {
+    final tema = Theme.of(context).textTheme;
+    return ListenableBuilder(
+      listenable: datos,
+      builder: (context, _) => SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            BurbujaZanky(texto: burbuja),
+            const SizedBox(height: 20),
+            Semantics(header: true, child: Text('¿Cómo participas?', style: tema.headlineMedium)),
+            const SizedBox(height: 8),
+            Text(
+              'Elige lo que más se parezca a ti: Inicio te muestra primero lo que te sirve. Lo puedes cambiar en Guardián.',
+              style: tema.bodyLarge?.copyWith(color: Zc.textoSuave),
+            ),
+            const SizedBox(height: 20),
+            SelectorRol(valor: datos.rol, alCambiar: datos.elegirRol),
+          ],
         ),
       ),
     );
