@@ -11,6 +11,10 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import 'borrador.dart';
 
+/// Lo que se le dice a la persona cuando el punto cae donde el servidor no recibe reportes.
+const textoPuntoFueraDelServidor =
+    'Ese punto queda fuera del Atlántico y el servidor no lo recibe. Marca en el mapa dónde lo viste.';
+
 /// Paso 2: ¿dónde? El GPS ya venía afinando desde que se abrió el flujo. Se puede
 /// corregir tocando el mapa o pegando un enlace de Google Maps. Siempre se ve, en
 /// palabras, si el punto cae dentro del manglar y en qué zona.
@@ -269,6 +273,12 @@ class _Resultado extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final u = borrador.ubicacion;
     final (IconData icono, Color color, String titulo, String detalle) = switch ((borrador.gps, u)) {
+      _ when borrador.punto != null && !borrador.puntoAceptado => (
+          Icons.wrong_location_rounded,
+          Zc.fango,
+          'Fuera del Atlántico',
+          textoPuntoFueraDelServidor,
+        ),
       (_, Ubicacion u) when u.dentro => (
           Icons.eco_rounded,
           Zc.hoja,
@@ -452,6 +462,9 @@ class _HojaEnlaceState extends State<_HojaEnlace> {
     final tt = Theme.of(context).textTheme;
     final r = leerEnlaceMapa(_campo.text);
     final p = r.punto;
+    // Fuera de la caja del servidor no se puede usar; entre esa caja y el Atlántico «de verdad»
+    // solo se avisa (puede ser un enlace equivocado).
+    final rechazado = p != null && !AreaServidor.contiene(p);
     final fuera = p != null && !enElAtlantico(p);
     final String? aviso = _campo.text.trim().isEmpty
         ? null
@@ -459,6 +472,8 @@ class _HojaEnlaceState extends State<_HojaEnlace> {
             ? 'Ese enlace corto no trae la coordenada. En Google Maps, mantén presionado el punto y copia las coordenadas (los números de arriba).'
             : p == null
                 ? 'No encuentro una ubicación en ese texto.'
+                : rechazado
+                    ? textoPuntoFueraDelServidor
                 : fuera
                     ? 'Ese punto queda fuera del Atlántico. ¿Es el enlace correcto?'
                     : null;
@@ -516,7 +531,7 @@ class _HojaEnlaceState extends State<_HojaEnlace> {
                 child: BotonZ(
                   texto: p == null ? 'Usar este punto' : 'Usar ${p.latitude.toStringAsFixed(4)}, ${p.longitude.toStringAsFixed(4)}',
                   icono: Icons.check_rounded,
-                  onTap: p == null ? null : () => Navigator.pop(context, p),
+                  onTap: p == null || rechazado ? null : () => Navigator.pop(context, p),
                 ),
               ),
             ],

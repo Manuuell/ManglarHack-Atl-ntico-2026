@@ -40,23 +40,6 @@ class BorradoDatos {
   }
 }
 
-/// Deja la memoria como una instalación nueva tras [BorradoDatos.borrarTodo].
-///
-/// TEMPORAL: es lo mismo que el método `olvidarTodo()` que debe vivir en EstadoZanky
-/// (ver el informe); cuando exista, esta extensión se borra y se llama al método.
-extension BorradoEnMemoria on EstadoZanky {
-  void olvidarTodoEnMemoria() {
-    perfil = null;
-    reportes.clear();
-    publicos = const [];
-    clima = null;
-    climaDeCache = false;
-    ultimaSincronizacion = null;
-    // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
-    notifyListeners();
-  }
-}
-
 /// Pide confirmación escrita y borra. Devuelve `true` si se borró.
 Future<bool> confirmarYBorrarDatos(BuildContext context) async {
   final estado = Zanky.leer(context);
@@ -76,7 +59,7 @@ Future<bool> confirmarYBorrarDatos(BuildContext context) async {
     }
     return false;
   }
-  estado.olvidarTodoEnMemoria();
+  estado.olvidarTodo();
   return true;
 }
 

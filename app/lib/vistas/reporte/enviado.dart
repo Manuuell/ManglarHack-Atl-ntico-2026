@@ -27,6 +27,10 @@ import '../raiz.dart';
   if (r.envio == Envio.enviando) {
     return ('Enviando…', 'Un momento: lo estoy subiendo con la foto.', Zc.cienaga);
   }
+  if (r.envio == Envio.rechazado) {
+    // Definitivo: se dice aunque no haya señal ahora (reintentar tal cual no lo arregla).
+    return ('No se pudo enviar', r.motivoRechazo ?? 'El servidor no aceptó este reporte.', Zc.sol);
+  }
   if (!servidorConfigurado) {
     return (guardado, 'Modo demostración: en la versión conectada se envía solo a la CRA.', Zc.textoSuave);
   }

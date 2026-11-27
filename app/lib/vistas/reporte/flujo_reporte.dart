@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../datos/estado.dart';
+import '../../datos/fotos.dart';
 import '../../datos/reporte.dart';
 import '../../datos/tipos.dart';
 import '../../nucleo/presionable.dart';
@@ -86,7 +87,7 @@ class _FlujoReporteState extends State<FlujoReporte> {
 
   bool get _puedeSeguir => switch (_paso) {
         0 => _b.tipo != null,
-        1 => _b.punto != null,
+        1 => _b.puntoAceptado, // fuera del Atlántico el servidor lo rechaza siempre
         _ => true,
       };
 
@@ -105,9 +106,10 @@ class _FlujoReporteState extends State<FlujoReporte> {
     final Reporte r;
     try {
       r = await _b.enviar();
-    } catch (_) {
-      // Casi siempre es el guardado de la foto (sin espacio en el navegador o el teléfono).
-      if (mounted) await _avisarFalloGuardado();
+    } catch (e) {
+      // Casi siempre es el guardado (sin espacio en el navegador o el teléfono): se muestra
+      // el mensaje real, no uno genérico.
+      if (mounted) await _avisarFalloGuardado(e is ErrorAlGuardar ? e : ErrorAlGuardar.de(e, conFoto: _b.foto != null));
       return;
     }
     if (!mounted) return;
@@ -118,18 +120,16 @@ class _FlujoReporteState extends State<FlujoReporte> {
     ));
   }
 
-  /// El guardado falló: nada se perdió (el borrador sigue aquí). Se ofrece reintentar o,
-  /// si hay foto, seguir sin ella (la foto es lo que más espacio pide).
-  Future<void> _avisarFalloGuardado() async {
-    final conFoto = _b.foto != null;
+  /// El guardado falló: nada se perdió (el borrador sigue aquí). Se ofrece reintentar y,
+  /// solo si falta espacio y hay foto, seguir sin ella (la foto es lo que más espacio pide).
+  Future<void> _avisarFalloGuardado(ErrorAlGuardar error) async {
+    final conFoto = _b.foto != null && error.sinEspacio;
     final seguirSinFoto = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
         title: const Text('No pude guardar tu reporte'),
-        content: Text(conFoto
-            ? 'Puede que no quede espacio para guardar la foto. No perdiste nada: puedes reintentar o guardar el reporte sin foto.'
-            : 'Puede que no quede espacio para guardarlo. No perdiste nada: puedes reintentar.'),
+        content: Text(error.mensaje),
         actions: [
           if (conFoto) TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Seguir sin foto')),
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Reintentar')),
@@ -213,7 +213,7 @@ class _FlujoReporteState extends State<FlujoReporte> {
                 texto: switch (_paso) {
                   0 => 'Elige qué viste',
                   1 => _b.punto != null
-                      ? 'Usar este punto'
+                      ? (_b.puntoAceptado ? 'Usar este punto' : 'Marca otro punto en el mapa')
                       : (_b.gps == EstadoGps.buscando ? 'Buscando tu ubicación…' : 'Toca el mapa para marcar'),
                   2 => _b.foto == null ? 'Seguir sin foto' : 'Seguir',
                   _ => !widget.estado.servidor.configurado

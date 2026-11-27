@@ -261,8 +261,12 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
 
   /// Escribe la lista. Antes relee el disco y fusiona (otra pestaña pudo escribir) y,
   /// si viene [nuevo], lo agrega; solo si la escritura sale bien la memoria cambia.
-  Future<void> _guardar({Reporte? nuevo}) => _enSerie(() async {
-        final epoca = _epoca;
+  ///
+  /// [epoca] es la época en que empezó quien llama (una vuelta de sincronización): si
+  /// se borró todo desde entonces, no escribe nada (ni siquiera una lista vacía).
+  Future<void> _guardar({Reporte? nuevo, int? epoca}) => _enSerie(() async {
+        final desde = epoca ?? _epoca;
+        if (desde != _epoca) return;
         final prefs = await SharedPreferences.getInstance();
         var disco = const <Reporte>[];
         try {
@@ -271,7 +275,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
         } catch (_) {
           // Sin poder releer, se escribe lo que hay en memoria (como antes).
         }
-        if (epoca != _epoca) return; // se borró todo mientras tanto
+        if (desde != _epoca) return; // se borró todo mientras tanto
         final trabajo = [?nuevo, ...reportes];
         fusionarReportes(trabajo, disco);
         try {
@@ -293,9 +297,9 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
   /// Igual que [_guardar], pero un fallo no corta lo que viene después (la vuelta de
   /// sincronización sigue: lo enviado ya está en el servidor, y el próximo guardado lo
   /// vuelve a intentar).
-  Future<void> _guardarSinRomper() async {
+  Future<void> _guardarSinRomper({int? epoca}) async {
     try {
-      await _guardar();
+      await _guardar(epoca: epoca);
     } catch (e) {
       debugPrint('Zanky: no pude guardar la lista de reportes: $e');
     }
@@ -366,7 +370,9 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _unaVuelta({required bool encadenada}) async {
     if (!servidor.configurado) return;
+    final epoca = _epoca;
     await _recargarDeDisco();
+    if (epoca != _epoca) return; // se borró todo mientras se releía el disco
     // Sin señal no se intenta: los reportes quedan «en el teléfono», sin sumar intentos.
     if (!enLinea) return;
 
@@ -429,21 +435,24 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
           debugPrint('Zanky: falló el envío de ${r.caso}: $e');
         }
       }
+      if (epoca != _epoca) return; // «Borrar mis datos» llegó con el envío en el aire
       r.cambiadoEn = DateTime.now();
       if (r.envio == Envio.error) _fallaronRecien.add(r.id);
-      await _guardarSinRomper();
+      await _guardarSinRomper(epoca: epoca);
       _avisar();
       if (cortoLaRed) break;
     }
 
     if (!cortoLaRed) {
-      await _traerEstados();
+      await _traerEstados(epoca);
+      if (epoca != _epoca) return;
       try {
         final propios = {
           for (final r in reportes) ...[r.id, ?r.idPublico],
         };
         // Los propios no se repiten como «públicos»: el mapa y la corroboración ya los tienen.
         final lista = await servidor.publicos();
+        if (epoca != _epoca) return;
         publicos = [
           for (final p in lista)
             if (!propios.contains(p.id)) p,
@@ -453,7 +462,8 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
       }
       ultimaSincronizacion = DateTime.now();
     }
-    await _reducirFotosEnviadas();
+    if (epoca != _epoca) return;
+    await _reducirFotosEnviadas(epoca);
     // Una vuelta encadenada que dejó esperando a los que fallaron no cuenta como «todo bien».
     _fallosSeguidos = (falloDelServidor || cortoLaRed)
         ? _fallosSeguidos + 1
@@ -463,7 +473,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
   /// Trae el estado, la prioridad y la confianza que fijó el servidor, en tandas de 100,
   /// de TODOS los enviados que aún pueden cambiar (todos menos los cerrados: un
   /// descartado se puede reabrir) y de los que aún no tienen su id público.
-  Future<void> _traerEstados() async {
+  Future<void> _traerEstados(int epoca) async {
     final ids = [
       for (final r in reportes)
         if (r.envio == Envio.enviado && (r.estado != EstadoReporte.cerrado || r.idPublico == null)) r.id,
@@ -478,6 +488,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
         if (esErrorDeRed(e)) break;
       }
     }
+    if (epoca != _epoca) return;
     final porId = {for (final r in reportes) r.id: r};
     var cambio = false;
     for (final e in remotos) {
@@ -509,14 +520,14 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
       }
     }
     if (cambio) {
-      await _guardarSinRomper();
+      await _guardarSinRomper(epoca: epoca);
       _avisar();
     }
   }
 
   /// Lo que ya llegó a la CRA no necesita la foto completa en el teléfono (ni en el
   /// navegador, que puede ser prestado): queda una miniatura sin metadatos.
-  Future<void> _reducirFotosEnviadas() async {
+  Future<void> _reducirFotosEnviadas(int epoca) async {
     var cambio = false;
     for (final r in reportes.toList()) {
       if (r.envio != Envio.enviado || r.fotoRef == null || r.fotoReducida) continue;
@@ -527,7 +538,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
       cambio = true;
     }
     if (cambio) {
-      await _guardarSinRomper();
+      await _guardarSinRomper(epoca: epoca);
       _avisar();
     }
   }

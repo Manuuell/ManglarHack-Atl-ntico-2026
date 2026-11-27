@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../datos/prioridad.dart';
+import '../../datos/reporte.dart' show maxDescripcionServidor, recortarPuntosDeCodigo;
 import '../../datos/tipos.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
@@ -85,7 +87,8 @@ class _PasoDetallesState extends State<PasoDetalles> {
                 focusNode: _foco,
                 minLines: 3,
                 maxLines: 6,
-                maxLength: 1000,
+                // El servidor cuenta puntos de código (un emoji de familia son 7): se corta igual.
+                inputFormatters: const [LimitadorPuntosDeCodigo()],
                 textCapitalization: TextCapitalization.sentences,
                 onChanged: (t) => b.cambiar(() => b.descripcion = t),
                 style: tt.bodyLarge,
@@ -365,6 +368,23 @@ class _TarjetaPrioridad extends StatelessWidget {
               style: tt.bodySmall?.copyWith(fontSize: 11.5, color: Zc.textoTenue)),
         ],
       ),
+    );
+  }
+}
+
+/// Corta el texto a [maximo] puntos de código (no letras visibles ni unidades UTF-16),
+/// como lo cuenta el servidor, sin partir un par sustituto.
+class LimitadorPuntosDeCodigo extends TextInputFormatter {
+  const LimitadorPuntosDeCodigo([this.maximo = maxDescripcionServidor]);
+  final int maximo;
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue anterior, TextEditingValue nuevo) {
+    if (nuevo.text.runes.length <= maximo) return nuevo;
+    final texto = recortarPuntosDeCodigo(nuevo.text, maximo);
+    return TextEditingValue(
+      text: texto,
+      selection: TextSelection.collapsed(offset: texto.length),
     );
   }
 }

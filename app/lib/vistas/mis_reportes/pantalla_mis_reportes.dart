@@ -13,7 +13,6 @@ import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
 import 'detalle_reporte.dart';
-import 'linea_tiempo.dart' show envioRechazado;
 import 'tarjeta_reporte.dart';
 
 enum _Filtro { todos, pendientes, validados }
@@ -50,10 +49,12 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
 
   static String? _resumen(List<Reporte> todos) {
     final enCra = todos.where((r) => r.envio == Envio.enviado).length;
-    final enTel = todos.length - enCra;
+    final noAceptados = todos.where((r) => r.envio == Envio.rechazado).length;
+    final enTel = todos.length - enCra - noAceptados;
     final partes = [
       if (enCra > 0) '$enCra en la CRA',
       if (enTel > 0) '$enTel en el teléfono',
+      if (noAceptados > 0) '$noAceptados no aceptado${noAceptados == 1 ? '' : 's'}',
     ];
     return partes.isEmpty ? null : partes.join(' · ');
   }
@@ -63,7 +64,8 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
     final e = Zanky.de(context);
     final todos = e.reportes;
     final filtrados = todos.where(_pasa).toList();
-    final enTel = filtrados.where((r) => r.envio != Envio.enviado).toList();
+    final enTel = filtrados.where((r) => r.envio != Envio.enviado && r.envio != Envio.rechazado).toList();
+    final rechazados = filtrados.where((r) => r.envio == Envio.rechazado).toList();
     final enCra = filtrados.where((r) => r.envio == Envio.enviado).toList();
 
     final filas = <Object>[
@@ -71,6 +73,11 @@ class _PantallaMisReportesState extends State<PantallaMisReportes> {
         const _Seccion('En tu teléfono'),
         const _AvisoEnvio(),
         ...enTel,
+      ],
+      if (rechazados.isNotEmpty) ...[
+        const _Seccion('No aceptados'),
+        const _AvisoRechazados(),
+        ...rechazados,
       ],
       if (enCra.isNotEmpty) ...[
         const _Seccion('En la CRA'),
@@ -155,6 +162,24 @@ class _Seccion extends StatelessWidget {
       );
 }
 
+/// Explica qué pasó con los reportes que el servidor no aceptó (no se reintentan solos).
+class _AvisoRechazados extends StatelessWidget {
+  const _AvisoRechazados();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: Zc.solClaro, borderRadius: BorderRadius.circular(Zr.m)),
+          child: Text(
+            'El servidor no aceptó estos reportes y no se reenvían solos. Ábrelos para ver el motivo y volver a intentar.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Zc.texto),
+          ),
+        ),
+      );
+}
+
 /// Explica qué pasa con lo que sigue en el teléfono y deja enviarlo a mano.
 class _AvisoEnvio extends StatelessWidget {
   const _AvisoEnvio();
@@ -169,8 +194,6 @@ class _AvisoEnvio extends StatelessWidget {
       texto = 'Modo demostración: estos reportes se quedan en este teléfono, no se envían a nadie.';
     } else if (!e.enLinea) {
       texto = 'Sin señal por ahora. Se envían solos cuando vuelva; no tienes que hacer nada.';
-    } else if (e.reportes.any(envioRechazado)) {
-      texto = 'La CRA no pudo recibir alguno de tus reportes. Ábrelo para ver qué pasó.';
     } else if (conError) {
       texto = 'Alguno no pudo enviarse. Lo vuelvo a intentar solo, y también puedes probar ahora.';
     } else {
