@@ -23,6 +23,7 @@ import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../guardian/editar_perfil.dart';
 import '../roles/selector_rol.dart';
+import 'pronostico_compacto.dart';
 import 'que_hago_ya.dart';
 import 'secciones_rol.dart';
 import '../raiz.dart';
@@ -103,6 +104,8 @@ class _InicioState extends State<Inicio> {
         return const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: EntradaEvento());
       case SeccionInicio.clima:
         return _TarjetaClima(estado: estado);
+      case SeccionInicio.pronostico:
+        return const PronosticoCompacto();
       case SeccionInicio.sabiasQue:
         return _SabiasQue(hectareas: estado.manglar.areaTotalHa);
     }

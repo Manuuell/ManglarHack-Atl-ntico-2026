@@ -58,6 +58,7 @@ enum SeccionInicio {
   asistentes,
   evento,
   clima,
+  pronostico,
   sabiasQue,
 }
 
@@ -74,6 +75,7 @@ List<SeccionInicio> seccionesDeInicio(RolUsuario rol, {String? rolPanel}) {
         SeccionInicio.progreso,
         SeccionInicio.evento,
         SeccionInicio.mision,
+        SeccionInicio.pronostico,
         SeccionInicio.sabiasQue,
       ],
     RolUsuario.estudiante => [
@@ -86,10 +88,12 @@ List<SeccionInicio> seccionesDeInicio(RolUsuario rol, {String? rolPanel}) {
         SeccionInicio.progreso,
         SeccionInicio.evento,
         SeccionInicio.clima,
+        SeccionInicio.pronostico,
         SeccionInicio.sabiasQue,
       ],
     RolUsuario.turista => [
         SeccionInicio.queHagoYa,
+        SeccionInicio.pronostico,
         SeccionInicio.queVer,
         SeccionInicio.queNoHacer,
         SeccionInicio.reporteRapido,
@@ -99,6 +103,7 @@ List<SeccionInicio> seccionesDeInicio(RolUsuario rol, {String? rolPanel}) {
       ],
     RolUsuario.organizador => [
         SeccionInicio.queHagoYa,
+        SeccionInicio.pronostico,
         SeccionInicio.misJornadas,
         SeccionInicio.qrEvento,
         SeccionInicio.asistentes,
