@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { FileJson, FileSpreadsheet, Inbox, SearchX, Siren, Sparkles, Trees, type LucideIcon } from 'lucide-react';
-import type { EstadoReporte, PrioridadReporte, Reporte, ZonasManglar } from '../../types/manglar';
-import { ESTADOS, LISTA_ESTADOS, LISTA_PRIORIDADES, PRIORIDADES, UMBRAL_IA, esAmenazaCritica, esValidadoPorIA } from '../../lib/catalogos';
-import { actualizarEstado, useReportes } from '../../lib/reportesStore';
-import { exportarCSV, exportarGeoJSON } from '../../lib/exportar';
+import type { CambioEstado, EstadoReporte, NivelPrioridad, Reporte, ZonasManglar } from '../../types/manglar';
+import { ESTADOS, LISTA_ESTADOS, LISTA_PRIORIDADES, PRIORIDADES, UMBRAL_IA, esAbierto, nivelPrioridad, CANALES, LISTA_CANALES, TRANSICIONES } from '../../lib/catalogos';
+import { cambiarEstado as registrarCambio, useHistorial, useReportes } from '../../lib/reportesStore';
+import { exportarCSV, exportarGeoJSON, exportarKML } from '../../lib/exportar';
 import { cn } from '../../lib/utils';
 import ReportesPanel, { type CampoOrden, type Orden } from './ReportesPanel';
 
@@ -18,19 +18,22 @@ function KpiCard({ etiqueta, valor, detalle, icono: Icono, acento }: {
   </article>;
 }
 
-export default function PanelCRA({ reportes: iniciales, poligonos }: { reportes: Reporte[]; poligonos: ZonasManglar }) {
+export default function PanelCRA({ reportes: iniciales, poligonos, historial: historialInicial }: { reportes: Reporte[]; poligonos: ZonasManglar; historial: CambioEstado[] }) {
   const reportes = useReportes(iniciales);
-  const [estado, setEstado] = useState<EstadoReporte | 'todos'>('todos');
-  const [prioridad, setPrioridad] = useState<PrioridadReporte | 'todas'>('todas');
-  const [orden, setOrden] = useState<Orden>({ campo: 'fecha', direccion: 'desc' });
+  const historial = useHistorial(historialInicial);
+  const [estado, setEstado] = useState<EstadoReporte | 'todos' | 'abiertos'>('abiertos');
+  const [prioridad, setPrioridad] = useState<NivelPrioridad | 'todas'>('todas');
+  const [orden, setOrden] = useState<Orden>({ campo: 'capturado_en', direccion: 'desc' });
   const [aviso, setAviso] = useState('');
   const timeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timeout.current !== null) clearTimeout(timeout.current); }, []);
 
   function cambiarEstado(id: string, nuevoEstado: EstadoReporte) {
-    actualizarEstado(id, nuevoEstado);
+    const reporte = reportes.find((r) => r.id === id);
+    const transicion = reporte && TRANSICIONES[reporte.estado].find((t) => t.a === nuevoEstado);
+    if (!transicion || !registrarCambio(id, nuevoEstado, { usuario_id: 'moderador-cra-demo', nota: `${transicion.accion}. Acción de demostración.` })) return;
     if (timeout.current !== null) clearTimeout(timeout.current);
-    setAviso(`${id} · ${ESTADOS[nuevoEstado].etiqueta}`);
+    setAviso(`Estado: ${ESTADOS[nuevoEstado].etiqueta} · ${id.slice(0, 8)}`);
     timeout.current = setTimeout(() => { setAviso(''); timeout.current = null; }, 3000);
   }
   function ordenar(campo: CampoOrden) {
@@ -38,32 +41,31 @@ export default function PanelCRA({ reportes: iniciales, poligonos }: { reportes:
   }
   function limpiarFiltros() { setEstado('todos'); setPrioridad('todas'); }
 
-  const filtrados = reportes.filter((reporte) => (estado === 'todos' || reporte.estado === estado) && (prioridad === 'todas' || reporte.prioridad === prioridad)).sort((a, b) => {
-    const diferencia = orden.campo === 'fecha' ? Date.parse(a.fecha) - Date.parse(b.fecha) : a.confianza_ia - b.confianza_ia;
+  const filtrados = reportes.filter((reporte) => (estado === 'todos' || (estado === 'abiertos' ? esAbierto(reporte) : reporte.estado === estado)) && (prioridad === 'todas' || nivelPrioridad(reporte.prioridad) === prioridad)).sort((a, b) => {
+    const diferencia = orden.campo === 'capturado_en' ? Date.parse(a.capturado_en) - Date.parse(b.capturado_en) : a.confianza - b.confianza;
     return (orden.direccion === 'asc' ? diferencia : -diferencia) || a.id.localeCompare(b.id);
   });
-  const amenazas = reportes.filter(esAmenazaCritica);
-  const whatsapp = reportes.filter((reporte) => reporte.origen === 'whatsapp').length;
-  const conteos = { todos: reportes.length, pendiente: 0, validado: 0, escalado: 0 };
-  reportes.forEach((reporte) => { conteos[reporte.estado] += 1; });
-  const area = poligonos.features.reduce((total, zona) => total + zona.properties.area_ha, 0);
-  const boton = 'inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors';
+  const altas = reportes.filter((r) => nivelPrioridad(r.prioridad) === 'alta' && esAbierto(r));
+  const conteo = (opcion: EstadoReporte | 'todos' | 'abiertos') => reportes.filter((r) => opcion === 'todos' || (opcion === 'abiertos' ? esAbierto(r) : r.estado === opcion)).length;
+  const humanos = reportes.filter((r) => ['verificado', 'alerta_oficial', 'en_atencion', 'cerrado'].includes(r.estado)).length;
+  const boton = 'inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-colors';
 
   return <div className="space-y-6">
+    <div className="rounded-2xl bg-agua-50 p-4 text-sm text-agua-700"><span className="mb-2 inline-block rounded-full bg-superficie px-3 py-1 text-xs font-semibold">Datos de ejemplo</span><p>Modo demostración: actúas como Moderador C.R.A. sin iniciar sesión. En producción los permisos y la auditoría los decide el servidor.</p></div>
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <KpiCard etiqueta="Total de reportes" valor={reportes.length} detalle={`${whatsapp} por WhatsApp · ${reportes.filter((reporte) => reporte.origen === 'app').length} desde la app`} icono={Inbox} acento="bg-fondo-alt text-manglar-700" />
-      <KpiCard etiqueta="Amenazas críticas activas" valor={amenazas.length} detalle={`${amenazas.filter((reporte) => reporte.estado !== 'escalado').length} sin escalar a expediente`} icono={Siren} acento={PRIORIDADES.alta.chip} />
-      <KpiCard etiqueta="Reportes validados por IA" valor={reportes.filter(esValidadoPorIA).length} detalle={`Confianza ≥ ${UMBRAL_IA} % · ${conteos.validado} confirmados por la C.R.A.`} icono={Sparkles} acento="bg-agua-50 text-agua-700" />
-      <KpiCard etiqueta="Zonas monitoreadas" valor={poligonos.features.length} detalle={`${poligonos.features.filter((zona) => zona.properties.prioridad === 'critica').length} en prioridad crítica · ${area.toLocaleString('es-CO')} ha`} icono={Trees} acento="bg-manglar-50 text-manglar-700" />
+      <KpiCard etiqueta="Reportes recibidos" valor={reportes.length} detalle={LISTA_CANALES.map((canal) => `${reportes.filter((r) => r.canal === canal).length} ${CANALES[canal].etiqueta}`).join(' · ')} icono={Inbox} acento="bg-fondo-alt text-manglar-700" />
+      <KpiCard etiqueta="Prioridad alta abiertos" valor={altas.length} detalle={`${altas.filter((r) => r.estado === 'recibido' || r.estado === 'en_verificacion').length} sin verificar`} icono={Siren} acento={PRIORIDADES.alta.chip} />
+      <KpiCard etiqueta={`Confianza IA ≥ ${UMBRAL_IA} %`} valor={reportes.filter((r) => r.confianza >= UMBRAL_IA).length} detalle={`${humanos} verificados por una persona`} icono={Sparkles} acento="bg-agua-50 text-agua-700" />
+      <KpiCard etiqueta="Zonas de trabajo" valor={poligonos.features.length} detalle="polígonos aproximados · KMZ C.R.A. pendiente" icono={Trees} acento="bg-manglar-50 text-manglar-700" />
     </div>
 
     <div className="overflow-hidden rounded-3xl bg-superficie shadow-[var(--c-sombra)]">
       <div className="space-y-4 border-b border-linea-suave p-5">
         <div className="flex flex-wrap items-start justify-between gap-5">
-          <div className="flex flex-wrap gap-5">
+          <div className="min-w-0 w-full space-y-4">
             <fieldset className="min-w-0"><legend className="mb-2 text-xs font-medium text-suave">Estado</legend>
-              <div className="flex flex-wrap gap-1 rounded-2xl bg-fondo-alt p-1">{(['todos', ...LISTA_ESTADOS] as const).map((opcion) => <button key={opcion} type="button" aria-pressed={estado === opcion} onClick={() => setEstado(opcion)} className={cn(boton, estado === opcion ? 'bg-manglar-900 text-white' : 'text-suave hover:bg-superficie')}>
-                {opcion === 'todos' ? 'Todos' : opcion === 'escalado' ? 'Escalado' : ESTADOS[opcion].etiqueta}<span className="tabular-nums">{conteos[opcion]}</span>
+              <div className="flex gap-1 overflow-x-auto rounded-2xl bg-fondo-alt p-1">{(['abiertos', 'todos', ...LISTA_ESTADOS] as const).map((opcion) => <button key={opcion} type="button" aria-pressed={estado === opcion} onClick={() => setEstado(opcion)} className={cn(boton, estado === opcion ? 'bg-manglar-900 text-white' : 'text-suave hover:bg-superficie')}>
+                {opcion === 'todos' ? 'Todos' : opcion === 'abiertos' ? 'Abiertos' : ESTADOS[opcion].etiqueta}<span className="tabular-nums">{conteo(opcion)}</span>
               </button>)}</div>
             </fieldset>
             <fieldset className="min-w-0"><legend className="mb-2 text-xs font-medium text-suave">Prioridad</legend>
@@ -76,12 +78,13 @@ export default function PanelCRA({ reportes: iniciales, poligonos }: { reportes:
             <div className="flex flex-wrap gap-2">{[
               { formato: 'CSV', icono: FileSpreadsheet, descargar: exportarCSV },
               { formato: 'GeoJSON', icono: FileJson, descargar: exportarGeoJSON },
+              { formato: 'KML', icono: FileJson, descargar: exportarKML },
             ].map(({ formato, icono: Icono, descargar }) => <button key={formato} type="button" disabled={filtrados.length === 0} onClick={() => descargar(filtrados)} title={`Descargar ${filtrados.length} reportes filtrados en ${formato}`} aria-label={`Descargar ${filtrados.length} reportes filtrados en ${formato}`} className={cn(boton, 'text-manglar-900 ring-1 ring-inset ring-linea hover:bg-fondo disabled:cursor-not-allowed disabled:opacity-40')}><Icono size={16} aria-hidden="true" />Exportar {formato}</button>)}</div>
           </div>
         </div>
-        <p className="text-xs text-tenue">Mostrando {filtrados.length} de {reportes.length} reportes · la exportación descarga la vista filtrada</p>
+        <p className="text-xs text-tenue">Mostrando {filtrados.length} de {reportes.length} reportes · la exportación descarga la vista filtrada con campos públicos y coordenadas aproximadas · CC BY 4.0</p>
       </div>
-      {filtrados.length > 0 ? <ReportesPanel reportes={filtrados} orden={orden} ordenar={ordenar} cambiarEstado={cambiarEstado} /> : <div className="flex flex-col items-center gap-4 px-5 py-14 text-center">
+      {filtrados.length > 0 ? <ReportesPanel historial={historial} reportes={filtrados} orden={orden} ordenar={ordenar} cambiarEstado={cambiarEstado} /> : <div className="flex flex-col items-center gap-4 px-5 py-14 text-center">
         <SearchX size={32} className="text-tenue" aria-hidden="true" /><p className="font-medium text-suave">No hay reportes con estos filtros</p>
         <button type="button" onClick={limpiarFiltros} className={cn(boton, 'bg-manglar-900 text-white hover:bg-manglar-800')}>Limpiar filtros</button>
       </div>}

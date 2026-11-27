@@ -1,16 +1,17 @@
-import { BadgeCheck, Bird, Clock, FileWarning, MessageCircle, Smartphone, Sprout, Trash2, TriangleAlert, type LucideIcon } from 'lucide-react';
-import type { EstadoReporte, Origen, PrioridadReporte, PrioridadZona, Reporte, TipoReporte } from '../types/manglar';
-
+import { Axe, Flame, Construction, Droplets, Trash2, Waves, Fish, CircleHelp, Inbox, ScanSearch, BadgeCheck, Siren, HardHat, CircleCheck, CircleX, Smartphone, QrCode, MessageCircle, type LucideIcon } from 'lucide-react';
+import type { Canal, EstadoReporte, NivelPrioridad, Prioridad, PrioridadZona, Reporte, TipoReporte } from '../types/manglar';
 export const UMBRAL_IA = 80;
-
-export const TIPOS: Record<TipoReporte, { etiqueta: string; icono: LucideIcon; descripcion: string }> = {
-  amenaza: { etiqueta: 'Amenaza', icono: TriangleAlert, descripcion: 'Actividades que ponen en riesgo el manglar y su fauna.' },
-  siembra: { etiqueta: 'Siembra', icono: Sprout, descripcion: 'Jornadas de siembra para recuperar el manglar.' },
-  limpieza: { etiqueta: 'Limpieza', icono: Trash2, descripcion: 'Recolección comunitaria de residuos en el manglar.' },
-  avistamiento: { etiqueta: 'Avistamiento', icono: Bird, descripcion: 'Observaciones de fauna en su hábitat natural.' },
+export const TIPOS: Record<TipoReporte, { etiqueta: string; etiquetaLarga: string; icono: LucideIcon; gravedad: Prioridad }> = {
+ tala: { etiqueta: 'Tala', etiquetaLarga: 'Tala o corte de mangle', icono: Axe, gravedad: 5 },
+ quema: { etiqueta: 'Quema', etiquetaLarga: 'Quema o incendio', icono: Flame, gravedad: 5 },
+ relleno: { etiqueta: 'Relleno', etiquetaLarga: 'Relleno o construcción', icono: Construction, gravedad: 4 },
+ vertimiento: { etiqueta: 'Vertimiento', etiquetaLarga: 'Vertimiento o contaminación del agua', icono: Droplets, gravedad: 4 },
+ basuras: { etiqueta: 'Basuras', etiquetaLarga: 'Basuras o residuos', icono: Trash2, gravedad: 2 },
+ cano_taponado: { etiqueta: 'Caño taponado', etiquetaLarga: 'Caño taponado o alteración del agua', icono: Waves, gravedad: 3 },
+ fauna: { etiqueta: 'Fauna', etiquetaLarga: 'Fauna afectada', icono: Fish, gravedad: 3 },
+ otro: { etiqueta: 'Otro', etiquetaLarga: 'Otro', icono: CircleHelp, gravedad: 1 },
 };
-
-export const PRIORIDADES: Record<PrioridadReporte, { etiqueta: string; color: string; chip: string; punto: string }> = {
+export const PRIORIDADES: Record<NivelPrioridad, { etiqueta: string; color: string; chip: string; punto: string }> = {
   alta: { etiqueta: 'Alta', color: '#dc2626', chip: 'bg-alta-suave text-alta-texto ring-1 ring-inset ring-alta/25', punto: 'bg-alta' },
   media: { etiqueta: 'Media', color: '#d97706', chip: 'bg-media-suave text-media-texto ring-1 ring-inset ring-media/25', punto: 'bg-media' },
   baja: { etiqueta: 'Baja', color: '#16a34a', chip: 'bg-baja-suave text-baja-texto ring-1 ring-inset ring-baja/25', punto: 'bg-baja' },
@@ -23,33 +24,36 @@ export const PRIORIDADES_ZONA: Record<PrioridadZona, { etiqueta: string; color: 
   baja: { etiqueta: 'Baja', color: '#16a34a', relleno: '#4ade80', opacidadRelleno: 0.22, chip: 'bg-baja-suave text-baja-texto ring-1 ring-inset ring-baja/25' },
 };
 
-export const ESTADOS: Record<EstadoReporte, { etiqueta: string; chip: string; icono: LucideIcon }> = {
-  pendiente: { etiqueta: 'Pendiente', chip: 'bg-fondo-alt text-suave ring-1 ring-inset ring-linea', icono: Clock },
-  validado: { etiqueta: 'Validado', chip: 'bg-agua-50 text-agua-700 ring-1 ring-inset ring-agua-500/30', icono: BadgeCheck },
-  escalado: { etiqueta: 'Escalado a expediente', chip: 'bg-manglar-900 text-white ring-1 ring-inset ring-manglar-900', icono: FileWarning },
+
+export const ESTADOS: Record<EstadoReporte, { etiqueta: string; descripcion: string; icono: LucideIcon; chip: string; abierto: boolean }> = {
+ recibido: { etiqueta: 'Recibido', descripcion: 'Recibido para revisión.', icono: Inbox, chip: 'bg-fondo-alt text-suave ring-1 ring-linea', abierto: true },
+ en_verificacion: { etiqueta: 'En verificación', descripcion: 'Una persona revisa la evidencia.', icono: ScanSearch, chip: 'bg-agua-50 text-agua-700 ring-agua-500/30', abierto: true },
+ verificado: { etiqueta: 'Verificado', descripcion: 'Hallazgo confirmado por una persona.', icono: BadgeCheck, chip: 'bg-agua-600 text-white', abierto: true },
+ alerta_oficial: { etiqueta: 'Alerta oficial', descripcion: 'Alerta emitida con apertura de expediente.', icono: Siren, chip: 'bg-alta text-white', abierto: true },
+ en_atencion: { etiqueta: 'En atención', descripcion: 'Caso en atención por el equipo.', icono: HardHat, chip: PRIORIDADES.media.chip, abierto: true },
+ cerrado: { etiqueta: 'Cerrado', descripcion: 'Seguimiento finalizado.', icono: CircleCheck, chip: PRIORIDADES.baja.chip, abierto: false },
+ descartado: { etiqueta: 'Descartado', descripcion: 'La evidencia no confirma el reporte.', icono: CircleX, chip: 'bg-fondo-alt text-tenue line-through', abierto: false },
 };
-
-export const ORIGENES: Record<Origen, { etiqueta: string; icono: LucideIcon }> = {
-  whatsapp: { etiqueta: 'WhatsApp · Sanky', icono: MessageCircle },
-  app: { etiqueta: 'App móvil', icono: Smartphone },
+export const TRANSICIONES: Record<EstadoReporte, { a: EstadoReporte; accion: string; tono: 'primaria' | 'peligro' | 'secundaria' }[]> = {
+ recibido: [{ a: 'en_verificacion', accion: 'Iniciar verificación', tono: 'primaria' }, { a: 'descartado', accion: 'Descartar', tono: 'peligro' }],
+ en_verificacion: [{ a: 'verificado', accion: 'Marcar verificado', tono: 'primaria' }, { a: 'descartado', accion: 'Descartar', tono: 'peligro' }],
+ verificado: [{ a: 'alerta_oficial', accion: 'Emitir alerta oficial (abre expediente)', tono: 'primaria' }, { a: 'cerrado', accion: 'Cerrar sin alerta', tono: 'secundaria' }],
+ alerta_oficial: [{ a: 'en_atencion', accion: 'Pasar a atención', tono: 'primaria' }],
+ en_atencion: [{ a: 'cerrado', accion: 'Cerrar caso', tono: 'primaria' }], cerrado: [], descartado: [],
 };
-
-export const LISTA_TIPOS: TipoReporte[] = ['amenaza', 'siembra', 'limpieza', 'avistamiento'];
-export const LISTA_PRIORIDADES: PrioridadReporte[] = ['alta', 'media', 'baja'];
-export const LISTA_ESTADOS: EstadoReporte[] = ['pendiente', 'validado', 'escalado'];
-
-export function esAmenazaCritica(r: Reporte): boolean {
-  return r.tipo === 'amenaza' && r.prioridad === 'alta';
-}
-
-export function esValidadoPorIA(r: Reporte): boolean {
-  return r.confianza_ia >= UMBRAL_IA;
-}
-
-export function nivelConfianza(n: number): PrioridadReporte {
-  return n >= UMBRAL_IA ? 'alta' : n >= 60 ? 'media' : 'baja';
-}
-
+export const CANALES: Record<Canal, { etiqueta: string; icono: LucideIcon }> = {
+ app: { etiqueta: 'App móvil', icono: Smartphone }, web: { etiqueta: 'Web · QR', icono: QrCode }, whatsapp: { etiqueta: 'WhatsApp · Zanqui', icono: MessageCircle },
+};
+export const LISTA_TIPOS = Object.keys(TIPOS) as TipoReporte[];
+export const LISTA_ESTADOS = Object.keys(ESTADOS) as EstadoReporte[];
+export const LISTA_PRIORIDADES = Object.keys(PRIORIDADES) as NivelPrioridad[];
+export const LISTA_PRIORIDADES_ZONA = Object.keys(PRIORIDADES_ZONA) as PrioridadZona[];
+export const LISTA_CANALES = Object.keys(CANALES) as Canal[];
+export function nivelPrioridad(p: Prioridad): NivelPrioridad { return p >= 4 ? 'alta' : p === 3 ? 'media' : 'baja'; }
+export function etiquetaPrioridad(p: Prioridad): string { return `P${p} · ${PRIORIDADES[nivelPrioridad(p)].etiqueta}`; }
+export function nivelConfianza(n: number): NivelPrioridad { return n >= UMBRAL_IA ? 'alta' : n >= 60 ? 'media' : 'baja'; }
+export function sincronizadoTarde(r: Pick<Reporte, 'recibido_en' | 'capturado_en'>): boolean { return Date.parse(r.recibido_en) - Date.parse(r.capturado_en) > 30 * 60 * 1000; }
+export function esAbierto(r: Pick<Reporte, 'estado'>): boolean { return ESTADOS[r.estado].abierto; }
 export function formatearFecha(iso: string, conHora = true): string {
   return new Intl.DateTimeFormat('es-CO', {
     timeZone: 'America/Bogota', day: 'numeric', month: 'short', year: 'numeric',

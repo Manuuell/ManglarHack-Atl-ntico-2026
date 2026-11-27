@@ -5,13 +5,14 @@ import Ecosistema from '../components/sections/Ecosistema.astro';
 import MapaSection from '../components/sections/MapaSection.astro';
 import PanelSection from '../components/sections/PanelSection.astro';
 import Comunidad from '../components/sections/Comunidad.astro';
-import { obtenerReportes, obtenerPoligonos, obtenerColegios } from '../lib/datos';
-const [reportes, poligonos, colegios] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerColegios()]);
+import { obtenerReportes, obtenerPoligonos, obtenerColegios, obtenerHistorial } from '../lib/datos';
+import { aReportePublico } from '../lib/privacidad';
+const [reportes, poligonos, colegios, historial] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerColegios(), obtenerHistorial()]);
 ---
 <BaseLayout>
  <Hero totalReportes={reportes.length} totalZonas={poligonos.features.length} totalColegios={colegios.length} />
  <Ecosistema />
- <MapaSection reportes={reportes} poligonos={poligonos} />
- <PanelSection reportes={reportes} poligonos={poligonos} />
+ <MapaSection reportes={reportes.map(aReportePublico)} poligonos={poligonos} />
+ <PanelSection historial={historial} reportes={reportes} poligonos={poligonos} />
  <Comunidad colegios={colegios} />
 </BaseLayout>

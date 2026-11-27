@@ -1,13 +1,14 @@
 ---
 import { Map, LayoutDashboard, Sparkles, Camera, MapPin } from 'lucide-react';
-import Sanky from '../marca/Sanky.astro';
+import Zanqui from '../marca/Zanqui.astro';
 import Button from '../ui/Button.astro';
 import Card from '../ui/Card.astro';
 import Badge from '../ui/Badge.astro';
+import ChipPrioridad from '../ui/react/ChipPrioridad';
 import BarraConfianza from '../ui/react/BarraConfianza';
 interface Props { totalReportes: number; totalZonas: number; totalColegios: number; }
 const { totalReportes, totalZonas, totalColegios } = Astro.props;
-const cifras = [[totalReportes, 'reportes ciudadanos'], [totalZonas, 'zonas de manglar monitoreadas'], [totalColegios, 'colegios guardianes']] as const;
+const cifras = [[totalReportes, 'reportes de ejemplo'], [totalZonas, 'zonas de trabajo'], [totalColegios, 'colegios de ejemplo']] as const;
 ---
 <section id="inicio" class="relative isolate overflow-hidden bg-gradient-to-b from-agua-50 to-fondo py-20 pt-28 sm:pb-24 sm:pt-28">
  <div aria-hidden="true" class="pointer-events-none absolute -left-32 top-20 -z-10 h-96 w-96 rounded-full bg-manglar-100/70 blur-3xl"></div>
@@ -15,19 +16,20 @@ const cifras = [[totalReportes, 'reportes ciudadanos'], [totalZonas, 'zonas de m
  <div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
   <div>
    <Badge tono="agua" class="mb-6 px-3 py-2"><Sparkles size={14} aria-hidden="true" />ManglarHack Atlántico 2026 · Ciencia ciudadana</Badge>
-   <h1 class="text-4xl leading-[1.08] font-extrabold text-manglar-950 sm:text-5xl lg:text-6xl">Los manglares del Atlántico, vigilados por su gente <span class="text-agua-600">en tiempo real</span></h1>
-   <p class="mt-6 max-w-xl text-base leading-relaxed text-suave sm:text-lg">Sanky, la mascota del mangle rojo, recibe reportes por WhatsApp con IA y desde una app que funciona sin señal; la C.R.A. los valida en un panel y todo queda como datos abiertos.</p>
-   <div class="mt-8 flex flex-wrap gap-3"><Button href="#mapa" size="lg"><Map size={18} aria-hidden="true" />Ver mapa en vivo</Button><Button href="#panel" variant="secondary" size="lg"><LayoutDashboard size={18} aria-hidden="true" />Ir al Panel C.R.A.</Button></div>
-   <dl class="mt-10 grid grid-cols-3 divide-x divide-linea">{cifras.map(([valor, etiqueta], indice) => <div class:list={['flex flex-col-reverse', indice === 0 ? 'pr-3' : 'px-3 sm:px-5']}><dt class="mt-1 text-xs leading-snug text-suave sm:text-sm">{etiqueta}</dt><dd class="text-3xl font-bold tabular-nums text-manglar-900 sm:text-4xl">{valor.toLocaleString('es-CO')}</dd></div>)}</dl>
+   <h1 class="text-4xl leading-[1.08] font-extrabold text-manglar-950 sm:text-5xl lg:text-6xl">Los manglares del Atlántico, vigilados por su gente <span class="text-agua-600">con ciencia ciudadana</span></h1>
+   <p class="mt-6 max-w-xl text-base leading-relaxed text-suave sm:text-lg">Zanqui, la mascota del mangle rojo, te acompaña a cuidar el territorio. Explora la demostración del mapa y del panel C.R.A.; la conexión con la app, WhatsApp y el servidor aún está por implementar.</p>
+   <div class="mt-8 flex flex-wrap gap-3"><Button href="#mapa" size="lg"><Map size={18} aria-hidden="true" />Ver el mapa</Button><Button href="#panel" variant="secondary" size="lg"><LayoutDashboard size={18} aria-hidden="true" />Ir al Panel C.R.A.</Button></div>
+   <p class="mt-8 text-xs font-semibold text-agua-700">Datos de ejemplo</p>
+   <dl class="mt-3 grid grid-cols-3 divide-x divide-linea">{cifras.map(([valor, etiqueta], indice) => <div class:list={['flex flex-col-reverse', indice === 0 ? 'pr-3' : 'px-3 sm:px-5']}><dt class="mt-1 text-xs leading-snug text-suave sm:text-sm">{etiqueta}</dt><dd class="text-3xl font-bold tabular-nums text-manglar-900 sm:text-4xl">{valor.toLocaleString('es-CO')}</dd></div>)}</dl>
   </div>
   <Card class="relative mx-auto w-full max-w-lg bg-superficie/85 p-5 sm:p-8">
-   <div class="flex items-center justify-between"><span class="text-xs font-semibold uppercase tracking-wide text-agua-700">Tu voz cuida el manglar</span><Badge tono="neutro">Demostración</Badge></div>
-   <Sanky class="mx-auto h-60 w-60 motion-safe:animate-flotar sm:h-72 sm:w-72" />
+   <div class="flex items-center justify-between"><span class="text-xs font-semibold uppercase tracking-wide text-agua-700">Tu voz cuida el manglar</span><Badge tono="neutro">Ejemplo de conversación</Badge></div>
+   <Zanqui class="mx-auto h-60 w-60 motion-safe:animate-flotar sm:h-72 sm:w-72" />
    <div class="overflow-hidden rounded-2xl bg-fondo-alt ring-1 ring-linea-suave">
-    <div class="flex items-center gap-2 bg-manglar-900 px-4 py-3 text-white"><Sanky class="h-9 w-9 rounded-full bg-manglar-50" /><p class="text-sm font-semibold">Sanky · en línea</p></div>
+    <div class="flex items-center gap-2 bg-manglar-900 px-4 py-3 text-white"><Zanqui class="h-9 w-9 rounded-full bg-manglar-50" /><p class="text-sm font-semibold">Zanqui · WhatsApp</p></div>
     <div class="space-y-4 p-4">
      <p class="ml-auto flex w-fit items-center gap-2 rounded-2xl rounded-tr-sm bg-agua-100 px-4 py-3 text-sm text-manglar-900"><Camera size={16} aria-hidden="true" /><MapPin size={16} aria-hidden="true" />Foto + ubicación</p>
-     <div class="mr-3 space-y-3 rounded-2xl rounded-tl-sm bg-superficie p-4 shadow-[var(--c-sombra)]"><p class="text-sm leading-relaxed">¡Gracias! Detecté posible tala de mangle rojo en Ciénaga de Mallorquín.</p><div><p class="mb-1 text-xs text-suave">Confianza IA</p><BarraConfianza valor={94} compacta /></div><Badge tono="alta">Prioridad Alta</Badge></div>
+     <div class="mr-3 space-y-3 rounded-2xl rounded-tl-sm bg-superficie p-4 shadow-[var(--c-sombra)]"><p class="text-sm leading-relaxed">¡Ajá! ¿Qué viste en el manglar? Gracias por la foto: tu caso de ejemplo es 3f2a9c1e. Detecté una posible tala; una persona debe verificarla.</p><div><p class="mb-1 text-xs text-suave">Confianza IA</p><BarraConfianza valor={94} compacta /></div><ChipPrioridad prioridad={5} /></div>
     </div>
    </div>
   </Card>

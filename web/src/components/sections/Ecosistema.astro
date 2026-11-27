@@ -3,15 +3,16 @@ import { MessageCircle, WifiOff, LayoutDashboard, CheckCircle2, ArrowRight } fro
 import Card from '../ui/Card.astro';
 import SectionHeading from '../ui/SectionHeading.astro';
 const puertas = [
- { icono: MessageCircle, titulo: 'Sanky en WhatsApp', texto: 'Cuidar el manglar empieza con una conversación.', estilo: 'bg-agua-50 text-agua-700', puntos: ['Envía una foto y tu ubicación, sin instalar nada.', 'La IA clasifica amenazas, siembras, limpiezas y avistamientos.', 'Estima la prioridad y entrega un puntaje de confianza.'] },
- { icono: WifiOff, titulo: 'App móvil offline-first', texto: 'El compromiso con el territorio sigue incluso sin señal.', estilo: 'bg-manglar-50 text-manglar-700', puntos: ['Registra tus hallazgos en campo sin conexión.', 'Una cola local sincroniza los reportes al reconectar.', 'Pensada para pescadores, guías y colegios.'] },
- { icono: LayoutDashboard, titulo: 'Plataforma web C.R.A.', texto: 'Información compartida para actuar con criterio.', estilo: 'bg-agua-50 text-agua-700', puntos: ['Consulta zonas y reportes en el mapa en vivo.', 'Valida reportes o escálalos a expediente.', 'Accede a datos abiertos en CSV y GeoJSON.'] },
+ { icono: MessageCircle, titulo: 'Zanqui en WhatsApp', texto: 'Cuidar el manglar empieza con una conversación.', estilo: 'bg-agua-50 text-agua-700', puntos: ['Envía una foto y tu ubicación, sin instalar nada.', 'La IA propone el tipo y una persona verifica el hallazgo.', 'Estima la prioridad y entrega un puntaje de confianza.'] },
+ { icono: WifiOff, titulo: 'App móvil sin conexión', texto: 'El compromiso con el territorio sigue incluso sin señal.', estilo: 'bg-manglar-50 text-manglar-700', puntos: ['Registra tus hallazgos en campo sin conexión.', 'Una cola local sincroniza los reportes al reconectar.', 'Pensada para pescadores, guías y colegios.'] },
+ { icono: LayoutDashboard, titulo: 'Plataforma web C.R.A.', texto: 'Información compartida para actuar con criterio.', estilo: 'bg-agua-50 text-agua-700', puntos: ['Consulta zonas y reportes en el mapa público.', 'Verifica reportes y emite alertas con expediente.', 'Accede a datos abiertos en CSV, GeoJSON y KML.'] },
 ];
-const pasos = ['Ciudadano', 'Sanky (IA)', 'Mapa en vivo', 'C.R.A. valida o escala', 'Datos abiertos'];
+const pasos = ['Ciudadano', 'Zanqui (IA)', 'Mapa público', 'C.R.A. verifica y atiende', 'Datos abiertos'];
 ---
 <section id="ecosistema" class="bg-superficie py-20 sm:py-24">
  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-  <SectionHeading eyebrow="Ecosistema Sanky" titulo="Un ecosistema, tres puertas de entrada" descripcion="Del primer hallazgo a una acción de conservación: cada aporte cuenta." align="center" />
+  <SectionHeading eyebrow="Ecosistema Zanqui" titulo="Un ecosistema, tres puertas de entrada" descripcion="Propuesta de conexión entre app, WhatsApp y panel. Esta web muestra datos de ejemplo; aún no hay backend." align="center" />
+  <p class="mb-8 text-center text-sm text-suave">Zanqui viene de las raíces en zancos del mangle rojo y de los zanqueros del Carnaval de Barranquilla. ¡Ajá! ¿Qué viste en el manglar?</p>
   <div class="grid gap-6 lg:grid-cols-3">{puertas.map(({ icono: Icono, titulo, texto, estilo, puntos }) => <Card class="p-7 sm:p-8"><div class={`mb-6 inline-flex rounded-2xl p-4 ${estilo}`}><Icono size={25} aria-hidden="true" /></div><h3 class="text-xl font-bold text-manglar-950">{titulo}</h3><p class="mt-3 leading-relaxed text-suave">{texto}</p><ul class="mt-6 space-y-4">{puntos.map(punto => <li class="flex gap-3 text-sm leading-relaxed text-suave"><CheckCircle2 size={18} className="mt-0.5 shrink-0 text-agua-700" aria-hidden="true" />{punto}</li>)}</ul></Card>)}</div>
   <ol aria-label="Flujo del reporte ciudadano" class="mt-10 flex flex-col items-center justify-between gap-4 rounded-3xl bg-fondo p-6 sm:p-8 lg:flex-row">{pasos.map((paso, indice) => <li class="flex w-full flex-col items-center gap-4 lg:w-auto lg:flex-row"><span class="flex items-center gap-2 text-sm font-semibold text-manglar-900"><span class="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-agua-100 text-xs text-agua-800">{indice + 1}</span>{paso}</span>{indice < pasos.length - 1 && <ArrowRight size={18} className="rotate-90 text-agua-600 lg:rotate-0" aria-hidden="true" />}</li>)}</ol>
  </div>
