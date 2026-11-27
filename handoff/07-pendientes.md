@@ -2,7 +2,7 @@
 
 Lista única del equipo. Cada pendiente grande tiene su issue en GitHub; aquí está el resumen para verlo todo de un vistazo.
 **Al terminar algo:** márcalo aquí (`[x]`), cierra el issue y avisa por el correo de agentes. Si aparece algo nuevo, se agrega
-aquí con dueño. Última actualización: 27-11-2026, 10:40.
+aquí con dueño. Última actualización: 27-11-2026, 11:25.
 
 Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
 
@@ -34,8 +34,9 @@ Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
 ## C. App móvil (`app/`, Á)
 
 - [x] Base: datos sin señal, zonas en el teléfono, prioridad con motivos, solidez, guardián, tema, Zanqui, barra.
-- [ ] Flujo de reporte: tipo → ubicación (GPS, mapa, enlace de Google Maps) → foto → detalles → enviado.
-- [ ] Pantallas: bienvenida y privacidad, mapa, mis reportes y detalle, guardián (tarjeta, nivel, insignias, misiones).
+- [x] Flujo de reporte: tipo → ubicación (GPS, mapa, enlace de Google Maps) → foto → detalles → enviado.
+- [x] Pantallas: bienvenida y privacidad, mapa, mis reportes y detalle, guardián (tarjeta, nivel, insignias, misiones).
+- [x] Recorrido completo visto en el navegador a 375 px (bienvenida → reporte → confirmación → mis reportes → mapa → guardián); 8 defectos de pantalla encontrados y arreglados.
 - [ ] Ver cada pantalla en el navegador y en un Android real; medir la fluidez cuadro a cuadro.
 - [ ] Probar **sin señal**: reportar en modo avión, volver y ver que llega sola, sin duplicar.
 - [ ] Probar el **peor caso**: el servidor guarda y la respuesta se pierde; reintentar no duplica.
@@ -56,7 +57,7 @@ Leyenda de dueños: **Á** Ángel · **M** Manuel · **J** Jerson · **Todos**.
 ## E. Bot de WhatsApp (`bot/`, Á con Codex)
 
 - [ ] Flujos: reportar (con foto, ubicación y **audio** transcrito), número de caso, consultar estado, eventos.
-- [ ] Probar con el simulador y luego con una cuenta real (Meta Cloud o Evolution; cuenta de Ángel).
+- [ ] Probar con el simulador y luego con una cuenta real (Meta Cloud o Evolution; cuenta de Ángel). En construcción en `bot/`.
 - [ ] Aviso al ciudadano cuando cambia su caso; difusión solo con consentimiento.
 - [ ] Llamadas (después de la entrega, documentado).
 
