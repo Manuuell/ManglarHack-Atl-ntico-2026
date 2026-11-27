@@ -117,6 +117,18 @@ La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se
 - `/workflow` incrusta además el visor original de la C.R.A. (capas, vista 3D y audios) desde manglarcra.netlify.app.
 - Instalar o actualizar en el VPS: copiar `copiar-cra.mjs` a `~/mimanglar-cra/`, `sudo install -m 644 scripts/vps/mimanglar-cra.* /etc/systemd/system/`, `sudo systemctl daemon-reload && sudo systemctl enable --now mimanglar-cra.timer`. Registro: `journalctl -u mimanglar-cra.service`.
 
+## Capas oficiales y noticias de la C.R.A. (API en vivo)
+
+- `src/lib/craApi.ts` lee desde el navegador, solo con GET, la API pública de gestión del riesgo de la C.R.A. (`https://api-791856053294.us-central1.run.app`, acepta cualquier origen):
+  - puntos críticos de riesgo (`/critical_points/items?format=geojson`);
+  - focos de calor por satélite (`/wildfire-clusters/items?format=geojson`);
+  - calidad del agua de las ciénagas (`/water_bodies/sampling_points` y `/measurements`, con la escala ICA del IDEAM).
+- Lee también las noticias de crautonoma.gov.co (WordPress REST, que ya acepta el origen de mimanglar y de localhost).
+- `components/mapa/CapasOficialesCRA.tsx` las pinta en el mapa de `#monitoreo` con interruptores y leyenda. Solo muestra lo que está a 2 km o menos de la cobertura de manglar (más los puntos de muestreo de Mallorquín, Totumo, Manatíes y Balboa), con la distancia en cada ventana.
+- `components/comunidad/NoticiasCRA.tsx` muestra «La C.R.A. en el manglar» debajo del mapa.
+- Si la C.R.A. no responde, el mapa sigue sin sus capas y lo dice.
+- En JSON la API devuelve la geometría en EPSG:9377; usar siempre `format=geojson`. No llamar a sus rutas de escritura ni a `/users`.
+
 ## Diseño (identidad C.R.A. modernizada)
 
 - Fondo azul institucional profundo (`bg-fondo` #082B45, `bg-fondo-alt`), tarjetas azul intermedio (`bg-superficie`, `bg-superficie-alta`), texto blanco (`text-texto`, `text-suave`, `text-tenue`), líneas finas translúcidas (`border-linea`, `border-linea-suave`). Los tokens semánticos viven en `src/styles/global.css`: no escribir hex sueltos en un componente.

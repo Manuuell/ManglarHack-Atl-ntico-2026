@@ -16,6 +16,7 @@ import { FUENTE_MANGLAR_CRA, obtenerCapaManglarCRA } from '../../lib/datos';
 import type { FeatureCollection, Polygon as PoligonoGeo } from 'geojson';
 import { exportarCSV, exportarGeoJSON, exportarKML } from '../../lib/exportar';
 import ChipCanal from '../ui/react/ChipCanal';
+import { CapasCRAEnMapa, InterruptoresCRA, LeyendaCRA, useCapasCRA } from './CapasOficialesCRA';
 import 'leaflet/dist/leaflet.css';
 import '../../styles/mapa.css';
 
@@ -87,6 +88,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
     obtenerCapaManglarCRA().then((datos) => { if (activo) setCapa(datos); }).catch(() => { if (activo) setErrorCapa(true); });
     return () => { activo = false; };
   }, []);
+  const capasCRA = useCapasCRA(capa, errorCapa);
   const areaInvemar = capa?.features.reduce((total, f) => total + f.properties.area_ha, 0);
   const hayFiltros = tipos.length > 0 || prioridades.length > 0;
 
@@ -122,6 +124,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
         </label>
         <label className="mt-2 flex min-h-11 items-center gap-2 text-xs font-medium"><input type="checkbox" role="switch" checked={mostrarCapa} onChange={(e) => setMostrarCapa(e.target.checked)} />Cobertura de manglar (C.R.A. 1:5.000)</label>
         {!capa && <p role="status" className="text-xs text-suave">{errorCapa ? 'No se pudo cargar la cobertura de manglar de la C.R.A.' : 'Cargando cobertura de manglar…'}</p>}
+        <InterruptoresCRA capas={capasCRA} />
         {hayFiltros && <button type="button" onClick={() => { setTipos([]); setPrioridades([]); }} className="mt-2 min-h-11 text-xs font-semibold text-dorado-300 underline underline-offset-4">Limpiar filtros</button>}
       </div>
 
@@ -154,6 +157,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
               </Popup>
             </Polygon>;
           })}
+          <CapasCRAEnMapa capas={capasCRA} />
           {filtrados.map((reporte) => (
             <Marker key={reporte.id} position={[reporte.lat, reporte.lon]} icon={iconoReporte(reporte)} title={TIPOS[reporte.tipo].etiquetaLarga} alt={TIPOS[reporte.tipo].etiquetaLarga} eventHandlers={{
               add: (evento) => (evento.target as L.Marker).getElement()?.setAttribute('aria-label', TIPOS[reporte.tipo].etiquetaLarga),
@@ -191,6 +195,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
         <div><h3 className="mb-2 font-semibold text-texto">Reportes por prioridad</h3><ul className="flex flex-wrap gap-3">{LISTA_PRIORIDADES.map((prioridad) => (
           <li key={prioridad} className="flex items-center gap-1.5 text-suave"><span aria-hidden="true" className={cn('size-2 rounded-full', PRIORIDADES[prioridad].punto)} />{PRIORIDADES[prioridad].etiqueta}</li>
         ))}</ul></div>
+        <LeyendaCRA capas={capasCRA} />
         <div className="flex flex-wrap gap-2" aria-label="Descargar datos públicos">{[{ etiqueta: 'CSV', descargar: exportarCSV }, { etiqueta: 'GeoJSON', descargar: exportarGeoJSON }, { etiqueta: 'KML', descargar: exportarKML }].map(({ etiqueta, descargar }) => <button key={etiqueta} disabled={!filtrados.length} onClick={() => descargar(filtrados)} className="min-h-11 rounded-xl px-3 ring-1 ring-linea disabled:opacity-40">Exportar {etiqueta}</button>)}</div>
         <p>Solo denuncias dentro del manglar o a menos de {RADIO_INFLUENCIA_M} m · vista filtrada · ubicaciones aproximadas · CC BY 4.0 · {backendActivo ? 'reportes del servidor común (hoy incluye reportes de demostración)' : 'Datos de ejemplo'}</p>
       </div>
