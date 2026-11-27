@@ -180,11 +180,24 @@ class ResultadoAlertas {
   final String nota;
   final bool simulacro;
 
-  /// Una alerta por lugar: el servidor repite la misma ciénaga (p. ej. varias amenazas ciudadanas);
-  /// se deja la de nivel más alto y se cuenta cuántas más hay allí. Nunca dos niveles para el mismo sitio.
+  /// Máximo de tarjetas, como la portada web (`AlertasManglar.tsx`: MAX_TARJETAS).
+  static const maxPublicadas = 6;
+
+  /// Lo que se publica, con la MISMA regla de la portada web (`publicadas()` en `AlertasManglar.tsx`, d9b200b):
+  /// las de IDEAM, DIMAR y la C.R.A.; las de la comunidad (`amenaza_ciudadana`) no, porque hoy salen de los
+  /// reportes de la demostración. Las 6 más recientes. En un simulacro se ven todas (vienen rotuladas).
+  List<AlertaManglar> get publicadas => [
+        for (final a in alertas)
+          if (simulacro || a.tipo != 'amenaza_ciudadana') a,
+      ]..sort((x, y) => y.desde.compareTo(x.desde));
+
+  List<AlertaManglar> get _visibles => publicadas.take(maxPublicadas).toList();
+
+  /// Una alerta por lugar (de las [publicadas]): se deja la de nivel más alto y se cuenta cuántas más hay
+  /// allí. Nunca dos niveles para el mismo sitio.
   List<(AlertaManglar, int)> get porLugar {
     final grupos = <String, List<AlertaManglar>>{};
-    for (final a in alertas) {
+    for (final a in _visibles) {
       grupos.putIfAbsent(a.lugar.isEmpty ? a.id : a.lugar, () => []).add(a);
     }
     final salida = [
@@ -193,9 +206,9 @@ class ResultadoAlertas {
     return salida;
   }
 
-  NivelAlerta? get nivelMaximo => alertas.isEmpty
+  NivelAlerta? get nivelMaximo => _visibles.isEmpty
       ? null
-      : alertas.map((a) => a.nivel).reduce((a, b) => a.index >= b.index ? a : b);
+      : _visibles.map((a) => a.nivel).reduce((a, b) => a.index >= b.index ? a : b);
 
   static const vacio = ResultadoAlertas(generado: null, alertas: [], ahora: [], fuentes: [], nota: '');
 

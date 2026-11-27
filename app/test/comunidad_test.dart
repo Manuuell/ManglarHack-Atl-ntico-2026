@@ -43,12 +43,14 @@ void main() {
       final grupos = r.porLugar;
       final lugares = grupos.map((g) => g.$1.lugar).toList();
       expect(lugares.toSet().length, lugares.length, reason: 'nunca dos niveles para el mismo sitio');
-      expect(lugares.length, 3);
+      // Como la portada web: sin las 4 de la comunidad (amenaza_ciudadana, de reportes de la demostración).
+      expect(r.publicadas.map((a) => a.tipo), isNot(contains('amenaza_ciudadana')));
+      expect(lugares.length, 2);
       expect(grupos.first.$1.nivel, NivelAlerta.naranja);
-      // Mallorquín tiene 4 alertas: se ve la naranja y se cuentan 3 más.
       final m = grupos.firstWhere((g) => g.$1.lugar.contains('Mallorqu'));
+      expect(m.$1.tipo, 'riesgo_incendio');
       expect(m.$1.nivel, NivelAlerta.naranja);
-      expect(m.$2, 3);
+      expect(m.$2, 0);
       expect(m.$1.punto, isNotNull);
       expect(m.$1.fuentesTexto, isNotEmpty);
     });
@@ -241,7 +243,7 @@ void main() {
       expect(find.text('ALERTAS DEL MANGLAR'), findsOneWidget);
       expect(find.text('Alerta naranja'), findsWidgets);
       expect(find.textContaining('Qué hacer:'), findsOneWidget);
-      expect(find.textContaining('lugares más'), findsOneWidget);
+      expect(find.textContaining('lugar más'), findsOneWidget); // 2 lugares: sin las de la comunidad, como la web
       expect(find.text('Viento ahora'), findsNothing); // va con el ícono delante
       expect(find.textContaining('Viento ahora'), findsOneWidget);
       expect(find.text('RESPALDO'), findsNothing, reason: 'con alertas oficiales no se muestran las reglas locales');

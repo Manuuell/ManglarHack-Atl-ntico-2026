@@ -167,6 +167,31 @@ void main() {
       expect(r.nivelMaximo, NivelAlerta.roja);
       expect(r.alertas, isNotEmpty);
       expect(r.nota, contains('no reemplazan los avisos oficiales'));
+      // En simulacro se ven todas (vienen rotuladas «SIMULACRO»), también la de la comunidad.
+      expect(r.publicadas, hasLength(4));
+      expect(r.publicadas.every((a) => a.titulo.startsWith('SIMULACRO')), isTrue);
+    });
+
+    test('fuera de simulacro, la regla de la portada: sin amenaza_ciudadana y máximo 6', () {
+      final r = ResultadoAlertas.deTexto(jsonEncode({
+        'alertas': [
+          for (var i = 0; i < 9; i++)
+            {
+              'id': 'a$i',
+              'tipo': i.isEven ? 'mar_de_leva' : 'amenaza_ciudadana',
+              'nivel': 'amarilla',
+              'titulo': 'Alerta $i',
+              'lugar': 'Lugar $i',
+              'desde': DateTime.utc(2026, 11, 27, i).toIso8601String(),
+            },
+          for (var i = 0; i < 4; i++)
+            {'id': 'b$i', 'tipo': 'riesgo_incendio', 'nivel': 'naranja', 'titulo': 'Fuego $i', 'lugar': 'Otro $i', 'desde': '2026-11-26T00:00:00Z'},
+        ],
+      }));
+      expect(r.publicadas.any((a) => a.tipo == 'amenaza_ciudadana'), isFalse);
+      expect(r.porLugar, hasLength(6));
+      // Las 6 más recientes: las 5 de mar de leva (27-nov) y una de las de fuego (26-nov).
+      expect(r.porLugar.where((g) => g.$1.tipo == 'mar_de_leva'), hasLength(5));
     });
 
     test('la fuente de la Corporación se escribe «C.R.A.», como la web', () {
