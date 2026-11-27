@@ -13,6 +13,7 @@ Aquí está la información común del equipo para que todos trabajemos con lo m
 | 07 | [Pendientes](07-pendientes.md) | Lista viva de pendientes por área y dueño, enlazada a los issues de GitHub, y las indicaciones de excelencia |
 | 08 | [Identidad de Zanky](08-zanky-identidad.md) | Paleta, prompts de diseño (personaje, poses, ícono, stickers, letrero QR) y de video de la mascota |
 | 09 | [Pitch, ficha y video](09-pitch-ficha-y-video.md) | Ficha técnica con herramientas y modelos de IA, guion del pitch de 7 min, guion del video, lista «No afirmar» y checklist de entrega |
+| 13 | [Integración bot ↔ web](13-integracion-bot-web.md) | Cómo llega un reporte de WhatsApp a la web, el aviso de cambio de estado, la prueba de punta a punta y lo que falta en la web y la app |
 
 ## Lo esencial en 30 segundos
 
