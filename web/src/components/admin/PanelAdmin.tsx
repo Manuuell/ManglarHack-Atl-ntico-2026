@@ -11,6 +11,7 @@ import { normalizarCelular, renovarSesion, useSesion } from '../../lib/cuenta';
 import { ErrorBot, pedirBot, pedirBotCrudo } from '../../lib/bot';
 import { sincronizarJornadas } from '../../lib/plataforma/jornadasApi';
 import { backendActivo, leerReportesPublicos, type FilaPublica } from '../../lib/backend/supabase';
+import PorConfirmar from './PorConfirmar';
 import { cn } from '../../lib/utils';
 
 // --- Tipos del contrato con el servidor -----------------------------------------------------------
@@ -36,9 +37,9 @@ interface ResultadoEnvio { enviados: number; fallidos: number; resultados: { nom
 /** Una persona de la lista: una cuenta de la web o alguien que se inscribió a una jornada sin cuenta. */
 interface Persona { clave: string; nombre: string; telefono: string | null; whatsapp: boolean; origen: 'cuenta' | 'inscripcion'; detalle: string; fecha: string; cuenta_id?: string }
 
-type Seccion = 'metricas' | 'personas' | 'jornadas' | 'invitar' | 'envios' | 'bot';
+type Seccion = 'metricas' | 'confirmar' | 'personas' | 'jornadas' | 'invitar' | 'envios' | 'bot';
 const SECCIONES: { id: Seccion; texto: string }[] = [
-  { id: 'metricas', texto: 'Últimos 30 días' }, { id: 'personas', texto: 'Personas' }, { id: 'jornadas', texto: 'Jornadas' },
+  { id: 'metricas', texto: 'Últimos 30 días' }, { id: 'confirmar', texto: 'Por confirmar' }, { id: 'personas', texto: 'Personas' }, { id: 'jornadas', texto: 'Jornadas' },
   { id: 'invitar', texto: 'Invitar por WhatsApp' }, { id: 'envios', texto: 'Envíos' }, { id: 'bot', texto: 'Zanky BOT' },
 ];
 const DIAS = 30;
@@ -508,6 +509,10 @@ export default function PanelAdmin() {
         <Tarjeta titulo="Jornadas próximas" icono={<CalendarDays className="size-4" aria-hidden="true" />} valor={resumen.jornadas.proximas} detalle={`de ${resumen.jornadas.publicadas} publicadas · ${resumen.jornadas.inscripciones} inscripciones`} />
         <Tarjeta titulo="Reportes por WhatsApp" valor={bot.reportes.total} detalle={bot.reportes.pendientes_envio > 0 ? `${bot.reportes.pendientes_envio} esperando llegar al servidor común` : 'Todos llegaron al servidor común'} />
       </div>}
+    </SeccionAdmin>
+
+    <SeccionAdmin id="confirmar" titulo="Por confirmar" descripcion="Publicaciones de la comunidad que invitan a actividades y reportes ciudadanos: confírmalos para que se publiquen o recházalos.">
+      <PorConfirmar />
     </SeccionAdmin>
 
     <SeccionAdmin id="personas" titulo="Personas registradas"
