@@ -62,6 +62,8 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Estación del manglar'), findsOneWidget);
       expect(find.textContaining('DEMOSTRACIÓN'), findsWidgets);
+    await tester.pumpWidget(const SizedBox.shrink()); // suelta la mascota y su parpadeo
+    await tester.pump(const Duration(seconds: 6)); // vence el parpadeo pendiente
     });
 
     testWidgets('cartel QR cabe en ${tamano.width}x${tamano.height}', (tester) async {

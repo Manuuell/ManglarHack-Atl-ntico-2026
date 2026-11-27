@@ -32,6 +32,8 @@ void main() {
     expect(find.textContaining('Visita guardada'), findsOneWidget);
     final preferencias = await SharedPreferences.getInstance();
     expect(preferencias.getStringList('puntos_visitas_pendientes'), contains('raices-01'));
+    await tester.pumpWidget(const SizedBox.shrink()); // suelta la mascota y su parpadeo
+    await tester.pump(const Duration(seconds: 6)); // vence el parpadeo pendiente
   });
 
   test('lee ?punto= con base href /app/ y fragmento de ruta', () {
@@ -55,6 +57,8 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Fotografía de seguimiento'), findsOneWidget);
       expect(find.textContaining('DEMOSTRACIÓN'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink()); // suelta la mascota y su parpadeo
+    await tester.pump(const Duration(seconds: 6)); // vence el parpadeo pendiente
     });
   }
 }
