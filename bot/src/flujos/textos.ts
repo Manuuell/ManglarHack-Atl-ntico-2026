@@ -63,6 +63,16 @@ export const MENU = {
     { id: 'jornadas', titulo: '🌱 Jornadas' },
     { id: 'mis_reportes', titulo: '📋 Mis reportes' },
   ] as Boton[],
+  /** El menú completo va como lista: WhatsApp solo admite 3 botones y son 6 opciones. */
+  boton: 'Ver opciones',
+  filas: [
+    { id: 'reportar', titulo: '🚨 Reportar', descripcion: 'Avisa de una tala, quema, basura u otra amenaza' },
+    { id: 'proponer', titulo: '💡 Proponer', descripcion: 'Propón una siembra, limpieza u otra acción' },
+    { id: 'jornadas', titulo: '🌱 Jornadas', descripcion: 'Siembras y limpiezas: inscríbete aquí mismo' },
+    { id: 'mis_reportes', titulo: '📋 Mis reportes', descripcion: 'El estado de lo que has reportado' },
+    { id: 'alertas', titulo: '⚠️ Alertas', descripcion: 'Mar de leva, aguaceros, vientos o incendio' },
+    { id: 'como_funciona', titulo: '❓ Cómo funciona', descripcion: 'Qué hace Zanky y cómo se usan tus datos' },
+  ] as Fila[],
 };
 
 export const COMO_FUNCIONA =
@@ -72,6 +82,7 @@ export const COMO_FUNCIONA =
   '3. Si puedes, una foto tomada en el momento.\n' +
   '4. La CRA recibe tu reporte en su panel, lo verifica y decide cómo actuar.\n\n' +
   '🌱 *Jornadas:* toca *Jornadas* para ver las próximas siembras y limpiezas e inscribirte.\n\n' +
+  '💡 *Proponer:* toca *Proponer* para sugerir una siembra, una limpieza u otra acción; la CRA la revisa.\n\n' +
   '⚠️ *Alertas:* escribe *alertas* para saber si viene mar de leva, aguaceros, vientos fuertes o riesgo de incendio en el manglar.\n\n' +
   '📶 *¿Sin señal?* Escríbeme igual: WhatsApp guarda tus mensajes y me llegan apenas vuelva la señal, con la hora en que los enviaste.\n\n' +
   '🔒 Nunca se publican tu nombre ni tu número. Los datos abiertos solo muestran el tipo, la zona aproximada y el estado.\n\n' +
@@ -112,13 +123,15 @@ export function amenazaReconocida(tipo: TipoId): string {
   );
 }
 
+// Texto plano (no el mensaje interactivo de «Enviar ubicación»): ese no carga en WhatsApp Web.
 export const PEDIR_UBICACION =
   '📍 *¿Dónde está pasando?*\n\n' +
-  'Toca *Enviar ubicación* y elige tu ubicación actual, o mueve el pin al sitio exacto.\n\n' +
+  'Toca el clip 📎 → *Ubicación* y envía tu ubicación actual, o mueve el pin al sitio exacto.\n\n' +
   'También puedes pegar un enlace de Google Maps.';
 
 export const UBICACION_NO_LEIDA =
-  'No pude leer esa ubicación 🤔. Usa el botón *Enviar ubicación* o pega un enlace de Google Maps.';
+  'No pude leer esa ubicación 🤔. Toca el clip 📎 → *Ubicación*, o pega un enlace de Google Maps.\n\n' +
+  'O escribe *salir* para cancelar.';
 
 export function ubicacionRecibida(dentro: boolean, distanciaM: number, zona?: string): string {
   const lugar = zona ? ` (${zona})` : '';
@@ -270,7 +283,8 @@ export const JORNADAS = {
     js.slice(0, 10).map(j => ({
       id: `jor:${j.id}`,
       titulo: `${TIPOS_JORNADA[j.tipo].emoji} ${fmtJornada.corta(j.inicio)} · ${TIPO_CORTO[j.tipo]}`,
-      descripcion: j.titulo,
+      // Los cupos libres en la misma línea, sin tener que abrir la invitación.
+      descripcion: `${cuposLibres(j)} · ${j.titulo}`.slice(0, 72),
     })),
 };
 
@@ -304,7 +318,149 @@ export const BOTONES_DESPUES_DE_JORNADA: Boton[] = [
   { id: 'menu', titulo: '🏠 Menú' },
 ];
 
+export function cuposLibres(j: Jornada): string {
+  const libres = Math.max(0, j.cupos - j.inscritos);
+  return libres > 0 ? `${libres} ${libres === 1 ? 'cupo libre' : 'cupos libres'}` : 'Sin cupos';
+}
+
+/** Después de la invitación: inscribirse aquí mismo (además del enlace de la web). */
+export function botonesInvitacion(j: Jornada): Boton[] {
+  const libres = j.cupos - j.inscritos;
+  return [
+    ...(libres > 0 ? [{ id: `ins:${j.id}`, titulo: '✅ Inscribirme' }] : []),
+    { id: 'jornadas', titulo: '🌱 Otra jornada' },
+    { id: 'menu', titulo: '🏠 Menú' },
+  ];
+}
+
+export function confirmarInscripcion(j: Jornada, nombre: string): string {
+  return (
+    `✅ *Confirma tu asistencia*\n\n${TIPOS_JORNADA[j.tipo].emoji} ${j.titulo}\n📅 ${fmtJornada.larga(j.inicio)}, ${fmtJornada.hora(j.inicio)}\n` +
+    `👤 A nombre de *${nombre}*\n\n` +
+    '🔒 Tu nombre y tu número solo se usan para organizar esta jornada y avisarte de cambios (Ley 1581 de 2012).'
+  );
+}
+
+export const BOTONES_CONFIRMAR_INSCRIPCION: Boton[] = [
+  { id: 'ins_si', titulo: '✅ Confirmo' },
+  { id: 'ins_nombre', titulo: '✏️ Otro nombre' },
+  { id: 'cancelar', titulo: '❌ Cancelar' },
+];
+
+export const PEDIR_NOMBRE_INSCRIPCION = '¿A nombre de quién te inscribo? Escribe tu nombre y apellido 🙂';
+
+export function inscrito(j: Jornada, libres: number, enlace: string): string {
+  return (
+    `🎉 ¡Listo! Quedaste inscrito en *${j.titulo}*.\n\n📅 ${fmtJornada.larga(j.inicio)}, de ${fmtJornada.hora(j.inicio)} a ${fmtJornada.hora(j.fin)}\n📍 ${j.punto_encuentro}\n\n` +
+    `Quedan ${libres} ${libres === 1 ? 'cupo' : 'cupos'}. Si al final no puedes ir, avísame escribiendo *no podré ir*.\n` +
+    `Invitación, calendario y QR: ${enlace}`
+  );
+}
+
+export function sinCupo(j: Jornada): string {
+  return `😕 *${j.titulo}* ya no tiene cupos. Mira las otras jornadas: puede que haya espacio en otra.`;
+}
+
+export function inscripcionCancelada(j: Jornada, liberados: number): string {
+  return liberados
+    ? `Listo, liberé tu cupo en *${j.titulo}* 🙏. Así otra persona puede ir.`
+    : `No encontré una inscripción tuya en *${j.titulo}*.`;
+}
+
 export const NO_ENTENDI = 'No te entendí 🤔. Toca una de las opciones o escribe *menu* para empezar de nuevo.';
 
 export const IA_NO_DISPONIBLE =
   'Uy, se me enredó la respuesta 🙈. Intenta de nuevo en un momento, o usa el menú: puedo recibir tu reporte o mostrarte las jornadas.';
+
+// --- Comandos globales, consulta por código y entrada no reconocida ----------------------------------
+
+/** Se escribió salir/cancelar/menú/hola con algo a medias. */
+export function cancelado(que: 'reporte' | 'propuesta' | 'registro' | 'inscripcion'): string {
+  const nombre = { reporte: 'Tu reporte en curso se canceló', propuesta: 'Tu propuesta en curso se canceló', registro: 'Tu registro de vigía se canceló', inscripcion: 'Tu inscripción en curso se canceló' }[que];
+  return `${nombre}, no quedó guardado.`;
+}
+
+export function noEntendi(paso: string, pregunta: string): string {
+  return `🤔 No te entendí. Estás en *${paso}*: ${pregunta}\n\nO escribe *salir* para cancelar.`;
+}
+
+export const BOTONES_NO_ENTENDI: Boton[] = [
+  { id: 'ayuda_paso', titulo: '❓ Ayuda' },
+  { id: 'salir', titulo: '🏠 Salir al menú' },
+];
+
+export function estadoDeCaso(r: Reporte): string {
+  const envio = r.envio?.estado === 'pendiente' ? 'Pendiente de envío a la CRA' : r.envio?.estado === 'rechazado' ? 'No se pudo enviar' : `*${ESTADOS[r.estado]}*. ${DESCRIPCION_ESTADO[r.estado]}`;
+  const fecha = new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(r.capturado_en));
+  return `📋 *${r.codigo}* · ${TIPOS[r.tipo].emoji} ${TIPOS[r.tipo].nombre}\nEstado: ${envio}\nFecha: ${fecha}${r.zonaNombre ? ` · ${r.zonaNombre}` : ''}`;
+}
+
+export function casoNoEncontrado(codigo: string): string {
+  return `🔎 No encontré un reporte con el código *${codigo}*. Revisa que esté bien escrito (por ejemplo *ZK-16D1*) o toca *📋 Mis reportes*.`;
+}
+
+// --- Reporte: lo que llega antes de tiempo y la corrección por campo -----------------------------------
+
+export const FOTO_PRIMERO = '📸 ¡Recibí tu foto! Vamos a reportar lo que muestra.';
+export const UBICACION_PRIMERO = '📍 Recibí la ubicación. Vamos a reportar lo que pasa ahí.';
+export const DESCRIPCION_ANOTADA = '✍️ Anoté lo que me contaste.';
+
+export const CORREGIR = {
+  cuerpo: '✏️ ¿Qué quieres corregir? Lo demás se queda como está.',
+  boton: 'Elegir',
+  filas: [
+    { id: 'c_tipo', titulo: '🚨 Qué pasa', descripcion: 'El tipo de amenaza' },
+    { id: 'c_ubicacion', titulo: '📍 Ubicación' },
+    { id: 'c_foto', titulo: '📸 Foto' },
+    { id: 'c_descripcion', titulo: '✍️ Descripción' },
+    { id: 'c_cuando', titulo: '⏱️ Cuándo' },
+    { id: 'c_magnitud', titulo: '📏 Tamaño' },
+    { id: 'c_todo', titulo: '🔄 Todo de nuevo' },
+  ] as Fila[],
+};
+
+// --- Proponer -------------------------------------------------------------------------------------------
+
+export const PROPUESTA_TIPO = {
+  cuerpo: '💡 *Proponer una acción*\n\n¿Qué quieres proponer para el manglar? La CRA revisa cada propuesta.',
+  boton: 'Elegir',
+};
+
+export const PROPUESTA_UBICACION =
+  '📍 *¿Dónde sería?*\n\n' +
+  'Toca el clip 📎 → *Ubicación* y envía el sitio (puedes mover el pin), o pega un enlace de Google Maps.\n\n' +
+  'Tiene que ser en el manglar o a menos de 500 m de él.';
+
+export const PROPUESTA_DESCRIPCION =
+  '✍️ *Cuéntanos la propuesta*: qué harían, con cuántas personas, qué necesitan y para cuándo. (Al menos una frase.)';
+
+export const PROPUESTA_DESCRIPCION_CORTA = 'Cuéntame un poco más, al menos una frase (10 letras o más) ✍️.';
+
+export const PROPUESTA_QUIEN = { cuerpo: '👥 ¿Quién propone?', boton: 'Elegir' };
+
+export const BOTONES_CONFIRMAR_PROPUESTA: Boton[] = [
+  { id: 'p_enviar', titulo: '✅ Enviar' },
+  { id: 'p_corregir', titulo: '✏️ Corregir' },
+  { id: 'cancelar', titulo: '❌ Cancelar' },
+];
+
+export const CORREGIR_PROPUESTA = {
+  cuerpo: '✏️ ¿Qué quieres corregir de la propuesta?',
+  boton: 'Elegir',
+  filas: [
+    { id: 'pc_tipo', titulo: '💡 Qué propones' },
+    { id: 'pc_ubicacion', titulo: '📍 Dónde' },
+    { id: 'pc_descripcion', titulo: '✍️ Descripción' },
+    { id: 'pc_quien', titulo: '👥 Quién propone' },
+  ] as Fila[],
+};
+
+export function propuestaEnviada(codigo: string): string {
+  return (
+    `💡 ¡Gracias! Tu propuesta *${codigo}* quedó registrada.\n\n` +
+    'La CRA la revisa en su panel y la ve el catálogo de soluciones de la plataforma. Guarda el código para preguntar por ella.'
+  );
+}
+
+export const PROPUESTA_NO_GUARDADA =
+  '⚠️ No pude guardar tu propuesta por un error del servidor. No quedó registrada: inténtalo de nuevo en unos minutos con *proponer*.';

@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'crypto';
 import { config } from '../config';
 import * as almacen from '../reportes/almacen';
 import { iaActiva } from '../ia/zanky';
+import { propuestasPublicas } from './almacenPropuestas';
 import * as J from './almacenJornadas';
 import { Cuenta, ROLES_ADMIN, mascara, normalizarTelefono, rolDe, verificarCuenta } from './cuentas';
 import { enviarInvitacion, imagenDe } from './plantilla';
@@ -45,6 +46,11 @@ const avisoDe = (lista: J.JornadaGuardada[]) => (lista.some(j => j.ejemplo) ? AV
 api.get('/jornadas', (_req, res) => {
   const jornadas = J.jornadasPublicadas();
   res.json({ aviso: avisoDe(jornadas), jornadas });
+});
+
+/** Propuestas hechas por WhatsApp, sin datos personales (catálogo de Soluciones y panel de la CRA). */
+api.get('/propuestas', (_req, res) => {
+  res.json({ propuestas: propuestasPublicas() });
 });
 
 api.get('/jornadas/:id', (req, res) => {

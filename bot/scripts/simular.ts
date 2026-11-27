@@ -114,6 +114,10 @@ async function main() {
   const { config } = await import('../src/config');
 
   almacen.iniciarAlmacen();
+  // El almacén de jornadas del bot (la fuente que comparten el bot y la web): se siembra con el JSON de prueba.
+  const { iniciarJornadas } = await import('../src/api/almacenJornadas');
+  iniciarJornadas();
+  await new Promise(ok => setTimeout(ok, 800));
   console.log(`Zonas cargadas: ${cargarZonas(config.zonasGeojson)} · cobertura C.R.A.: ${cargarAreaReporte(config.areaReporteGeojson)} polígonos · backend de prueba en ${process.env.SUPABASE_URL}\n`);
 
   let persona = '573000000001';
@@ -239,7 +243,68 @@ async function main() {
     ['toca un tipo de la lista vieja («Basuras»)', lista('basuras')],
   ]);
 
-  console.log('\n--- Filas que recibió el backend de prueba (todas pasaron las reglas del esquema) ---');
+  // 5) Respuestas escritas, foto primero, corregir un campo, salir, códigos, no entendido, proponer e inscripción.
+  console.log('\n\n=== Respuestas escritas, foto primero y corregir un campo ===');
+  persona = '573007778899';
+  const texto = (body: string) => ({ type: 'text', text: { body } });
+  await correr([
+    ['manda primero una foto con pie', { type: 'image', image: { id: 'media-foto-1', sha256: 'abc', mime_type: 'image/jpeg', caption: 'Botaron escombros junto al caño' } }],
+    ['escribe «sí» al consentimiento', texto('sí')],
+    ['escribe «relleno» en vez de elegir de la lista', texto('relleno')],
+    ['manda la ubicación', { type: 'location', location: { latitude: 11.0412, longitude: -74.8706 } }],
+    ['escribe «hoy, más temprano»', texto('hoy más temprano')],
+    ['escribe «grande»', texto('grande')],
+    ['escribe «corregir»', texto('corregir')],
+    ['elige corregir solo el tamaño', lista('c_magnitud')],
+    ['escribe «mediana»', texto('mediana')],
+    ['escribe «sí, envíalo»', texto('sí, envíalo')],
+  ]);
+
+  console.log('\n\n=== Salir, códigos, no entendido ===');
+  const codigoNuevo = almacen.todos().filter(r => r.envio.estado === 'enviado').slice(-1)[0]?.codigo ?? 'ZK-0000';
+  await correr([
+    ['toca Reportar', boton('reportar')],
+    ['elige Tala', lista('tala')],
+    ['escribe «asdfgh» en la ubicación (1.ª vez)', texto('asdfgh')],
+    ['escribe «asdfgh» otra vez (2.ª vez)', texto('asdfgh')],
+    ['escribe «salir» en el paso de ubicación', texto('salir')],
+    [`escribe el código ${codigoNuevo}`, texto(codigoNuevo.toLowerCase())],
+    ['escribe un código que no existe', texto('ZK-FFFF')],
+    ['escribe «consultar estado»', texto('consultar estado')],
+  ]);
+  const cancelado = almacen.todos().filter(r => r.reportanteHash === almacen.hashDe(persona));
+  console.log(`Reportes de esta persona: ${cancelado.map(r => r.codigo).join(', ')} (el cancelado con «salir» no está)`);
+
+  console.log('\n\n=== Proponer ===');
+  await correr([
+    ['escribe «proponer»', texto('proponer')],
+    ['elige Siembra', lista('siembra')],
+    ['manda una ubicación en Barranquilla (fuera)', { type: 'location', location: { latitude: 10.9878, longitude: -74.7889 } }],
+    ['manda una ubicación en el manglar', { type: 'location', location: { latitude: 11.0321, longitude: -74.8575 } }],
+    ['escribe la propuesta', texto('Sembrar 200 plántulas de mangle rojo con el colegio del barrio en enero')],
+    ['escribe «universidad»', texto('universidad')],
+    ['toca Enviar', boton('p_enviar')],
+  ]);
+  const { propuestasPublicas } = await import('../src/api/almacenPropuestas');
+  const props = propuestasPublicas();
+  console.log(`Propuestas guardadas (GET /api/propuestas): ${JSON.stringify(props.map(p => ({ codigo: p.codigo, tipo: p.tipo, tipo_accion: p.tipo_accion, tipo_actor: p.tipo_actor, zona: p.zona })))}`);
+  await correr([[`escribe el código ${props[0]?.codigo}`, texto(String(props[0]?.codigo))]]);
+
+  console.log('\n\n=== Inscribirse a una jornada en el chat ===');
+  const J = await import('../src/api/almacenJornadas');
+  const antes = J.publica(J.jornada('jornada-1')!).inscritos;
+  await correr([
+    ['toca Jornadas', boton('jornadas')],
+    ['elige la siembra', lista('jor:jornada-1')],
+    ['toca Inscribirme', boton('ins:jornada-1')],
+    ['escribe su nombre', texto('Ana Gómez')],
+    ['escribe «sí»', texto('sí')],
+  ]);
+  console.log(`Inscritos en jornada-1: ${antes} → ${J.publica(J.jornada('jornada-1')!).inscritos}`);
+  await correr([['escribe «no podré ir»', texto('no podré ir')]]);
+  console.log(`Inscritos tras «no podré ir»: ${J.publica(J.jornada('jornada-1')!).inscritos}`);
+
+  console.log('\n\n--- Filas que recibió el backend de prueba (todas pasaron las reglas del esquema) ---');
   for (const f of filas) console.log(JSON.stringify({ ...f, reportante_id: String(f.reportante_id).slice(0, 12) + '…' }));
   servidor.close();
 }
