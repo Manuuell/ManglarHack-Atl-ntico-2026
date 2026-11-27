@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'ayudas/fuente_lato.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zanky/datos/estado.dart';
+import 'package:zanky/datos/experiencia/ia_zanky.dart';
 import 'package:zanky/datos/experiencia/entrada_evento.dart';
 import 'package:zanky/datos/experiencia/jornada.dart';
 import 'package:zanky/datos/experiencia/participacion.dart';
@@ -250,11 +251,11 @@ void main() {
   });
 
   group('Charla con Zanky', () {
-    _probar('Charla', () => CharlaZanky(evento: _evento()));
+    _probar('Charla', () => CharlaZanky(evento: _evento(), ia: IaZanky(urlChat: '')));
 
     testWidgets('chip → escribiendo… → respuesta con fuente; lo desconocido se dice honesto', (t) async {
-      await _montar(t, CharlaZanky(evento: _evento()));
-      expect(find.textContaining('IA lista, sin conectar'), findsOneWidget);
+      await _montar(t, CharlaZanky(evento: _evento(), ia: IaZanky(urlChat: '')));
+      expect(find.textContaining('sin internet'), findsOneWidget);
       await t.tap(find.text('¿Qué es el carbono azul?'));
       await t.pump(const Duration(milliseconds: 100));
       expect(find.text('escribiendo…'), findsOneWidget);

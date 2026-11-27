@@ -1,6 +1,7 @@
 import '../../nucleo/kit/ruta_borde.dart';
 import 'package:flutter/material.dart';
 
+import '../../datos/experiencia/dictado.dart';
 import '../../datos/experiencia/ia_zanky.dart';
 import '../../datos/experiencia/jornada.dart';
 import '../../datos/experiencia/preguntas_zanky.dart';
@@ -30,9 +31,10 @@ class _Mensaje {
 
 /// Chat con Zanky: responde sin conexión con preguntas frecuentes; con IA solo si está conectada.
 class CharlaZanky extends StatefulWidget {
-  const CharlaZanky({super.key, required this.evento, this.ia, this.pausaEscribiendo = const Duration(milliseconds: 700)});
+  const CharlaZanky({super.key, required this.evento, this.ia, this.dictado, this.pausaEscribiendo = const Duration(milliseconds: 700)});
   final EventoZanky evento;
   final IaZanky? ia;
+  final Dictado? dictado;
 
   /// Cuánto se ve «escribiendo…» antes de la respuesta sin conexión.
   final Duration pausaEscribiendo;
@@ -43,6 +45,12 @@ class CharlaZanky extends StatefulWidget {
 
 class _CharlaZankyState extends State<CharlaZanky> {
   late final IaZanky _ia = widget.ia ?? IaZanky();
+  late final Dictado _dictado = widget.dictado ?? crearDictado();
+  bool _escuchando = false;
+
+  /// null: aún no se sabe; true: la IA respondió; false: falló y se responde sin conexión.
+  bool? _iaEnLinea;
+  DateTime? _iaFallo;
   final _texto = TextEditingController();
   final _scroll = ScrollController();
   final _foco = FocusNode();
@@ -66,6 +74,7 @@ class _CharlaZankyState extends State<CharlaZanky> {
     _texto.dispose();
     _scroll.dispose();
     _foco.dispose();
+    if (_escuchando) _dictado.detener();
     super.dispose();
   }
 
@@ -80,7 +89,14 @@ class _CharlaZankyState extends State<CharlaZanky> {
     });
     _bajar();
     final pausa = Future<void>.delayed(widget.pausaEscribiendo);
-    final deIa = await _ia.preguntar(p, evento: widget.evento);
+    // Tras un fallo no se reintenta en 45 s: sin señal, cada pregunta responde al instante sin conexión.
+    final reposo = _iaFallo != null && DateTime.now().difference(_iaFallo!) < const Duration(seconds: 45);
+    final historial = [for (final m in _mensajes.skip(1).take(_mensajes.length - 2)) (esZanky: m.esZanky, texto: m.texto)];
+    final deIa = reposo ? null : await _ia.preguntar(p, evento: widget.evento, historial: historial);
+    if (_ia.conectada && !reposo) {
+      _iaEnLinea = deIa != null;
+      _iaFallo = deIa == null ? DateTime.now() : null;
+    }
     final local = responderSinConexion(p, evento: widget.evento);
     await pausa;
     if (!mounted) return;
@@ -88,7 +104,7 @@ class _CharlaZankyState extends State<CharlaZanky> {
       _escribiendo = false;
       if (deIa != null) {
         _mensajes.add(_Mensaje.zanky(deIa, fuente: 'IA de Zanky (puede equivocarse)'));
-        _animo = Animo.feliz;
+        _animo = animoDeTexto(deIa);
         _sugerencias = local.sugerencias;
       } else {
         _mensajes.add(_Mensaje.zanky(local.texto, fuente: local.fuente, encontrada: local.encontrada));
@@ -97,6 +113,21 @@ class _CharlaZankyState extends State<CharlaZanky> {
       }
     });
     _bajar();
+  }
+
+  Future<void> _dictar() async {
+    if (_escuchando) {
+      _dictado.detener();
+      return;
+    }
+    setState(() => _escuchando = true);
+    final t = await _dictado.escuchar();
+    if (!mounted) return;
+    setState(() => _escuchando = false);
+    if (t != null) {
+      _texto.text = t;
+      await _preguntar(t);
+    }
   }
 
   void _bajar() {
@@ -120,7 +151,7 @@ class _CharlaZankyState extends State<CharlaZanky> {
         child: Column(
           children: [
             const BarraEvento(titulo: 'Habla con Zanky', icono: Icons.arrow_back_rounded, etiqueta: 'Volver'),
-            _Aviso(conectada: _ia.conectada),
+            _Aviso(conectada: _ia.conectada, enLinea: _iaEnLinea),
             Expanded(
               child: ListView(
                 controller: _scroll,
@@ -161,7 +192,7 @@ class _CharlaZankyState extends State<CharlaZanky> {
                       maxLength: 200,
                       style: tt.bodyLarge,
                       decoration: InputDecoration(
-                        hintText: 'Escribe tu pregunta',
+                        hintText: _escuchando ? 'Te escucho…' : 'Escribe tu pregunta',
                         counterText: '',
                         filled: true,
                         fillColor: Colors.white,
@@ -170,6 +201,25 @@ class _CharlaZankyState extends State<CharlaZanky> {
                       ),
                     ),
                   ),
+                  if (_dictado.disponible) ...[
+                    const SizedBox(width: 8),
+                    Presionable(
+                      onTap: _dictar,
+                      etiqueta: _escuchando ? 'Dejar de escuchar' : 'Preguntar con la voz',
+                      child: AnimatedContainer(
+                        duration: Zm.corto,
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: _escuchando ? Zc.carnavalRojo : Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Zc.hoja.withValues(alpha: 0.35)),
+                        ),
+                        child: Icon(_escuchando ? Icons.stop_rounded : Icons.mic_rounded,
+                            color: _escuchando ? Colors.white : Zc.hoja),
+                      ),
+                    ),
+                  ],
                   const SizedBox(width: 8),
                   Presionable(
                     onTap: () => _preguntar(_texto.text),
@@ -192,25 +242,31 @@ class _CharlaZankyState extends State<CharlaZanky> {
 }
 
 class _Aviso extends StatelessWidget {
-  const _Aviso({required this.conectada});
+  const _Aviso({required this.conectada, required this.enLinea});
   final bool conectada;
+  final bool? enLinea;
 
   @override
   Widget build(BuildContext context) {
-    final color = conectada ? Zc.hoja : Zc.textoSuave;
+    final viva = conectada && enLinea != false;
+    final color = enLinea == true ? Zc.hoja : Zc.textoSuave;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       child: Semantics(
         container: true,
         child: Row(
           children: [
-            Icon(conectada ? Icons.bolt_rounded : Icons.offline_bolt_outlined, size: 16, color: color),
+            Icon(viva ? Icons.bolt_rounded : Icons.offline_bolt_outlined, size: 16, color: color),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                conectada
-                    ? 'IA conectada. También respondo sin internet.'
-                    : 'IA lista, sin conectar. Respondo con lo que sé, sin internet.',
+                !conectada
+                    ? 'Respondo con lo que sé, sin internet.'
+                    : switch (enLinea) {
+                        true => 'IA de Zanky en línea. Sin señal también respondo.',
+                        false => 'La IA no responde ahora: te contesto con lo que sé, sin internet.',
+                        null => 'Con señal respondo con IA; sin ella, con lo que sé.',
+                      },
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
               ),
             ),

@@ -18,6 +18,17 @@ Animo animoDe(TonoZanky t) => switch (t) {
       TonoZanky.celebrando => Animo.celebrando,
     };
 
+/// Ánimo de Zanky según una respuesta libre de la IA (palabras de la respuesta, sin otra llamada).
+Animo animoDeTexto(String texto) {
+  final t = texto.toLowerCase();
+  const malas = ['peligro', 'tala', 'basura', 'contamina', 'quema', 'relleno', 'amenaza', 'riesgo', 'reporta', 'lo siento'];
+  const buenas = ['¡bien', 'felicit', 'gracias por', 'genial', 'excelente', '¡sí', 'celebr', '🎉'];
+  if (malas.any(t.contains)) return Animo.preocupado;
+  if (buenas.any(t.contains)) return Animo.celebrando;
+  if (t.trim().endsWith('?')) return Animo.curioso;
+  return Animo.feliz;
+}
+
 /// Un check que se dibuja trazo a trazo (o ya dibujado con movimiento reducido).
 class CheckDibujado extends StatefulWidget {
   const CheckDibujado({super.key, this.tamano = 24, this.color = Colors.white, this.grosor = 3});

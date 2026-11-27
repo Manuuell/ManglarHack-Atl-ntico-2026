@@ -267,11 +267,13 @@ class FuenteJornadas {
   /// El evento con lo que ya está en el teléfono (caché y luego respaldo), sin esperar la red.
   Future<EventoZanky> eventoLocal(String codigo) async {
     try {
+      // Caché y respaldo se leen a la vez: en la primera visita no se espera a la una para pedir el otro.
+      final respaldoF = _respaldo();
       final c = await _cache();
       for (final j in c.jornadas) {
         if (j.id == codigo) return _evento(j, c.aviso);
       }
-      final r = await _respaldo();
+      final r = await respaldoF;
       for (final j in r.jornadas) {
         if (j.id == codigo) return _evento(j, c.aviso);
       }

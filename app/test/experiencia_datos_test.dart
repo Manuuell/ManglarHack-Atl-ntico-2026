@@ -310,9 +310,41 @@ void main() {
     });
 
     test('la IA no está conectada sin servidor y no hace red', () async {
-      final ia = IaZanky(cliente: MockClient((_) async => throw StateError('no debía llamar')));
+      final ia = IaZanky(urlChat: '', cliente: MockClient((_) async => throw StateError('no debía llamar')));
       expect(ia.conectada, isFalse);
       expect(await ia.preguntar('hola'), isNull);
+    });
+
+    test('pregunta al bot como la web: historial, contexto del evento y respuesta', () async {
+      late Map cuerpo;
+      final ia = IaZanky(
+        urlChat: 'https://bot.test/chat',
+        cliente: MockClient((r) async {
+          cuerpo = jsonDecode(r.body) as Map;
+          return http.Response(jsonEncode({'respuesta': '  El manglar guarda carbono.  '}), 200);
+        }),
+      );
+      final e = EventoZanky(codigo: 'j1', titulo: 'Siembra en Tubará');
+      final r = await ia.preguntar('¿y el carbono?', evento: e, historial: [(esZanky: false, texto: 'hola'), (esZanky: true, texto: '¡Hola!')]);
+      expect(r, 'El manglar guarda carbono.');
+      final m = (cuerpo['mensajes'] as List).cast<Map>();
+      expect(m.first['texto'], contains('Siembra en Tubará'));
+      expect(m.map((x) => x['rol']), ['zanky', 'usuario', 'zanky', 'usuario']);
+      expect(m.last['texto'], '¿y el carbono?');
+    });
+
+    test('si el bot falla o se demora, devuelve null para responder sin conexión', () async {
+      final caido = IaZanky(urlChat: 'https://bot.test/chat', cliente: MockClient((_) async => http.Response('Not Found', 404)));
+      expect(await caido.preguntar('hola'), isNull);
+      final lento = IaZanky(
+        urlChat: 'https://bot.test/chat',
+        espera: const Duration(milliseconds: 50),
+        cliente: MockClient((_) async {
+          await Future<void>.delayed(const Duration(seconds: 2));
+          return http.Response('{"respuesta":"tarde"}', 200);
+        }),
+      );
+      expect(await lento.preguntar('hola'), isNull);
     });
   });
 
