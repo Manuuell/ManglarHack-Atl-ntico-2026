@@ -1,21 +1,21 @@
-// Botón de perfil de la cabecera y panel de cuenta (iniciar sesión, crear cuenta, recuperar la
-// contraseña y perfil). También intercepta los enlaces con data-cuenta-reportar: si no hay sesión,
-// antes de ir a «Reportar» ofrece entrar o crear cuenta, o «Seguir sin cuenta» (reportar nunca la exige).
-// El panel es un <dialog> modal: va en la capa superior, por encima de la burbuja de Zanky y los avisos.
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { CircleUserRound, Eye, EyeOff, LogOut, ShieldCheck, X } from 'lucide-react';
+// Botón de perfil de la cabecera. Con sesión abre un menú corto (ver perfil, configuración,
+// administración si la cuenta tiene el rol, cerrar sesión); el perfil vive en su propia página, /perfil.
+// Sin sesión abre el panel de cuenta (iniciar sesión, crear cuenta, recuperar la contraseña), que es un
+// <dialog> modal: va en la capa superior, por encima de la burbuja de Zanky y los avisos.
+// También intercepta los enlaces con data-cuenta-reportar: si no hay sesión, antes de ir a «Reportar»
+// ofrece entrar o crear cuenta, o «Seguir sin cuenta» (reportar nunca la exige).
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent as EventoTecla, type ReactNode } from 'react';
+import { CircleUserRound, Eye, EyeOff, LogOut, Settings, ShieldCheck, UserRound, X } from 'lucide-react';
 import {
-  ErrorCuenta, SECTORES_CUENTA, actualizarPerfil, cambiarClave, celularLegible, cerrarSesion, cuentasActivas, iniciarSesion,
+  ErrorCuenta, SECTORES_CUENTA, cambiarClave, cerrarSesion, cuentasActivas, iniciarSesion,
   normalizarCelular, recuperarClave, registrarse, renovarSesion, rolDeAdmin, sesionActual, tomarSesionDelEnlace, useSesion,
 } from '../../lib/cuenta';
 import '../../styles/cuenta.css';
 
-type Modo = 'entrar' | 'crear' | 'olvido' | 'nueva_clave' | 'perfil';
+type Modo = 'entrar' | 'crear' | 'olvido' | 'nueva_clave';
 type Aviso = { tipo: 'ok' | 'error'; texto: string } | null;
 const CLAVE_SIN_CUENTA = 'zanky-web:v1:reportar-sin-cuenta';
 const CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
-const fecha = (iso: string | null) => iso ? new Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(iso)) : null;
 
 function Campo({ id, etiqueta, error, children, ayuda }: { id: string; etiqueta: string; error?: string; ayuda?: string; children: ReactNode }) {
   return <div className="cuenta-campo">
@@ -43,22 +43,48 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
   const [celular, setCelular] = useState('');
   const [whatsappOk, setWhatsappOk] = useState(false);
   const [esAdmin, setEsAdmin] = useState(false);
+  const [menu, setMenu] = useState(false);
+  const raiz = useRef<HTMLDivElement>(null);
+  const boton = useRef<HTMLButtonElement>(null);
 
-  const vista: Modo = sesion ? (modo === 'nueva_clave' ? 'nueva_clave' : 'perfil') : (modo === 'perfil' || modo === 'nueva_clave' ? 'entrar' : modo);
+  // Con sesión, el panel solo se usa para la contraseña nueva que pide el enlace de recuperación.
+  const vista: Modo = sesion ? (modo === 'nueva_clave' ? 'nueva_clave' : modo) : (modo === 'nueva_clave' ? 'entrar' : modo);
 
   function abrir(m: Modo, d: string | null = null, a: Aviso = null) {
+    setMenu(false);
     setModo(m); setDestino(d); setAviso(a); setErrores({}); setClave(''); setVerClave(false);
-    if (m === 'perfil') cargarPerfil();
     if (!dialogo.current?.open) dialogo.current?.showModal();
   }
   const cerrar = () => dialogo.current?.close();
-  function cargarPerfil() {
-    const s = sesionActual();
-    setNombre(s?.usuario.nombre ?? ''); setSector(s?.usuario.sector ?? '');
-    setCelular(celularLegible(s?.usuario.telefono ?? null)); setWhatsappOk(Boolean(s?.usuario.whatsapp_ok));
-    void rolDeAdmin().then((r) => setEsAdmin(Boolean(r))).catch(() => setEsAdmin(false));
-  }
   function cambiar(m: Modo) { setModo(m); setAviso(null); setErrores({}); setClave(''); }
+
+  // «Administración» solo sale en el menú si el servidor de Zanky le da el rol a la cuenta.
+  useEffect(() => {
+    if (!sesion) { setEsAdmin(false); setMenu(false); return; }
+    let vigente = true;
+    void rolDeAdmin().then((r) => { if (vigente) setEsAdmin(Boolean(r)); }).catch(() => { if (vigente) setEsAdmin(false); });
+    return () => { vigente = false; };
+  }, [sesion?.usuario.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // El menú se cierra con Escape (y el foco vuelve al botón) o con un clic fuera.
+  useEffect(() => {
+    if (!menu) return;
+    raiz.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+    const fuera = (e: PointerEvent) => { if (!raiz.current?.contains(e.target as Node)) setMenu(false); };
+    const escape = (e: KeyboardEvent) => { if (e.key === 'Escape') { setMenu(false); boton.current?.focus(); } };
+    document.addEventListener('pointerdown', fuera);
+    document.addEventListener('keydown', escape);
+    return () => { document.removeEventListener('pointerdown', fuera); document.removeEventListener('keydown', escape); };
+  }, [menu]);
+
+  function moverseEnMenu(e: EventoTecla<HTMLDivElement>) {
+    const items = [...e.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    const siguiente = { ArrowDown: i + 1, ArrowUp: i - 1, Home: 0, End: items.length - 1 }[e.key];
+    if (siguiente === undefined || items.length === 0) return;
+    e.preventDefault();
+    items[(siguiente + items.length) % items.length].focus();
+  }
 
   function irADestino() {
     const d = destino;
@@ -81,7 +107,7 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
       if (!r) return;
       if ('error' in r) abrir('entrar', null, { tipo: 'error', texto: r.error });
       else if (r.tipo === 'recovery') abrir('nueva_clave', null, { tipo: 'ok', texto: 'Escribe tu contraseña nueva.' });
-      else abrir('perfil', null, { tipo: 'ok', texto: '¡Listo! Tu correo quedó confirmado y ya tienes cuenta.' });
+      else location.assign('/perfil?bienvenida=1');
     }).catch((e: unknown) => abrir('entrar', null, { tipo: 'error', texto: e instanceof Error ? e.message : 'No se pudo usar el enlace del correo.' }));
     void renovarSesion();
     const reloj = window.setInterval(() => { void renovarSesion(); }, 60_000);
@@ -91,7 +117,7 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
 
   // Otras partes de la web (por ejemplo, /admin sin sesión) piden abrir el panel con este evento.
   useEffect(() => {
-    const alPedir = () => abrir(sesionActual() ? 'perfil' : 'entrar');
+    const alPedir = () => { if (sesionActual()) setMenu(true); else abrir('entrar'); };
     window.addEventListener('zanky-cuenta:abrir', alPedir);
     return () => window.removeEventListener('zanky-cuenta:abrir', alPedir);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,6 +146,13 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
     } finally { setOcupado(false); }
   }
 
+  // Al entrar o crear la cuenta sin un destino pendiente, se cierra el panel y se abre el menú de la cuenta.
+  function yaConSesion() {
+    if (destino) { irADestino(); return; }
+    cerrar();
+    setMenu(true);
+  }
+
   function validar(campos: ('nombre' | 'correo' | 'clave' | 'acepta' | 'celular')[]): boolean {
     const e: Record<string, string> = {};
     if (campos.includes('nombre') && nombre.trim().length < 2) e.nombre = 'Escribe tu nombre.';
@@ -140,14 +173,13 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
     if (vista === 'entrar' && validar(['correo', 'clave'])) void ejecutar(async () => {
       await iniciarSesion(correo, clave);
       setClave('');
-      if (destino) irADestino();
-      else { cargarPerfil(); setAviso({ tipo: 'ok', texto: `¡Hola, ${sesionActual()?.usuario.nombre ?? ''}!` }); }
+      yaConSesion();
     });
     if (vista === 'crear' && validar(['nombre', 'correo', 'clave', 'acepta', 'celular'])) void ejecutar(async () => {
       const telefono = normalizarCelular(celular);
       const r = await registrarse({ nombre, correo, clave, sector: sector || null, telefono: telefono === 'invalido' ? null : telefono, whatsappOk });
       setClave('');
-      if (r === 'sesion') { if (destino) irADestino(); else { cargarPerfil(); setAviso({ tipo: 'ok', texto: `¡Bienvenido, ${nombre.trim()}! Ya tienes cuenta.` }); } }
+      if (r === 'sesion') yaConSesion();
       else { setModo('entrar'); setAviso({ tipo: 'ok', texto: `Te enviamos un correo a ${correo.trim()}. Abre el enlace para activar la cuenta y luego inicia sesión.` }); }
     });
     if (vista === 'olvido' && validar(['correo'])) void ejecutar(async () => {
@@ -156,20 +188,15 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
     });
     if (vista === 'nueva_clave' && validar(['clave'])) void ejecutar(async () => {
       await cambiarClave(clave);
-      setClave(''); setModo('perfil');
-      setAviso({ tipo: 'ok', texto: 'Contraseña cambiada.' });
-    });
-    if (vista === 'perfil' && validar(['nombre', 'celular'])) void ejecutar(async () => {
-      const telefono = normalizarCelular(celular);
-      await actualizarPerfil({ nombre, sector: sector || null, telefono: telefono === 'invalido' ? null : telefono, whatsappOk });
-      setAviso({ tipo: 'ok', texto: 'Perfil guardado.' });
+      setClave('');
+      setAviso({ tipo: 'ok', texto: 'Contraseña cambiada. Ya puedes cerrar este panel.' });
     });
   }
 
-  const salir = () => void ejecutar(async () => { await cerrarSesion(); setModo('entrar'); setAviso({ tipo: 'ok', texto: 'Cerraste la sesión.' }); });
+  const salir = () => { setMenu(false); void cerrarSesion(); boton.current?.focus(); };
 
   const inicial = (sesion?.usuario.nombre || sesion?.usuario.correo || '?').trim().charAt(0).toLocaleUpperCase('es-CO');
-  const titulo = { entrar: 'Inicia sesión', crear: 'Crea tu cuenta', olvido: 'Recupera tu contraseña', nueva_clave: 'Contraseña nueva', perfil: sesion?.usuario.nombre ?? 'Tu perfil' }[vista];
+  const titulo = { entrar: 'Inicia sesión', crear: 'Crea tu cuenta', olvido: 'Recupera tu contraseña', nueva_clave: 'Contraseña nueva' }[vista];
   const campoClave = (autocompletar: string) => <Campo id="cuenta-clave" etiqueta={vista === 'nueva_clave' ? 'Contraseña nueva' : 'Contraseña'} error={errores.clave} ayuda={vista === 'entrar' ? undefined : 'Al menos 8 caracteres.'}>
     <div className="cuenta-clave">
       <input id="cuenta-clave" name="password" type={verClave ? 'text' : 'password'} autoComplete={autocompletar} value={clave} onChange={(e) => setClave(e.target.value)} aria-invalid={Boolean(errores.clave)} aria-describedby={errores.clave ? 'cuenta-clave-error' : undefined} />
@@ -200,21 +227,39 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
     </select>
   </Campo>;
 
-  return <>
-    <button type="button" className={`cuenta-boton cuenta-${contexto}`} onClick={() => abrir(sesion ? 'perfil' : 'entrar')} aria-haspopup="dialog"
+  return <div className="cuenta-raiz" ref={raiz}>
+    <button ref={boton} type="button" className={`cuenta-boton cuenta-${contexto}`} onClick={() => (sesion ? setMenu((m) => !m) : abrir('entrar'))}
+      aria-haspopup={sesion ? 'menu' : 'dialog'} aria-expanded={sesion ? menu : undefined} aria-controls={sesion && menu ? 'cuenta-menu' : undefined}
       aria-label={sesion ? `Mi cuenta: ${sesion.usuario.nombre}` : 'Iniciar sesión o crear cuenta'} title={sesion ? `Mi cuenta: ${sesion.usuario.nombre}` : 'Iniciar sesión o crear cuenta'}>
       {sesion ? <span className="cuenta-inicial" aria-hidden="true">{inicial}</span> : <CircleUserRound aria-hidden="true" />}
     </button>
+
+    {sesion && menu && <div id="cuenta-menu" className="cuenta-menu" role="menu" aria-label="Tu cuenta" onKeyDown={moverseEnMenu}>
+      <div className="cuenta-menu-cab">
+        <span className="cuenta-menu-avatar" aria-hidden="true">{inicial}</span>
+        <span className="cuenta-menu-quien">
+          <span className="cuenta-menu-nombre">{sesion.usuario.nombre}</span>
+          <span className="cuenta-menu-correo">{sesion.usuario.correo}</span>
+        </span>
+      </div>
+      <div className="cuenta-menu-grupo">
+        <a role="menuitem" href="/perfil"><UserRound aria-hidden="true" />Ver perfil</a>
+        <a role="menuitem" href="/perfil#datos" onClick={() => setMenu(false)}><Settings aria-hidden="true" />Configuración</a>
+        {esAdmin && <a role="menuitem" href="/admin"><ShieldCheck aria-hidden="true" />Administración</a>}
+      </div>
+      <div className="cuenta-menu-grupo">
+        <button type="button" role="menuitem" onClick={salir}><LogOut aria-hidden="true" />Cerrar sesión</button>
+      </div>
+    </div>}
 
     <dialog ref={dialogo} className="cuenta-dialogo" aria-labelledby="cuenta-titulo" onClick={(e) => { if (e.target === e.currentTarget) cerrar(); }}>
       <div className="cuenta-caja">
         <button type="button" className="cuenta-cerrar" onClick={cerrar} aria-label="Cerrar"><X aria-hidden="true" /></button>
         <div className="cuenta-cab">
-          {vista === 'perfil' ? <span className="cuenta-avatar" aria-hidden="true">{inicial}</span> : <img src="/marca/zanky/zanky-feliz-256.webp" alt="" width={56} height={56} />}
+          <img src="/marca/zanky/zanky-feliz-256.webp" alt="" width={56} height={56} />
           <div>
-            <p className="cuenta-kicker">{vista === 'perfil' ? 'Tu perfil' : destino ? 'Antes de reportar' : 'Tu cuenta'}</p>
+            <p className="cuenta-kicker">{destino ? 'Antes de reportar' : 'Tu cuenta'}</p>
             <h2 id="cuenta-titulo" className="cuenta-titulo">{titulo}</h2>
-            {vista === 'perfil' && sesion && <p className="cuenta-sub">{sesion.usuario.correo}{sesion.usuario.creado_en ? ` · desde el ${fecha(sesion.usuario.creado_en)}` : ''}</p>}
           </div>
         </div>
 
@@ -241,26 +286,14 @@ export default function PanelCuenta({ contexto = 'plataforma' }: { contexto?: 'p
             </div></>}
           {vista === 'olvido' && <>{campoCorreo}<button type="button" className="cuenta-enlace" onClick={() => cambiar('entrar')}>← Volver a iniciar sesión</button></>}
           {vista === 'nueva_clave' && campoClave('new-password')}
-          {vista === 'perfil' && <>{campoNombre}{campoCelular}{campoSector}</>}
 
           {aviso && <p className={`cuenta-aviso cuenta-aviso-${aviso.tipo}`} role={aviso.tipo === 'error' ? 'alert' : 'status'}>{aviso.texto}</p>}
 
           <button type="submit" className="cuenta-btn cuenta-btn-dorado" disabled={ocupado || !cuentasActivas}>
-            {ocupado ? 'Un momento…' : { entrar: 'Entrar', crear: 'Crear mi cuenta', olvido: 'Enviar el enlace', nueva_clave: 'Guardar contraseña', perfil: 'Guardar cambios' }[vista]}
+            {ocupado ? 'Un momento…' : { entrar: 'Entrar', crear: 'Crear mi cuenta', olvido: 'Enviar el enlace', nueva_clave: 'Guardar contraseña' }[vista]}
           </button>
         </form>
-
-        {vista === 'perfil' && <div className="cuenta-perfil">
-          <nav aria-label="Atajos de tu cuenta" className="cuenta-atajos">
-            {esAdmin && <a href="/admin" className="cuenta-atajo-admin"><ShieldCheck aria-hidden="true" />Panel de administración</a>}
-            <a href="/#reportar" onClick={cerrar}>Reportar un problema</a>
-            <a href="/plataforma/jornadas">Jornadas de tu comunidad</a>
-            <a href="/plataforma/registro">¿Representas una organización? Regístrala como actor</a>
-          </nav>
-          <button type="button" className="cuenta-btn cuenta-btn-claro" onClick={() => cambiar('nueva_clave')}>Cambiar contraseña</button>
-          <button type="button" className="cuenta-btn cuenta-btn-salir" onClick={salir} disabled={ocupado}><LogOut aria-hidden="true" />Cerrar sesión</button>
-        </div>}
       </div>
     </dialog>
-  </>;
+  </div>;
 }
