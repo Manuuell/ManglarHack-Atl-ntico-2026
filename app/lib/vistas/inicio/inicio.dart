@@ -30,6 +30,7 @@ import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../guardian/editar_perfil.dart';
 import '../roles/selector_rol.dart';
 import 'pronostico_compacto.dart';
+import '../sensores/sensores_compacto.dart';
 import 'que_hago_ya.dart';
 import 'secciones_rol.dart';
 import '../crecimiento/pantalla_mi_manglar.dart';
@@ -77,6 +78,7 @@ class _InicioState extends State<Inicio> {
         SeccionInicio.queNoHacer => 'Qué no hacer en el manglar',
         SeccionInicio.clima => 'El clima en el manglar',
         SeccionInicio.pronostico => 'El pronóstico del manglar',
+        SeccionInicio.sensores => 'Los sensores del manglar',
         SeccionInicio.sabiasQue => '¿Sabías qué?',
         _ => 'Zanky',
       };
@@ -196,6 +198,8 @@ class _InicioState extends State<Inicio> {
         return _TarjetaClima(estado: estado);
       case SeccionInicio.pronostico:
         return const PronosticoCompacto();
+      case SeccionInicio.sensores:
+        return const SensoresCompacto();
       case SeccionInicio.sabiasQue:
         return _SabiasQue(hectareas: estado.manglar.areaTotalHa);
     }

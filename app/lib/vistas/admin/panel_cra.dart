@@ -7,6 +7,7 @@ import '../../datos/admin/reporte_admin.dart';
 import '../../nucleo/kit/anuncio.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
+import '../sensores/pantalla_sensores.dart';
 import 'acceso_admin.dart';
 import 'bandeja_admin.dart';
 import 'piezas_admin.dart';
@@ -155,7 +156,13 @@ class _Cabecera extends StatelessWidget {
               ],
             ),
           ),
+          BotonIcono(
+            icono: Icons.sensors_rounded,
+            etiqueta: 'Sensores del manglar',
+            alTocar: () => abrirSensores(context),
+          ),
           if (c.dentro) ...[
+            const SizedBox(width: 4),
             BotonIcono(
               icono: Icons.refresh_rounded,
               etiqueta: 'Actualizar reportes',

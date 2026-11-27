@@ -39,6 +39,27 @@ Para enviar a un proyecto de **demostración**, cargar `seed_sensores_demo.sql` 
 
 Comprobaciones locales: `node --check tools/simular_sensor.mjs`, `node tools/simular_sensor.mjs` y `node --experimental-strip-types --test tools/probar_ingesta.test.mjs`. Si Deno está instalado, ejecutar `deno check backend/supabase/functions/lectura-sensor/index.ts`.
 
+## En la app: «Sensores del manglar»
+
+- **Dónde:** tarjeta «Sensores del manglar» en Inicio (todos los roles) y botón de sensores en la cabecera del panel CRA.
+  Un toque abre la pantalla; cada estación abre su detalle (deslizar desde el borde vuelve; mantener presionada una
+  estación da «Ver detalle» y «Compartir lectura»; tirar hacia abajo actualiza).
+- **Qué muestra:** mapa chico y lista de estaciones por zona (las sondas de una misma zona forman una estación), última
+  lectura de cada sonda, estado (en línea si llegó hace 25 min o menos; «sin datos hace X» si no; «aún sin lecturas»),
+  mini gráfica de las últimas 12 h con la línea del umbral, umbrales explicados en lenguaje simple y una alerta roja
+  cuando una lectura de menos de 6 h llega al umbral (`en_alerta` de la RPC o el umbral de referencia).
+- **De dónde:** `ultimas_lecturas()` con la clave anon (`--dart-define=ZANKY_API=… --dart-define=ZANKY_ANON=…`), cada
+  minuto mientras la pantalla está abierta. La RPC solo da la última lectura: la gráfica se arma con las lecturas que el
+  teléfono fue viendo. Sin señal se muestra la copia guardada con su hora. Sin servidor o sin ninguna lectura, la app
+  muestra lecturas simuladas con el rótulo **«DEMOSTRACIÓN · datos de ejemplo»**.
+- **Umbral:** desde `estadisticas_parche_1.sql` solo el admin recibe `umbral_alerta`; los demás ven el umbral de
+  referencia de la app (1,5 m, 45 ppt, 34 °C, 100 NTU), rotulado «de referencia».
+
+Para la demo en vivo: cargar `seed_sensores_demo.sql`, crear los tokens y correr
+`ZANKY_SENSOR_URL=… ZANKY_SENSOR_TOKEN='{"UUID":"token",…}' node tools/simular_sensor.mjs`; en menos de un minuto la
+tarjeta de Inicio pasa a «Alerta: nivel del agua en Ciénaga de Mallorquín» (1,72 m contra 1,5 m). Sin variables, el
+simulador solo imprime y la app sigue en modo demostración.
+
 ## Lo que ve el ciudadano y qué decir en el pitch
 
 En la vista ciudadana se muestran zona, magnitud, valor aproximado, fecha, vigencia y un aviso «supera el umbral; revisar». No mostrar tokens, historial crudo, ubicación exacta de sondas ni afirmar que el sensor valida una denuncia. **Antes de exponer una vista ciudadana en producción**, revisar que la RPC heredada `ultimas_lecturas()` actualmente devuelve latitud/longitud exactas a `anon`; esta página las omite visualmente, pero la respuesta HTTP aún las contiene. Publicar una RPC agregada por zona o ajustar esos permisos en una migración coordinada con el panel.
