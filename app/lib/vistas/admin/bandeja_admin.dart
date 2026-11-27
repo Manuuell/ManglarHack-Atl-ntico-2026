@@ -23,7 +23,9 @@ import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../avisos_zona/avisos_encargado.dart';
 import 'detalle_admin.dart';
+import 'permisos/pantalla_permisos.dart';
 import 'piezas_admin.dart';
+import '../../datos/permisos/permisos_rol.dart';
 
 /// La bandeja de verificación: filtros arriba, lo pendiente primero y lo más urgente
 /// arriba. Al abrirla, lo que había deja de contar como «nuevo» en el ícono del panel.
@@ -63,7 +65,7 @@ class _BandejaAdminState extends State<BandejaAdmin> {
     // Escribiendo en un campo: las letras son letras.
     if (FocusManager.instance.primaryFocus?.context?.widget is EditableText) return KeyEventResult.ignored;
     final k = e.logicalKey;
-    final sel = _lista.where((r) => r.id == _sel).firstOrNull;
+    final sel = _lista.where((r) => r.id == _sel && puedeEnPanel(context, _c.rol, Permiso.decidirReportes)).firstOrNull;
     if (k == LogicalKeyboardKey.keyJ) {
       _mover(1);
     } else if (k == LogicalKeyboardKey.keyK) {
@@ -422,6 +424,8 @@ class TarjetaAdminConGestos extends StatelessWidget {
   Widget build(BuildContext context) {
     final r = reporte;
     final c = controlador;
+    // Solo decide quien tiene el permiso (matriz de permisos del panel); los demás solo miran.
+    final decide = r.pendiente && puedeEnPanel(context, c.rol, Permiso.decidirReportes);
     final abrir = AccionGesto(
       etiqueta: 'Abrir detalle',
       icono: Icons.open_in_new_rounded,
@@ -445,7 +449,7 @@ class TarjetaAdminConGestos extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         tarjeta,
-        if (r.pendiente && ancha) ...[
+        if (decide && ancha) ...[
           const SizedBox(height: 8),
           BandejaAcciones(acciones: [aprobar, rechazar], etiqueta: 'Decidir ${r.tipo.nombre}'),
         ],
@@ -454,11 +458,11 @@ class TarjetaAdminConGestos extends StatelessWidget {
     return MenuMantenido(
       etiqueta: '${r.tipo.nombre}, ${r.zona}',
       vistaPrevia: (_) => _VistaPreviaAdmin(controlador: c, reporte: r),
-      acciones: [abrir, if (r.pendiente) ...[aprobar, rechazar]],
+      acciones: [abrir, if (decide) ...[aprobar, rechazar]],
       child: FilaDeslizable(
         radio: BorderRadius.circular(Zr.l),
-        accionesInicio: [if (r.pendiente) aprobar],
-        accionesFin: [if (r.pendiente) rechazar],
+        accionesInicio: [if (decide) aprobar],
+        accionesFin: [if (decide) rechazar],
         hijo: conBotones,
       ),
     );

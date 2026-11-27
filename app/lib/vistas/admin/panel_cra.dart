@@ -7,10 +7,15 @@ import '../../datos/admin/reporte_admin.dart';
 import '../../nucleo/kit/anuncio.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
+import '../../datos/roles.dart';
 import '../sensores/pantalla_sensores.dart';
+import 'sensores/seccion_sensores_admin.dart';
 import 'acceso_admin.dart';
 import 'bandeja_admin.dart';
+import 'permisos/pantalla_permisos.dart';
 import 'piezas_admin.dart';
+import '../../datos/permisos/permisos_rol.dart';
+import '../../datos/permisos/repositorio_permisos.dart';
 import 'resumen_admin.dart';
 
 /// Abre el panel de la CRA como una pantalla aparte (no es una pestaña: los ciudadanos
@@ -26,7 +31,7 @@ Future<void> abrirPanelCra(BuildContext context) {
   );
 }
 
-enum _Vista { bandeja, resumen }
+enum _Vista { bandeja, resumen, sensores }
 
 /// El panel: acceso → bandeja y resumen. Una sola pantalla con cabecera propia.
 class PanelCra extends StatefulWidget {
@@ -40,6 +45,27 @@ class _PanelCraState extends State<PanelCra> {
   _Vista _vista = _Vista.bandeja;
   ControladorAdmin? _c;
 
+  /// Permisos del rol con sesión: se crean al entrar y se cambian si cambia la sesión.
+  ControladorPermisos? _permisos;
+  String? _clavePermisos;
+
+  void _sincronizarPermisos() {
+    final c = _c;
+    if (c == null) return;
+    final clave = c.dentro ? '${c.demostracion}|${c.rol}|${c.correo}' : null;
+    if (clave == _clavePermisos) return;
+    _clavePermisos = clave;
+    _permisos?.dispose();
+    _permisos = null;
+    if (clave == null) return;
+    final p = ControladorPermisos(
+      fuente: c.demostracion ? null : FuenteSupabase(c.servidor, c.tokenParaContenido),
+      rolActual: RolEquipo.deId(c.rol),
+    );
+    _permisos = p;
+    p.cargar();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -47,17 +73,20 @@ class _PanelCraState extends State<PanelCra> {
     if (!identical(c, _c)) {
       _c?.removeListener(_alCambiar);
       _c = c..addListener(_alCambiar);
+      _sincronizarPermisos();
     }
   }
 
   @override
   void dispose() {
     _c?.removeListener(_alCambiar);
+    _permisos?.dispose();
     super.dispose();
   }
 
   /// Si el servidor no aceptó una decisión, se dice por qué (y el reporte ya volvió a como estaba).
   void _alCambiar() {
+    _sincronizarPermisos();
     final c = _c;
     if (c == null || c.fallo == null || !mounted) return;
     final f = c.tomarFallo();
@@ -74,7 +103,8 @@ class _PanelCraState extends State<PanelCra> {
   @override
   Widget build(BuildContext context) {
     final c = AdminScope.de(context);
-    return Scaffold(
+    final permisos = _permisos;
+    final pantalla = Scaffold(
       body: SafeArea(
         bottom: false,
         // La barra de «Deshacer» flota sobre la lista: no le quita alto con letra grande.
@@ -110,6 +140,7 @@ class _PanelCraState extends State<PanelCra> {
         ),
       ),
     );
+    return permisos == null ? pantalla : PermisosScope(controlador: permisos, child: pantalla);
   }
 }
 
@@ -156,11 +187,13 @@ class _Cabecera extends StatelessWidget {
               ],
             ),
           ),
-          BotonIcono(
-            icono: Icons.sensors_rounded,
-            etiqueta: 'Sensores del manglar',
-            alTocar: () => abrirSensores(context),
-          ),
+          // Dentro del panel los sensores tienen su propio segmento (con permiso); fuera, el atajo público.
+          if (!c.dentro)
+            BotonIcono(
+              icono: Icons.sensors_rounded,
+              etiqueta: 'Sensores del manglar',
+              alTocar: () => abrirSensores(context),
+            ),
           if (c.dentro) ...[
             const SizedBox(width: 4),
             BotonIcono(
@@ -168,12 +201,20 @@ class _Cabecera extends StatelessWidget {
               etiqueta: 'Actualizar reportes',
               alTocar: () => c.actualizar(),
             ),
-            if (c.rol == 'admin') ...[
+            if (puedeEnPanel(context, c.rol, Permiso.editarContenido)) ...[
               const SizedBox(width: 4),
               BotonIcono(
                 icono: Icons.edit_note_rounded,
                 etiqueta: 'Editar contenido de la app',
                 alTocar: () => abrirEditorContenido(context, c),
+              ),
+            ],
+            if (PermisosScope.de(context) case final p? when p.puede(Permiso.administrarRoles) || c.demostracion) ...[
+              const SizedBox(width: 4),
+              BotonIcono(
+                icono: Icons.admin_panel_settings_rounded,
+                etiqueta: 'Permisos del equipo',
+                alTocar: () => abrirPermisos(context, p, demostracion: c.demostracion),
               ),
             ],
             const SizedBox(width: 4),
@@ -205,15 +246,25 @@ class _Dentro extends StatelessWidget {
       children: [
         const SizedBox(height: 4),
         SegmentosZ<_Vista>(
-          valores: _Vista.values,
+          // «Sensores y microcontroladores» solo con la gestión de sensores del rol.
+          valores: [
+            _Vista.bandeja,
+            _Vista.resumen,
+            if (RolPanel.puede(c.rol, Gestion.sensores)) _Vista.sensores,
+          ],
           actual: vista,
-          nombre: (v) => v == _Vista.bandeja ? 'Bandeja' : 'Resumen',
+          nombre: (v) => switch (v) { _Vista.bandeja => 'Bandeja', _Vista.resumen => 'Resumen', _Vista.sensores => 'Sensores' },
           cuenta: (v) => v == _Vista.bandeja ? c.conteos[FiltroBandeja.pendientes] : null,
           alCambiar: alCambiarVista,
         ),
         const SizedBox(height: 10),
         Expanded(
-          child: vista == _Vista.bandeja ? BandejaAdmin(controlador: c) : ResumenAdmin(controlador: c),
+          child: switch (vista) {
+            _Vista.bandeja => BandejaAdmin(controlador: c),
+            _Vista.resumen => ResumenAdmin(controlador: c),
+            _Vista.sensores =>
+              RolPanel.puede(c.rol, Gestion.sensores) ? const SeccionSensoresAdmin() : BandejaAdmin(controlador: c),
+          },
         ),
       ],
     );
