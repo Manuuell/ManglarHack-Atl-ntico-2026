@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import '../../datos/experiencia/instalar_web.dart';
 import '../../datos/experiencia/jornada.dart';
 import '../../nucleo/base/hoja.dart';
-import '../../nucleo/presionable.dart';
+import '../../nucleo/kit/accion_gesto.dart';
+import '../../nucleo/kit/menu_mantenido.dart';
 import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 import 'piezas.dart';
@@ -56,10 +57,20 @@ class _ProximoEventoState extends State<ProximoEvento> {
                     children: [
                       Text('Próximo evento', style: tt.labelSmall),
                       const SizedBox(height: 8),
-                      Presionable(
+                      // Tocar abre el evento; mantener presionado muestra la tarjeta en grande (vista previa)
+                      // con «Abrir», igual que los eventos de Comunidad.
+                      MenuMantenido(
                         etiqueta: 'Próximo evento: ${j.titulo}, ${fechaLarga(j.inicio)}',
-                        escala: 0.97,
-                        onTap: () => abrirEvento(context, j.id),
+                        radio: BorderRadius.circular(Zr.m),
+                        alTocar: () => abrirEvento(context, j.id),
+                        vistaPrevia: (_) => _VistaPreviaJornada(j),
+                        acciones: [
+                          AccionGesto(
+                            etiqueta: 'Abrir',
+                            icono: Icons.open_in_full_rounded,
+                            alEjecutar: () => abrirEvento(context, j.id),
+                          ),
+                        ],
                         child: _TarjetaJornada(j),
                       ),
                     ],
@@ -125,6 +136,51 @@ class _TarjetaJornada extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.only(right: 8),
             child: Icon(Icons.chevron_right_rounded, color: Zc.textoTenue),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Vista previa al mantener presionado: foto grande, título completo, fecha y lugar sin cortar.
+class _VistaPreviaJornada extends StatelessWidget {
+  const _VistaPreviaJornada(this.j);
+  final Jornada j;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final img = j.imagen;
+    const respaldo = Image(image: _TarjetaJornada._respaldo, fit: BoxFit.cover);
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(Zr.l)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AspectRatio(
+            aspectRatio: 16 / 9,
+            child: img == null
+                ? respaldo
+                : Image.network(img.toString(), fit: BoxFit.cover, errorBuilder: (_, _, _) => respaldo),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(j.esEjemplo ? '${j.tipoLegible} · Ejemplo' : j.tipoLegible,
+                    style: tt.labelSmall?.copyWith(color: Zc.hoja)),
+                const SizedBox(height: 4),
+                Text(j.titulo, style: tt.titleMedium),
+                const SizedBox(height: 8),
+                Text('${fechaLarga(j.inicio)} · ${horaCorta(j.inicio)}', style: tt.bodyMedium),
+                if (j.puntoEncuentro.trim().isNotEmpty) Text(j.puntoEncuentro, style: tt.bodySmall),
+              ],
+            ),
           ),
         ],
       ),
