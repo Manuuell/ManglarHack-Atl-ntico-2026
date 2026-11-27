@@ -59,6 +59,23 @@ void main() {
     expect(tester.hasRunningAnimations, isFalse);
   });
 
+  testWidgets('a 360 px con letra al doble no se desborda y la siguiente asoma', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(360, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+      home: MediaQuery(
+        data: const MediaQueryData(size: Size(360, 800), textScaler: TextScaler.linear(2), disableAnimations: true),
+        child: Scaffold(body: ReporteRapido(alElegir: (_) {})),
+      ),
+    ));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    // La cuarta tarjeta empieza dentro de la pantalla pero no cabe entera: invita a deslizar.
+    final cuarta = tester.getRect(find.byKey(ReporteRapido.claveTarjeta(3)));
+    expect(cuarta.left, lessThan(360));
+    expect(cuarta.right, greaterThan(360));
+  });
+
   testWidgets('tocar una tarjeta elige su tipo', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1280, 800));
     addTearDown(() => tester.binding.setSurfaceSize(null));

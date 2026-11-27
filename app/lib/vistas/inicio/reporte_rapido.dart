@@ -119,10 +119,15 @@ class _ReporteRapidoState extends State<ReporteRapido> with SingleTickerProvider
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          // En una línea si cabe; con letra grande la pista baja debajo del título
+          // en vez de desbordarse.
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.end,
+            spacing: 12,
+            runSpacing: 2,
             children: [
-              Expanded(child: Text('Reporte rápido', style: tt.titleMedium)),
+              Text('Reporte rápido', style: tt.titleMedium),
               Text('Toca y ve directo a «¿Dónde?»', style: tt.labelSmall?.copyWith(color: Zc.textoTenue)),
             ],
           ),
