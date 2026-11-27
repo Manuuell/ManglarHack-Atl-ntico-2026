@@ -109,7 +109,7 @@ export default function MapaEnVivo({ reportes: iniciales, sectores, jornadas: jo
     }
     for (const j of proximas) {
       const icono = L.divIcon({ className: 'pin-jornada', html: '<span>🌱</span>', iconSize: [28, 28] });
-      L.marker([j.lat, j.lon], { icon: icono, keyboard: false }).bindPopup(`<b>${j.titulo}</b><br>${fechaJornada(j.inicio)}<br><a href="/plataforma/jornadas?jornada=${j.id}">Ver la invitación</a>`).addTo(capa);
+      L.marker([j.lat, j.lon], { icon: icono, keyboard: false }).bindPopup(`<b>${j.titulo}</b><br>${fechaJornada(j.inicio)}<br><a href="/plataforma/jornada?id=${encodeURIComponent(j.id)}">Ver la jornada</a>`).addTo(capa);
     }
     if (recien.length) {
       setNuevos((prev) => new Set([...prev, ...recien.map((r) => r.id)]));
@@ -154,9 +154,9 @@ export default function MapaEnVivo({ reportes: iniciales, sectores, jornadas: jo
         {proximas.length > 0 && (
           <div className="envivo-jornadas">
             {proximas.map((j) => (
-              <a key={j.id} href={`/plataforma/jornadas?jornada=${j.id}`}>
+              <a key={j.id} href={`/plataforma/jornada?id=${encodeURIComponent(j.id)}`}>
                 <CalendarDays className="size-4 shrink-0" aria-hidden="true" />
-                <span><b>{j.titulo}</b><small>{fechaJornada(j.inicio)} · {j.inscritos}/{j.cupos} inscritos</small></span>
+                <span><b>{j.titulo}</b><small>{fechaJornada(j.inicio)} · {j.inscritos} {j.inscritos === 1 ? 'inscrito' : 'inscritos'}</small></span>
               </a>
             ))}
           </div>

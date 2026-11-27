@@ -28,11 +28,12 @@ export interface SectorWorkflow {
 export const FUENTE_WORKFLOW = 'Workflow de monitoreo del manglar de la C.R.A. (manglarcra.netlify.app), actualización 2025–2026';
 
 // Zona del workflow de la C.R.A. → sector de esta web (los polígonos de poligonosManglar.json).
-// La zona 3 (Tubará – Juan de Acosta) es el sector «Manatíes»: correspondencia por confirmar con la C.R.A.
+// Nombres de la C.R.A.; los ids se conservan porque los usan los datos, la app y el backend
+// (balboa = Puerto Colombia, manaties = Tubará; ver handoff/11-contenido-cra.md).
 const SECTOR_POR_ZONA: Record<SectorCRA['zona'], { id: SectorWorkflowId; nombre: string }> = {
   1: { id: 'mallorquin', nombre: 'Mallorquín' },
-  2: { id: 'balboa', nombre: 'Balboa' },
-  3: { id: 'manaties', nombre: 'Manatíes' },
+  2: { id: 'balboa', nombre: 'Puerto Colombia' },
+  3: { id: 'manaties', nombre: 'Tubará' },
   4: { id: 'totumo', nombre: 'Totumo' },
 };
 
@@ -112,7 +113,7 @@ export function construirWorkflow(c: ResumenCRA): Workflow {
       id: 'sintesis', etiqueta: 'Síntesis', titulo: 'El manglar en cifras',
       resumen: `Se estiman ${es(cifras.manglar_probable_ha)} ha de manglar probable y ${es(cifras.por_revisar_ha)} ha por revisar en cuatro sectores del Atlántico.`,
       cifras: [cifra(cifras.manglar_probable_ha, 'ha', 'Manglar probable'), cifra(cifras.por_revisar_ha, 'ha', 'Por revisar'), cifra(cifras.perdida_ha_2016_2025, 'ha', 'Cambio neto · 2016–2025', 1), cifra(cifras.dosel_seco_2026_ha, 'ha', 'Dosel más seco · 2026'), cifra(cifras.riesgo_muy_alto_ha, 'ha', 'Riesgo muy alto'), { valor: miles(cifras.carbono_total_t), unidad: 't de carbono', etiqueta: 'Carbono total' }],
-      puntos: [`Manglar probable: ${es(cifras.prob_alta_ha)} ha con probabilidad alta y ${es(cifras.prob_media_ha)} ha con probabilidad media.`, `Los cuatro sectores suman ${es(total)} ha: ${es(cifras.manglar_probable_ha)} ha probables + ${es(cifras.por_revisar_ha)} ha por revisar.`, 'Los límites sectoriales son aproximados; la correspondencia de Manatíes (Tubará – Juan de Acosta) requiere confirmación de la C.R.A.'],
+      puntos: [`Manglar probable: ${es(cifras.prob_alta_ha)} ha con probabilidad alta y ${es(cifras.prob_media_ha)} ha con probabilidad media.`, `Los cuatro sectores suman ${es(total)} ha: ${es(cifras.manglar_probable_ha)} ha probables + ${es(cifras.por_revisar_ha)} ha por revisar.`, 'Los límites sectoriales son aproximados.'],
       capa: 'sectores', color: 'capa-manglar', fuente: FUENTE_WORKFLOW, audio: audio('sin'),
     },
     {

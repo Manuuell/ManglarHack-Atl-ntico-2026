@@ -8,6 +8,7 @@ import { TIPOS_JORNADA } from '../../lib/plataforma/catalogos';
 import { renovarSesion, useSesion } from '../../lib/cuenta';
 import { ErrorBot, pedirBot, pedirBotCrudo } from '../../lib/bot';
 import { sincronizarJornadas } from '../../lib/plataforma/jornadasApi';
+import { CUPOS_SIN_LIMITE } from '../../lib/plataforma/jornadas';
 import { cn } from '../../lib/utils';
 
 // --- Tipos del contrato con el servidor -----------------------------------------------------------
@@ -94,17 +95,17 @@ function Aviso({ tipo, children }: { tipo: 'ok' | 'error' | 'info'; children: Re
 // --- Formulario de jornada ---------------------------------------------------------------------------
 interface Borrador {
   titulo: string; tipo: TipoJornada; fecha: string; hora_inicio: string; hora_fin: string; punto_encuentro: string;
-  lat: string; lon: string; cupos: string; que_llevar: string; descripcion: string; imagen_url: string;
+  lat: string; lon: string; que_llevar: string; descripcion: string; imagen_url: string;
 }
 function borradorDe(j?: JornadaAdmin): Borrador {
   if (j) return {
     titulo: j.titulo, tipo: j.tipo, fecha: diaBogota(j.inicio), hora_inicio: horaBogota(j.inicio), hora_fin: horaBogota(j.fin),
-    punto_encuentro: j.punto_encuentro, lat: String(j.lat), lon: String(j.lon), cupos: String(j.cupos),
+    punto_encuentro: j.punto_encuentro, lat: String(j.lat), lon: String(j.lon),
     que_llevar: j.que_llevar.join(', '), descripcion: j.descripcion, imagen_url: j.imagen_url ?? '',
   };
   return {
     titulo: '', tipo: 'limpieza', fecha: diaBogota(Date.now() + 86_400_000), hora_inicio: '08:00', hora_fin: '11:00',
-    punto_encuentro: PUNTOS[0].nombre, lat: String(PUNTOS[0].lat), lon: String(PUNTOS[0].lon), cupos: '40',
+    punto_encuentro: PUNTOS[0].nombre, lat: String(PUNTOS[0].lat), lon: String(PUNTOS[0].lon),
     que_llevar: 'Agua potable, gorra, bloqueador solar, guantes', descripcion: '', imagen_url: '',
   };
 }
@@ -129,8 +130,6 @@ function FormularioJornada({ jornada, onGuardar, onCerrar }: { jornada?: Jornada
     if (d.punto_encuentro.trim().length < 5) er.punto_encuentro = 'Indica el punto de encuentro (al menos 5 letras).';
     const lat = Number(d.lat), lon = Number(d.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) er.lat = 'Latitud y longitud no válidas.';
-    const cupos = Number(d.cupos);
-    if (!Number.isInteger(cupos) || cupos < 1 || cupos > 1000) er.cupos = 'Los cupos van de 1 a 1000.';
     const imagen = d.imagen_url.trim();
     if (imagen && !/^https:\/\/\S+$/.test(imagen)) er.imagen_url = 'La imagen debe ser un enlace https (JPG o PNG) público.';
     setErrores(er);
@@ -138,7 +137,7 @@ function FormularioJornada({ jornada, onGuardar, onCerrar }: { jornada?: Jornada
     setOcupado(true); setFallo('');
     try {
       await onGuardar({
-        titulo, tipo: d.tipo, inicio, fin, punto_encuentro: d.punto_encuentro.trim(), lat, lon, cupos,
+        titulo, tipo: d.tipo, inicio, fin, punto_encuentro: d.punto_encuentro.trim(), lat, lon, cupos: CUPOS_SIN_LIMITE,
         que_llevar: d.que_llevar.split(/[,\n]/).map((x) => x.trim()).filter(Boolean).slice(0, 12),
         descripcion: d.descripcion.trim(), imagen_url: imagen || null,
       });
@@ -155,12 +154,9 @@ function FormularioJornada({ jornada, onGuardar, onCerrar }: { jornada?: Jornada
     </div>
     <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Nombre de la jornada</span>
       <input className={campo} value={d.titulo} onChange={(e) => cambiar('titulo', e.target.value)} maxLength={90} placeholder="Ej.: Recolección de basura en el manglar de Mallorquín" /><Falta k="titulo" /></label>
-    <div className="grid gap-5 sm:grid-cols-2">
-      <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Tipo</span>
-        <select className={campo} value={d.tipo} onChange={(e) => cambiar('tipo', e.target.value as TipoJornada)}>{TIPOS.map((t) => <option key={t} value={t}>{TIPOS_JORNADA[t].etiqueta}</option>)}</select></label>
-      <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Cupos</span>
-        <input type="number" inputMode="numeric" min={1} max={1000} className={campo} value={d.cupos} onChange={(e) => cambiar('cupos', e.target.value)} /><Falta k="cupos" /></label>
-    </div>
+    <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Tipo</span>
+      <select className={campo} value={d.tipo} onChange={(e) => cambiar('tipo', e.target.value as TipoJornada)}>{TIPOS.map((t) => <option key={t} value={t}>{TIPOS_JORNADA[t].etiqueta}</option>)}</select>
+      <span className="text-xs text-tenue">Las jornadas no tienen límite de cupos: se inscribe quien quiera ir.</span></label>
     <div className="grid gap-5 sm:grid-cols-3">
       <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Fecha</span><input type="date" className={campo} value={d.fecha} onChange={(e) => cambiar('fecha', e.target.value)} /><Falta k="fecha" /></label>
       <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Empieza</span><input type="time" className={campo} value={d.hora_inicio} onChange={(e) => cambiar('hora_inicio', e.target.value)} /></label>
@@ -418,7 +414,7 @@ export default function PanelAdmin() {
                 <h3 className="mt-2 text-lg font-bold leading-snug">{j.titulo}</h3>
                 <p className="mt-1 text-sm text-suave">{capital(fechaPlantilla(j.inicio))} – {hora(j.fin)}</p>
                 <p className="flex items-start gap-1 text-sm text-suave"><MapPin className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />{j.punto_encuentro}</p>
-                <p className="mt-1 text-sm text-suave"><Users className="mr-1 inline size-3.5" aria-hidden="true" />{j.inscritos} de {j.cupos} inscritos{typeof j.inscripciones_activas === 'number' ? ` · ${j.inscripciones_activas} en el servidor` : ''}</p>
+                <p className="mt-1 text-sm text-suave"><Users className="mr-1 inline size-3.5" aria-hidden="true" />{j.inscritos} {j.inscritos === 1 ? 'inscrito' : 'inscritos'}{typeof j.inscripciones_activas === 'number' ? ` · ${j.inscripciones_activas} en el servidor` : ''}</p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">

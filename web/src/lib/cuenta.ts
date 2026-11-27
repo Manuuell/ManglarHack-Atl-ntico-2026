@@ -14,7 +14,7 @@ export const cuentasActivas = Boolean(URL_BASE && CLAVE);
 const CLAVE_SESION = 'zanky-web:v1:sesion';
 const EVENTO = 'zanky-cuenta';
 
-export const SECTORES_CUENTA = ['Mallorquín', 'Balboa', 'Manatíes', 'Totumo'] as const;
+export const SECTORES_CUENTA = ['Mallorquín', 'Puerto Colombia', 'Tubará', 'Totumo'] as const;
 
 export interface Usuario {
   id: string;

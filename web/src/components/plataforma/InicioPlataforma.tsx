@@ -12,6 +12,7 @@ import { fechaCRA } from '../../lib/cra';
 import { cn } from '../../lib/utils';
 import MapaPlataforma from './MapaPlataforma';
 import { enAreaDeReporte } from '../../lib/areaReporte';
+import { textoInscritos } from '../jornadas/piezas';
 import AvisoZanky from '../marca/AvisoZanky';
 
 interface Props { zonas: ZonasManglar; acciones: Accion[]; reportes: ReportePublico[]; jornadas: Jornada[] }
@@ -122,7 +123,7 @@ export default function InicioPlataforma({ zonas, acciones: accionesIniciales, r
                       <strong className="block font-bold group-hover:text-dorado-300">{j.titulo}</strong>
                       <span className="flex items-center gap-1 text-suave"><CalendarDays className="size-3.5" aria-hidden="true" />{hora(j.inicio)} – {hora(j.fin)}</span>
                       <span className="flex items-center gap-1 text-suave"><MapPin className="size-3.5" aria-hidden="true" />{j.punto_encuentro}</span>
-                      <span className="text-tenue">{Math.max(0, j.cupos - j.inscritos)} cupos disponibles de {j.cupos}</span>
+                      <span className="text-tenue">{textoInscritos(j.inscritos)} · gratis, sin límite de cupos</span>
                     </span>
                   </a>
                 </li>

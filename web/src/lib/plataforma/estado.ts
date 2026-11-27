@@ -96,7 +96,6 @@ export function inscribirseEnJornada(jornada_id: string, nombre: string): Result
   if (!jornada) return fallar({ jornada_id: 'No se encontró la jornada.' });
   inscripciones.inicializar(SIN_INSCRIPCIONES);
   if (inscripciones.obtener().some((item) => item.jornada_id === jornada_id)) return fallar({ jornada_id: 'Ya estás inscrito en esta jornada desde este navegador. ¡Te esperamos!' });
-  if (jornada.inscritos >= jornada.cupos) return fallar({ cupos: 'Esta jornada ya no tiene cupos disponibles.' });
   const inscripcion: Inscripcion = { id: crypto.randomUUID(), jornada_id, nombre: nombre.trim(), fecha: new Date().toISOString() };
   jornadas.establecer((previo) => previo.map((item) => item.id === jornada_id ? { ...item, inscritos: item.inscritos + 1 } : item));
   inscripciones.establecer((previo) => [...previo, inscripcion]);
