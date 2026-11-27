@@ -263,7 +263,7 @@ class _FotoAdminState extends State<_FotoAdmin> {
             }
             if (s.hasError) {
               return _Hueco(
-                icono: Icons.broken_image_rounded,
+                icono: const Icon(Icons.broken_image_rounded, size: 40, color: Cra.hoja),
                 texto: 'No se pudo cargar la foto',
                 accion: 'Reintentar',
                 alTocar: () => setState(() => _futuro = _pedir()),
@@ -272,7 +272,7 @@ class _FotoAdminState extends State<_FotoAdmin> {
             final bytes = s.data;
             if (bytes == null) {
               return _Hueco(
-                icono: r.tipo.icono,
+                icono: IconoAmenaza(r.tipo, tamano: 44, color: Cra.hoja),
                 texto: !r.tieneFoto
                     ? 'Este reporte no trae foto'
                     : (demo ? 'La demostración no trae fotos' : 'Sin foto disponible'),
@@ -317,7 +317,9 @@ class _FotoAdminState extends State<_FotoAdmin> {
 
 class _Hueco extends StatelessWidget {
   const _Hueco({required this.icono, required this.texto, this.accion, this.alTocar});
-  final IconData icono;
+
+  /// El dibujo del hueco: el ícono propio de la amenaza (`IconoAmenaza`) o uno de Material.
+  final Widget icono;
   final String texto;
   final String? accion;
   final VoidCallback? alTocar;
@@ -333,7 +335,7 @@ class _Hueco extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icono, size: 40, color: Cra.hoja),
+            ExcludeSemantics(child: icono),
             const SizedBox(height: 8),
             Text(texto, textAlign: TextAlign.center, style: tt.bodyMedium?.copyWith(color: Cra.texto)),
             if (accion != null)
