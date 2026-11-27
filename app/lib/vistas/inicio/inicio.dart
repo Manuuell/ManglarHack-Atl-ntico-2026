@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
@@ -29,7 +31,6 @@ import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../admin/contenido/franja_portada.dart';
 import '../guardian/editar_perfil.dart';
-import '../configuracion/cuenta_entrar.dart';
 import '../comunidad/comunidad_inicio.dart';
 import '../comunidad/feed_y_eventos.dart' show recargaComunidadInicio;
 import '../sensores/sensores_compacto.dart';
@@ -54,6 +55,31 @@ class Inicio extends StatefulWidget {
 
 class _InicioState extends State<Inicio> {
   int _dato = -1;
+
+  /// Desplazamiento de Inicio y cuánto se ve la barra compacta (0 a 1).
+  final _scroll = ScrollController();
+  final _barra = ValueNotifier<double>(0);
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_alDesplazar);
+  }
+
+  /// La barra aparece entre los 48 y los 104 px, cuando el saludo grande ya pasó.
+  /// Con «reducir movimiento» aparece de golpe, sin fundido.
+  void _alDesplazar() {
+    var v = ((_scroll.offset - 48) / 56).clamp(0.0, 1.0);
+    if (MediaQuery.disableAnimationsOf(context)) v = v > 0.5 ? 1.0 : 0.0;
+    if (v != _barra.value) _barra.value = v;
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    _barra.dispose();
+    super.dispose();
+  }
 
   /// Secciones que la persona ocultó con el menú (mantener presionado). Duran la sesión
   /// y se devuelven con «Mostrar» al final de la lista.
@@ -280,12 +306,18 @@ class _InicioState extends State<Inicio> {
         .where((s) => !_ocultas.contains(s) && !_sobra(context, s, estado, progreso, resumen))
         .toList();
     var i = 0;
-    return TirarActualizar(
+    final h = DateTime.now().hour;
+    final iconoHora = h < 6 || h >= 19
+        ? Icons.nightlight_round
+        : (h < 12 ? Icons.wb_sunny_rounded : Icons.wb_twilight_rounded);
+    return Stack(children: [
+      TirarActualizar(
       alActualizar: () async {
         recargaComunidadInicio.value++;
         await Future.wait([estado.sincronizar(), estado.cargarClima()]);
       },
       child: ListView(
+        controller: _scroll,
         padding: EdgeInsets.fromLTRB(0, arriba + 10, 0, 120),
         children: [
           const FranjaMarcaCra(),
@@ -299,16 +331,17 @@ class _InicioState extends State<Inicio> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_saludo().toUpperCase(), style: tt.seccion.copyWith(color: Cra.azul)),
+                      Row(children: [
+                        Icon(iconoHora, size: 14, color: Cra.dorado),
+                        const SizedBox(width: 5),
+                        Flexible(child: Text(_saludo().toUpperCase(), style: tt.seccion.copyWith(color: Cra.azul))),
+                      ]),
                       const SizedBox(height: 2),
                       Text(nombre.isEmpty ? 'Guardián del manglar' : nombre, style: tt.headlineMedium),
                     ],
                   ),
                 ),
                 const CampanaAvisos(),
-                const SizedBox(width: 8),
-                // La cuenta a un toque (Configuración vive ahora en Guardián).
-                const AvatarCuenta(),
                 const SizedBox(width: 4),
                 ZankyMascota(
                   tamano: 74,
@@ -357,6 +390,57 @@ class _InicioState extends State<Inicio> {
               ),
             ),
         ],
+      ),
+      ),
+      Positioned(
+        top: 0,
+        left: 0,
+        right: 0,
+        child: _BarraCompacta(visible: _barra, titulo: nombre.isEmpty ? _saludo() : '${_saludo()}, $nombre'),
+      ),
+    ]);
+  }
+}
+
+/// Barra compacta estilo iOS: aparece con desenfoque cuando el saludo grande ya
+/// se fue hacia arriba. Solo cambia su opacidad, y solo en el tramo de 56 px en
+/// que aparece: el resto del desplazamiento no reconstruye nada.
+class _BarraCompacta extends StatelessWidget {
+  const _BarraCompacta({required this.visible, required this.titulo});
+  final ValueNotifier<double> visible;
+  final String titulo;
+
+  @override
+  Widget build(BuildContext context) {
+    final arriba = MediaQuery.paddingOf(context).top;
+    final tt = Theme.of(context).textTheme;
+    return ValueListenableBuilder<double>(
+      valueListenable: visible,
+      builder: (_, v, hijo) => v <= 0
+          ? const SizedBox.shrink()
+          // Solo rotula: no tiene acciones, así que no le roba toques ni el mantener a lo de debajo.
+          : IgnorePointer(child: Opacity(opacity: v, child: hijo)),
+      child: RepaintBoundary(
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              padding: EdgeInsets.fromLTRB(20, arriba + 8, 20, 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.78),
+                border: Border(bottom: BorderSide(color: Zc.linea.withValues(alpha: 0.6), width: 0.5)),
+              ),
+              child: Semantics(
+                header: true,
+                child: Text(titulo,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.titleMedium?.copyWith(color: Cra.azul)),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -726,7 +810,9 @@ class _CamaraVivaState extends State<_CamaraViva> with SingleTickerProviderState
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (context.animationsDisabled) {
-      _c.stop();
+      _c
+        ..stop()
+        ..value = 0; // quieto y en reposo (sin el latido a medias)
     } else if (!_c.isAnimating) {
       _c.repeat();
     }
@@ -745,7 +831,11 @@ class _CamaraVivaState extends State<_CamaraViva> with SingleTickerProviderState
           height: 84,
           child: AnimatedBuilder(
             animation: _c,
-            builder: (_, hijo) => CustomPaint(painter: _Anillos(_c.value), child: hijo),
+            // El botón late dos veces por vuelta, con los anillos: solo escala, no repinta el ícono.
+            builder: (_, hijo) => CustomPaint(
+              painter: _Anillos(_c.value),
+              child: Transform.scale(scale: 1 + 0.06 * math.pow(math.sin(math.pi * _c.value * 2), 4), child: hijo),
+            ),
             child: Center(
               child: Container(
                 width: 52,
