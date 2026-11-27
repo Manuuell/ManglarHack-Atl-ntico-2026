@@ -584,12 +584,14 @@ export async function atender(m: MensajeEntrante): Promise<void> {
 }
 
 /** Avisa a la persona cuando la CRA cambia el estado de su reporte (solo si reportó con su número). */
-export async function avisarCambio(contacto: string | undefined, codigo: string, estado: Parameters<typeof T.cambioDeEstado>[1]): Promise<void> {
-  if (!contacto) return;
+export async function avisarCambio(contacto: string | undefined, codigo: string, estado: Parameters<typeof T.cambioDeEstado>[1], nota?: string): Promise<boolean> {
+  if (!contacto) return false;
   try {
-    await whatsapp.texto(contacto, T.cambioDeEstado(codigo, estado));
+    await whatsapp.texto(contacto, T.cambioDeEstado(codigo, estado, nota));
+    return true;
   } catch (err) {
     // Fuera de la ventana de 24 horas WhatsApp exige una plantilla aprobada.
     console.warn(`[aviso] no se pudo avisar ${codigo}:`, (err as Error).message);
+    return false;
   }
 }

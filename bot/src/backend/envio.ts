@@ -59,6 +59,7 @@ export async function enviarReporte(r: Reporte): Promise<ResultadoEnvio> {
     }
     const creado = await crearReporte(aFila(r, fotoUrl));
     r.envio = { estado: 'enviado', intentos, enviadoEn: new Date().toISOString() };
+    if (creado.id_publico) r.idPublico = creado.id_publico;
     // La prioridad y la confianza que valen son las del servidor (zona y prioridad oficial de la C.R.A.,
     // corroboraciones): se leen apenas se crea. Si esa lectura falla, el reporte igual quedó guardado.
     try {

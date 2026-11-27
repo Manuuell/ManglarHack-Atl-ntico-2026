@@ -11,6 +11,7 @@ import { esEstado } from './reportes/modelo';
 import { atender, avisarCambio } from './flujos/zanky';
 import { enviarReporte } from './backend/envio';
 import { backendActivo } from './backend/supabase';
+import { sondearEstados } from './backend/avisos';
 import { enviadoTarde } from './flujos/textos';
 import { ErrorIA, iaActiva, responder, Turno } from './ia/zanky';
 
@@ -180,6 +181,13 @@ app.get('/api/reportes', exigirClave, (_req, res) => {
 });
 
 app.patch('/api/reportes/:codigo/estado', exigirClave, async (req, res) => {
+  // Con el backend común conectado, el estado vive en Supabase: la C.R.A. lo cambia en el panel web con la RPC
+  // cambiar_estado (rol y transiciones válidas, auditoría) y el bot se entera por el sondeo (backend/avisos.ts).
+  // Cambiarlo aquí dejaría la copia del bot distinta de lo que ven la web y la app.
+  if (backendActivo()) {
+    res.status(409).json({ error: 'estado_en_backend', mensaje: 'El estado se cambia en el panel con cambiar_estado (Supabase); el bot avisa al ciudadano solo.' });
+    return;
+  }
   const { estado, por, nota } = req.body ?? {};
   if (!esEstado(estado)) {
     res.status(400).json({ error: 'estado_invalido' });
@@ -195,7 +203,10 @@ app.patch('/api/reportes/:codigo/estado', exigirClave, async (req, res) => {
     res.status(404).json({ error: 'no_existe' });
     return;
   }
-  await avisarCambio(r.contacto, r.codigo, estado);
+  if (await avisarCambio(r.contacto, r.codigo, estado, typeof nota === 'string' ? nota.slice(0, 500) : undefined)) {
+    r.estadoAvisado = estado;
+    almacen.actualizar(r);
+  }
   res.json(r);
 });
 
@@ -231,6 +242,11 @@ export function iniciar(): void {
   for (const aviso of avisosDeConfiguracion()) console.warn(`[config] ${aviso}`);
   setInterval(() => void reintentarPendientes(), 60_000);
   void reintentarPendientes();
+  // Aviso al ciudadano cuando la C.R.A. cambia el estado en el panel (sondeo de estado_de_reportes).
+  if (backendActivo()) {
+    setInterval(() => void sondearEstados().catch(err => console.warn(`[avisos] ${(err as Error).message}`)), config.sondeoEstadosMs);
+    console.log(`[avisos] se pregunta por cambios de estado cada ${Math.round(config.sondeoEstadosMs / 1000)} s`);
+  }
   app.listen(config.port, () => {
     console.log(`Zanky BOT escuchando en el puerto ${config.port} · ${n} zonas de manglar · ${nArea} polígonos de la cobertura C.R.A. (área de reporte)`);
   });

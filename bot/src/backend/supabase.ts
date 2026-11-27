@@ -111,6 +111,8 @@ export interface EstadoServidor {
   confianza: number;
   nota_publica: string | null;
   actualizado_en: string;
+  /** Solo en el esquema de main (vista con id_publico). */
+  id_publico?: string;
 }
 
 /** Estado de varios reportes por su id (máximo 100), con la RPC pública estado_de_reportes. */

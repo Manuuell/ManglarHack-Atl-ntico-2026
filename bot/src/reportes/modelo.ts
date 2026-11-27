@@ -56,6 +56,17 @@ export const ESTADOS: Record<Estado, string> = {
   descartado: 'Descartado',
 };
 
+/** Qué significa cada estado para el ciudadano: las mismas descripciones de la web (web/src/lib/catalogos.ts). */
+export const DESCRIPCION_ESTADO: Record<Estado, string> = {
+  recibido: 'Recibido para revisión.',
+  en_verificacion: 'Una persona de la C.R.A. revisa la evidencia.',
+  verificado: 'Hallazgo confirmado por una persona.',
+  alerta_oficial: 'Alerta emitida con apertura de expediente.',
+  en_atencion: 'Caso en atención por el equipo.',
+  cerrado: 'Seguimiento finalizado.',
+  descartado: 'La evidencia no confirma el reporte.',
+};
+
 export function esEstado(v: unknown): v is Estado {
   return typeof v === 'string' && Object.prototype.hasOwnProperty.call(ESTADOS, v);
 }
@@ -126,7 +137,16 @@ export interface Reporte {
   avisarA?: string;
   envio: Envio;
   historial: CambioEstado[];
+  /** Id que publica la vista reportes_publicos (el del mapa de la web). Lo devuelve crear_reporte. */
+  idPublico?: string;
+  /** Último estado del que ya se avisó por WhatsApp (sin valor: «recibido», que se dice al enviar). */
+  estadoAvisado?: Estado;
+  /** Intentos fallidos de avisar el estado actual (fuera de la ventana de 24 h de WhatsApp, por ejemplo). */
+  avisoFallidos?: number;
 }
+
+/** Estados en los que el caso ya no cambia: tras avisarlos no se vuelve a preguntar por ese reporte. */
+export const ESTADOS_FINALES: ReadonlySet<Estado> = new Set(['cerrado', 'descartado']);
 
 export const ROLES = {
   pescador: { nombre: 'Pescador/a', emoji: '🎣', descripcion: 'Vivo de la ciénaga o del mar' },

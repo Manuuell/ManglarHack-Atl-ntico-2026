@@ -1,6 +1,6 @@
 import { Boton, Fila } from '../whatsapp/cloudApi';
 import { Jornada, TIPOS_JORNADA, enlaceComoLlegar, enlaceEventoZanky, enlaceInvitacion, fmt as fmtJornada } from '../jornadas/jornadas';
-import { ESTADOS, MAGNITUDES, MOMENTOS, MUNICIPIOS, MagnitudId, MomentoId, MunicipioId, ROLES, Reporte, RolId, TIPOS, TipoId } from '../reportes/modelo';
+import { DESCRIPCION_ESTADO, ESTADOS, MAGNITUDES, MOMENTOS, MUNICIPIOS, MagnitudId, MomentoId, MunicipioId, ROLES, Reporte, RolId, TIPOS, TipoId } from '../reportes/modelo';
 
 export const ENCABEZADO = 'Zanky BOT 🌿';
 
@@ -230,8 +230,14 @@ export function misReportes(reportes: Reporte[]): string {
   );
 }
 
-export function cambioDeEstado(codigo: string, estado: keyof typeof ESTADOS): string {
-  return `🌿 Novedad de tu reporte *${codigo}*: ahora está *${ESTADOS[estado]}*. ¡Gracias por cuidar el manglar!`;
+export function cambioDeEstado(codigo: string, estado: keyof typeof ESTADOS, notaPublica?: string | null, enlace?: string): string {
+  return (
+    `🌿 Novedad de tu reporte *${codigo}*: ahora está *${ESTADOS[estado]}*.\n` +
+    DESCRIPCION_ESTADO[estado] +
+    (notaPublica ? `\n\n📝 La C.R.A. dice: ${notaPublica.slice(0, 500)}` : '') +
+    (enlace ? `\n\n🔎 Sigue tu caso: ${enlace}` : '') +
+    '\n\n¡Gracias por cuidar el manglar!'
+  );
 }
 
 // --- Jornadas comunitarias ----------------------------------------------------

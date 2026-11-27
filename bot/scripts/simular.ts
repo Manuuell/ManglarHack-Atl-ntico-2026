@@ -83,7 +83,7 @@ const servidor = http.createServer((req, res) => {
     }
     if (req.method === 'POST' && req.url === '/rest/v1/rpc/estado_de_reportes') {
       const { ids } = JSON.parse(cuerpo);
-      const filasEstado = filas.filter(f => ids.includes(f.id)).map(f => ({ id: f.id, estado: 'verificado', prioridad: f.prioridad, confianza: 85, nota_publica: null, actualizado_en: new Date().toISOString() }));
+      const filasEstado = filas.filter(f => ids.includes(f.id)).map(f => ({ id: f.id, estado: f._estado ?? 'recibido', prioridad: f.prioridad, confianza: 85, nota_publica: f._nota ?? null, actualizado_en: new Date().toISOString(), id_publico: f._id_publico }));
       return res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(filasEstado));
     }
     res.writeHead(404).end();
@@ -192,6 +192,26 @@ async function main() {
   await correr([['escribe "menu"', { type: 'text', text: { body: 'menu' } }], ...reporte]);
   const pendiente = almacen.pendientesDeEnvio()[0];
   console.log(`\nPendientes: ${almacen.pendientesDeEnvio().length} · reintento → ${pendiente ? await enviarReporte(pendiente) : 'nada'}`);
+
+  // 3) La C.R.A. cambia el estado en el panel (cambiar_estado): el sondeo avisa una sola vez por cambio.
+  console.log('\n\n=== La C.R.A. pasa el primer reporte a «En verificación» ===');
+  const { sondearEstados } = await import('../src/backend/avisos');
+  const mostrarBandeja = () => {
+    for (const s of bandejaSimulada as any[]) console.log(`🌿 Zanky → ${String(s.to).slice(0, 5)}…: ${String(s.text?.body ?? '').replace(/\n/g, '\n           ')}`);
+    bandejaSimulada.length = 0;
+  };
+  bandejaSimulada.length = 0;
+  filas[0]._estado = 'en_verificacion';
+  filas[0]._nota = 'Un funcionario va a visitar el punto esta semana.';
+  console.log(`Sondeo 1 → ${await sondearEstados()} aviso(s)`);
+  mostrarBandeja();
+  console.log(`Sondeo 2, sin cambios → ${await sondearEstados()} aviso(s)`);
+  filas[0]._estado = 'verificado';
+  filas[0]._nota = null;
+  console.log(`Sondeo 3, pasa a «Verificado» → ${await sondearEstados()} aviso(s)`);
+  mostrarBandeja();
+  const avisado = almacen.todos().find(r => r.id === filas[0].id);
+  console.log(`Último estado avisado guardado: ${avisado?.estadoAvisado} · id público guardado: ${avisado?.idPublico === filas[0]._id_publico ? 'sí' : 'no'}`);
 
   console.log('\n--- Filas que recibió el backend de prueba (todas pasaron las reglas del esquema) ---');
   for (const f of filas) console.log(JSON.stringify({ ...f, reportante_id: String(f.reportante_id).slice(0, 12) + '…' }));
