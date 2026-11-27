@@ -35,7 +35,7 @@ Astro 7 (estático, varias páginas) · React 19 (`@astrojs/react`) para islas �
 
 | Ruta | Qué es |
 |---|---|
-| `/` | Portada (`src/styles/portada.css` + `src/scripts/portada.ts`): cabecera que pasa a cápsula al bajar, hero con el visor satelital del manglar y los reportes en vivo, el reto y sus 3 preguntas, y un visor por entregable: chat de Zanky (reportar), cola por prioridad (ubicar), boceto animado del panel de la C.R.A. (verificar), descargas de datos abiertos, jornadas; animaciones de entrada con `data-reveal` |
+| `/` | Portada comunitaria en vivo (`src/styles/portada.css` + `src/scripts/portada.ts` + `src/components/comunidad/`): cabecera que pasa a cápsula al bajar; hero con el mapa satelital y la lista «Ahora en el manglar» (reportes de la comunidad y jornadas); «Reportar un problema» (tipo, ubicación en el mapa con la regla del área de reporte, foto, detalles, consentimiento); próximas jornadas con inscritos; avisos en tiempo real (otras pestañas incluidas, vía `lib/comunidad/reportesLocales.ts`). Sin texto del reto: solo lo que hace la comunidad |
 | `/workflow` | Mapa 2D + panel derecho con pestañas Síntesis, Extensión, Cambios, Dosel 2026, Altura, Agua, Presión, Carbono, Método y Fuentes |
 | `/plataforma` | Inicio de la plataforma abierta (mapa del manglar y de las acciones, estado del manglar, acciones en curso) |
 | `/plataforma/registro` | Registro de actor |

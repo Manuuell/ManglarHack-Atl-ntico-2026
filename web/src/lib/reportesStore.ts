@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { CambioEstado, EstadoReporte, Reporte, ReportePublico } from '../types/manglar';
 import { TRANSICIONES } from './catalogos';
 import { aReportePublico } from './privacidad';
+import { leerLocales, suscribirLocales } from './comunidad/reportesLocales';
 let reportes: Reporte[] | null = null;
 let publicos: ReportePublico[] | null = null;
 let historial: CambioEstado[] | null = null;
@@ -12,7 +13,17 @@ const listeners = new Set<() => void>();
 export function suscribir(listener: () => void): () => void { listeners.add(listener); return () => { listeners.delete(listener); }; }
 function notificar(): void { listeners.forEach((listener) => listener()); }
 export function inicializarReportes(iniciales: Reporte[]): void {
- if (reportes === null) { reportes = iniciales; publicos = iniciales.map(aReportePublico); }
+ if (reportes !== null) return;
+ reportes = iniciales; publicos = iniciales.map(aReportePublico);
+ // Los reportes que la comunidad hace desde la portada (modo demostración) se suman en vivo.
+ if (typeof window === 'undefined') return;
+ const sumarLocales = (): boolean => {
+  const nuevos = leerLocales().filter((l) => !(reportes ?? []).some((r) => r.id === l.id));
+  if (!nuevos.length) return false;
+  reportes = [...(reportes ?? []), ...nuevos]; publicos = reportes.map(aReportePublico); return true;
+ };
+ sumarLocales();
+ suscribirLocales(() => { if (sumarLocales()) notificar(); });
 }
 export function obtenerReportesActuales(): Reporte[] { return reportes ?? vacios; }
 // En producción lo hace el servidor: permiso en un solo lugar y auditoría.
@@ -37,6 +48,6 @@ export function useHistorial(iniciales: CambioEstado[]): CambioEstado[] {
 }
 // El mapa se suscribe a una proyección pública estable, nunca al registro privado.
 export function useReportesPublicos(iniciales: ReportePublico[]): ReportePublico[] {
- if (typeof window !== 'undefined' && publicos === null) publicos = iniciales.map(aReportePublico);
+ if (typeof window !== 'undefined' && publicos === null) inicializarReportes(iniciales as unknown as Reporte[]);
  return useSyncExternalStore(suscribir, () => publicos ?? publicosVacios, () => iniciales);
 }
