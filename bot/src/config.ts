@@ -22,6 +22,8 @@ export const config = {
   /** Backend común (backend/supabase). Sin estos dos valores los reportes se quedan en la copia local. */
   supabaseUrl: (env.SUPABASE_URL ?? '').replace(/\/$/, ''),
   supabaseAnon: env.SUPABASE_ANON_KEY ?? '',
+  /** Jornadas comunitarias publicadas por la web (siembras, limpiezas, recorridos). */
+  jornadasUrl: env.JORNADAS_URL ?? 'https://mimanglar.sentralabs.co/datos/jornadas.json',
   radioInfluenciaM: Number(env.RADIO_INFLUENCIA_M ?? 500),
   /** Más allá de esta distancia se pregunta si la ubicación es correcta. */
   distanciaSospechosaM: 3000,

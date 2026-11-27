@@ -1,4 +1,5 @@
 import { Boton, Fila } from '../whatsapp/cloudApi';
+import { Jornada, TIPOS_JORNADA, enlaceComoLlegar, enlaceInvitacion, fmt as fmtJornada } from '../jornadas/jornadas';
 import { ESTADOS, MAGNITUDES, MOMENTOS, MUNICIPIOS, MagnitudId, MomentoId, MunicipioId, ROLES, Reporte, RolId, TIPOS, TipoId } from '../reportes/modelo';
 
 export const ENCABEZADO = 'Zanky BOT 🌿';
@@ -38,7 +39,7 @@ export function registrado(nombre: string | undefined, numero: number, rol: RolI
   return (
     `¡Listo${nombre ? `, *${nombre}*` : ''}! 🌿 Ya eres el *vigía #${numero}* del manglar del Atlántico.\n\n` +
     `${ROLES[rol].emoji} ${ROLES[rol].nombre} · 📍 ${MUNICIPIOS[municipio]}\n\n` +
-    'Cuando veas algo raro en el manglar, escríbeme y toca *🚨 Reportar*.'
+    'Cuando veas algo raro en el manglar, escríbeme y toca *🚨 Reportar*. Y si quieres ayudar en persona, toca *🌱 Jornadas*.'
   );
 }
 
@@ -50,11 +51,12 @@ export const MENU = {
   cuerpo:
     '¡Ajá! Soy *Zanky*, el vigía del manglar del Atlántico.\n\n' +
     'Si ves algo que le hace daño al manglar (tala, quemas, basura, vertimientos o un caño tapado), ' +
-    'cuéntamelo aquí: le llega a la CRA, que lo verifica y decide cómo actuar.',
+    'cuéntamelo aquí: le llega a la CRA, que lo verifica y decide cómo actuar.\n\n' +
+    'También puedes sumarte a una *jornada* de siembra o limpieza. Escribe *ayuda* para saber cómo funciona.',
   botones: [
     { id: 'reportar', titulo: '🚨 Reportar' },
+    { id: 'jornadas', titulo: '🌱 Jornadas' },
     { id: 'mis_reportes', titulo: '📋 Mis reportes' },
-    { id: 'como_funciona', titulo: 'ℹ️ Cómo funciona' },
   ] as Boton[],
 };
 
@@ -64,6 +66,7 @@ export const COMO_FUNCIONA =
   '2. Me mandas la ubicación (el botón de WhatsApp o un enlace de Google Maps).\n' +
   '3. Si puedes, una foto tomada en el momento.\n' +
   '4. La CRA recibe tu reporte en su panel, lo verifica y decide cómo actuar.\n\n' +
+  '🌱 *Jornadas:* toca *Jornadas* para ver las próximas siembras y limpiezas e inscribirte.\n\n' +
   '📶 *¿Sin señal?* Escríbeme igual: WhatsApp guarda tus mensajes y me llegan apenas vuelva la señal, con la hora en que los enviaste.\n\n' +
   '🔒 Nunca se publican tu nombre ni tu número. Los datos abiertos solo muestran el tipo, la zona aproximada y el estado.\n\n' +
   '⚠️ Si hay peligro para las personas, llama primero al *123*.';
@@ -226,5 +229,48 @@ export function misReportes(reportes: Reporte[]): string {
 export function cambioDeEstado(codigo: string, estado: keyof typeof ESTADOS): string {
   return `🌿 Novedad de tu reporte *${codigo}*: ahora está *${ESTADOS[estado]}*. ¡Gracias por cuidar el manglar!`;
 }
+
+// --- Jornadas comunitarias ----------------------------------------------------
+
+const TIPO_CORTO: Record<Jornada['tipo'], string> = { siembra: 'Siembra', limpieza: 'Limpieza', recorrido_vigias: 'Recorrido', monitoreo: 'Monitoreo' };
+
+export const JORNADAS = {
+  cuerpo: '🌱 *Jornadas comunitarias*\n\nEstas son las próximas siembras, limpiezas y recorridos para cuidar el manglar. Elige una para ver la invitación.',
+  boton: 'Ver jornadas',
+  filas: (js: Jornada[]): Fila[] =>
+    js.slice(0, 10).map(j => ({
+      id: `jor:${j.id}`,
+      titulo: `${TIPOS_JORNADA[j.tipo].emoji} ${fmtJornada.corta(j.inicio)} · ${TIPO_CORTO[j.tipo]}`,
+      descripcion: j.titulo,
+    })),
+};
+
+export function sinJornadas(web: string): string {
+  return `Por ahora no hay jornadas próximas publicadas 🌿.\n\nMira la cartelera aquí: ${web}`;
+}
+
+export function jornadasNoDisponibles(web: string): string {
+  return `No pude consultar las jornadas en este momento 🙏. Puedes verlas en ${web}`;
+}
+
+export function invitacionJornada(j: Jornada, aviso: string): string {
+  const libres = Math.max(0, j.cupos - j.inscritos);
+  return (
+    `${TIPOS_JORNADA[j.tipo].emoji} *${j.titulo}*\n\n` +
+    `📅 ${fmtJornada.larga(j.inicio)}, de ${fmtJornada.hora(j.inicio)} a ${fmtJornada.hora(j.fin)}\n` +
+    `📍 ${j.punto_encuentro}\n` +
+    `🧭 Cómo llegar: ${enlaceComoLlegar(j)}\n` +
+    `👥 ${libres > 0 ? `${libres} cupos libres de ${j.cupos}` : 'Sin cupos por ahora'}\n` +
+    (j.que_llevar.length ? `🎒 Qué llevar: ${j.que_llevar.join(', ')}\n` : '') +
+    `\n✅ Inscríbete aquí: ${enlaceInvitacion(j)}\n` +
+    'Desde ese enlace también la agregas a tu calendario y la compartes.' +
+    (aviso ? `\n\nℹ️ _${aviso}_` : '')
+  );
+}
+
+export const BOTONES_DESPUES_DE_JORNADA: Boton[] = [
+  { id: 'jornadas', titulo: '🌱 Otra jornada' },
+  { id: 'menu', titulo: '🏠 Menú' },
+];
 
 export const NO_ENTENDI = 'No te entendí 🤔. Toca una de las opciones o escribe *menu* para empezar de nuevo.';

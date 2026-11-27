@@ -9,6 +9,8 @@ import { confianza, corroboraciones, prioridad } from '../reportes/evaluacion';
 import { FuenteUbicacion, MagnitudId, MomentoId, RolId, TipoId, enAtlantico, esMagnitud, esMomento, esMunicipio, esRol, esTipo, numeroDeCaso } from '../reportes/modelo';
 import { enviarReporte } from '../backend/envio';
 import { backendActivo, estadoDeReportes } from '../backend/supabase';
+import { buscarJornada, proximasJornadas } from '../jornadas/jornadas';
+import { config as configBot } from '../config';
 import * as T from './textos';
 
 type Paso =
@@ -25,6 +27,7 @@ type Paso =
   | 'descripcion'
   | 'cuando'
   | 'magnitud'
+  | 'jornadas'
   | 'confirmar';
 
 interface Registro {
@@ -306,6 +309,34 @@ async function recibirFoto(de: string, s: Sesion, mediaId: string, sha256Meta?: 
   await whatsapp.botones(de, `${s.borrador.conFoto ? '📸 ¡Foto recibida!' : 'No pude guardar la foto, sigamos sin ella.'}\n\n${T.PEDIR_DESCRIPCION}`, T.BOTON_OMITIR);
 }
 
+const webJornadas = () => `${new URL(configBot.jornadasUrl).origin}/plataforma/jornadas`;
+
+/** Lista las próximas jornadas comunitarias que publica la web. */
+async function mostrarJornadas(de: string, s: Sesion): Promise<void> {
+  ir(s, 'jornadas');
+  try {
+    const { jornadas } = await proximasJornadas();
+    if (!jornadas.length) {
+      await whatsapp.texto(de, T.sinJornadas(webJornadas()));
+      return enviarMenu(de, s);
+    }
+    await whatsapp.lista(de, T.JORNADAS.cuerpo, T.JORNADAS.boton, T.JORNADAS.filas(jornadas));
+  } catch (err) {
+    console.warn('[jornadas] no se pudieron leer:', (err as Error).message);
+    await whatsapp.texto(de, T.jornadasNoDisponibles(webJornadas()));
+    await enviarMenu(de, s);
+  }
+}
+
+/** Manda la invitación de una jornada con el enlace de inscripción de la web. */
+async function enviarInvitacion(de: string, s: Sesion, id: string): Promise<void> {
+  const { aviso } = await proximasJornadas().catch(() => ({ aviso: '' }));
+  const j = buscarJornada(id);
+  if (!j) return mostrarJornadas(de, s);
+  await whatsapp.texto(de, T.invitacionJornada(j, aviso));
+  await whatsapp.botones(de, '¿Qué más quieres hacer?', T.BOTONES_DESPUES_DE_JORNADA);
+}
+
 /** Los reportes de la persona con el estado que tiene hoy en el backend común (lo cambia la CRA en el panel). */
 async function misReportesConEstado(de: string) {
   const propios = almacen.delReportante(almacen.hashDe(de));
@@ -342,6 +373,11 @@ export async function atender(m: MensajeEntrante): Promise<void> {
     return;
   }
   if (texto === 'registro' || texto === 'registrarme') return empezarRegistro(de, s);
+  if (texto === 'jornadas' || texto === 'jornada' || texto === 'eventos') return mostrarJornadas(de, s);
+  if (texto === 'ayuda' || texto === 'como funciona') {
+    await whatsapp.texto(de, T.COMO_FUNCIONA);
+    return enviarMenu(de, s);
+  }
   if (COMANDOS_MENU.has(texto)) return inicio(de, s);
 
   switch (s.paso) {
@@ -405,6 +441,7 @@ export async function atender(m: MensajeEntrante): Promise<void> {
         await whatsapp.texto(de, T.misReportes(await misReportesConEstado(de)));
         return;
       }
+      if (opcion === 'jornadas' || /jornad|siembra|voluntari|limpieza de/.test(texto)) return mostrarJornadas(de, s);
       if (opcion === 'como_funciona') {
         await whatsapp.texto(de, T.COMO_FUNCIONA);
         await whatsapp.botones(de, '¿Qué quieres hacer?', T.MENU.botones);
@@ -499,6 +536,14 @@ export async function atender(m: MensajeEntrante): Promise<void> {
       }
       await whatsapp.botones(de, T.PEDIR_MAGNITUD, T.BOTONES_MAGNITUD);
       return;
+    }
+
+    case 'jornadas': {
+      if (opcion.startsWith('jor:')) return enviarInvitacion(de, s, opcion.slice(4));
+      if (opcion === 'jornadas') return mostrarJornadas(de, s);
+      if (opcion === 'menu') return enviarMenu(de, s);
+      if (opcion === 'reportar' || texto.includes('report')) return empezarReporte(de, s);
+      return mostrarJornadas(de, s);
     }
 
     case 'confirmar': {

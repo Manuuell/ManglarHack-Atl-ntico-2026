@@ -42,6 +42,17 @@ const servidor = http.createServer((req, res) => {
   let cuerpo = '';
   req.on('data', c => (cuerpo += c));
   req.on('end', () => {
+    if (req.method === 'GET' && req.url === '/datos/jornadas.json') {
+      const en = (dias: number, h: number) => new Date(Date.now() + dias * 86_400_000 + h * 3_600_000).toISOString();
+      return res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({
+        aviso: 'Datos de ejemplo · Modo demostración',
+        jornadas: [
+          { id: 'jornada-1', titulo: 'Jornada de siembra en el caño', tipo: 'siembra', inicio: en(2, 0), fin: en(2, 4), punto_encuentro: 'Ecoparque Ciénaga de Mallorquín, entrada principal', lat: 11.03217, lon: -74.85755, cupos: 40, inscritos: 23, que_llevar: ['Agua', 'Gorra'], descripcion: 'Datos de ejemplo.' },
+          { id: 'jornada-2', titulo: 'Recorrido de vigías del Totumo', tipo: 'recorrido_vigias', inicio: en(9, 0), fin: en(9, 3), punto_encuentro: 'Muelle de pescadores del Totumo', lat: 10.74, lon: -75.24, cupos: 15, inscritos: 9, que_llevar: [], descripcion: 'Datos de ejemplo.' },
+          { id: 'jornada-vieja', titulo: 'Jornada que ya pasó', tipo: 'limpieza', inicio: en(-3, 0), fin: en(-3, 2), punto_encuentro: 'Playa', lat: 11, lon: -74.9, cupos: 10, inscritos: 10, que_llevar: [], descripcion: '' },
+        ],
+      }));
+    }
     if (req.headers.apikey !== 'anon-de-prueba') return res.writeHead(401).end();
     if (fallarProximos > 0) {
       fallarProximos--;
@@ -75,6 +86,7 @@ async function main() {
   process.env.HASH_SALT = 'simulacion';
   process.env.SUPABASE_URL = `http://127.0.0.1:${puerto}`;
   process.env.SUPABASE_ANON_KEY = 'anon-de-prueba';
+  process.env.JORNADAS_URL = `http://127.0.0.1:${puerto}/datos/jornadas.json`;
   process.env.ZONAS_GEOJSON = path.resolve(__dirname, '../../app/assets/datos/manglar_zonas.json');
 
   const { bandejaSimulada } = await import('../src/whatsapp/cloudApi');
@@ -118,6 +130,9 @@ async function main() {
     ['elige Puerto Colombia', lista('puerto_colombia')],
     ...reporte,
     ['toca Mis reportes', boton('mis_reportes')],
+    ['toca Jornadas', boton('jornadas')],
+    ['elige la siembra', lista('jor:jornada-1')],
+    ['toca Menú', boton('menu')],
     ['manda una ubicación fuera del Atlántico', { type: 'location', location: { latitude: 6.2442, longitude: -75.5812 } }],
   ];
 
