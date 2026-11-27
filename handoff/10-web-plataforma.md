@@ -34,7 +34,7 @@ fondo azul institucional, tarjetas azul intermedio, acentos dorados, Lato, titul
 | `/plataforma/registro` | Registro de actor (Ley 1581; el correo nunca se publica). |
 | `/plataforma/proponer` | Proponer una acción marcando el sitio: hereda acción, prioridad, unidad hidrográfica y escenario **de la capa de prioridades de la CRA en ese punto**. |
 | `/plataforma/seguimiento` | Seguimiento con detalle, requerimientos, observaciones y línea de tiempo; **jornadas** (base Innvita): inscripción, invitación por WhatsApp, enlace, `.ics`; enlaces `?accion=` y `?jornada=`. |
-| `/plataforma/monitoreo` | Reportes ciudadanos de Zanky (app, bot, web) en mapa público anonimizado + exportación CSV/GeoJSON/KML; reporte de monitoreo con **fotos georreferenciadas** (EXIF, GPS del teléfono o mapa; miniaturas sin metadatos); ranking de colegios. |
+| `/plataforma/monitoreo` | Redirige a la portada (`/#monitoreo`): allí están el mapa público de reportes de Zanky con filtros y exportación CSV/GeoJSON/KML, el seguimiento de siembras con fotos georreferenciadas y el ranking de colegios. |
 | `/plataforma/proyectos` | Plantillas prellenadas (Metodología General Ajustada y nota conceptual) con los datos del sitio y del workflow; lo desconocido queda [entre corchetes]; descargar, copiar e imprimir. |
 | `/plataforma/panel` | Panel de la Corporación con **roles de demostración**: decisiones sobre acciones (observaciones obligatorias), alertas calculadas de los datos, cola de reportes ciudadanos por rol, auditoría unificada, carga de KMZ/KML → GeoJSON. |
 

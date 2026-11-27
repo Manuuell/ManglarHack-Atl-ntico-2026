@@ -1,101 +1,153 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
-import Zanky from '../components/marca/Zanky.astro';
+import '../styles/portada.css';
+import { obtenerPoligonos, obtenerReportes } from '../lib/datos';
+import { aReportePublico } from '../lib/privacidad';
+import { obtenerAcciones, obtenerJornadas, obtenerMonitoreos } from '../lib/plataforma/datos';
+import { obtenerColegios } from '../lib/datos';
+import MapaEnVivo from '../components/comunidad/MapaEnVivo';
+import ReportarProblema from '../components/comunidad/ReportarProblema';
+import JornadasEnVivo from '../components/comunidad/JornadasEnVivo';
+import AvisosEnVivo from '../components/comunidad/AvisosEnVivo';
+import PanelCuenta from '../components/cuenta/PanelCuenta';
+import MonitoreoComunitario from '../components/comunidad/MonitoreoComunitario.astro';
+import GuardianesManglar from '../components/comunidad/GuardianesManglar.astro';
 
-const entradas = [
- { numero: '01', rotulo: 'Workflow', titulo: 'El manglar visto desde el satélite', href: '/workflow', texto: 'La metodología paso a paso y el visor de datos: extensión, cambios, dosel, altura, agua, presión y riesgo, carbono.' },
- { numero: '02', rotulo: 'Plataforma abierta', titulo: 'Restaurar y conservar entre todos', href: '/plataforma', texto: 'Comunidades, entidades y ciudadanos proponen siembras, restauración y acciones de conservación, las siguen con la autoridad ambiental y formulan proyectos. Integra los reportes de la app y del bot de Zanky.' },
-];
-
-// Cifras del workflow de monitoreo de la C.R.A. (ver src/lib/workflow.ts y web/CLAUDE.md).
-const cifras = [
- { valor: '775 ha', texto: 'de manglar probable en 2025: 465 con probabilidad alta y 310 media.' },
- { valor: '−34,7 ha', texto: 'de pérdida entre 2016 y 2025.' },
- { valor: '194 ha', texto: 'en riesgo muy alto.' },
- { valor: '270 t C/ha', texto: 'de carbono, el 92 % guardado en el suelo (125 mil t en total).' },
-];
+// Lo público pasa por aReportePublico: sin foto, sin quién reporta y con la ubicación difuminada.
+const [reportes, sectores, jornadas, acciones, monitoreos, colegios] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerJornadas(), obtenerAcciones(), obtenerMonitoreos(), obtenerColegios()]);
+const publicos = reportes.map(aReportePublico);
 ---
-<BaseLayout>
- <a href="#contenido" class="sr-only fixed left-4 top-4 z-50 rounded-full bg-superficie p-3 focus:not-sr-only">Saltar al contenido</a>
- <CabeceraCRA activo="portada" />
- <main id="contenido">
-  <!-- Portada -->
-  <section aria-labelledby="titulo-portada" class="relative isolate -mt-[4.75rem] overflow-hidden bg-linear-to-b from-cra-700 via-cra-900 to-fondo pt-[4.75rem]">
-   <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
-    <div class="absolute -right-24 top-24 h-[34rem] w-[34rem] rounded-full bg-cra-500/30 blur-[110px]"></div>
-    <div class="absolute -left-32 top-1/2 h-[26rem] w-[26rem] rounded-full bg-dorado-500/10 blur-[110px]"></div>
-    <svg aria-hidden="true" focusable="false" viewBox="0 0 1440 1000" preserveAspectRatio="xMidYMid slice" class="absolute inset-0 h-full w-full fill-none stroke-white/[0.07]">
-     {Array.from({ length: 12 }, (_, i) => <path d="M800 -160C450 20 1210 130 900 360S380 440 720 690s800 160 640 500" transform={`translate(${i * 31} ${i * -14})`} stroke-width="1" />)}
-    </svg>
-   </div>
-   <div class="mx-auto max-w-5xl px-4 pt-20 pb-14 text-center sm:px-6 lg:pt-28">
-    <p class="revelar mx-auto inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-semibold text-suave">
-     <span class="h-2 w-2 rounded-full bg-dorado-500"></span>Departamento del Atlántico · Monitoreo satelital 2015–2026
-    </p>
-    <h1 id="titulo-portada" class="revelar titular mt-7 text-5xl sm:text-6xl lg:text-7xl">El manglar del Atlántico, <span class="resalte">cuidado</span> entre todos.</h1>
-    <p class="revelar mx-auto mt-6 max-w-2xl text-base leading-relaxed text-suave sm:text-lg">Implementación de herramientas tecnológicas y de inteligencia artificial para la gestión integral del ecosistema de manglar.</p>
-    <div class="revelar mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-     <a href="/plataforma" class="inline-flex min-h-12 items-center gap-2 rounded-full bg-dorado-500 px-7 text-base font-bold text-cra-950 shadow-[0_12px_34px_-14px_rgb(237_181_18/0.8)] transition-colors hover:bg-dorado-300">Entrar a la plataforma <span aria-hidden="true">→</span></a>
-     <a href="/workflow" class="inline-flex min-h-12 items-center rounded-full border border-white/25 bg-white/5 px-7 text-base font-semibold text-texto transition-colors hover:border-dorado-300 hover:text-dorado-300">Ver el workflow</a>
-    </div>
-   </div>
-   <!-- Tarjetas flotantes con cifras -->
-   <div class="mx-auto grid max-w-5xl gap-3 px-4 pb-20 sm:grid-cols-3 sm:px-6">
-    {cifras.slice(0, 3).map(({ valor, texto }, i) => (
-     <div class:list={['revelar rounded-3xl bg-white px-5 py-4 text-left text-cra-950 shadow-[var(--c-sombra-alta)]', i === 1 && 'sm:translate-y-6']}>
-      <p class="font-[family-name:var(--font-titulo)] text-3xl font-extrabold tracking-tight">{valor}</p>
-      <p class="mt-1 text-sm leading-snug text-cra-900/80">{texto}</p>
-     </div>
-    ))}
-   </div>
-  </section>
+<BaseLayout title="Zanky · Lo que pasa en el manglar del Atlántico, ahora" class="portada" sinPie>
+  <header class="cab" id="cab">
+    <a class="cab-marca" href="#inicio" aria-label="Corporación Autónoma Regional del Atlántico, inicio">
+      <img class="logo-cra" src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" />
+    </a>
+    <nav class="cab-nav" aria-label="Secciones">
+      <a href="#mapa">Mapa en vivo</a>
+      <a href="#reportar">Reportar</a>
+      <a href="#jornadas">Jornadas</a>
+      <a href="#monitoreo">Monitoreo</a>
+    </nav>
+    <a class="boton boton-tinta cab-entrar" href="#reportar" data-cuenta-reportar>Reportar</a>
+    <PanelCuenta client:load contexto="portada" />
+  </header>
 
-  <!-- Las dos entradas -->
-  <section aria-label="Entradas" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-   <div class="grid gap-5 md:grid-cols-2">
-    {entradas.map(({ numero, rotulo, titulo, href, texto }) => (
-     <a href={href} class="revelar group relative flex min-h-11 flex-col rounded-[2rem] border border-linea-suave bg-superficie p-8 shadow-[var(--c-sombra)] transition-[transform,background-color] duration-300 hover:-translate-y-1 hover:bg-superficie-alta sm:p-10">
-      <p class="rotulo text-dorado-300">{numero} · {rotulo}</p>
-      <h2 class="titular mt-4 pr-10 text-3xl sm:text-4xl">{titulo}</h2>
-      <p class="mt-4 max-w-xl leading-relaxed text-suave">{texto}</p>
-      <span aria-hidden="true" class="absolute top-8 right-8 grid h-11 w-11 place-items-center rounded-full bg-white/10 text-xl transition-colors group-hover:bg-dorado-500 group-hover:text-cra-950 sm:top-10 sm:right-10">→</span>
-     </a>
-    ))}
-   </div>
-  </section>
-
-  <!-- Cifras con fuente -->
-  <section aria-labelledby="titulo-cifras" class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-   <div class="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-    <div class="revelar">
-     <p class="rotulo text-dorado-300">El ecosistema</p>
-     <h2 id="titulo-cifras" class="titular mt-4 text-4xl sm:text-5xl">El manglar en cifras, <span class="text-dorado-300">con su fuente.</span></h2>
-     <p class="mt-5 max-w-md leading-relaxed text-suave">Cada número sale del workflow de monitoreo de la C.R.A. con imágenes Sentinel-2. El manglar se reporta como <strong class="text-texto">probable</strong>: lo confirma el trabajo en campo.</p>
-    </div>
-    <dl class="revelar border-t border-linea">
-     {cifras.map(({ valor, texto }) => (
-      <div class="grid gap-2 border-b border-linea py-5 sm:grid-cols-[11rem_1fr] sm:items-baseline">
-       <dt class="font-[family-name:var(--font-titulo)] text-3xl font-extrabold tracking-tight text-texto">{valor}</dt>
-       <dd class="text-suave">{texto}</dd>
+  <main>
+    <section class="hero" id="inicio">
+      <div class="hero-texto">
+        <h1>Lo que pasa en el manglar, <span class="resalte">ahora</span>.</h1>
+        <p class="hero-sub">Reportes de la comunidad y jornadas del Atlántico en un solo mapa, en tiempo real.</p>
+        <div class="hero-acciones">
+          <a class="boton boton-tinta" href="#reportar" data-cuenta-reportar>Reportar un problema <span aria-hidden="true">→</span></a>
+          <a class="boton boton-claro" href="#jornadas">Ver jornadas</a>
+        </div>
       </div>
-     ))}
-     <p class="pt-4 text-xs text-tenue">Fuente: workflow de monitoreo de la C.R.A. (Sentinel-2, programa Copernicus).</p>
-    </dl>
-   </div>
-  </section>
+      <div class="hero-envivo" id="mapa">
+        <MapaEnVivo client:only="react" reportes={publicos} sectores={sectores} jornadas={jornadas}>
+          <div slot="fallback" class="envivo envivo-cargando"><p>Cargando el mapa del manglar…</p></div>
+        </MapaEnVivo>
+      </div>
+    </section>
 
-  <!-- Zanky -->
-  <section aria-label="Reporta con Zanky" class="px-3 py-12 sm:px-5">
-   <div class="revelar mx-auto flex max-w-7xl flex-col items-start gap-6 rounded-[2.25rem] bg-dorado-500 px-6 py-10 text-cra-950 sm:flex-row sm:items-center sm:px-12">
-    <Zanky animo="feliz" class="h-32 w-32 shrink-0 sm:h-36 sm:w-36" />
-    <div class="max-w-2xl">
-     <p class="rotulo text-cra-900">Monitoreo comunitario</p>
-     <h2 class="titular mt-2 text-3xl sm:text-4xl">¿Viste algo raro en el manglar?</h2>
-     <p class="mt-3 text-base font-medium leading-relaxed text-cra-900">Repórtalo con Zanky por WhatsApp o desde la app: llega a la Corporación con su ubicación, la verifica y decide cómo actuar.</p>
+    <section class="panel" data-tono="abismo" id="reportar">
+      <div class="panel-dentro dividido reportar-dentro">
+        <div class="panel-texto" data-reveal="left">
+          <p class="kicker">Reportar</p>
+          <h2>¿Viste algo raro en el manglar? <span class="tono">Cuéntalo aquí.</span></h2>
+          <p>Tala, quemas, basura, vertimientos o un caño tapado: llega con su ubicación y aparece en el mapa.</p>
+          <p>También por WhatsApp con Zanky BOT o desde la app, aun sin señal.</p>
+          <img class="reportar-zanky" src="/marca/zanky/zanky-preocupado-256.webp" alt="" width="160" height="160" loading="lazy" />
+        </div>
+        <div data-reveal="card" data-reveal-delay="100">
+          <ReportarProblema client:only="react" sectores={sectores}>
+            <div slot="fallback" class="reportar-card reportar-cargando"><p>Cargando el formulario…</p></div>
+          </ReportarProblema>
+        </div>
+      </div>
+    </section>
+
+    <MonitoreoComunitario reportes={publicos} sectores={sectores} acciones={acciones} monitoreos={monitoreos} />
+
+    <section class="panel" data-tono="hondo" id="jornadas">
+      <div class="panel-dentro">
+        <div class="jornadas-cab" data-reveal>
+          <div>
+            <p class="kicker">Comunidad</p>
+            <h2>Súmate a la <span class="tono">próxima jornada</span>.</h2>
+          </div>
+          <div class="acciones">
+            <a class="boton boton-dorado" href="/plataforma/jornadas">Ver todas <span aria-hidden="true">→</span></a>
+            <a class="boton boton-claro" href="/plataforma/jornadas">Crear una jornada</a>
+          </div>
+        </div>
+        <JornadasEnVivo client:load jornadas={jornadas} />
+      </div>
+    </section>
+
+    <GuardianesManglar colegios={colegios} />
+
+    <section class="cierre">
+      <div class="cierre-dentro" data-reveal="scale">
+        <h2>El manglar se cuida entre todos.</h2>
+        <p>Reporta lo que ves y súmate a las jornadas de tu comunidad.</p>
+        <div class="acciones">
+          <a class="boton boton-tinta boton-grande" href="#reportar" data-cuenta-reportar>Reportar un problema <span aria-hidden="true">→</span></a>
+          <a class="boton boton-claro boton-grande" href="/plataforma">Entrar a la plataforma</a>
+        </div>
+        <img class="cierre-zanky" src="/marca/zanky/zanky-celebrando-512.webp" alt="" loading="lazy" />
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="pie-dentro">
+      <div class="pie-alto">
+        <p class="pie-lema"><span class="blanco">El manglar del Atlántico,</span> <span class="pie-agua">vigilado por su gente</span></p>
+        <a class="pie-cta" href="/plataforma/panel">¿Eres de la C.R.A.? <b>Entrar al panel</b> <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="pie-columnas">
+        <nav aria-label="La portada">
+          <h3>Aquí</h3>
+          <a href="#mapa">Mapa en vivo</a>
+          <a href="#reportar">Reportar un problema</a>
+          <a href="#jornadas">Jornadas</a>
+          <a href="#monitoreo">Monitoreo y datos abiertos</a>
+        </nav>
+        <nav aria-label="Plataforma">
+          <h3>Plataforma</h3>
+          <a href="/plataforma/jornadas">Todas las jornadas</a>
+          <a href="/workflow">Workflow satelital</a>
+          <a href="/plataforma/panel">Panel de la Corporación</a>
+        </nav>
+        <div class="pie-sobre">
+          <h3>Zanky</h3>
+          <p>La comunidad del manglar del Atlántico reporta lo que ve y se organiza en jornadas. Cobertura de manglar de la C.R.A. (1:5.000); imágenes satelitales © Esri y Maxar. Los reportes salen del servidor común de la app, la web y WhatsApp, sin datos de quien reporta y con la ubicación aproximada.</p>
+        </div>
+      </div>
+      <div class="pie-aliados">
+        <span class="pie-etiqueta">Con</span>
+        <div class="pie-logos">
+          <span class="pie-logo"><img src="/marca/logo-cra-blanco.png" alt="Corporación Autónoma Regional del Atlántico" /></span>
+          <span class="pie-logo"><b class="pie-logo-texto">Universidad Simón Bolívar</b></span>
+        </div>
+      </div>
+      <div class="pie-bajo">
+        <span>© 2026 Zanky · Equipo SENTRALABS · UTB</span>
+        <span class="pie-hecho">Hecho con
+          <svg class="corazon" viewBox="0 0 24 24" role="img" aria-label="corazón">
+            <path fill="#da121a" d="M12 21.5s-7.6-4.7-10.1-9.4C.2 8.8 1.9 4.6 5.8 4.2 8.1 4 10 5.3 12 7.4c2-2.1 3.9-3.4 6.2-3.2 3.9.4 5.6 4.6 3.9 7.9C19.6 16.8 12 21.5 12 21.5z"/>
+            <path fill="#fcd116" transform="translate(12 12.6) scale(.68) translate(-12 -12.6)" d="M12 21.5s-7.6-4.7-10.1-9.4C.2 8.8 1.9 4.6 5.8 4.2 8.1 4 10 5.3 12 7.4c2-2.1 3.9-3.4 6.2-3.2 3.9.4 5.6 4.6 3.9 7.9C19.6 16.8 12 21.5 12 21.5z"/>
+            <path fill="#078930" transform="translate(12 12.6) scale(.38) translate(-12 -12.6)" d="M12 21.5s-7.6-4.7-10.1-9.4C.2 8.8 1.9 4.6 5.8 4.2 8.1 4 10 5.3 12 7.4c2-2.1 3.9-3.4 6.2-3.2 3.9.4 5.6 4.6 3.9 7.9C19.6 16.8 12 21.5 12 21.5z"/>
+          </svg>
+          en el Caribe colombiano</span>
+      </div>
     </div>
-    <a href="/plataforma/monitoreo" class="inline-flex min-h-12 shrink-0 items-center rounded-full bg-cra-950 px-6 font-bold text-white transition-colors hover:bg-cra-800 sm:ml-auto">Ver el monitoreo</a>
-   </div>
-  </section>
- </main>
+  </footer>
+
+  <AvisosEnVivo client:load jornadas={jornadas} />
 </BaseLayout>
+
+<script>
+  import { montarPortada } from '../scripts/portada';
+  montarPortada();
+</script>

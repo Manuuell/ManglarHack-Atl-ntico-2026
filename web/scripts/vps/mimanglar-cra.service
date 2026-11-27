@@ -1,0 +1,18 @@
+# Copia los datos del workflow de la C.R.A. a /var/www/mimanglar/cra.
+# Lo dispara mimanglar-cra.timer. Instalación: ver la sección «Datos de la C.R.A.» de web/CLAUDE.md.
+[Unit]
+Description=Copia los datos del workflow de la C.R.A. para mimanglar.sentralabs.co
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/usr/bin/node /home/ubuntu/mimanglar-cra/copiar-cra.mjs /var/www/mimanglar/cra
+Nice=10
+TimeoutStartSec=10min
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/www/mimanglar

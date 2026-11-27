@@ -19,6 +19,15 @@ export function urlInvitacion(id: string): string {
   return `${base}/plataforma/jornadas?jornada=${encodeURIComponent(id)}`;
 }
 
+// La experiencia «Interactúa con Zanky» es la versión web de la app (en /app/ del mismo sitio): en la
+// jornada la gente registra su asistencia, habla con Zanky, hace el reto del manglar y reporta.
+const URL_APP: string = import.meta.env.PUBLIC_URL_APP ?? 'https://mimanglar.sentralabs.co/app/';
+
+/** Enlace del evento en la app: /app/?evento=<id>. Un código desconocido abre un evento genérico. */
+export function urlEventoZanky(id: string): string {
+  return `${URL_APP}?evento=${encodeURIComponent(id)}`;
+}
+
 const utc = (iso: string) => new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
 /** Agregar a Google Calendar (sin cuenta de la plataforma: lo abre el calendario de la persona). */

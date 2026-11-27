@@ -1,13 +1,15 @@
 // Cartelera de jornadas comunitarias: tarjetas con banner, ficha de invitación con inscripción,
-// formas de compartir (WhatsApp, enlace, calendario), QR y cartel imprimible, y alta de jornadas.
+// formas de compartir (WhatsApp, enlace, calendario), QR y cartel imprimible, «Interactúa con Zanky»
+// (la experiencia del evento en la app) y alta de jornadas.
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
-import { CalendarPlus, Check, Clock, Copy, Download, MapPin, MessageCircle, Navigation, Plus, Printer, Share2, Users, X } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Clock, Copy, Download, MapPin, MessageCircle, Navigation, Plus, Printer, Share2, Users, X } from 'lucide-react';
 import type { Accion, Jornada, TipoJornada } from '../../types/plataforma';
 import { inscribirseEnJornada, useAcciones, useInscripciones, useJornadas } from '../../lib/plataforma/estado';
 import { TIPOS_JORNADA } from '../../lib/plataforma/catalogos';
 import { copiarEnlace, descargarICS, enlaceInvitacionWhatsApp } from '../../lib/plataforma/calendario';
-import { crearJornada, enlaceComoLlegar, enlaceGoogleCalendar, fmt, urlInvitacion, type DatosJornada } from '../../lib/plataforma/jornadas';
+import { crearJornada, enlaceComoLlegar, enlaceGoogleCalendar, fmt, urlEventoZanky, urlInvitacion, type DatosJornada } from '../../lib/plataforma/jornadas';
 import { cn } from '../../lib/utils';
 import AvisoZanky from '../marca/AvisoZanky';
 
@@ -46,6 +48,15 @@ function Banner({ j, className, grande = false }: { j: Jornada; className?: stri
       </span>
     </div>
   );
+}
+
+/** QR en SVG (tinta azul C.R.A. sobre blanco) para pantalla y para el cartel impreso. */
+function useQr(url: string): string {
+  const [svg, setSvg] = useState('');
+  useEffect(() => {
+    QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#05243a', light: '#ffffff' } }).then(setSvg).catch(() => setSvg(''));
+  }, [url]);
+  return svg;
 }
 
 function Cupos({ j }: { j: Jornada }) {
@@ -100,16 +111,14 @@ function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; acci
   const T = TIPOS_JORNADA[j.tipo];
   const { pasada, lleno } = estadoDe(j);
   const url = urlInvitacion(j.id);
+  const urlZanky = urlEventoZanky(j.id);
+  const qr = useQr(url);
+  const qrZanky = useQr(urlZanky);
   const [nombre, setNombre] = useState('');
   const [acepta, setAcepta] = useState(false);
   const [mensaje, setMensaje] = useState<{ ok: boolean; texto: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
-  const [qr, setQr] = useState('');
   const puedeCompartir = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
-
-  useEffect(() => {
-    QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#05243a', light: '#ffffff' } }).then(setQr).catch(() => setQr(''));
-  }, [url]);
 
   function confirmar(e: FormEvent) {
     e.preventDefault();
@@ -187,6 +196,19 @@ function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; acci
           )}
         </section>
 
+        {/* Interactúa con Zanky: la experiencia del evento en la app */}
+        {!pasada && (
+          <section aria-labelledby={`zanky-${j.id}`} className="flex flex-col items-center gap-6 rounded-3xl border border-white/15 bg-superficie p-5 sm:flex-row sm:p-6">
+            {/* El QR va limpio, sin nada encima, para que se lea a la primera. */}
+            <div className="size-36 shrink-0 overflow-hidden rounded-2xl bg-white p-1.5" role="img" aria-label="Código QR para interactuar con Zanky en la jornada" dangerouslySetInnerHTML={{ __html: qrZanky }} />
+            <div className="text-center sm:text-left">
+              <h3 id={`zanky-${j.id}`} className="titular flex items-center justify-center gap-2 text-xl sm:justify-start sm:text-2xl"><img src="/marca/zanky/zanky-feliz-256.webp" alt="" width={44} height={44} className="size-9 shrink-0 sm:size-11" />Interactúa con Zanky</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-suave">El día de la jornada, escanéalo en el punto de encuentro: registras tu asistencia, hablas con Zanky, haces el reto del manglar y reportas lo que veas.</p>
+              <a href={urlZanky} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-dorado-500 px-5 text-sm font-bold text-cra-950 transition-colors hover:bg-dorado-300">Abrir con Zanky<ArrowRight className="size-4" aria-hidden="true" /></a>
+            </div>
+          </section>
+        )}
+
         {/* Compartir */}
         <section aria-labelledby={`compartir-${j.id}`}>
           <h3 id={`compartir-${j.id}`} className="rotulo text-dorado-300">Invita a tu gente</h3>
@@ -208,17 +230,29 @@ function Invitacion({ j, accion, inscrito, aviso, onCerrar }: { j: Jornada; acci
         </section>
       </div>
 
-      {/* Cartel imprimible: solo aparece al imprimir. */}
-      <div id="cartel-jornada" className="hidden">
-        <p className="cartel-rotulo">{T.etiqueta} · Jornada comunitaria del manglar</p>
-        <h1 className="cartel-titulo">{j.titulo}</h1>
-        <p className="cartel-dato">{capital(fmt.larga(j.inicio))} · {fmt.hora(j.inicio)} – {fmt.hora(j.fin)}</p>
-        <p className="cartel-dato">Punto de encuentro: {j.punto_encuentro}</p>
-        {j.que_llevar.length > 0 && <p className="cartel-dato">Qué llevar: {j.que_llevar.join(', ')}</p>}
-        <div className="cartel-qr" dangerouslySetInnerHTML={{ __html: qr }} />
-        <p className="cartel-pie">Escanea para inscribirte · Cupos: {j.cupos}</p>
-        <p className="cartel-pie">Corporación Autónoma Regional del Atlántico · Monitoreo comunitario con Zanky</p>
-      </div>
+      {/* Cartel imprimible: va directo en <body> (fuera de la hoja, que no se imprime) y solo aparece al imprimir. */}
+      {typeof document !== 'undefined' && createPortal(
+        <div id="cartel-jornada" className="hidden">
+          <img className="cartel-zanky" src="/marca/zanky/zanky-feliz-512.webp" alt="" />
+          <p className="cartel-rotulo">{T.etiqueta} · Jornada comunitaria del manglar</p>
+          <h1 className="cartel-titulo">{j.titulo}</h1>
+          <p className="cartel-dato">{capital(fmt.larga(j.inicio))} · {fmt.hora(j.inicio)} – {fmt.hora(j.fin)}</p>
+          <p className="cartel-dato">Punto de encuentro: {j.punto_encuentro}</p>
+          {j.que_llevar.length > 0 && <p className="cartel-dato">Qué llevar: {j.que_llevar.join(', ')}</p>}
+          <div className="cartel-qrs">
+            <figure>
+              <div className="cartel-qr" dangerouslySetInnerHTML={{ __html: qr }} />
+              <figcaption><b>Inscríbete</b>Aparta tu cupo · {j.cupos} cupos</figcaption>
+            </figure>
+            <figure>
+              <div className="cartel-qr" dangerouslySetInnerHTML={{ __html: qrZanky }} />
+              <figcaption><b>Interactúa con Zanky</b>El día de la jornada: asistencia, reto del manglar y reportes</figcaption>
+            </figure>
+          </div>
+          <p className="cartel-pie">Corporación Autónoma Regional del Atlántico · Monitoreo comunitario con Zanky</p>
+        </div>,
+        document.body,
+      )}
     </Hoja>
   );
 }
@@ -352,6 +386,11 @@ export default function CarteleraJornadas(props: Props) {
                       {inscrito(j.id) && <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-bold text-emerald-200"><Check className="size-3.5" aria-hidden="true" />Vas a ir</p>}
                     </div>
                   </button>
+                  {!estadoDe(j).pasada && (
+                    <a href={urlEventoZanky(j.id)} className="mt-3 ml-1 inline-flex min-h-11 items-center gap-2 rounded-full border border-dorado-500/40 bg-dorado-500/10 py-1 pr-4 pl-1.5 text-sm font-bold text-dorado-300 transition-colors hover:border-dorado-300 hover:bg-dorado-500/20">
+                      <img src="/marca/zanky/zanky-feliz-256.webp" alt="" width={32} height={32} className="size-8" />Interactúa con Zanky
+                    </a>
+                  )}
                 </article>
               </li>
             );

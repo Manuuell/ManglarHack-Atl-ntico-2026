@@ -1,0 +1,64 @@
+/* Zanky abajo a la derecha: botón que abre WhatsApp y un globo de vez en cuando. Fijo sobre los mapas
+   (Leaflet usa hasta 1000) y bajo los avisos (2000). Clases zk- con dos niveles para que las reglas de la
+   portada (.portada a, img…) no las pisen. */
+.zk-burbuja {
+  --zk-tinta: var(--color-cra-950);
+  --zk-dorado: var(--color-dorado-500);
+  --zk-verde: #1fa855; /* verde de WhatsApp, con contraste suficiente sobre blanco */
+  position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 1900; display: flex; flex-direction: column; align-items: flex-end; gap: 12px;
+  font-family: var(--font-sans); pointer-events: none;
+}
+.zk-burbuja > * { pointer-events: auto; }
+
+.zk-burbuja .zk-boton {
+  position: relative; width: 66px; height: 66px; border-radius: 50%; border: 3px solid #fff;
+  display: grid; place-items: center; text-decoration: none;
+  background: radial-gradient(circle at 35% 30%, var(--color-dorado-300), var(--zk-dorado));
+  box-shadow: 0 16px 34px -12px rgb(5 36 58 / .65);
+  transition: transform .25s cubic-bezier(.2, .8, .2, 1.2), box-shadow .25s;
+}
+.zk-burbuja .zk-boton img { width: 56px; height: 56px; object-fit: contain; display: block; margin-top: 4px; }
+.zk-burbuja .zk-boton:hover { transform: translateY(-3px) scale(1.04); box-shadow: 0 22px 40px -14px rgb(5 36 58 / .7); }
+.zk-burbuja .zk-boton:active { transform: scale(.95); }
+.zk-burbuja .zk-boton:focus-visible, .zk-burbuja .zk-globo a:focus-visible, .zk-burbuja .zk-globo button:focus-visible {
+  outline: 3px solid var(--color-dorado-300); outline-offset: 3px;
+}
+/* Insignia verde: dice «esto abre WhatsApp». */
+.zk-burbuja .zk-wa {
+  position: absolute; right: -4px; bottom: -2px; width: 26px; height: 26px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--zk-verde); color: #fff; border: 2px solid #fff;
+}
+.zk-burbuja .zk-boton::after {
+  content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--zk-dorado); opacity: 0;
+  animation: zk-onda 3.2s ease-out 1.5s infinite;
+}
+@keyframes zk-onda { 0% { transform: scale(.85); opacity: .9; } 70%, 100% { transform: scale(1.35); opacity: 0; } }
+
+/* Globo de Zanky: sale del botón, con su pico hacia abajo a la derecha. */
+.zk-burbuja .zk-globo {
+  position: relative; display: flex; align-items: flex-start; gap: 4px; max-width: min(260px, calc(100vw - 32px));
+  padding: 10px 6px 10px 14px; border-radius: 18px 18px 6px 18px; background: #fff; color: var(--zk-tinta);
+  box-shadow: 0 16px 34px -14px rgb(5 36 58 / .55); animation: zk-entra .45s cubic-bezier(.2, .8, .2, 1); transform-origin: bottom right;
+}
+.zk-burbuja .zk-globo::after {
+  content: ""; position: absolute; right: 22px; bottom: -7px; width: 14px; height: 14px; background: #fff;
+  transform: rotate(45deg); border-radius: 0 0 3px 0;
+}
+.zk-burbuja .zk-globo a { flex: 1; min-height: 24px; padding-top: 2px; color: var(--zk-tinta); font-weight: 700; font-size: 14px; line-height: 1.35; text-decoration: none; }
+.zk-burbuja .zk-globo a:hover { color: var(--color-cra-700); text-decoration: underline; text-underline-offset: 3px; }
+.zk-burbuja .zk-globo button {
+  flex: none; width: 28px; height: 28px; margin: -4px 0 0; border-radius: 50%; border: 0; background: transparent;
+  color: #6b8193; display: grid; place-items: center; cursor: pointer;
+}
+.zk-burbuja .zk-globo button:hover { background: #eef4f8; color: var(--zk-tinta); }
+@keyframes zk-entra { from { opacity: 0; transform: translateY(10px) scale(.94); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 520px) {
+  .zk-burbuja .zk-boton { width: 60px; height: 60px; }
+  .zk-burbuja .zk-boton img { width: 50px; height: 50px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .zk-burbuja .zk-boton, .zk-burbuja .zk-globo { animation: none; transition: none; }
+  .zk-burbuja .zk-boton::after { animation: none; }
+}

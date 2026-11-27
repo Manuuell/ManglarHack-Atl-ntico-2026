@@ -1,0 +1,21 @@
+/* Monitoreo comunitario y guardianes dentro de la portada.
+   portada.css fija sin capa los h2/h3, p y a de toda la portada (tamaño de
+   titular, margin: 0, color: inherit), y eso le gana a las clases de Tailwind,
+   que van en capas. Dentro de .mon se devuelven esas propiedades a Tailwind
+   con revert-layer, para que el mapa, el formulario y el ranking se vean
+   igual que en la plataforma. */
+.portada .mon :is(h2, h3, h4) {
+  font-family: revert-layer; font-weight: revert-layer; font-size: revert-layer;
+  letter-spacing: revert-layer; line-height: revert-layer; margin: revert-layer;
+}
+.portada .mon p { margin: revert-layer; }
+.portada .mon a { color: revert-layer; }
+
+.mon-cab h2 { max-width: 18ch; }
+.portada .mon-sub { color: var(--texto-2); font-size: 16.5px; line-height: 1.55; max-width: 62ch; margin-top: 16px; }
+.mon { margin-top: clamp(1.8rem, 4vw, 2.6rem); min-width: 0; color: #fff; }
+.mon-cargando {
+  display: grid; place-items: center; border-radius: 22px;
+  background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1);
+  color: rgba(255, 255, 255, .7);
+}
