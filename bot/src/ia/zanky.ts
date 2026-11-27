@@ -50,11 +50,15 @@ const LARGO: Record<Canal, string> = {
   web: 'máximo unas 90 palabras; puedes usar una lista corta con guiones. Para resaltar usa **así**; nunca títulos con #',
 };
 
+/** Títulos de las jornadas que la plataforma marca como datos de ejemplo (para rotular la respuesta). */
+let titulosDeEjemplo: string[] = [];
+
 async function contextoJornadas(canal: Canal): Promise<string> {
   try {
     const { jornadas, aviso } = await proximasJornadas();
     if (!jornadas.length) return 'Próximas jornadas: no hay jornadas publicadas por ahora.';
     const ejemplo = /ejemplo/i.test(aviso);
+    titulosDeEjemplo = ejemplo ? jornadas.map(j => j.titulo.toLowerCase()) : [];
     const lineas = jornadas.slice(0, 4).map(j =>
       `- ${j.titulo}${ejemplo ? ' [Datos de ejemplo]' : ''}: ${fmt.larga(j.inicio)}, ${fmt.hora(j.inicio)} a ${fmt.hora(j.fin)}, en ${j.punto_encuentro}. ` +
       `Cupos libres: ${Math.max(0, j.cupos - j.inscritos)} de ${j.cupos}. Inscripción: ${enlaceInvitacion(j)} · Ese día, con Zanky: ${enlaceEventoZanky(j)}` +
@@ -107,7 +111,11 @@ export async function responder(historial: Turno[], canal: Canal): Promise<strin
   const datos = (await res.json()) as { choices?: { message?: { content?: string } }[] };
   const texto = datos.choices?.[0]?.message?.content?.trim();
   if (!texto) throw new ErrorIA('OpenAI respondió vacío');
-  return aFormato(texto, canal).slice(0, 1500);
+  // Honestidad del dato: si habla de una jornada de ejemplo y no lo dijo, se agrega aquí (no se deja al modelo).
+  const final = aFormato(texto, canal);
+  const nombraEjemplo = titulosDeEjemplo.some(t => final.toLowerCase().includes(t)) || (titulosDeEjemplo.length > 0 && /jornada/i.test(final) && /\d{1,2} de [a-z]+/i.test(final));
+  const nota = nombraEjemplo && !/ejemplo/i.test(final) ? '\n\n(Ojo: por ahora las jornadas son datos de ejemplo de la demostración.)' : '';
+  return (final + nota).slice(0, 1500);
 }
 
 /** Por si el modelo se sale del formato: WhatsApp resalta con *un* asterisco y ninguno usa títulos #. */
