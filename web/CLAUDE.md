@@ -11,7 +11,8 @@ Rama de trabajo: **`web`** (nunca `main`). Un commit por punto, en español, **s
 ```bash
 npm run dev      # http://localhost:4321
 npm run check    # astro check (TS estricto en .astro/.ts/.tsx)
-npm run build    # build estático a dist/
+npm run build    # build estático a dist/ (antes baja la copia de datos de la C.R.A.)
+npm run cra:copiar  # solo actualiza public/cra/ con los datos de manglarcra.netlify.app
 ```
 
 No hay pruebas automatizadas: `check` y `build` deben pasar antes de cada commit, y cada pantalla se mira en el navegador antes de darla por buena.
@@ -66,7 +67,8 @@ src/
   lib/privacidad.ts             aReportePublico
   lib/reportesStore.ts          estado compartido de reportes + historial
   lib/exportar.ts               CSV, GeoJSON y KML públicos
-  lib/workflow.ts               cifras del workflow de la C.R.A. con su fuente
+  lib/workflow.ts               cifras y pestañas del workflow, construidas del resumen de la C.R.A. (con respaldo fijo)
+  lib/cra.ts, useWorkflowCRA.ts lectura en vivo de /cra/data/core.json (ver «Datos de la C.R.A. en vivo»)
   lib/plataforma/               datos.ts, catalogos.ts, almacen.ts (store persistente), …
   layouts/                      BaseLayout.astro, PlataformaLayout.astro
   components/                   layout/, ui/, marca/ (Zanky), mapa/, panel/, workflow/, plataforma/
@@ -93,7 +95,18 @@ La capa de manglar de INVEMAR 2020 se importa con `?url` desde `../datos/` (por 
 
 ## Cifras del workflow (fuente: workflow de la C.R.A., manglarcra.netlify.app)
 
-775 ha de manglar probable en 2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Balboa 197, Totumo 148, Manatíes 742 · pérdida −34,7 ha entre 2016 y 2025 · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
+775 ha de manglar probable en 2025 (465 con probabilidad alta + 310 media) · 828 ha por revisar · por sector (probable + por revisar): Mallorquín 516, Balboa 197, Manatíes (Tubará – Juan de Acosta) 148, Totumo 742 · pérdida −34,7 ha entre 2016 y 2025 · 262 ha con dosel más seco en 2026 · altura mediana del dosel 10,7 m · 194 ha en riesgo muy alto · carbono 125 mil t, 270 t C/ha (92 % en el suelo). Capa INVEMAR 2020 (referencia nacional): 144 polígonos, 533 ha.
+
+## Datos de la C.R.A. en vivo (`/cra/`)
+
+La web usa los mismos datos que publica la C.R.A. en manglarcra.netlify.app y se actualiza sola cuando cambian. Ese sitio no deja que otro dominio lea sus datos desde el navegador, así que se copian al nuestro:
+
+- `scripts/copiar-cra.mjs` baja `data/core.json` y las imágenes y audios que nombra a `public/cra/` (ignorada en git). Solo baja lo que cambió (ETag), valida la forma de `core.json` y, si llega roto o el sitio no responde, conserva la última copia buena. Escribe `espejo.json` con la fecha de revisión.
+- Corre antes de `dev` y de `build` (con `--suave`: avisa pero no falla sin red), así que `dist/cra/` siempre lleva una copia.
+- En el VPS lo corre cada 15 minutos `mimanglar-cra.timer` (unidades en `scripts/vps/`, script en `~/mimanglar-cra/`) sobre `/var/www/mimanglar/cra`. Si un despliegue con `rsync --delete` la pisa, el temporizador la repone.
+- La web lee la copia con `cargarCRA()` (`src/lib/cra.ts`) y `useWorkflowCRA()`; `construirWorkflow()` arma cifras, sectores y pestañas. Si la copia no responde, se usan `RESPALDO_CRA` (cifras del 27-11-2026) y se dice en pantalla.
+- `/workflow` incrusta además el visor original de la C.R.A. (capas, vista 3D y audios) desde manglarcra.netlify.app.
+- Instalar o actualizar en el VPS: copiar `copiar-cra.mjs` a `~/mimanglar-cra/`, `sudo install -m 644 scripts/vps/mimanglar-cra.* /etc/systemd/system/`, `sudo systemctl daemon-reload && sudo systemctl enable --now mimanglar-cra.timer`. Registro: `journalctl -u mimanglar-cra.service`.
 
 ## Diseño (identidad C.R.A. modernizada)
 
