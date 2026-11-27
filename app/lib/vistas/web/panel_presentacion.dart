@@ -9,9 +9,9 @@ import '../comun/zanky_mascota.dart';
 import 'abrir_enlace.dart';
 import 'entrada_qr.dart';
 
-/// TODO: número de WhatsApp del bot de Zanky, con indicativo y sin «+» ni espacios (ej. '573001234567').
-/// Mientras esté vacío, el botón de WhatsApp NO se muestra.
-const String kWhatsappZanky = '';
+/// Número de WhatsApp del bot de Zanky, con indicativo y sin «+» ni espacios (el mismo del README).
+/// Si quedara vacío, el botón de WhatsApp no se muestra.
+const String kWhatsappZanky = '573104432501';
 
 /// Qué parte del panel se pinta: en pantallas muy anchas va repartido a los dos lados del teléfono.
 enum PartePanel { izquierda, derecha, todo }
