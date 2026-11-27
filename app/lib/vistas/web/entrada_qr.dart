@@ -5,10 +5,10 @@ import 'package:flutter/foundation.dart';
 /// El letrero apunta a `https://…/?zona=mallorquin` (o `tubara`, `juan_de_acosta`, `piojo`); un QR genérico puede
 /// traer solo `?origen=qr`. Se lee una vez al arrancar y se guarda aquí.
 ///
-/// CÓMO ENGANCHARLO EN EL REPORTE (lo hace el chat principal, no esta carpeta):
-///  - Al abrir el flujo, si `entradaQr.value?.zonaId != null`, preseleccionar esa zona como sugerencia (el GPS manda:
-///    si el teléfono está dentro de otra zona, gana el GPS) con `Zanky.de(context).manglar.zonaPorId(id)`.
-///  - Al enviar, mandar `entradaQr.value?.canal` ('qr') junto al reporte para que la CRA vea qué letreros funcionan.
+/// En el reporte (`vistas/reporte/borrador.dart`): si `zonaId` viene, el borrador abre con esa zona preseleccionada
+/// como sugerencia; la primera lectura del GPS o una marca en el mapa la reemplazan. Si se envía con la zona del
+/// letrero, el método de ubicación va como «enlace». El canal va como 'web': el servidor solo acepta app, web o
+/// whatsapp (`backend/supabase/schema.sql`), así que [EntradaQr.canal] no se manda.
 final ValueNotifier<EntradaQr?> entradaQr = ValueNotifier<EntradaQr?>(null);
 
 /// Zonas válidas: los mismos ids que `assets/datos/manglar_zonas.json`.
@@ -23,7 +23,7 @@ class EntradaQr {
   /// Llegó por un código QR (o se sabe una zona, que solo viene de un letrero).
   final bool viaQr;
 
-  /// Canal para el reporte.
+  /// Cómo llegó (para mostrar o medir en la app). No es el `canal` del reporte: el servidor no acepta 'qr'.
   String get canal => viaQr ? 'qr' : 'web';
 
   @override

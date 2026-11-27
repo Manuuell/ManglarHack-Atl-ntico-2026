@@ -12,6 +12,7 @@ import '../../datos/reporte.dart';
 import '../../datos/reporte_canal.dart';
 import '../../datos/tipos.dart';
 import '../../datos/zonas.dart';
+import '../web/entrada_qr.dart';
 
 /// Qué pasa con el GPS ahora mismo, para decírselo a la persona sin jerga.
 enum EstadoGps { buscando, listo, sinPermiso, apagado, noDisponible }
@@ -22,12 +23,31 @@ enum EstadoGps { buscando, listo, sinPermiso, apagado, noDisponible }
 /// persona elige el tipo, el receptor ya va afinando. Se queda con la lectura más
 /// precisa y se detiene sola a los 25 s o al llegar a ±10 m, para no gastar batería.
 class Borrador extends ChangeNotifier {
-  Borrador(this.estado, {this.tipo})
+  /// [entrada] es la del QR del letrero con que se abrió la web (por defecto, la que quedó al arrancar).
+  Borrador(this.estado, {this.tipo, EntradaQr? entrada})
       : id = estado.nuevoId(),
         anonimo = estado.perfil?.anonimoPorDefecto ?? false,
         visto = DateTime.now() {
+    _sugerirZonaDelLetrero(entrada ?? entradaQr.value);
     _iniciarGps();
   }
+
+  /// El punto actual es la zona del letrero con QR, no una lectura del GPS ni una marca en el mapa.
+  bool zonaDelLetrero = false;
+
+  /// Se entró por el QR de un letrero (`?zona=…`): esa zona queda preseleccionada como sugerencia.
+  /// Sigue siendo método GPS a la espera: la primera lectura del GPS la reemplaza (si la persona está en otra
+  /// zona, gana el GPS) y marcar en el mapa también. Si el GPS nunca llega, se envía como «enlace».
+  void _sugerirZonaDelLetrero(EntradaQr? e) {
+    final z = estado.manglar.zonaPorId(e?.zonaId);
+    if (z == null) return;
+    punto = z.centro;
+    ubicacion = estado.manglar.ubicar(punto!);
+    zonaDelLetrero = true;
+  }
+
+  /// Método que se envía: el punto del letrero vino de un enlace (el QR), no del GPS.
+  MetodoUbicacion get metodoEnviado => zonaDelLetrero ? MetodoUbicacion.enlace : metodo;
 
   final EstadoZanky estado;
   final String id;
@@ -144,6 +164,7 @@ class Borrador extends ChangeNotifier {
     precisionM = precision;
     metodo = m;
     ubicacion = estado.manglar.ubicar(p);
+    zonaDelLetrero = false;
   }
 
   // ----------------------------------------------------------------- foto
@@ -200,7 +221,7 @@ class Borrador extends ChangeNotifier {
   Solidez get solidez => Solidez.calcular(
         tieneFoto: foto != null,
         fotoDeCamara: fotoDeCamara,
-        metodo: metodo,
+        metodo: metodoEnviado,
         precisionM: precisionM,
         ubicacion: ubicacion,
         descripcion: descripcion,
@@ -242,7 +263,7 @@ class Borrador extends ChangeNotifier {
         descripcion: recortarPuntosDeCodigo(descripcion.trim()),
         punto: punto!,
         precisionM: precisionM,
-        metodo: metodo,
+        metodo: metodoEnviado,
         capturadoEn: DateTime.now(),
         momento: momento,
         magnitud: magnitud,
@@ -258,7 +279,7 @@ class Borrador extends ChangeNotifier {
         confianza: confianzaCanal(
           conFoto: foto != null,
           fotoHash: huella,
-          metodo: metodo,
+          metodo: metodoEnviado,
           dentro: u.dentro,
           distanciaM: u.distanciaM,
           momento: momento,
@@ -272,6 +293,8 @@ class Borrador extends ChangeNotifier {
         fotoHash: huella,
         fotoDeCamara: fotoDeCamara,
         capturadoSinSenal: !estado.enLinea,
+        // El servidor solo acepta app, web o whatsapp (`backend/supabase/schema.sql`): lo que entra por el QR va
+        // como 'web'; el letrero se reconoce por la zona y el método «enlace».
         canal: kIsWeb ? 'web' : 'app',
       );
       return await estado.agregar(r, foto);

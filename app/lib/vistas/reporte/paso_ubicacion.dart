@@ -327,6 +327,7 @@ class _Resultado extends StatelessWidget {
         ),
     };
     final precision = switch (borrador.metodo) {
+      _ when borrador.zonaDelLetrero => 'Zona del letrero con QR',
       MetodoUbicacion.gps when borrador.precisionM != null => 'GPS ±${borrador.precisionM!.round()} m',
       MetodoUbicacion.mapa => 'Marcado en el mapa',
       MetodoUbicacion.enlace => 'Desde Google Maps',
