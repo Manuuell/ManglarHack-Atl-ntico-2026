@@ -6,7 +6,10 @@ import '../../../datos/sensores/lecturas_sensor.dart';
 import '../../../nucleo/base/esqueleto.dart';
 import '../../../nucleo/base/hoja.dart';
 import '../../../nucleo/identidad.dart';
+import '../../../nucleo/kit/accion_gesto.dart';
 import '../../../nucleo/kit/anuncio.dart';
+import '../../../nucleo/kit/fila_deslizable.dart';
+import '../../../nucleo/kit/menu_mantenido.dart';
 import '../../../nucleo/kit/aviso.dart';
 import '../../../nucleo/kit/confirmar.dart';
 import '../../../nucleo/kit/haptica.dart';
@@ -467,13 +470,10 @@ class _EditorJornadas extends StatelessWidget {
         cerrar ? 'Cerró la jornada «${j.titulo}»' : 'Reabrió la jornada «${j.titulo}»');
   }
 
+  /// Sin hoja de confirmar: se quita al momento y el aviso ofrece «Deshacer» (la vara pide
+  /// Deshacer antes que confirmar).
   Future<void> _quitar(BuildContext context, JornadaPanel j) async {
-    final ok = await confirmarEnHoja(context,
-        titulo: '¿Quitar «${j.titulo}»?',
-        texto: 'Deja de verse en la app. Tendrás unos segundos para deshacer.',
-        textoConfirmar: 'Quitar',
-        destructivo: true);
-    if (!ok || !context.mounted) return;
+    vibrar(Vibracion.media);
     await _guardar(context, c, SeccionContenido.jornadas,
         c.contenido.copiar(jornadas: [for (final x in c.contenido.jornadas) if (x.id != j.id) x]), 'Quitó la jornada «${j.titulo}»');
   }
@@ -486,7 +486,13 @@ class _EditorJornadas extends StatelessWidget {
       nota: 'Siembras, limpiezas y recorridos que convoca el equipo, con foto, fecha, lugar y cupos.',
       children: [
         _BotonDorado(texto: 'Nueva jornada', icono: Icons.add_rounded, alTocar: c.editable ? () => _editar(context, null) : null),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
+        if (lista.isNotEmpty && c.editable)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Text('Mantén presionada una jornada para verla y editarla, cerrarla o quitarla; o deslízala.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Cra.textoSuave)),
+          ),
         if (lista.isEmpty)
           const VacioAdmin(
             titulo: 'Aún no hay jornadas del panel',
@@ -516,6 +522,33 @@ class _FilaJornada extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final editar = AccionGesto(etiqueta: 'Editar', icono: Icons.edit_rounded, color: Cra.azul, alEjecutar: alEditar);
+    final cerrar = AccionGesto(
+      etiqueta: j.cerrada ? 'Reabrir' : 'Cerrar',
+      icono: j.cerrada ? Icons.lock_open_rounded : Icons.lock_rounded,
+      color: Cra.hoja,
+      alEjecutar: alCerrar,
+    );
+    final quitar = AccionGesto(etiqueta: 'Quitar', icono: Icons.delete_outline_rounded, destructiva: true, alEjecutar: alQuitar);
+    final ancha = MediaQuery.sizeOf(context).width >= 700;
+    final fila = _contenido(context, conBotones: editable && ancha);
+    if (!editable) return fila;
+    // Teléfono: mantener presionado (vista previa + acciones) y deslizar. Ancha: además, los botones.
+    return MenuMantenido(
+      key: ValueKey('jornada-${j.id}'),
+      etiqueta: j.titulo,
+      vistaPrevia: (ctx) => _VistaPreviaJornada(j: j),
+      acciones: [editar, cerrar, quitar],
+      child: FilaDeslizable(
+        radio: BorderRadius.circular(Zr.l),
+        accionesInicio: [cerrar],
+        accionesFin: [editar, quitar],
+        hijo: fila,
+      ),
+    );
+  }
+
+  Widget _contenido(BuildContext context, {required bool conBotones}) {
     final tt = Theme.of(context).textTheme;
     return Semantics(
       container: true,
@@ -554,7 +587,7 @@ class _FilaJornada extends StatelessWidget {
               ),
             ),
           ]),
-          if (editable) ...[
+          if (conBotones) ...[
             const SizedBox(height: 8),
             Wrap(spacing: 4, children: [
               TextButton.icon(onPressed: alEditar, icon: const Icon(Icons.edit_rounded, size: 18), label: const Text('Editar')),
@@ -567,6 +600,46 @@ class _FilaJornada extends StatelessWidget {
           ],
         ]),
       ),
+    );
+  }
+}
+
+/// Lo que se ve en grande al mantener presionada una jornada: foto, título, fecha, lugar y cupos.
+class _VistaPreviaJornada extends StatelessWidget {
+  const _VistaPreviaJornada({required this.j});
+  final JornadaPanel j;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Container(
+      key: const Key('jornada-vista-previa'),
+      color: Cra.superficie,
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        SizedBox(
+          height: 150,
+          child: j.fotoUrl.isEmpty
+              ? const ColoredBox(color: Cra.superficieAlta, child: Icon(Icons.park_rounded, color: Cra.dorado, size: 48))
+              : Image.network(j.fotoUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      const ColoredBox(color: Cra.superficieAlta, child: Icon(Icons.broken_image_rounded, color: Cra.textoTenue))),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(j.titulo, style: tt.titleLarge),
+            const SizedBox(height: 6),
+            Text(fechaCorta(j.fecha), style: tt.bodyMedium),
+            Text(j.lugar, style: tt.bodyMedium),
+            const SizedBox(height: 8),
+            Wrap(spacing: 6, runSpacing: 4, children: [
+              _Chip(j.textoCupos),
+              _Chip(j.cerrada ? 'Cerrada' : 'Abierta', resaltado: !j.cerrada),
+            ]),
+          ]),
+        ),
+      ]),
     );
   }
 }

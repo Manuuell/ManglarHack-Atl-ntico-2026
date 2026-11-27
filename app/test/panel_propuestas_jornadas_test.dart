@@ -10,6 +10,8 @@ import 'package:zanky/datos/admin/contenido_publico.dart';
 import 'package:zanky/datos/comunidad/comunidad.dart';
 import 'package:zanky/datos/servidor.dart';
 import 'package:zanky/nucleo/identidad.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:zanky/vistas/admin/contenido/seccion_contenido_admin.dart';
 import 'package:zanky/vistas/admin/propuestas_admin.dart';
 
 PropuestaWhatsapp _propuesta(String codigo, {String tipo = 'siembra', String proponente = 'comunidad'}) => PropuestaWhatsapp(
@@ -101,6 +103,76 @@ void main() {
       }
       expect(pedidas, 2);
       expect(find.text('Siembra propuesta por WhatsApp · PROP-1A2B'), findsOneWidget);
+      await cerrar(t);
+    });
+  });
+
+  group('Filas de jornadas con gestos', () {
+    final j = JornadaPanel(id: 'j-1', titulo: 'Siembra en Bocana', fecha: DateTime(2026, 12, 5, 7), lugar: 'Kiosco', cupos: 30);
+
+    Future<ControladorContenidoPanel> montar(WidgetTester t) async {
+      SharedPreferences.setMockInitialValues({});
+      t.view.physicalSize = const Size(390, 844);
+      t.view.devicePixelRatio = 1;
+      addTearDown(() {
+        t.view.resetPhysicalSize();
+        t.view.resetDevicePixelRatio();
+      });
+      final c = ControladorContenidoPanel();
+      await c.cargar();
+      await c.guardar(SeccionContenido.jornadas, c.contenido.copiar(jornadas: [j]), 'prueba');
+      await t.pumpWidget(MaterialApp(
+        theme: temaCra(),
+        home: Scaffold(body: SeccionContenidoAdmin(controlador: c, noticias: () async => const [])),
+      ));
+      await t.pump(const Duration(milliseconds: 300));
+      await t.tap(find.text('Jornadas').first);
+      for (var i = 0; i < 4; i++) {
+        await t.pump(const Duration(milliseconds: 150));
+      }
+      return c;
+    }
+
+    Future<void> cerrar(WidgetTester t) async {
+      await t.pumpWidget(const SizedBox());
+      await t.pump(const Duration(seconds: 10));
+    }
+
+    testWidgets('390: sin botones sueltos; mantener presionado da vista previa y acciones', (t) async {
+      await montar(t);
+      expect(find.widgetWithText(TextButton, 'Editar'), findsNothing, reason: 'en el teléfono son gestos');
+      await t.longPress(find.text('Siembra en Bocana'));
+      await t.pump(const Duration(milliseconds: 500));
+      expect(find.byKey(const Key('jornada-vista-previa')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Editar')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Cerrar')), findsOneWidget);
+      expect(find.byKey(const Key('menu-Quitar')), findsOneWidget);
+      await cerrar(t);
+    });
+
+    testWidgets('quitar desde el menú: se va al momento y «Deshacer» la devuelve', (t) async {
+      final c = await montar(t);
+      await t.longPress(find.text('Siembra en Bocana'));
+      await t.pump(const Duration(milliseconds: 500));
+      await t.tap(find.byKey(const Key('menu-Quitar')));
+      for (var i = 0; i < 6; i++) {
+        await t.pump(const Duration(milliseconds: 150));
+      }
+      expect(c.contenido.jornadas, isEmpty);
+      expect(find.text('Deshacer'), findsOneWidget);
+      await t.tap(find.text('Deshacer'));
+      for (var i = 0; i < 6; i++) {
+        await t.pump(const Duration(milliseconds: 150));
+      }
+      expect(c.contenido.jornadas.single.id, 'j-1');
+      await cerrar(t);
+    });
+
+    testWidgets('deslizar a la derecha revela «Cerrar»', (t) async {
+      await montar(t);
+      await t.drag(find.text('Siembra en Bocana'), const Offset(160, 0));
+      await t.pump(const Duration(milliseconds: 600));
+      expect(find.byKey(const Key('accion-Cerrar')), findsOneWidget);
       await cerrar(t);
     });
   });
