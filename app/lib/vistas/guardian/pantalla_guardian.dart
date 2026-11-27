@@ -21,6 +21,8 @@ import 'editar_perfil.dart';
 import 'insignias_guardian.dart';
 import '../experiencia/widgets_evento.dart' show ResumenParticipacion;
 import 'nivel_guardian.dart';
+import '../crecimiento/pantalla_mi_manglar.dart';
+import '../crecimiento/zanky_crece.dart';
 import 'tarjeta_guardian.dart';
 
 /// Guardián: la tarjeta digital, el nivel, las insignias, la misión de la semana y los
@@ -116,7 +118,17 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
           SeccionGuardian.tarjeta =>
             perfil != null ? SeccionTarjeta(perfil: perfil, progreso: progreso) : const _SinPerfil(),
           SeccionGuardian.rol => _SeccionRol(rol: rol),
-          SeccionGuardian.nivel => SeccionNivel(progreso: progreso, sinReportes: estado.reportes.isEmpty),
+          SeccionGuardian.nivel => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SeccionNivel(progreso: progreso, sinReportes: estado.reportes.isEmpty),
+                const SizedBox(height: 12),
+                ZankyCreceCompacto(
+                  puntos: progreso.puntos,
+                  alAbrir: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PantallaMiManglar())),
+                ),
+              ],
+            ),
           SeccionGuardian.puntos => SeccionPuntos(servidorConectado: estado.servidor.configurado),
           SeccionGuardian.participacion => const ResumenParticipacion(),
           SeccionGuardian.mision => const _MisionSemana(),

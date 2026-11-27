@@ -26,6 +26,8 @@ import '../roles/selector_rol.dart';
 import 'pronostico_compacto.dart';
 import 'que_hago_ya.dart';
 import 'secciones_rol.dart';
+import '../crecimiento/pantalla_mi_manglar.dart';
+import '../crecimiento/zanky_crece.dart';
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
 
@@ -77,7 +79,14 @@ class _InicioState extends State<Inicio> {
       case SeccionInicio.estadoReportes:
         return EstadoMisReportes(resumen: resumen);
       case SeccionInicio.progreso:
-        return _Progreso(progreso: progreso);
+        // El crecimiento de Zanky es el corazón de la gamificación: abre «Mi manglar».
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: ZankyCreceCompacto(
+            puntos: progreso.puntos,
+            alAbrir: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PantallaMiManglar())),
+          ),
+        );
       case SeccionInicio.retoManglar:
         return const RetoManglar();
       case SeccionInicio.rankingColegio:
@@ -373,67 +382,6 @@ class _Rapidos extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _Progreso extends StatelessWidget {
-  const _Progreso({required this.progreso});
-  final Progreso progreso;
-
-  @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final n = progreso.nivel;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: TarjetaZ(
-        onTap: () => Raiz.irA(context, 3),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 54,
-              height: 54,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(end: progreso.avanceNivel),
-                    duration: Zm.largo,
-                    curve: Zm.entrar,
-                    builder: (_, v, _) => CircularProgressIndicator(
-                      value: v,
-                      strokeWidth: 5,
-                      strokeCap: StrokeCap.round,
-                      color: Zc.hoja,
-                      backgroundColor: Zc.hojaClara,
-                    ),
-                  ),
-                  Text('${n.numero}', style: tt.titleLarge?.copyWith(color: Zc.hoja)),
-                ],
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(n.nombre, style: tt.titleMedium),
-                  const SizedBox(height: 2),
-                  Text(
-                    progreso.enviados == 0
-                        ? 'Tu primer reporte validado te hace crecer.'
-                        : '${progreso.enviados} ${progreso.enviados == 1 ? 'reporte enviado' : 'reportes enviados'} · '
-                            '${progreso.validados} ${progreso.validados == 1 ? 'validado' : 'validados'}',
-                    style: tt.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.chevron_right_rounded, color: Zc.textoTenue),
-          ],
-        ),
-      ),
     );
   }
 }
