@@ -19,10 +19,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart' show LatLng;
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../datos/comunidad/comunidad.dart';
+import '../../datos/comunidad/feed.dart' show puntoPedidoMapa;
 import '../../nucleo/identidad.dart';
 import '../../nucleo/kit/accion_gesto.dart';
 import '../../nucleo/kit/aviso.dart';
@@ -148,14 +150,13 @@ class GrupoAlerta {
   List<AlertaManglar> get todas => [principal, ...resto];
 }
 
-const maxAlertasPublicadas = 6;
+const maxAlertasPublicadas = ResultadoAlertas.maxPublicadas;
 
 /// Lo mismo que publica la portada web (`publicadas()` de AlertasManglar.tsx): sin las amenazas
-/// ciudadanas y solo las 6 más recientes.
-List<AlertaManglar> alertasPublicadas(List<AlertaManglar> alertas) => ([
-      for (final a in alertas)
-        if (a.tipo != 'amenaza_ciudadana') a,
-    ]..sort((x, y) => y.desde.compareTo(x.desde)))
+/// ciudadanas y solo las 6 más recientes. Una sola regla: la de [ResultadoAlertas.publicadas].
+List<AlertaManglar> alertasPublicadas(List<AlertaManglar> alertas, {bool simulacro = false}) =>
+    ResultadoAlertas(generado: null, alertas: alertas, ahora: const [], fuentes: const [], nota: '', simulacro: simulacro)
+        .publicadas
         .take(maxAlertasPublicadas)
         .toList();
 
@@ -179,8 +180,9 @@ extension<T> on T {
   R let<R>(R Function(T) f) => f(this);
 }
 
-/// Los grupos que se muestran en Inicio y en Comunidad (la misma cuenta en las dos).
-List<GrupoAlerta> gruposPublicados(ResultadoAlertas r) => agruparAlertas(alertasPublicadas(r.alertas));
+/// Los grupos que se muestran en Inicio, en Comunidad y en el mapa (la misma cuenta en los tres).
+List<GrupoAlerta> gruposPublicados(ResultadoAlertas r) =>
+    agruparAlertas(r.publicadas.take(maxAlertasPublicadas).toList());
 
 // ------------------------------------------------------------------ ocultas y seguidas
 
@@ -541,7 +543,7 @@ List<AccionGesto> accionesAlerta(BuildContext context, GrupoAlerta g, {DateTime?
       alEjecutar: () => abrirDetalleAlerta(context, g, generado: generado, simulacro: simulacro),
     ),
     if (a.punto != null)
-      AccionGesto(etiqueta: 'Ver en el mapa', icono: Icons.map_rounded, alEjecutar: () => verEnElMapa(context)),
+      AccionGesto(etiqueta: 'Ver en el mapa', icono: Icons.map_rounded, alEjecutar: () => verEnElMapa(context, a.punto)),
     AccionGesto(
       etiqueta: 'Compartir',
       icono: Icons.ios_share_rounded,
@@ -577,8 +579,10 @@ void ocultarConDeshacer(BuildContext context, AlertaManglar a, {AlertasOcultas? 
       accion: AccionAviso('Deshacer', () => o.mostrar(a.id)));
 }
 
-/// Lleva a la pestaña del mapa (donde están los círculos de las alertas).
-void verEnElMapa(BuildContext context) {
+/// Lleva a la pestaña del mapa (índice 1 en [Raiz]) y la centra en la alerta: el mapa escucha
+/// [puntoPedidoMapa] y vuela al punto.
+void verEnElMapa(BuildContext context, [LatLng? punto]) {
+  if (punto != null) puntoPedidoMapa.value = punto;
   Navigator.of(context).popUntil((r) => r.isFirst);
   Raiz.irA(context, 1);
 }
@@ -1032,7 +1036,7 @@ class DetalleAlerta extends StatelessWidget {
                         right: 8,
                         bottom: 8,
                         child: FilledButton.tonalIcon(
-                          onPressed: () => verEnElMapa(context),
+                          onPressed: () => verEnElMapa(context, a.punto),
                           icon: const Icon(Icons.map_rounded, size: 18),
                           label: const Text('Ver en el mapa'),
                         ),

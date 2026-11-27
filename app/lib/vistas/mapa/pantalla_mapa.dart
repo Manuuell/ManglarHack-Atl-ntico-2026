@@ -19,10 +19,13 @@ import '../../nucleo/presionable.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/tema.dart';
 import '../../nucleo/base/transicion_pestanas.dart';
+import '../comunidad/alertas_diseno.dart' show GrupoAlerta, abrirDetalleAlerta, gruposPublicados;
 import '../comunidad/piezas_comunidad.dart';
 import '../mis_reportes/detalle_reporte.dart';
 import '../reporte/flujo_reporte.dart';
+import '../visores/pantalla_visores.dart' show distanciaAlManglar;
 import 'capa_prioridad.dart';
+import 'capa_visores.dart';
 import 'controles.dart';
 import 'hojas.dart';
 import 'marcadores.dart';
@@ -116,6 +119,58 @@ class _PantallaMapaState extends State<PantallaMapa>
   Set<String> _idsPrueba = const {};
   ResultadoAlertas _alertasOf = ResultadoAlertas.vacio;
 
+  /// Las mismas alertas que Inicio y Comunidad ([gruposPublicados]): una regla para las tres.
+  List<GrupoAlerta> _gruposAlertas = const [];
+
+  // Capa «Riesgos CRA»: puntos críticos y focos de calor de los visores (misma API y copia sin
+  // señal). Se pide la primera vez que se enciende y queda en memoria: no se consulta dos veces.
+  bool _verRiesgos = false;
+  bool _cargandoRiesgos = false;
+  DatosCapaVisores? _riesgos;
+  List<Marker> _marcasRiesgos = const [];
+
+  double _distanciaM(double lat, double lon) =>
+      mounted ? distanciaAlManglar(context, lat, lon) : double.infinity;
+
+  Future<void> _alternarRiesgos() async {
+    if (_cargandoRiesgos) return;
+    vibrar(Vibracion.seleccion);
+    if (_verRiesgos) {
+      setState(() => _verRiesgos = false);
+      return;
+    }
+    final guardados = _riesgos;
+    if (guardados != null) {
+      setState(() => _verRiesgos = true);
+      _avisarRiesgos(guardados);
+      return;
+    }
+    setState(() => _cargandoRiesgos = true);
+    final d = await cargarCapaVisores(context, _distanciaM);
+    if (!mounted) return;
+    setState(() {
+      _cargandoRiesgos = false;
+      _riesgos = d;
+      _verRiesgos = d != null;
+      _marcasRiesgos = d == null ? const [] : marcadoresVisores(context, d, _distanciaM);
+    });
+    if (d == null) {
+      _mostrarAviso(_Aviso(
+        'No pude traer los riesgos de la CRA: sin señal y sin copia guardada.',
+        Icons.cloud_off_rounded,
+        accion: 'Reintentar',
+        alAccion: _alternarRiesgos,
+      ));
+    } else {
+      _avisarRiesgos(d);
+    }
+  }
+
+  void _avisarRiesgos(DatosCapaVisores d) => _mostrarAviso(_Aviso(
+        d.vacia ? 'La CRA no reporta puntos críticos ni focos de calor en el manglar.' : d.resumen,
+        d.vacia ? Icons.verified_rounded : Icons.warning_amber_rounded,
+      ));
+
   Future<void> _cargarComunidad() async {
     final f = FuenteComunidad.compartida;
     final [r, a] = await Future.wait<Object>([f.reportes(), f.alertas()]);
@@ -125,6 +180,7 @@ class _PantallaMapaState extends State<PantallaMapa>
       _comunidad = [for (final x in lote) x.publico];
       _idsPrueba = {for (final x in lote) if (x.prueba) x.publico.id};
       _alertasOf = (a as Lote<ResultadoAlertas>).datos;
+      _gruposAlertas = gruposPublicados(_alertasOf);
     });
   }
 
@@ -816,34 +872,42 @@ class _PantallaMapaState extends State<PantallaMapa>
                         ],
                 ),
               ),
-              // Alertas oficiales del servidor: un círculo del color del nivel por lugar (la más alta).
+              // Riesgos de la CRA (visores): debajo de las alertas, para que estas se toquen primero.
+              if (_verRiesgos) MarkerLayer(markers: _marcasRiesgos),
+              // Alertas oficiales del servidor: un círculo del color del nivel por lugar (la más alta),
+              // las mismas publicadas que muestran Inicio y Comunidad.
               CircleLayer(
                 circles: [
-                  for (final (a, _) in _alertasOf.porLugar)
-                    if (a.punto != null)
+                  for (final g in _gruposAlertas)
+                    if (g.principal.punto case final punto?)
                       CircleMarker(
-                        point: a.punto!,
+                        point: punto,
                         radius: 1500,
                         useRadiusInMeter: true,
-                        color: colorNivel(a.nivel).withValues(alpha: 0.16),
-                        borderColor: colorNivel(a.nivel).withValues(alpha: 0.7),
+                        color: colorNivel(g.principal.nivel).withValues(alpha: 0.16),
+                        borderColor: colorNivel(g.principal.nivel).withValues(alpha: 0.7),
                         borderStrokeWidth: 2,
                       ),
                 ],
               ),
               MarkerLayer(
                 markers: [
-                  for (final (a, extra) in _alertasOf.porLugar)
-                    if (a.punto != null)
+                  for (final g in _gruposAlertas)
+                    if (g.principal.punto case final punto?)
                       Marker(
-                        key: ValueKey('alerta-${a.id}'),
-                        point: a.punto!,
+                        key: ValueKey('alerta-${g.principal.id}'),
+                        point: punto,
                         width: 48,
                         height: 48,
                         child: MarcadorAlerta(
-                          alerta: a,
-                          conteo: extra + 1,
-                          alTocar: () => abrirHojaAlerta(context, a, extra: extra, generado: _alertasOf.generado),
+                          alerta: g.principal,
+                          conteo: g.todas.length,
+                          alTocar: () => abrirDetalleAlerta(
+                            context,
+                            g,
+                            generado: _alertasOf.generado,
+                            simulacro: _alertasOf.simulacro,
+                          ),
                         ),
                       ),
                 ],
@@ -900,6 +964,19 @@ class _PantallaMapaState extends State<PantallaMapa>
                           : 'Filtrar reportes',
                       punto: _filtro.activo,
                       onTap: _abrirFiltro,
+                    ),
+                    const SizedBox(width: 10),
+                    // Arriba y no sobre «Mi ubicación»: así no crece el panel de abajo ni tapa el mapa.
+                    BotonRedondo(
+                      key: const ValueKey('boton-riesgos'),
+                      icono: Icons.warning_amber_rounded,
+                      etiqueta: _verRiesgos
+                          ? 'Riesgos CRA, capa encendida. Toca para apagarla'
+                          : 'Riesgos CRA: ver puntos críticos y focos de calor',
+                      ocupado: _cargandoRiesgos,
+                      punto: _verRiesgos,
+                      color: _verRiesgos ? Cra.azul : Zc.raiz,
+                      onTap: _alternarRiesgos,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
