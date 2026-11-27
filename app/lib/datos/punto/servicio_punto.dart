@@ -25,7 +25,10 @@ class ServicioPunto {
     }
     try {
       final r = await servidor.pedir('GET', Uri.parse('${servidor.base}/rest/v1/puntos_publicos?codigo=eq.${Uri.encodeComponent(codigo)}&select=*&limit=1'),
-        {'apikey': servidor.anon, 'Authorization': 'Bearer ${servidor.anon}'});
+        {'apikey': servidor.anon, 'Authorization': 'Bearer ${servidor.anon}'},
+        // Con señal floja en el sitio no se espera 20 s: si ya hay ficha guardada se muestra a los 3 s,
+        // y sin ella se avisa a los 8 s (la visita queda guardada y se reintenta).
+        plazo: Duration(seconds: guardado != null ? 3 : 8));
       if (r.statusCode >= 300) throw ErrorServidor('punto', r.body, estadoHttp: r.statusCode);
       final lista = jsonDecode(r.body) as List;
       if (lista.isEmpty) { await preferencias.remove('punto_cache_$codigo'); return null; }

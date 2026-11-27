@@ -45,7 +45,15 @@
 
   <!-- La primera foto de la bienvenida se pide junto al motor: cuando Flutter la necesita ya está en la caché
        del navegador (misma URL y mismo modo que usa Flutter para sus recursos, por eso as="fetch" y crossorigin). -->
-  <link rel="preload" href="assets/assets/fotos/manglar-raices-cartagena.webp" as="fetch" crossorigin="anonymous">
+  <script>
+    // Solo en la portada (bienvenida): quien llega a un punto o a un evento no ve esta foto primero.
+    if (!/[?&#](punto|evento|jornada)=|evento\//.test(location.href)) {
+      var pre = document.createElement('link');
+      pre.rel = 'preload'; pre.as = 'fetch'; pre.crossOrigin = 'anonymous';
+      pre.href = 'assets/assets/fotos/manglar-raices-cartagena.webp';
+      document.head.appendChild(pre);
+    }
+  </script>
   <link rel="preload" href="zanky-arranque.webp" as="image" fetchpriority="high">
 
   <style>
