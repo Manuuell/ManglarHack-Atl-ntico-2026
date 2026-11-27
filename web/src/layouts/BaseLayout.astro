@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Footer from '../components/layout/Footer.astro';
+import BurbujaZanky from '../components/zanky/BurbujaZanky';
 interface Props { title?: string; description?: string; class?: string; sinPie?: boolean; }
 const { title = 'El manglar del Atlántico · C.R.A.', description = 'Monitoreo del manglar del Atlántico y plataforma abierta para su restauración y conservación con la C.R.A., las comunidades y Zanky.', class: clase, sinPie = false } = Astro.props;
 ---
@@ -30,6 +31,7 @@ const { title = 'El manglar del Atlántico · C.R.A.', description = 'Monitoreo 
  <body class:list={['bg-fondo text-texto font-sans', clase]}>
   <slot />
   {!sinPie && <Footer />}
+  <BurbujaZanky client:idle />
   <script is:inline>
    // Las secciones con .revelar entran al aparecer en pantalla (una sola vez).
    (() => {

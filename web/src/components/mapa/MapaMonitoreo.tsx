@@ -5,6 +5,7 @@ import { GeoJSON, Pane, MapContainer, Marker, Polygon, Popup, TileLayer, Tooltip
 import type { NivelPrioridad, ReportePublico, CapaManglarCRA, TipoReporte, ZonasManglar } from '../../types/manglar';
 import { LISTA_PRIORIDADES, LISTA_PRIORIDADES_ZONA, LISTA_TIPOS, PRIORIDADES, PRIORIDADES_ZONA, TIPOS, formatearFecha, nivelPrioridad } from '../../lib/catalogos';
 import { useReportesPublicos } from '../../lib/reportesStore';
+import { backendActivo } from '../../lib/backend/supabase';
 import { LIMITES_MANGLAR, RADIO_INFLUENCIA_M, enAreaDeReporte } from '../../lib/areaReporte';
 import { cn } from '../../lib/utils';
 import BarraConfianza from '../ui/react/BarraConfianza';
@@ -92,7 +93,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
   return (
     <div className="relative z-0">
       <div className="mb-3 rounded-sm bg-superficie/95 p-4 shadow-[var(--c-sombra-alta)] backdrop-blur ">
-        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-dorado-300">Datos de ejemplo</div>
+        <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-dorado-300">{backendActivo ? 'En vivo desde el servidor' : 'Datos de ejemplo'}</div>
         <div role="status" aria-live="polite" className="text-sm text-suave">
           Mostrando {filtrados.length} de {reportesVivos.length} reportes{fueraDeArea > 0 ? ` · ${fueraDeArea} fuera del área de reporte no se publica${fueraDeArea === 1 ? "" : "n"}` : ""}
           {filtrados.length === 0 && <span className="mt-2 block text-texto">Ningún reporte coincide con los filtros</span>}
@@ -191,7 +192,7 @@ export default function MapaMonitoreo({ reportes, poligonos }: Props) {
           <li key={prioridad} className="flex items-center gap-1.5 text-suave"><span aria-hidden="true" className={cn('size-2 rounded-full', PRIORIDADES[prioridad].punto)} />{PRIORIDADES[prioridad].etiqueta}</li>
         ))}</ul></div>
         <div className="flex flex-wrap gap-2" aria-label="Descargar datos públicos">{[{ etiqueta: 'CSV', descargar: exportarCSV }, { etiqueta: 'GeoJSON', descargar: exportarGeoJSON }, { etiqueta: 'KML', descargar: exportarKML }].map(({ etiqueta, descargar }) => <button key={etiqueta} disabled={!filtrados.length} onClick={() => descargar(filtrados)} className="min-h-11 rounded-xl px-3 ring-1 ring-linea disabled:opacity-40">Exportar {etiqueta}</button>)}</div>
-        <p>Solo denuncias dentro del manglar o a menos de {RADIO_INFLUENCIA_M} m · vista filtrada · ubicaciones aproximadas · CC BY 4.0 · Datos de ejemplo</p>
+        <p>Solo denuncias dentro del manglar o a menos de {RADIO_INFLUENCIA_M} m · vista filtrada · ubicaciones aproximadas · CC BY 4.0 · {backendActivo ? 'reportes del servidor común (hoy incluye reportes de demostración)' : 'Datos de ejemplo'}</p>
       </div>
     </div>
   );

@@ -389,6 +389,8 @@ body.portada {
 
 /* -- avisos en tiempo real ----------------------------------------------------- */
 .avisos { position: fixed; left: 16px; bottom: 16px; z-index: 2000; display: grid; gap: 10px; width: min(380px, calc(100vw - 32px)); pointer-events: none; }
+/* En el teléfono los avisos van encima de la burbuja de Zanky (abajo a la derecha) para no taparla. */
+@media (max-width: 520px) { .avisos { bottom: 92px; } }
 .aviso {
   pointer-events: auto; display: grid; grid-template-columns: 34px minmax(0, 1fr) 32px; gap: 10px; align-items: start;
   padding: 12px; border-radius: 18px; background: var(--tinta); color: #fff; box-shadow: 0 18px 40px -16px rgba(0, 0, 0, .6);
