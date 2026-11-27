@@ -155,7 +155,7 @@
       "type": "Feature",
       "properties": {
         "id": "balboa",
-        "nombre": "Balboa",
+        "nombre": "Puerto Colombia",
         "nombre_largo": "Puerto Colombia – Balboa – Puerto Velero",
         "municipio": "Puerto Colombia y Tubará",
         "prioridad": "alta",
@@ -304,7 +304,7 @@
       "type": "Feature",
       "properties": {
         "id": "manaties",
-        "nombre": "Manatíes",
+        "nombre": "Tubará",
         "nombre_largo": "Tubará – Juan de Acosta",
         "municipio": "Tubará y Juan de Acosta",
         "prioridad": "media",
