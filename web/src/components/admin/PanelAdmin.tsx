@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { CalendarDays, Check, Download, Image as Imagen, MapPin, MessageCircle, Pencil, Plus, RefreshCw, Search, Send, ShieldCheck, Users, X } from 'lucide-react';
 import type { TipoJornada } from '../../types/plataforma';
 import { TIPOS_JORNADA } from '../../lib/plataforma/catalogos';
-import { renovarSesion, useSesion } from '../../lib/cuenta';
+import { normalizarCelular, renovarSesion, useSesion } from '../../lib/cuenta';
 import { ErrorBot, pedirBot, pedirBotCrudo } from '../../lib/bot';
 import { sincronizarJornadas } from '../../lib/plataforma/jornadasApi';
 import { backendActivo, leerReportesPublicos, type FilaPublica } from '../../lib/backend/supabase';
@@ -272,8 +272,11 @@ export default function PanelAdmin() {
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   // Invitar
   const [jornadaInvitar, setJornadaInvitar] = useState('');
-  const [destino, setDestino] = useState<'cuentas' | 'inscritos' | 'uno'>('cuentas');
+  const [destino, setDestino] = useState<'cuentas' | 'inscritos' | 'uno' | 'numero'>('cuentas');
   const [cuentaUna, setCuentaUna] = useState('');
+  // «Un número»: quien administra escribe el celular (para probar o para alguien que pidió la invitación).
+  const [numero, setNumero] = useState('');
+  const [nombreNumero, setNombreNumero] = useState('');
   const [confirmando, setConfirmando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoEnvio | null>(null);
@@ -418,8 +421,10 @@ export default function PanelAdmin() {
   const jInvitar = publicadas.find((j) => j.id === jornadaInvitar) ?? null;
   useEffect(() => { if (destino === 'inscritos' && jInvitar && !inscritos[jInvitar.id]) void verInscritos(jInvitar.id, true); }, [destino, jInvitar?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const inscritosWhatsapp = jInvitar ? (inscritos[jInvitar.id] ?? []).filter((i) => i.acepta_whatsapp && i.estado !== 'cancelada' && i.telefono_mascara) : [];
-  const cuantos = destino === 'cuentas' ? conWhatsapp.length : destino === 'inscritos' ? inscritosWhatsapp.length : cuentaUna ? 1 : 0;
-  const nombreEjemplo = destino === 'uno' ? (conWhatsapp.find((c) => c.cuenta_id === cuentaUna)?.nombre ?? 'María') : destino === 'inscritos' ? (inscritosWhatsapp[0]?.nombre ?? 'María') : (conWhatsapp[0]?.nombre ?? 'María');
+  const numeroNormal = normalizarCelular(numero);
+  const numeroOk = numeroNormal !== null && numeroNormal !== 'invalido';
+  const cuantos = destino === 'cuentas' ? conWhatsapp.length : destino === 'inscritos' ? inscritosWhatsapp.length : destino === 'numero' ? (numeroOk ? 1 : 0) : cuentaUna ? 1 : 0;
+  const nombreEjemplo = destino === 'numero' ? (nombreNumero.trim() || 'amigo del manglar') : destino === 'uno' ? (conWhatsapp.find((c) => c.cuenta_id === cuentaUna)?.nombre ?? 'María') : destino === 'inscritos' ? (inscritosWhatsapp[0]?.nombre ?? 'María') : (conWhatsapp[0]?.nombre ?? 'María');
   const esManana = jInvitar ? diaBogota(jInvitar.inicio) === diaBogota(Date.now() + 86_400_000) : false;
   const imagenInvitacion = jInvitar?.imagen_url || resumen?.plantilla.imagen_por_defecto || '';
 
@@ -427,7 +432,7 @@ export default function PanelAdmin() {
     if (!jInvitar) return;
     setEnviando(true); setResultado(null);
     try {
-      const r = await api<ResultadoEnvio>('/api/admin/invitaciones', { metodo: 'POST', cuerpo: { jornada_id: jInvitar.id, destino, ...(destino === 'uno' ? { cuenta_id: cuentaUna } : {}) } });
+      const r = await api<ResultadoEnvio>('/api/admin/invitaciones', { metodo: 'POST', cuerpo: { jornada_id: jInvitar.id, destino, ...(destino === 'uno' ? { cuenta_id: cuentaUna } : {}), ...(destino === 'numero' ? { telefono: numero, nombre: nombreNumero } : {}) } });
       setResultado(r);
       setAviso({ tipo: r.fallidos ? 'error' : 'ok', texto: `Enviadas: ${r.enviados}. Fallidas: ${r.fallidos}.` });
       void api<{ envios: Envio[] }>('/api/admin/envios').then((e) => setEnvios(e?.envios ?? [])).catch(() => undefined);
@@ -592,12 +597,21 @@ export default function PanelAdmin() {
               ['cuentas', `Cuentas que aceptaron WhatsApp (${conWhatsapp.length})`],
               ['inscritos', `Inscritos de esta jornada con WhatsApp (${inscritos[jornadaInvitar] ? inscritosWhatsapp.length : '…'})`],
               ['uno', 'Una sola cuenta (para probar)'],
+              ['numero', 'Un número que yo escriba'],
             ] as const).map(([v, t]) => <label key={v} className={cn('flex min-h-11 cursor-pointer items-center gap-3 rounded-2xl border px-4 py-2 text-sm', destino === v ? 'border-dorado-500 bg-dorado-500/10' : 'border-linea bg-white/5')}>
               <input type="radio" name="destino" value={v} checked={destino === v} onChange={() => { setDestino(v); setConfirmando(false); setResultado(null); }} className="size-4 accent-dorado-500" />{t}</label>)}
             {destino === 'uno' && (conWhatsapp.length === 0 ? <p className="text-sm text-tenue">Ninguna cuenta ha aceptado WhatsApp todavía. Crea una cuenta con tu celular y marca la casilla.</p> :
               <select className={campo} value={cuentaUna} onChange={(e) => setCuentaUna(e.target.value)} aria-label="Cuenta a la que se envía la prueba">
                 {conWhatsapp.map((c) => <option key={c.cuenta_id} value={c.cuenta_id}>{c.nombre} · {c.telefono_mascara}</option>)}
               </select>)}
+            {destino === 'numero' && <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Celular (WhatsApp)</span>
+                <input className={campo} type="tel" inputMode="tel" autoComplete="off" maxLength={20} placeholder="300 123 4567" value={numero} onChange={(e) => { setNumero(e.target.value); setConfirmando(false); setResultado(null); }} />
+                {numero.trim() && !numeroOk && <span className="text-sm font-semibold text-alta-texto">Revisa el celular: 10 dígitos, por ejemplo 300 123 4567.</span>}</label>
+              <label className="grid gap-1.5"><span className="text-sm font-semibold text-suave">Nombre (opcional)</span>
+                <input className={campo} maxLength={60} placeholder="Para el saludo: «Hola …»" value={nombreNumero} onChange={(e) => setNombreNumero(e.target.value)} /></label>
+              <p className="text-xs text-tenue sm:col-span-2">Envía solo a números que te pidieron la invitación o al tuyo para probar (Ley 1581 de 2012 y reglas de WhatsApp).</p>
+            </div>}
           </fieldset>
           {jInvitar && !esManana && <Aviso tipo="info">La plantilla dice «mañana es tu evento». Esta jornada es el {fechaLarga(jInvitar.inicio)}: lo ideal es enviarla el día anterior.</Aviso>}
           {!confirmando ? <button type="button" disabled={!jInvitar || cuantos === 0 || enviando} onClick={() => setConfirmando(true)} className={cn(boton('dorado'), 'justify-self-start')}><Send className="size-4" aria-hidden="true" />Enviar invitación</button> :
