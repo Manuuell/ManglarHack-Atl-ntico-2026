@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import '../../lib/popupsQueCaben';
 import { renderToStaticMarkup } from 'react-dom/server';
 import L from 'leaflet';
 import { GeoJSON, Pane, MapContainer, Marker, Polygon, Popup, TileLayer, Tooltip, ZoomControl, useMap } from 'react-leaflet';

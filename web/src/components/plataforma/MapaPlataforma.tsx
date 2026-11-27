@@ -2,6 +2,7 @@
 // referencia, sectores, acciones y reportes ciudadanos. Solo cliente
 // (client:only="react"): importa Leaflet.
 import 'leaflet/dist/leaflet.css';
+import '../../lib/popupsQueCaben';
 import '../../styles/mapa.css';
 import { useEffect, useMemo, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';

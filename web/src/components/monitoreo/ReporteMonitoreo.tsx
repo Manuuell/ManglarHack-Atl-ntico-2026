@@ -1,6 +1,7 @@
 // Reporte de monitoreo de una acción con fotografías ubicadas.
 // Se monta con client:only="react" (usa Leaflet y APIs del navegador).
 import 'leaflet/dist/leaflet.css';
+import '../../lib/popupsQueCaben';
 import '../../styles/mapa.css';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { divIcon, latLngBounds } from 'leaflet';
