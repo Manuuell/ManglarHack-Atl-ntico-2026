@@ -24,6 +24,7 @@ Future<bool> confirmarEnHoja(
   required String textoConfirmar,
   String textoCancelar = 'Cancelar',
   bool destructivo = false,
+  bool seguroPrimero = false,
   Animo animo = Animo.preocupado,
 }) async {
   vibrar(Vibracion.media);
@@ -36,6 +37,7 @@ Future<bool> confirmarEnHoja(
       textoConfirmar: textoConfirmar,
       textoCancelar: textoCancelar,
       destructivo: destructivo,
+      seguroPrimero: seguroPrimero,
       animo: animo,
     ),
   );
@@ -65,13 +67,16 @@ Future<bool> accionConDeshacer(
     );
     if (!ok || !context.mounted) return false;
   }
-  await hacer();
-  if (!context.mounted) return true;
-  avisar(
-    context,
-    avisoHecho,
-    accion: AccionAviso(textoDeshacer, () => deshacer()),
-  );
+  // La acción cambia lo visible al instante; el aviso no espera a que termine de guardarse.
+  final hecho = hacer();
+  if (context.mounted) {
+    avisar(
+      context,
+      avisoHecho,
+      accion: AccionAviso(textoDeshacer, () => deshacer()),
+    );
+  }
+  await hecho;
   return true;
 }
 
@@ -82,6 +87,7 @@ class _ContenidoConfirmar extends StatelessWidget {
     required this.textoConfirmar,
     required this.textoCancelar,
     required this.destructivo,
+    required this.seguroPrimero,
     required this.animo,
   });
   final String titulo;
@@ -89,6 +95,10 @@ class _ContenidoConfirmar extends StatelessWidget {
   final String textoConfirmar;
   final String textoCancelar;
   final bool destructivo;
+
+  /// `true`: lo seguro (cancelar) es el botón principal y lo que destruye va
+  /// debajo, en rojo y más discreto. Para lo que se pierde de verdad.
+  final bool seguroPrimero;
   final Animo animo;
 
   @override
@@ -104,18 +114,29 @@ class _ContenidoConfirmar extends StatelessWidget {
         const SizedBox(height: 6),
         Text(texto, style: tt.bodyMedium, textAlign: TextAlign.center),
         const SizedBox(height: 20),
-        BotonZ(
-          texto: textoConfirmar,
-          color: destructivo ? rojo : Zc.hoja,
-          onTap: () => Navigator.pop(context, true),
-        ),
-        const SizedBox(height: 8),
-        BotonZ(
-          texto: textoCancelar,
-          secundario: true,
-          color: destructivo ? Zc.hoja : Zc.textoSuave,
-          onTap: () => Navigator.pop(context, false),
-        ),
+        if (seguroPrimero) ...[
+          BotonZ(texto: textoCancelar, onTap: () => Navigator.pop(context, false)),
+          const SizedBox(height: 8),
+          BotonZ(
+            texto: textoConfirmar,
+            secundario: true,
+            color: rojo,
+            onTap: () => Navigator.pop(context, true),
+          ),
+        ] else ...[
+          BotonZ(
+            texto: textoConfirmar,
+            color: destructivo ? rojo : Zc.hoja,
+            onTap: () => Navigator.pop(context, true),
+          ),
+          const SizedBox(height: 8),
+          BotonZ(
+            texto: textoCancelar,
+            secundario: true,
+            color: destructivo ? Zc.hoja : Zc.textoSuave,
+            onTap: () => Navigator.pop(context, false),
+          ),
+        ],
       ],
     );
   }

@@ -141,7 +141,7 @@ class _InterruptorIosState extends State<InterruptorIos> with TickerProviderStat
                   animation: Listenable.merge([_pos, _presion]),
                   builder: (context, _) {
                     final t = _pos.value.clamp(0.0, 1.0);
-                    final estira = 4.0 * Curves.easeOut.transform(_presion.value);
+                    final estira = 4.0 * AppMotion.press.transform(_presion.value);
                     return DecoratedBox(
                       decoration: BoxDecoration(
                         color: Color.lerp(const Color(0xFFD9D5CA), widget.colorActivo, t),

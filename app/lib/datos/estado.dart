@@ -157,6 +157,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
     _reintento?.cancel();
     perfil = null;
     reportes.clear();
+    _quitados.clear();
     publicos = const [];
     clima = null;
     climaDeCache = false;
@@ -199,6 +200,33 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
     _avisar();
     unawaited(sincronizar());
     return reportes.firstWhere((x) => x.id == r.id, orElse: () => r);
+  }
+
+  /// Ids que la persona quitó de este teléfono: la fusión con el disco no los trae de vuelta.
+  final Set<String> _quitados = {};
+
+  /// ¿Se puede quitar de este teléfono? Solo lo que no llegó a la CRA ni va en camino:
+  /// un reporte enviado ya no es solo del teléfono.
+  static bool sePuedeQuitar(Reporte r) => r.envio != Envio.enviado && r.envio != Envio.enviando;
+
+  /// Quita del teléfono un reporte que no salió (con [restaurarReporte] se recupera
+  /// mientras la pantalla conserve el objeto). Primero memoria y después disco.
+  Future<void> quitarReporte(Reporte r) async {
+    if (!sePuedeQuitar(r)) return;
+    _quitados.add(r.id);
+    reportes.removeWhere((x) => x.id == r.id);
+    _avisar();
+    await _guardarSinRomper();
+  }
+
+  /// Devuelve un reporte quitado con [quitarReporte] (el «Deshacer»).
+  Future<void> restaurarReporte(Reporte r) async {
+    _quitados.remove(r.id);
+    if (reportes.any((x) => x.id == r.id)) return;
+    reportes.add(r);
+    reportes.sort((a, b) => b.capturadoEn.compareTo(a.capturadoEn));
+    _avisar();
+    await _guardarSinRomper();
   }
 
   /// Pone otra vez en la cola un reporte rechazado o con error (por ejemplo, si el
@@ -290,6 +318,8 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
         if (desde != _epoca) return; // se borró todo mientras tanto
         final trabajo = [?nuevo, ...reportes];
         fusionarReportes(trabajo, disco);
+        // Lo que la persona quitó no vuelve del disco (otra pestaña, una copia vieja).
+        trabajo.removeWhere((r) => _quitados.contains(r.id));
         try {
           final ok = await prefs.setStringList(claveReportes, [for (final r in trabajo) jsonEncode(r.toJson())]);
           if (!ok) throw const ErrorAlGuardar('El almacenamiento no aceptó el cambio.');
@@ -322,7 +352,9 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
         try {
           final prefs = await SharedPreferences.getInstance();
           await prefs.reload();
-          if (fusionarReportes(reportes, leerReportes(prefs.getStringList(claveReportes)))) _avisar();
+          final cambio = fusionarReportes(reportes, leerReportes(prefs.getStringList(claveReportes)));
+          reportes.removeWhere((r) => _quitados.contains(r.id));
+          if (cambio) _avisar();
         } catch (_) {}
       });
 

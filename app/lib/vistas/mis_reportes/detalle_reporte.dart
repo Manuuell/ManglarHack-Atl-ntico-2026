@@ -10,6 +10,7 @@ import '../../datos/tipos.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
+import '../../nucleo/kit/aviso.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
 import 'foto_reporte.dart';
@@ -786,11 +787,10 @@ class _Acciones extends StatelessWidget {
   }
 
   Future<void> _compartir(BuildContext context) async {
-    final mensajero = ScaffoldMessenger.of(context);
     try {
       await SharePlus.instance.share(ShareParams(text: _texto(), subject: 'Caso ${reporte.caso} en Zanky'));
     } catch (_) {
-      mensajero.showSnackBar(const SnackBar(content: Text('No pude abrir el menú de compartir.')));
+      if (context.mounted) avisar(context, 'No pude abrir el menú de compartir.', tipo: TipoAviso.error);
     }
   }
 
