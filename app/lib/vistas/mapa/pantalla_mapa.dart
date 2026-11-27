@@ -842,6 +842,7 @@ class _PantallaMapaState extends State<PantallaMapa>
                         height: 48,
                         child: MarcadorAlerta(
                           alerta: a,
+                          conteo: extra + 1,
                           alTocar: () => abrirHojaAlerta(context, a, extra: extra, generado: _alertasOf.generado),
                         ),
                       ),

@@ -12,6 +12,7 @@ import '../../nucleo/kit/menu_mantenido.dart';
 import '../../nucleo/identidad.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
+import 'alertas_diseno.dart';
 import 'lector_noticia.dart';
 
 /// Colores de los niveles de alerta, con los tonos de la paleta CRA (amarilla = dorado CRA).
@@ -100,79 +101,13 @@ class TarjetaAlerta extends StatelessWidget {
   final int extra;
   final bool compacta;
 
+  /// El diseño vive en `alertas_diseno.dart` (niveles, ícono por amenaza, sello de fuente).
   @override
-  Widget build(BuildContext context) {
-    final tt = Theme.of(context).textTheme;
-    final a = alerta;
-    final cuando = a.desde == a.hasta ? cuandoTexto(a.desde) : '${cuandoTexto(a.desde)} → ${cuandoTexto(a.hasta)}';
-    return Semantics(
-      container: true,
-      label: '${a.nivel.texto}: ${sinPuntosCra(a.titulo)}',
-      child: Container(
-        decoration: BoxDecoration(
-          color: Zc.superficie,
-          borderRadius: BorderRadius.circular(Zr.m),
-          border: Border(left: BorderSide(color: colorNivel(a.nivel), width: 4)),
-          boxShadow: const [BoxShadow(color: Color(0x140B2E24), blurRadius: 18, offset: Offset(0, 6))],
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              EtiquetaNivel(a.nivel),
-              const Spacer(),
-              Text(a.medido ? 'Medido' : 'Pronóstico', style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
-            ]),
-            const SizedBox(height: 10),
-            Text('${a.icono} ${sinPuntosCra(a.titulo)}', style: tt.titleMedium?.copyWith(color: Zc.texto, fontWeight: FontWeight.w800)),
-            if (extra > 0)
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: Text('y $extra ${extra == 1 ? 'aviso más' : 'avisos más'} en este lugar',
-                    style: tt.labelSmall?.copyWith(color: Zc.textoSuave)),
-              ),
-            if (!compacta) ...[
-              const SizedBox(height: 6),
-              Text(sinPuntosCra(a.detalle), style: tt.bodyMedium?.copyWith(color: Zc.textoSuave, height: 1.4)),
-              const SizedBox(height: 8),
-              Text.rich(
-                TextSpan(children: [
-                  const TextSpan(text: 'Qué hacer: ', style: TextStyle(fontWeight: FontWeight.w800)),
-                  TextSpan(text: sinPuntosCra(a.recomendacion)),
-                ]),
-                style: tt.bodyMedium?.copyWith(color: Zc.texto, height: 1.4),
-              ),
-            ],
-            const SizedBox(height: 10),
-            Wrap(spacing: 14, runSpacing: 6, children: [
-              _Dato(icono: Icons.place_rounded, texto: sinPuntosCra(a.lugar)),
-              _Dato(icono: Icons.schedule_rounded, texto: cuando),
-              _Dato(icono: Icons.verified_rounded, texto: sinPuntosCra(a.fuentesTexto)),
-            ]),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Dato extends StatelessWidget {
-  const _Dato({required this.icono, required this.texto});
-  final IconData icono;
-  final String texto;
-  @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icono, size: 15, color: Zc.textoTenue),
-        const SizedBox(width: 4),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 260),
-          child: Text(texto,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(color: Zc.textoSuave)),
-        ),
-      ]);
+  Widget build(BuildContext context) => Semantics(
+        container: true,
+        label: '${alerta.nivel.texto}: ${alerta.titulo}',
+        child: TarjetaAlertaZ(alerta: alerta, extra: extra, expandida: !compacta),
+      );
 }
 
 /// El mismo mensaje que arma `compartir()` en AlertasManglar.tsx.
@@ -213,33 +148,19 @@ Future<void> abrirHojaAlerta(BuildContext context, AlertaManglar a, {int extra =
       ),
     );
 
-/// Marcador de alerta en el mapa: el ícono de la web sobre un círculo del color del nivel.
+/// Marcador de alerta en el mapa: anillo que respira según el nivel, ícono de la amenaza y conteo
+/// (el diseño, en `alertas_diseno.dart`).
 class MarcadorAlerta extends StatelessWidget {
-  const MarcadorAlerta({super.key, required this.alerta, required this.alTocar});
+  const MarcadorAlerta({super.key, required this.alerta, required this.alTocar, this.conteo = 1});
   final AlertaManglar alerta;
   final VoidCallback alTocar;
+  final int conteo;
   @override
-  Widget build(BuildContext context) {
-    final c = colorNivel(alerta.nivel);
-    return Presionable(
-      etiqueta: '${alerta.nivel.texto}: ${alerta.titulo}',
-      onTap: alTocar,
-      child: Center(
-        child: Container(
-          width: 38,
-          height: 38,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            shape: BoxShape.circle,
-            border: Border.all(color: c, width: 3),
-            boxShadow: [BoxShadow(color: c.withValues(alpha: 0.45), blurRadius: 12)],
-          ),
-          child: Text(alerta.icono, style: const TextStyle(fontSize: 18, height: 1)),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Presionable(
+        etiqueta: '${alerta.nivel.texto}: ${alerta.titulo}${conteo > 1 ? ' y ${conteo - 1} avisos más' : ''}',
+        onTap: alTocar,
+        child: MarcadorAlertaZ(alerta: alerta, conteo: conteo),
+      );
 }
 
 /// La vista previa al mantener presionada una noticia: foto, fecha y el comienzo del texto.

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../datos/comunidad/comunidad.dart';
 import '../../datos/comunidad/feed.dart';

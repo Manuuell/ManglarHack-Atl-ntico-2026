@@ -24,6 +24,7 @@ import '../../nucleo/tema.dart';
 import '../comun/zanky_mascota.dart';
 import '../../datos/comunidad/feed.dart';
 import 'datos_abiertos.dart';
+import 'alertas_diseno.dart';
 import 'feed_y_eventos.dart';
 import 'piezas_comunidad.dart';
 import '../../datos/admin/contenido_publico.dart';
@@ -252,7 +253,7 @@ class _SeccionAlertas extends StatelessWidget {
             tamanoZanky: 96,
             relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
           )
-        else if (l.datos.alertas.isEmpty)
+        else if (gruposPublicados(l.datos).isEmpty)
           const EstadoVacio(
             titulo: 'Todo en calma',
             texto: 'No hay mar de leva, aguaceros, vientos fuertes ni riesgo de incendio a la vista.',
@@ -261,11 +262,7 @@ class _SeccionAlertas extends StatelessWidget {
             relleno: EdgeInsets.fromLTRB(28, 0, 28, 8),
           )
         else
-          for (final (a, extra) in l.datos.porLugar)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-              child: TarjetaAlerta(alerta: a, extra: extra),
-            ),
+          ListaAlertas(grupos: gruposPublicados(l.datos), generado: l.datos.generado, simulacro: l.datos.simulacro),
         if (l.datos.generado != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),

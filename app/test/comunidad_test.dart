@@ -11,8 +11,8 @@ import 'package:zanky/datos/comunidad/feed.dart' show cargaJornadasRespaldo;
 import 'package:zanky/datos/experiencia/jornada.dart';
 import 'package:zanky/datos/tipos.dart';
 import 'package:zanky/nucleo/tema.dart';
+import 'package:zanky/vistas/comunidad/alertas_diseno.dart';
 import 'package:zanky/vistas/comunidad/comunidad_inicio.dart';
-import 'package:zanky/vistas/comunidad/piezas_comunidad.dart';
 
 /// Respuestas REALES guardadas el 27-nov-2026 (GET de solo lectura):
 /// `zanqui.sentralabs.co/alertas`, `/datos-abiertos/reportes.geojson` y el wp-json de la CRA
@@ -241,9 +241,10 @@ void main() {
       )));
       await t.pumpAndSettle();
       expect(find.text('ALERTAS DEL MANGLAR'), findsOneWidget);
-      expect(find.text('Alerta naranja'), findsWidgets);
+      expect(find.textContaining('Alerta naranja'), findsWidgets);
       expect(find.textContaining('Qué hacer:'), findsOneWidget);
-      expect(find.textContaining('lugar más'), findsOneWidget); // 2 lugares: sin las de la comunidad, como la web
+      // Lo mismo que publica la web: sin amenazas ciudadanas, una por lugar (Totumo y Mallorquín).
+      expect(find.text('1 de 2'), findsOneWidget);
       expect(find.text('Viento ahora'), findsNothing); // va con el ícono delante
       expect(find.textContaining('Viento ahora'), findsOneWidget);
       expect(find.text('RESPALDO'), findsNothing, reason: 'con alertas oficiales no se muestran las reglas locales');
@@ -261,19 +262,19 @@ void main() {
     });
 
     testWidgets('la tarjeta de alerta cabe a 360 px sin desbordes', (t) async {
-      final grupos = ResultadoAlertas.deTexto(fixture('alertas.json')).porLugar;
+      final resultado = ResultadoAlertas.deTexto(fixture('alertas.json'));
       for (final ancho in [360.0, 768.0]) {
         await t.pumpWidget(app(
           Padding(
             padding: const EdgeInsets.all(20),
-            child: TarjetaAlertaInicio(grupos: grupos, alTocar: () {}, generado: DateTime.now()),
+            child: TarjetaAlertaInicio(resultado: resultado),
           ),
           ancho: ancho,
         ));
         await t.pump();
         expect(t.takeException(), isNull);
       }
-      expect(find.byType(EtiquetaNivel), findsOneWidget);
+      expect(find.byType(InsigniaAlerta), findsOneWidget, reason: 'solo la de arriba se dibuja entera');
     });
   });
 }
