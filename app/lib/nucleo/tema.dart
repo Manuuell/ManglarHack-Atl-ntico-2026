@@ -22,6 +22,11 @@ abstract final class Zc {
   static const sol = Color(0xFFF2A33A);
   static const solClaro = Color(0xFFFDEED6);
 
+  // Colores del Carnaval de Barranquilla: el confeti y las celebraciones.
+  static const carnavalAmarillo = Color(0xFFF9C80E);
+  static const carnavalRojo = Color(0xFFE63946);
+  static const carnavalVerde = Color(0xFF2A9D8F);
+
   static const texto = Color(0xFF12211C);
   static const textoSuave = Color(0xFF55655F);
   static const textoTenue = Color(0xFF8A9893);

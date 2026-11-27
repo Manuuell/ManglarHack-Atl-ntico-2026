@@ -406,4 +406,29 @@ void main() {
     expect(e.perfil, isNull);
     expect(e.publicos, isEmpty);
   });
+
+  test('un envío en vuelo durante el borrado NO vuelve a escribir reportes.v1', () async {
+    final puerta = Completer<void>();
+    final s = ServidorFalso(alCrear: (p) async {
+      await puerta.future; // el envío sigue en el aire mientras se borra
+      return http.Response(jsonEncode({'id': p['id'], 'nuevo': true, 'id_publico': 'pub-${p['id']}'}), 200);
+    });
+    final e = estadoCon(s)..enLinea = true;
+    await e.agregar(reporteDePrueba(idDePrueba(96)), null);
+    final vuelta = e.sincronizar();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(s.creados, isNotEmpty);
+
+    // Lo que hace «Borrar mis datos»: primero el disco, luego la memoria.
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(EstadoZanky.claveReportes);
+    e.olvidarTodo();
+
+    puerta.complete();
+    await vuelta;
+    await e.sincronizar();
+    expect(await almacen.leerLista(EstadoZanky.claveReportes), isEmpty, reason: 'no debe reaparecer ni la clave');
+    expect((await almacen.getAll()).keys, isNot(contains('flutter.${EstadoZanky.claveReportes}')));
+    expect(e.reportes, isEmpty);
+  });
 }

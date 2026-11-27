@@ -58,7 +58,13 @@ class SeccionNivel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            Text(nivel.lema, style: tt.bodyMedium),
+            Row(
+              children: [
+                ZankyEtapa(etapa: nivel.numero, tamano: 64),
+                const SizedBox(width: 12),
+                Expanded(child: Text(nivel.lema, style: tt.bodyMedium)),
+              ],
+            ),
             if (progreso.pendientes > 0) ...[
               const SizedBox(height: 14),
               _EnRevision(pendientes: progreso.pendientes),

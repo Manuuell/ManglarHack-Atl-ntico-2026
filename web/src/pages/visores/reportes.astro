@@ -8,7 +8,7 @@ import { aReportePublico } from '../../lib/privacidad';
 const [reportes, sectores] = await Promise.all([obtenerReportes(), obtenerPoligonos()]);
 const publicos = reportes.map(aReportePublico);
 ---
-<VisorLayout pagina="reportes" titulo="Reportes de la comunidad" resumen="Lo que reporta la gente desde la web, la app y WhatsApp, con filtros por tipo y prioridad, las capas oficiales de la C.R.A. para comparar y los datos abiertos en CSV, GeoJSON y KML. Sin fotos ni nombres, y con la ubicación difuminada.">
+<VisorLayout pagina="reportes" rotulo="Monitoreo comunitario" titulo="Reportes de la comunidad" resumen="Lo que reporta la gente desde la web, la app y WhatsApp, con filtros por tipo y prioridad, las capas oficiales de la C.R.A. para comparar y los datos abiertos en CSV, GeoJSON y KML. Sin fotos ni nombres, y con la ubicación difuminada.">
   <div class="relative isolate">
     <MapaMonitoreo client:only="react" reportes={publicos} poligonos={sectores}>
       <div slot="fallback" class="grid h-[760px] place-items-center rounded-sm bg-white/5 text-suave ring-1 ring-linea" role="status">Cargando el mapa de reportes…</div>

@@ -1,10 +1,13 @@
-import 'dart:math' as math;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/reporte.dart';
+import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/celebracion.dart';
+import '../../nucleo/kit/haptica.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/burbuja.dart';
@@ -26,6 +29,10 @@ import '../raiz.dart';
   }
   if (r.envio == Envio.enviando) {
     return ('Enviando…', 'Un momento: lo estoy subiendo con la foto.', Zc.cienaga);
+  }
+  if (r.envio == Envio.rechazado) {
+    // Definitivo: se dice aunque no haya señal ahora (reintentar tal cual no lo arregla).
+    return ('No se pudo enviar', r.motivoRechazo ?? 'El servidor no aceptó este reporte.', Zc.sol);
   }
   if (!servidorConfigurado) {
     return (guardado, 'Modo demostración: en la versión conectada se envía solo a la CRA.', Zc.textoSuave);
@@ -60,24 +67,26 @@ class ReporteEnviado extends StatefulWidget {
   State<ReporteEnviado> createState() => _ReporteEnviadoState();
 }
 
-class _ReporteEnviadoState extends State<ReporteEnviado> with SingleTickerProviderStateMixin {
-  late final AnimationController _check =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900));
+class _ReporteEnviadoState extends State<ReporteEnviado> {
+  /// El ✓ y el confeti arrancan cuando la pantalla ya se ve (la entrada es un fundido
+  /// de [Zm.largo]); antes no se verían.
+  bool _celebrando = false;
+  Timer? _arranque;
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 180), () {
+    _arranque = Timer(Zm.corto, () {
       if (!mounted) return;
-      _check.forward();
-      // El golpe de éxito llega cuando el trazo se completa, no antes.
-      Future.delayed(const Duration(milliseconds: 380), () => HapticFeedback.mediumImpact());
+      setState(() => _celebrando = true);
+      // Un solo ✓: el de esta pantalla. El overlay pone solo el confeti (conCheck: false).
+      celebrar(context, etiqueta: 'Reporte guardado', conCheck: false);
     });
   }
 
   @override
   void dispose() {
-    _check.dispose();
+    _arranque?.cancel();
     super.dispose();
   }
 
@@ -108,13 +117,13 @@ class _ReporteEnviadoState extends State<ReporteEnviado> with SingleTickerProvid
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
                 children: [
                   Center(
-                    child: SizedBox(
-                      width: 108,
-                      height: 108,
-                      child: AnimatedBuilder(
-                        animation: _check,
-                        builder: (_, _) => CustomPaint(painter: _Check(_check.value, Zc.hoja)),
-                      ),
+                    child: SizedBox.square(
+                      dimension: 108,
+                      // El ✓ se dibuja una sola vez (el del kit); la vibración de éxito llega
+                      // cuando el trazo termina.
+                      child: _celebrando
+                          ? CheckDibujado(tamano: 108, etiqueta: 'Reporte guardado', alTerminar: vibrarExito)
+                          : null,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -134,9 +143,7 @@ class _ReporteEnviadoState extends State<ReporteEnviado> with SingleTickerProvid
                     etiqueta: 'Número de caso ${r.caso}. Toca para copiar',
                     onTap: () {
                       Clipboard.setData(ClipboardData(text: r.caso));
-                      ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(SnackBar(content: Text('Copiado: ${r.caso}')));
+                      avisar(context, 'Copiado: ${r.caso}', tipo: TipoAviso.exito);
                     },
                     child: TarjetaZ(
                       child: Column(
@@ -204,51 +211,4 @@ class _ReporteEnviadoState extends State<ReporteEnviado> with SingleTickerProvid
       ),
     );
   }
-}
-
-/// Disco que brota y un check que se dibuja (el trazo empieza cuando el disco ya creció).
-class _Check extends CustomPainter {
-  _Check(this.t, this.color);
-  final double t;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final c = size.center(Offset.zero);
-    final r = size.width / 2;
-    final disco = Curves.easeOutBack.transform((t / 0.45).clamp(0.0, 1.0));
-    canvas.drawCircle(c, r * disco, Paint()..color = color.withValues(alpha: 0.14));
-    canvas.drawCircle(c, r * 0.74 * disco, Paint()..color = color);
-    // Anillo que se expande y se desvanece.
-    final anillo = ((t - 0.3) / 0.7).clamp(0.0, 1.0);
-    if (anillo > 0 && anillo < 1) {
-      canvas.drawCircle(
-        c,
-        r * (0.74 + 0.3 * anillo),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3
-          ..color = color.withValues(alpha: 0.5 * (1 - anillo)),
-      );
-    }
-    final trazo = Curves.easeInOutCubic.transform(((t - 0.28) / 0.5).clamp(0.0, 1.0));
-    if (trazo <= 0) return;
-    final p = Path()
-      ..moveTo(c.dx - r * 0.3, c.dy + r * 0.02)
-      ..lineTo(c.dx - r * 0.08, c.dy + r * 0.24)
-      ..lineTo(c.dx + r * 0.34, c.dy - r * 0.22);
-    final metrica = p.computeMetrics().first;
-    canvas.drawPath(
-      metrica.extractPath(0, metrica.length * trazo),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = math.max(4, r * 0.11)
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = Colors.white,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_Check o) => o.t != t;
 }

@@ -137,6 +137,51 @@ abstract final class AppMotion {
     return staggerStep * capped;
   }
 
+  // ---- Tokens del kit (`nucleo/kit/`) ----------------------------------
+
+  /// Cuánto vive un aviso en pantalla según su largo: 2,2 s de base más 45 ms
+  /// por carácter (se lee a ~22 caracteres/s con margen), entre 2,5 y 6 s.
+  /// Con acción dura más (7 s): hay que dar tiempo de alcanzar el botón.
+  /// Los números salen de la tabla de avisos de la guía de la casa (error 6 s,
+  /// con acción 7 s) y se ajustan al largo para que un «Guardado» no estorbe.
+  static Duration vidaAviso(String texto, {bool conAccion = false}) {
+    if (conAccion) return const Duration(seconds: 7);
+    final ms = 2200 + 45 * texto.length;
+    return Duration(milliseconds: ms.clamp(2500, 6000));
+  }
+
+  /// Plazo del «Deshacer»: lo bastante largo para arrepentirse, corto para no
+  /// dejar una acción pendiente. Es lo que vacía el anillo del aviso.
+  static const Duration plazoDeshacer = Duration(seconds: 6);
+
+  /// Trazo del ✓ (y del aro): ≈0,4 s con arranque y frenada. Una sola vez.
+  static const Duration trazoCheck = Duration(milliseconds: 420);
+
+  /// Curva del trazo: arranca y frena (la del check de la guía).
+  static const Curve curvaTrazo = Cubic(0.65, 0, 0.35, 1);
+
+  /// Una ráfaga de confeti completa. Lineal a propósito: la física
+  /// (gravedad y arrastre) ya pone la desaceleración; una curva encima se vería
+  /// como si los papelitos flotaran.
+  static const Duration confeti = Duration(milliseconds: 1500);
+
+  /// Cada tramo de la sacudida de error (0 → −6 → 6 → −4 → 0 px): 60 ms.
+  static const Duration tramoSacudida = Duration(milliseconds: 60);
+
+  /// Cuánto se queda el ✓ de un botón antes de volver a reposo.
+  static const Duration reposoHecho = Duration(milliseconds: 1100);
+
+  /// Cuánto se queda el estado de error de un botón antes de volver a reposo.
+  static const Duration reposoError = Duration(milliseconds: 1400);
+
+  /// Giro completo del spinner propio: 0,7 s, el ritmo de la guía.
+  static const Duration giroSpinner = Duration(milliseconds: 700);
+
+  /// Descartar un aviso o una tarjeta deslizando: más de 48 px o más de
+  /// 450 px/s al soltar (umbrales del globo de bienvenida de la guía).
+  static const double distanciaDescarte = 48;
+  static const double velocidadDescarte = 450;
+
   /// Transición entre pantallas para animaciones propias (la navegación por
   /// defecto ya usa `CupertinoPageTransitionsBuilder` en las cinco
   /// plataformas vía `AppTheme`). 300 ms con curva de entrada: la pantalla

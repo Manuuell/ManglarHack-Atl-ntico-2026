@@ -3,7 +3,8 @@
 -- =====================================================================================
 -- Se pega ENTERO en el SQL Editor de Supabase (rol postgres). Es idempotente: se puede
 -- volver a correr sin romper nada ni duplicar nada.
--- Orden de carga: schema.sql  ->  zonas.sql  ->  seed_demo.sql (opcional, solo demo).
+-- Orden de carga: schema.sql -> zonas-N.sql -> prioridades-N.sql -> seed_demo.sql (opcional, solo demo).
+-- (El orden y el peso de cada archivo están en README.md.)
 --
 -- Principios (por qué está hecho así; el detalle está en README.md):
 --  1. El permiso se decide en el SERVIDOR y en UN solo lugar: panel_rol_de(uid), que lee la
@@ -20,8 +21,12 @@ create extension if not exists postgis with schema extensions;
 set search_path = public, extensions;
 
 -- -------------------------------------------------------------------------------------
--- 1. ZONAS DE MANGLAR (capa INVEMAR 2020, 4 zonas; se cargan con zonas.sql)
+-- 1. ZONAS DE MANGLAR Y PRIORIDADES DE CONSERVACIÓN (capa oficial de la CRA)
 -- -------------------------------------------------------------------------------------
+-- zonas: cobertura de manglar del Atlántico de la CRA a escala 1:5.000 (649,66 ha, 886 polígonos,
+-- 4 zonas); se carga con zonas-N.sql. prioridad_conservacion es DERIVADA (alta 5, media 4, baja 3)
+-- de la prioridad dominante en la zona: solo informativa. La que cuenta para la prioridad de un
+-- reporte es la de prioridades_cra, punto por punto.
 create table if not exists public.zonas (
   id                     text primary key,
   nombre                 text not null,
@@ -33,6 +38,20 @@ create table if not exists public.zonas (
 );
 create index if not exists zonas_geog_gix on public.zonas using gist (geog);
 create index if not exists zonas_geom_gix on public.zonas using gist (geom);
+
+-- Prioridades de conservación de la CRA (Alta/Media/Baja), 458 filas con 9.274 polígonos; se cargan con
+-- prioridades-N.sql. MISMA estructura que crea prioridades-1.sql (create table if not exists: da igual
+-- cuál de los dos corra primero). Vacía, el trigger de recepción simplemente no suma nada.
+create table if not exists public.prioridades_cra (
+  id             bigint generated always as identity primary key,
+  prioridad      text not null check (prioridad in ('alta','media','baja')),
+  accion         text not null,                 -- Preservación, Restauración, Recuperación, Rehabilitación
+  escenario      text not null,                 -- Escenario I, Escenario III…
+  area_protegida text,                          -- p. ej. Palmar Titi; null si no está en un área protegida
+  unidad         text,                          -- unidad hidrográfica
+  geom           geometry(MultiPolygon, 4326) not null
+);
+create index if not exists prioridades_cra_geom_gix on public.prioridades_cra using gist (geom);
 
 -- -------------------------------------------------------------------------------------
 -- 2. REPORTES (contrato = Reporte.aServidor() de la app, handoff/05)
@@ -230,6 +249,7 @@ set search_path = public, extensions, pg_temp as $$
 declare
   v_pto   geography;
   v_zona  record;
+  v_alta  boolean := false;   -- el punto cae en una zona de prioridad de conservación ALTA de la CRA
   v_n     int;
   v_corr  int;
   v_p     int;
@@ -262,8 +282,8 @@ begin
 
   v_pto := ST_SetSRID(ST_MakePoint(new.lon, new.lat), 4326)::geography;
 
-  -- Zona más cercana (siempre se asigna la más próxima), si zonas.sql ya se cargó.
-  select z.id, z.municipio, z.prioridad_conservacion,
+  -- Zona más cercana (siempre se asigna la más próxima), si zonas-N.sql ya se cargó.
+  select z.id, z.municipio,
          ST_Distance(z.geog, v_pto) as d,
          ST_Covers(z.geog, v_pto)   as dentro
     into v_zona
@@ -278,6 +298,18 @@ begin
     new.distancia_m     := case when v_zona.dentro then 0 else round(v_zona.d)::int end;
   end if;
   -- (Sin zonas cargadas se respeta lo del cliente para no perder el reporte.)
+
+  -- Prioridad de conservación oficial de la CRA en el punto (misma regla que app/lib/datos/prioridad.dart):
+  -- solo cuenta dentro del manglar; si varios polígonos lo cubren vale el de prioridad más alta; si ninguno
+  -- lo cubre (fuera de la zonificación) o prioridades_cra está vacía, no suma ni inventa nada.
+  if new.dentro_poligono then
+    select (c.prioridad = 'alta') into v_alta
+      from public.prioridades_cra c
+     where ST_Covers(c.geom, v_pto::geometry)
+     order by case c.prioridad when 'alta' then 3 when 'media' then 2 else 1 end desc
+     limit 1;
+    v_alta := coalesce(v_alta, false);
+  end if;
 
   -- Corroboración: mismo tipo, a ≤ 1 km, con ±3 h de diferencia, de OTRO reportante, sin descartados.
   select count(*) into v_corr
@@ -294,7 +326,7 @@ begin
            when 'relleno' then 4 when 'vertimiento' then 4 when 'cano_taponado' then 4 when 'fauna' then 4
            else 2 end;
   if new.dentro_poligono then
-    if coalesce(v_zona.prioridad_conservacion, 0) >= 5 then v_p := v_p + 1; end if;
+    if v_alta then v_p := v_p + 1; end if;           -- prioridad de conservación ALTA de la CRA
   elsif coalesce(new.distancia_m, 1000000) > 500 then
     v_p := v_p - 1;                                  -- fuera del área de influencia (500 m)
   end if;
@@ -849,10 +881,16 @@ revoke all on public.zonas, public.reportes, public.historial_estado, public.aud
 revoke all on public.reportes_publicos from public, anon, authenticated;
 revoke all on sequence public.expediente_seq from public, anon, authenticated;
 
--- zonas: capa pública (INVEMAR), lectura abierta.
+-- zonas y prioridades_cra: capas públicas (CRA), lectura abierta.
 grant select on public.zonas to anon, authenticated;
 drop policy if exists zonas_lectura_publica on public.zonas;
 create policy zonas_lectura_publica on public.zonas for select to anon, authenticated using (true);
+
+alter table public.prioridades_cra enable row level security;
+revoke all on public.prioridades_cra from public, anon, authenticated;
+grant select on public.prioridades_cra to anon, authenticated;
+drop policy if exists prioridades_cra_lectura_publica on public.prioridades_cra;
+create policy prioridades_cra_lectura_publica on public.prioridades_cra for select to anon, authenticated using (true);
 
 -- reportes: el público NO toca la tabla. Crea reportes solo con crear_reporte() (más abajo), que valida y
 -- corre como el dueño. Por eso ya no hay GRANT INSERT ni la política de INSERT para anon, ni el
@@ -974,4 +1012,4 @@ begin
   end if;
 end $$;
 
--- Listo. Siguiente: zonas.sql (y, si quieres datos de demostración, seed_demo.sql).
+-- Listo. Siguiente: zonas-N.sql, prioridades-N.sql (y, si quieres datos de demostración, seed_demo.sql).

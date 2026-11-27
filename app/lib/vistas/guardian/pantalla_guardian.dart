@@ -3,16 +3,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../datos/estado.dart';
 import '../../datos/guardian.dart';
+import '../../datos/roles.dart';
 import '../../nucleo/base/entrada_escalonada.dart';
 import '../../nucleo/base/transicion_pestanas.dart';
+import '../../nucleo/kit/aviso.dart';
+import '../../nucleo/kit/celebracion.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
+import '../admin/entrada_panel.dart';
+import '../admin/panel_cra.dart';
+import '../admin/piezas_admin.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
 import '../reporte/flujo_reporte.dart';
+import '../roles/selector_rol.dart';
 import 'editar_perfil.dart';
 import 'insignias_guardian.dart';
+import '../experiencia/widgets_evento.dart' show ResumenParticipacion;
 import 'nivel_guardian.dart';
+import '../crecimiento/pantalla_mi_manglar.dart';
+import '../crecimiento/zanky_crece.dart';
 import 'tarjeta_guardian.dart';
 
 /// Guardián: la tarjeta digital, el nivel, las insignias, la misión de la semana y los
@@ -27,6 +37,7 @@ class PantallaGuardian extends StatefulWidget {
 
 class _PantallaGuardianState extends State<PantallaGuardian> {
   static const _claveCelebradas = 'guardian.celebradas.v1';
+  static const _claveNivel = 'guardian.nivel.v1';
   bool _revisando = false;
 
   @override
@@ -69,8 +80,21 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
       final prefs = await SharedPreferences.getInstance();
       final ya = (prefs.getStringList(_claveCelebradas) ?? const <String>[]).toSet();
       final nuevas = [for (final i in Insignia.todas) if (progreso.insignias.contains(i.id) && !ya.contains(i.id)) i];
-      if (nuevas.isEmpty) return;
-      await prefs.setStringList(_claveCelebradas, {...ya, for (final i in nuevas) i.id}.toList());
+      // Subida de nivel: se compara con el último nivel celebrado (nivel 1 de partida, sin fiesta).
+      final nivel = progreso.nivel;
+      final visto = prefs.getInt(_claveNivel) ?? 1;
+      final subio = nivel.numero > visto;
+      if (nivel.numero != visto) await prefs.setInt(_claveNivel, nivel.numero);
+      if (nuevas.isEmpty && !subio) return;
+      if (nuevas.isNotEmpty) {
+        await prefs.setStringList(_claveCelebradas, {...ya, for (final i in nuevas) i.id}.toList());
+      }
+      if (subio && mounted) {
+        // El ✓ con confeti y, a la vez, el aviso con el nombre del nivel; las insignias esperan su turno.
+        final fiesta = celebrar(context, etiqueta: 'Subiste al nivel ${nivel.numero}: ${nivel.nombre}', grande: true);
+        avisar(context, 'Nivel ${nivel.numero}: ${nivel.nombre}', tipo: TipoAviso.exito);
+        await fiesta;
+      }
       for (final i in nuevas) {
         if (!mounted) return;
         await mostrarCelebracion(context, i);
@@ -87,16 +111,34 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
     final estado = Zanky.de(context);
     final perfil = estado.perfil;
     final progreso = estado.progreso;
-    final secciones = <Widget>[
-      if (perfil != null) SeccionTarjeta(perfil: perfil, progreso: progreso) else const _SinPerfil(),
-      SeccionNivel(progreso: progreso, sinReportes: estado.reportes.isEmpty),
-      SeccionPuntos(servidorConectado: estado.servidor.configurado),
-      const _MisionSemana(),
-      SeccionInsignias(progreso: progreso),
-      _Colegios(
-        colegio: perfil?.colegio.trim() ?? '',
-        servidorConectado: estado.servidor.configurado,
-      ),
+    final rol = perfil?.rol ?? RolUsuario.ciudadano;
+    final secciones = [
+      for (final sec in seccionesDeGuardian(rol, conPerfil: perfil != null))
+        switch (sec) {
+          SeccionGuardian.tarjeta =>
+            perfil != null ? SeccionTarjeta(perfil: perfil, progreso: progreso) : const _SinPerfil(),
+          SeccionGuardian.rol => _SeccionRol(rol: rol),
+          SeccionGuardian.nivel => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SeccionNivel(progreso: progreso, sinReportes: estado.reportes.isEmpty),
+                const SizedBox(height: 12),
+                ZankyCreceCompacto(
+                  puntos: progreso.puntos,
+                  alAbrir: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PantallaMiManglar())),
+                ),
+              ],
+            ),
+          SeccionGuardian.puntos => SeccionPuntos(servidorConectado: estado.servidor.configurado),
+          SeccionGuardian.participacion => const ResumenParticipacion(),
+          SeccionGuardian.mision => const _MisionSemana(),
+          SeccionGuardian.insignias => SeccionInsignias(progreso: progreso),
+          SeccionGuardian.colegios => _Colegios(
+              colegio: perfil?.colegio.trim() ?? '',
+              servidorConectado: estado.servidor.configurado,
+            ),
+          SeccionGuardian.panel => const EntradaPanelCra(),
+        },
     ];
     return SafeArea(
       bottom: false,
@@ -106,19 +148,34 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
           CabeceraZ(
             titulo: 'Guardián',
             subtitulo: 'Tu lugar en el manglar',
-            accion: Presionable(
-              etiqueta: 'Editar mi perfil',
-              onTap: () => mostrarEditarPerfil(context),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Zc.superficie,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Zc.linea),
+            accion: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // El ícono del panel solo aparece con la sesión del equipo, con su contador.
+                if (AdminScope.maybeDe(context)?.dentro ?? false) ...[
+                  BotonIcono(
+                    icono: Icons.shield_rounded,
+                    etiqueta: 'Panel CRA',
+                    cuenta: AdminScope.de(context).sinVer,
+                    alTocar: () => abrirPanelCra(context),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Presionable(
+                  etiqueta: 'Editar mi perfil',
+                  onTap: () => mostrarEditarPerfil(context),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Zc.superficie,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Zc.linea),
+                    ),
+                    child: const Icon(Icons.edit_rounded, size: 22, color: Zc.raiz),
+                  ),
                 ),
-                child: const Icon(Icons.edit_rounded, size: 22, color: Zc.raiz),
-              ),
+              ],
             ),
           ),
           for (var i = 0; i < secciones.length; i++)
@@ -127,6 +184,46 @@ class _PantallaGuardianState extends State<PantallaGuardian> {
               child: EntradaEscalonada(index: i, child: secciones[i]),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Cómo participas: el rol de la bienvenida, con su ilustración y un toque para cambiarlo.
+class _SeccionRol extends StatelessWidget {
+  const _SeccionRol({required this.rol});
+  final RolUsuario rol;
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: TarjetaZ(
+        onTap: () => mostrarCambiarRol(context),
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            IlustracionRol(rol, tamano: 56),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('TU ROL', style: tt.labelSmall?.copyWith(color: rol.color)),
+                  Text(rol.nombre, style: tt.titleMedium),
+                  Text(rol.lema, style: tt.bodySmall),
+                ],
+              ),
+            ),
+            const SizedBox(width: 6),
+            Semantics(
+              label: 'Cambiar mi rol',
+              excludeSemantics: true,
+              child: Text('Cambiar', style: tt.labelMedium?.copyWith(color: Zc.hoja)),
+            ),
+          ],
+        ),
       ),
     );
   }

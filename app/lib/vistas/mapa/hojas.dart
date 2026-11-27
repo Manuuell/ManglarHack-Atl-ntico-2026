@@ -6,6 +6,7 @@ import '../../nucleo/base/hoja.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
+import 'capa_prioridad.dart';
 import 'modelo.dart';
 
 String _hectareas(double ha) => '${ha.toStringAsFixed(1).replaceAll('.', ',')} ha';
@@ -467,3 +468,94 @@ Future<bool> explicarUbicacion(BuildContext context) async {
 
 /// «Cerca del manglar» o el nombre de la zona, para marcadores públicos.
 String nombreDeZona(Manglar m, String id) => m.zonaPorId(id)?.nombre ?? 'Cerca del manglar del Atlántico';
+
+/// Un polígono de la capa oficial de prioridades de conservación de la CRA: nivel, acción,
+/// escenario, sector y superficie, con la nota honesta de la fuente.
+Future<void> abrirHojaPrioridad(BuildContext context, {required PoligonoPrioridad poligono}) {
+  final plan = poligono.plan;
+  final color = colorPrioridadCra(plan.prioridad);
+  return mostrarHojaZ<void>(
+    context,
+    nombre: 'prioridad_cra',
+    contenido: (c) {
+      final tt = Theme.of(c).textTheme;
+      final sector = plan.areaProtegida ?? plan.unidad;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(color: color.withValues(alpha: 0.2), shape: BoxShape.circle),
+                child: Icon(Icons.shield_rounded, color: Color.lerp(color, Zc.raiz, 0.35), size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Prioridad ${plan.prioridad.nombre.toLowerCase()}', style: tt.headlineSmall),
+                    Text('Conservación · CRA', style: tt.bodyMedium),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _Dato(titulo: 'Acción', valor: plan.accion)),
+              const SizedBox(width: 12),
+              Expanded(child: _Dato(titulo: 'Escenario', valor: plan.escenario)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (sector != null) ...[
+                Expanded(
+                  child: _Dato(
+                    titulo: plan.areaProtegida != null ? 'Área protegida' : 'Sector (unidad hidrográfica)',
+                    valor: sector,
+                  ),
+                ),
+                const SizedBox(width: 12),
+              ],
+              Expanded(child: _Dato(titulo: 'Superficie de este polígono', valor: '≈ ${_hectareas(poligono.hectareas)}')),
+            ],
+          ),
+          if (plan.figura.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text('Figura legal: ${plan.figura}', style: tt.bodyMedium),
+          ],
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(color: Zc.solClaro, borderRadius: BorderRadius.circular(Zr.s)),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 1),
+                  child: Icon(Icons.info_outline_rounded, size: 18, color: Zc.fango),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$notaFuentePrioridad Las hectáreas las calcula Zanky sobre el polígono que ves.',
+                    style: tt.bodySmall?.copyWith(color: Zc.texto),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    },
+  );
+}

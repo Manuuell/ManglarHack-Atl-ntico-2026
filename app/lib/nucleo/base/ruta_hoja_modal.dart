@@ -25,7 +25,9 @@
 /// ellas encoge la de detrás un 3 % sin código extra en quien la abre.
 library;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 
 import 'tokens.dart';
 import 'movimiento.dart';
@@ -121,7 +123,7 @@ Future<T?> mostrarHojaModal<T>(
 ///
 /// Con movimiento reducido no hay fundido ni deslizamiento: la hoja aparece
 /// de golpe y sigue cerrándose igual.
-class _PaginaHoja extends StatelessWidget {
+class _PaginaHoja extends StatefulWidget {
   const _PaginaHoja({
     required this.animacion,
     required this.builder,
@@ -131,6 +133,21 @@ class _PaginaHoja extends StatelessWidget {
   final Animation<double> animacion;
   final WidgetBuilder builder;
   final bool areaSeguraAbajo;
+
+  @override
+  State<_PaginaHoja> createState() => _PaginaHojaState();
+}
+
+class _PaginaHojaState extends State<_PaginaHoja> {
+  /// Cuánto ha bajado la hoja con el dedo (px). El velo lo lee para aclararse
+  /// a la par: la hoja y el fondo se mueven como una sola cosa.
+  final ValueNotifier<double> _arrastre = ValueNotifier(0);
+
+  @override
+  void dispose() {
+    _arrastre.dispose();
+    super.dispose();
+  }
 
   void _cerrar(BuildContext context) {
     Navigator.of(context).maybePop();
@@ -144,8 +161,11 @@ class _PaginaHoja extends StatelessWidget {
         alignment: Alignment.bottomCenter,
         child: SafeArea(
           top: false,
-          bottom: areaSeguraAbajo,
-          child: _HojaArrastrable(child: Builder(builder: builder)),
+          bottom: widget.areaSeguraAbajo,
+          child: _HojaArrastrable(
+            arrastre: _arrastre,
+            child: Builder(builder: widget.builder),
+          ),
         ),
       ),
     );
@@ -153,13 +173,13 @@ class _PaginaHoja extends StatelessWidget {
       return Stack(
         fit: StackFit.expand,
         children: [
-          _VeloHoja(color: velo, alCerrar: () => _cerrar(context)),
+          _VeloHoja(color: velo, alCerrar: () => _cerrar(context), arrastre: _arrastre),
           hoja,
         ],
       );
     }
     final curva = CurvedAnimation(
-      parent: animacion,
+      parent: widget.animacion,
       curve: AppMotion.enter,
       reverseCurve: AppMotion.exit,
     );
@@ -170,6 +190,7 @@ class _PaginaHoja extends StatelessWidget {
           color: velo,
           alCerrar: () => _cerrar(context),
           opacidad: curva,
+          arrastre: _arrastre,
         ),
         SlideTransition(
           position: Tween<Offset>(
@@ -194,21 +215,34 @@ class _VeloHoja extends StatelessWidget {
   const _VeloHoja({
     required this.color,
     required this.alCerrar,
+    required this.arrastre,
     this.opacidad,
   });
 
   final Color color;
   final VoidCallback alCerrar;
 
+  /// Cuánto bajó la hoja con el dedo: aclara el velo en proporción.
+  final ValueListenable<double> arrastre;
+
   /// Nula → velo opaco del todo (movimiento reducido, sin fundido).
   final Animation<double>? opacidad;
 
+  /// Con este arrastre el velo ya es invisible.
+  static const double _arrastreSinVelo = 420;
+
   @override
   Widget build(BuildContext context) {
-    final velo = ColoredBox(color: color);
-    final fondo = opacidad == null
-        ? velo
-        : FadeTransition(opacity: opacidad!, child: velo);
+    // El color cambia por cuadro (pintura), no la opacidad de un subárbol: no
+    // hay `saveLayer` mientras se arrastra.
+    final fondo = AnimatedBuilder(
+      animation: Listenable.merge([arrastre, ?opacidad]),
+      builder: (context, _) {
+        final base = opacidad?.value ?? 1.0;
+        final suelta = 1 - (arrastre.value / _arrastreSinVelo).clamp(0.0, 1.0);
+        return ColoredBox(color: color.withValues(alpha: color.a * base * suelta));
+      },
+    );
     return Positioned.fill(
       child: Semantics(
         button: true,
@@ -242,9 +276,12 @@ class _VeloHoja extends StatelessWidget {
 /// Sin `saveLayer`: solo un [Transform.translate] dentro del
 /// [RepaintBoundary] de la página.
 class _HojaArrastrable extends StatefulWidget {
-  const _HojaArrastrable({required this.child});
+  const _HojaArrastrable({required this.child, required this.arrastre});
 
   final Widget child;
+
+  /// Se actualiza con lo que ha bajado la hoja (lo lee el velo).
+  final ValueNotifier<double> arrastre;
 
   @override
   State<_HojaArrastrable> createState() => _HojaArrastrableState();
@@ -254,68 +291,47 @@ class _HojaArrastrable extends StatefulWidget {
 /// mitad: con 350 px bajados, cada píxel de dedo mueve la hoja medio píxel.
 const double _distanciaResistencia = 350;
 
+/// Hacia arriba, la hoja cede un poco (como el elástico de iOS) y vuelve.
+const double _cedeArriba = 14;
+
 class _HojaArrastrableState extends State<_HojaArrastrable>
     with SingleTickerProviderStateMixin {
-  double _arrastre = 0;
-  late final AnimationController _retroceso;
-  late final CurvedAnimation _curvaRetroceso;
-  double _origenRetroceso = 0;
+  /// Posición de la hoja (px, hacia abajo). Sin límites: lo mueve el dedo y,
+  /// al soltar, un resorte que conserva la velocidad del gesto.
+  late final AnimationController _pos = AnimationController.unbounded(vsync: this)
+    ..addListener(_alMoverse);
 
-  @override
-  void initState() {
-    super.initState();
-    _retroceso = AnimationController(
-      vsync: this,
-      duration: AppMotion.fast,
-    );
-    _curvaRetroceso = CurvedAnimation(
-      parent: _retroceso,
-      curve: AppMotion.enter,
-    )..addListener(_alRetroceder);
-  }
+  double get _arrastre => _pos.value;
+
+  void _alMoverse() => widget.arrastre.value = _pos.value < 0 ? 0 : _pos.value;
 
   @override
   void dispose() {
-    _curvaRetroceso.dispose();
-    _retroceso.dispose();
+    _pos.dispose();
     super.dispose();
   }
 
   void _alEmpezar(DragStartDetails details) {
-    _retroceso.stop();
+    _pos.stop();
+    // Con el teclado arriba, arrastrar la hoja lo baja (como en iOS): la hoja
+    // no se queda a media pantalla con el teclado tapándola.
+    if (MediaQuery.viewInsetsOf(context).bottom > 0) {
+      FocusManager.instance.primaryFocus?.unfocus();
+    }
   }
 
   void _alMover(DragUpdateDetails details) {
-    _retroceso.stop();
+    _pos.stop();
     final delta = details.delta.dy;
+    final actual = _arrastre;
     if (delta <= 0) {
-      final siguiente = _arrastre + delta;
-      setState(() {
-        _arrastre = siguiente < 0 ? 0 : siguiente;
-      });
+      // Subir: libre hasta su sitio y, pasado eso, con mucha resistencia.
+      final siguiente = actual + (actual > 0 ? delta : delta * 0.25);
+      _pos.value = siguiente < -_cedeArriba ? -_cedeArriba : siguiente;
       return;
     }
-    final resistencia = 1 / (1 + _arrastre / _distanciaResistencia);
-    final siguiente = _arrastre + delta * resistencia;
-    setState(() {
-      _arrastre = siguiente < 0 ? 0 : siguiente;
-    });
-  }
-
-  void _alRetroceder() {
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _arrastre = _origenRetroceso * (1 - _curvaRetroceso.value);
-    });
-  }
-
-  void _volverASitio() {
-    _origenRetroceso = _arrastre;
-    _retroceso
-      ..reset()
-      ..forward();
+    final resistencia = actual < 0 ? 1.0 : 1 / (1 + actual / _distanciaResistencia);
+    _pos.value = actual + delta * resistencia;
   }
 
   void _alSoltar(DragEndDetails details) {
@@ -328,12 +344,13 @@ class _HojaArrastrableState extends State<_HojaArrastrable>
       return;
     }
     if (context.animationsDisabled) {
-      setState(() {
-        _arrastre = 0;
-      });
+      _pos.value = 0;
       return;
     }
-    _volverASitio();
+    // Vuelve a su sitio con el resorte suave y la velocidad con que se soltó.
+    _pos.animateWith(
+      SpringSimulation(AppMotion.resorteSuave, _arrastre, 0, velocidad),
+    );
   }
 
   @override
@@ -345,9 +362,14 @@ class _HojaArrastrableState extends State<_HojaArrastrable>
       onVerticalDragStart: _alEmpezar,
       onVerticalDragUpdate: _alMover,
       onVerticalDragEnd: _alSoltar,
-      child: Transform.translate(
-        offset: Offset(0, _arrastre),
+      child: AnimatedBuilder(
+        animation: _pos,
+        // El contenido no se reconstruye por cuadro: solo se traslada.
         child: widget.child,
+        builder: (context, hijo) => Transform.translate(
+          offset: Offset(0, _pos.value),
+          child: hijo,
+        ),
       ),
     );
   }

@@ -1,0 +1,17 @@
+---
+// Perfil de la cuenta: identidad, próximas jornadas, datos (#datos) y seguridad (#seguridad).
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CabeceraCRA from '../components/layout/CabeceraCRA.astro';
+import PaginaPerfil from '../components/cuenta/PaginaPerfil';
+import { obtenerJornadas } from '../lib/plataforma/datos';
+
+const jornadas = await obtenerJornadas();
+---
+<BaseLayout title="Tu perfil · Zanky y la C.R.A." description="Tu cuenta en la plataforma del manglar: tus datos, las jornadas de tu comunidad y la seguridad de tu cuenta.">
+  <CabeceraCRA rotulo="TU PERFIL" />
+  <main id="contenido" class="mx-auto w-full max-w-7xl px-4 pt-10 pb-24 sm:px-6 lg:px-8">
+    <PaginaPerfil client:only="react" jornadas={jornadas}>
+      <div slot="fallback" class="grid min-h-[50vh] place-items-center text-tenue" role="status">Cargando tu perfil…</div>
+    </PaginaPerfil>
+  </main>
+</BaseLayout>

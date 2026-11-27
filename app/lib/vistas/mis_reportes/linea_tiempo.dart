@@ -17,9 +17,14 @@ String fechaLarga(DateTime t) {
   return '${l.day} ${_meses[l.month - 1]} ${l.year}, $hm';
 }
 
-/// El hallazgo 17 agrega `Envio.rechazado` (el servidor dijo que no, y reintentar no
-/// sirve). Se mira por nombre para que esta pantalla compile antes y después del cambio.
-bool envioRechazado(Reporte r) => r.envio.name == 'rechazado';
+/// El servidor dijo que no a este reporte (reintentar tal cual no lo arregla).
+bool envioRechazado(Reporte r) => r.envio == Envio.rechazado;
+
+/// El motivo que dio el servidor, o una frase honesta si no dijo ninguno.
+String textoMotivoRechazo(Reporte r) {
+  final m = (r.motivoRechazo ?? '').trim();
+  return m.isEmpty ? 'El servidor no aceptó este reporte.' : m;
+}
 
 /// La nota con la que el teléfono apunta «Recibido» al crear el reporte: es un apunte
 /// local, no un aviso de la CRA, y no debe salir como si lo fuera.
@@ -81,10 +86,10 @@ class LineaTiempo extends StatelessWidget {
           icono: Icons.cloud_done_rounded,
         )
       else if (envioRechazado(r))
-        const _Paso(
-          titulo: 'La CRA no pudo recibirlo',
-          detalle: 'El servidor rechazó este reporte y reintentar no lo arregla. '
-              'Revisa la ubicación y la información, o haz uno nuevo.',
+        _Paso(
+          titulo: 'No se pudo enviar',
+          detalle: '${textoMotivoRechazo(r)}\n'
+              'Reintentar tal cual no lo arregla: revisa los datos, o haz uno nuevo.',
           fase: _Fase.actual,
           color: Zc.fango,
           icono: Icons.error_outline_rounded,

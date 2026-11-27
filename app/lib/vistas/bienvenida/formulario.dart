@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../datos/roles.dart';
 import '../../nucleo/base/movimiento.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
@@ -10,7 +11,7 @@ import '../comun/burbuja.dart';
 /// La cédula ya no se pide en la bienvenida (hoy no tiene ningún uso): es opcional en
 /// «Editar mi perfil». Los límites de cédula viven aquí para que ambas pantallas usen los mismos.
 class DatosPerfil extends ChangeNotifier {
-  DatosPerfil({String nombre = '', String colegio = '', this.anonimo = false})
+  DatosPerfil({String nombre = '', String colegio = '', this.anonimo = false, this.rol = RolUsuario.ciudadano})
       : nombre = TextEditingController(text: nombre),
         colegio = TextEditingController(text: colegio);
 
@@ -26,6 +27,13 @@ class DatosPerfil extends ChangeNotifier {
 
   bool anonimo;
   bool acepto = false;
+  RolUsuario rol;
+
+  void elegirRol(RolUsuario r) {
+    if (r == rol) return;
+    rol = r;
+    notifyListeners();
+  }
 
   /// Tras un intento fallido de enviar, todos los errores se muestran de una vez.
   bool forzar = false;
