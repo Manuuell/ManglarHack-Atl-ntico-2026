@@ -7,6 +7,7 @@ import '../nucleo/base/transicion_pestanas.dart';
 import '../nucleo/presionable.dart';
 import '../nucleo/tema.dart';
 import 'guardian/pantalla_guardian.dart';
+import 'comun/zanky_mascota.dart';
 import 'inicio/inicio.dart';
 import 'mapa/pantalla_mapa.dart';
 import 'mis_reportes/pantalla_mis_reportes.dart';
@@ -34,6 +35,18 @@ class _RaizState extends State<Raiz> {
     super.initState();
     Raiz._pedida.addListener(_atenderPedido);
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Una sola vez: las imágenes de Zanky ya en memoria antes del primer cambio de ánimo.
+    if (!_precargado) {
+      _precargado = true;
+      precargarZanky(context);
+    }
+  }
+
+  bool _precargado = false;
 
   @override
   void dispose() {

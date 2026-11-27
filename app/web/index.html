@@ -53,38 +53,27 @@
       transition: opacity .45s cubic-bezier(.2,.9,.25,1), visibility .45s;
     }
     #zk-carga.zk-fuera { opacity: 0; visibility: hidden; }
-    #zk-carga svg { width: 148px; height: 148px; overflow: visible; animation: zk-bota 1.6s cubic-bezier(.45,0,.35,1) infinite; }
+    #zk-carga .zk-mascota { width: 156px; height: 156px; display: block; transform-origin: 50% 100%;
+      animation: zk-respira 3.2s ease-in-out infinite; will-change: transform; }
     #zk-carga .zk-sombra { width: 84px; height: 12px; border-radius: 50%; background: rgba(0,40,44,.28); margin-top: -10px;
-      animation: zk-sombra 1.6s cubic-bezier(.45,0,.35,1) infinite; }
+      animation: zk-sombra 3.2s ease-in-out infinite; }
     #zk-carga .zk-texto { font-size: 17px; font-weight: 600; letter-spacing: -.1px; }
     #zk-carga .zk-puntos span { animation: zk-punto 1.2s infinite both; }
     #zk-carga .zk-puntos span:nth-child(2) { animation-delay: .15s; }
     #zk-carga .zk-puntos span:nth-child(3) { animation-delay: .3s; }
-    @keyframes zk-bota { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-14px) rotate(2deg); } }
-    @keyframes zk-sombra { 0%,100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(.78); opacity: .6; } }
+    @keyframes zk-respira { 0%,100% { transform: scaleY(1) rotate(-1.2deg); } 50% { transform: scaleY(1.025) rotate(1.2deg); } }
+    @keyframes zk-sombra { 0%,100% { transform: scaleX(1); opacity: 1; } 50% { transform: scaleX(.94); opacity: .85; } }
     @keyframes zk-punto { 0%,80%,100% { opacity: .25; } 40% { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) {
-      #zk-carga svg, #zk-carga .zk-sombra, #zk-carga .zk-puntos span { animation: none; }
+      #zk-carga .zk-mascota, #zk-carga .zk-sombra, #zk-carga .zk-puntos span { animation: none; }
       #zk-carga { transition: none; }
     }
   </style>
 </head>
 <body>
   <div id="zk-carga" role="status" aria-live="polite">
-    <!-- Zanky simple: corona de hojas, cara de tronco y su pin -->
-    <svg viewBox="0 0 200 200" aria-hidden="true">
-      <path d="M100 188 L52 112 A56 56 0 1 1 148 112 Z" fill="#fff"/>
-      <circle cx="100" cy="92" r="40" fill="#8B3A2B"/>
-      <ellipse cx="100" cy="84" rx="32" ry="25" fill="#A24B39"/>
-      <ellipse cx="87" cy="94" rx="8.5" ry="10" fill="#1B1210"/><ellipse cx="113" cy="94" rx="8.5" ry="10" fill="#1B1210"/>
-      <circle cx="90" cy="90" r="3" fill="#fff"/><circle cx="116" cy="90" r="3" fill="#fff"/>
-      <path d="M84 106 Q100 122 116 106" fill="none" stroke="#1B1210" stroke-width="3.5" stroke-linecap="round"/>
-      <g fill="#2E7D32"><ellipse cx="82" cy="40" rx="9" ry="22" transform="rotate(-32 82 40)"/>
-        <ellipse cx="118" cy="40" rx="9" ry="22" transform="rotate(32 118 40)"/></g>
-      <g fill="#43A047"><ellipse cx="93" cy="34" rx="9" ry="24" transform="rotate(-10 93 34)"/>
-        <ellipse cx="107" cy="34" rx="9" ry="24" transform="rotate(10 107 34)"/></g>
-      <path d="M110 22 L124 8" stroke="#558B2F" stroke-width="4" stroke-linecap="round"/><circle cx="125" cy="7" r="4" fill="#7CB342"/>
-    </svg>
+    <!-- Zanky feliz (arte oficial, WebP de 256 px): respira anclado a los pies -->
+    <img class="zk-mascota" src="zanky-arranque.webp" width="156" height="156" alt="" decoding="async" fetchpriority="high">
     <div class="zk-sombra"></div>
     <div class="zk-texto">Cargando el manglar<span class="zk-puntos"><span>.</span><span>.</span><span>.</span></span></div>
     <noscript><div class="zk-texto" style="max-width:280px;text-align:center">Zanky necesita JavaScript para funcionar. Actívalo en tu navegador y vuelve a abrir esta página.</div></noscript>

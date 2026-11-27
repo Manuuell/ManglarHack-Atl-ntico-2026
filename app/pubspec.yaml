@@ -41,6 +41,8 @@ flutter:
 
   assets:
     - assets/datos/
+    - assets/zanky/
+    - assets/zanky/etapas/
 
   # Inter va dentro de la app: en el manglar no hay señal para bajar fuentes.
   fonts:
