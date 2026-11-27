@@ -283,8 +283,8 @@ export const JORNADAS = {
     js.slice(0, 10).map(j => ({
       id: `jor:${j.id}`,
       titulo: `${TIPOS_JORNADA[j.tipo].emoji} ${fmtJornada.corta(j.inicio)} · ${TIPO_CORTO[j.tipo]}`,
-      // Los cupos libres en la misma línea, sin tener que abrir la invitación.
-      descripcion: `${cuposLibres(j)} · ${j.titulo}`.slice(0, 72),
+      // Cuánta gente va, en la misma línea, sin tener que abrir la invitación.
+      descripcion: `${resumenInscritos(j)} · ${j.titulo}`.slice(0, 72),
     })),
 };
 
@@ -317,16 +317,15 @@ export const BOTONES_DESPUES_DE_JORNADA: Boton[] = [
   { id: 'menu', titulo: '🏠 Menú' },
 ];
 
-export function cuposLibres(j: Jornada): string {
-  const libres = Math.max(0, j.cupos - j.inscritos);
-  return libres > 0 ? `${libres} ${libres === 1 ? 'cupo libre' : 'cupos libres'}` : 'Sin cupos';
+/** Las jornadas no tienen límite de cupos: se dice cuánta gente va. */
+export function resumenInscritos(j: Jornada): string {
+  return j.inscritos > 0 ? `${j.inscritos} ${j.inscritos === 1 ? 'inscrito' : 'inscritos'}` : 'Gratis';
 }
 
 /** Después de la invitación: inscribirse aquí mismo (además del enlace de la web). */
 export function botonesInvitacion(j: Jornada): Boton[] {
-  const libres = j.cupos - j.inscritos;
   return [
-    ...(libres > 0 ? [{ id: `ins:${j.id}`, titulo: '✅ Inscribirme' }] : []),
+    { id: `ins:${j.id}`, titulo: '✅ Inscribirme' },
     { id: 'jornadas', titulo: '🌱 Otra jornada' },
     { id: 'menu', titulo: '🏠 Menú' },
   ];
@@ -348,21 +347,17 @@ export const BOTONES_CONFIRMAR_INSCRIPCION: Boton[] = [
 
 export const PEDIR_NOMBRE_INSCRIPCION = '¿A nombre de quién te inscribo? Escribe tu nombre y apellido 🙂';
 
-export function inscrito(j: Jornada, libres: number, enlace: string): string {
+export function inscrito(j: Jornada, enlace: string): string {
   return (
     `🎉 ¡Listo! Quedaste inscrito en *${j.titulo}*.\n\n📅 ${fmtJornada.larga(j.inicio)}, de ${fmtJornada.hora(j.inicio)} a ${fmtJornada.hora(j.fin)}\n📍 ${j.punto_encuentro}\n\n` +
-    `Quedan ${libres} ${libres === 1 ? 'cupo' : 'cupos'}. Si al final no puedes ir, avísame escribiendo *no podré ir*.\n` +
+    `${j.inscritos > 1 ? `Ya van ${j.inscritos} personas. ` : ''}Si al final no puedes ir, avísame escribiendo *no podré ir*.\n` +
     `Invitación, calendario y QR: ${enlace}`
   );
 }
 
-export function sinCupo(j: Jornada): string {
-  return `😕 *${j.titulo}* ya no tiene cupos. Mira las otras jornadas: puede que haya espacio en otra.`;
-}
-
 export function inscripcionCancelada(j: Jornada, liberados: number): string {
   return liberados
-    ? `Listo, liberé tu cupo en *${j.titulo}* 🙏. Así otra persona puede ir.`
+    ? `Listo, cancelé tu inscripción en *${j.titulo}* 🙏. Si cambias de idea, puedes volver a inscribirte.`
     : `No encontré una inscripción tuya en *${j.titulo}*.`;
 }
 

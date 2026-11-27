@@ -599,10 +599,6 @@ async function empezarInscripcion(m: MensajeEntrante, s: Sesion, id: string): Pr
     return mostrarJornadas(de, s);
   }
   const publica = J.publica(j);
-  if (publica.inscritos >= publica.cupos) {
-    await whatsapp.texto(de, T.sinCupo(publica));
-    return mostrarJornadas(de, s);
-  }
   const nombre = almacen.usuario(almacen.hashDe(de))?.nombre ?? (m.nombrePerfil ? nombreValido(m.nombrePerfil) ?? undefined : undefined);
   s.inscripcion = { jornadaId: j.id, nombre };
   if (!nombre) {
@@ -620,16 +616,12 @@ async function confirmarInscripcion(de: string, s: Sesion): Promise<void> {
   const r = J.inscribir(j, { nombre: ins.nombre, telefono: normalizarTelefono(de), cuenta_id: null, acepta_whatsapp: true });
   s.inscripcion = undefined;
   ir(s, 'menu');
-  if (r === 'sin_cupo') {
-    await whatsapp.texto(de, T.sinCupo(J.publica(j)));
-    return mostrarJornadas(de, s);
-  }
   const publica = J.publica(j);
-  console.log(`[jornadas] inscripción por WhatsApp en ${j.id} (${publica.inscritos}/${publica.cupos})`);
-  await menuLista(de, T.inscrito(publica, Math.max(0, publica.cupos - publica.inscritos), enlaceInvitacion(publica)));
+  console.log(`[jornadas] inscripción por WhatsApp en ${j.id} (${publica.inscritos} inscritos, inscripción ${r.id})`);
+  await menuLista(de, T.inscrito(publica, enlaceInvitacion(publica)));
 }
 
-/** «No podré ir» escrito: libera el cupo en la próxima jornada donde está inscrito este número. */
+/** «No podré ir» escrito: cancela la inscripción en la próxima jornada donde está inscrito este número. */
 async function noPodreIr(de: string, s: Sesion): Promise<void> {
   const tel = normalizarTelefono(de);
   const proxima = J.jornadasPublicadas()
