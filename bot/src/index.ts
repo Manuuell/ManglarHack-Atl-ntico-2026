@@ -17,6 +17,7 @@ import path from 'path';
 import { api } from './api/rutas';
 import { iniciarJornadas } from './api/almacenJornadas';
 import { atenderRespuestaInvitacion } from './api/respuestas';
+import { escucharAudio } from './ia/audio';
 import { alertasActuales, alertasSimulacro, iniciarAlertas } from './alertas/motor';
 
 type ConCuerpoCrudo = Request & { cuerpoCrudo?: Buffer };
@@ -69,7 +70,14 @@ function encolar(m: MensajeEntrante): void {
       console.log(`[entrante] ${quien} ${m.entrada.tipo}`);
       await whatsapp.marcarLeido(m.messageId).catch(err => console.warn(`[leido] ${(err as Error).message}`));
       // «No podré ir» de una invitación por plantilla: se atiende aparte del flujo de conversación.
-      if (!(await atenderRespuestaInvitacion(m))) await atender(m);
+      // Nota de voz: se transcribe y sigue como si la persona lo hubiera escrito (si falla, ya se le respondió).
+      let mensaje = m;
+      if (m.entrada.tipo === 'audio') {
+        const texto = await escucharAudio(m.de, m.entrada.mediaId, m.entrada.mime);
+        if (texto === null) return;
+        mensaje = { ...m, entrada: { tipo: 'texto', texto } };
+      }
+      if (!(await atenderRespuestaInvitacion(mensaje))) await atender(mensaje);
       console.log(`[respondido] ${quien}`);
     })
     .catch(err => console.error(`[flujo] error atendiendo ${m.messageId}:`, (err as Error).message))

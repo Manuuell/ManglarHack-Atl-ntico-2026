@@ -28,6 +28,11 @@ export const config = {
   /** OpenAI: Zanky conversa en la burbuja de la web (POST /chat) y responde preguntas libres en WhatsApp. */
   openaiKey: env.OPENAI_API_KEY ?? '',
   openaiModel: env.OPENAI_MODEL ?? 'gpt-4o-mini',
+  /** Notas de voz: se transcriben con este modelo y siguen la conversación como texto. TRANSCRIBIR_AUDIOS=no las apaga. */
+  openaiTranscribeModel: env.OPENAI_TRANSCRIBE_MODEL ?? 'gpt-4o-mini-transcribe',
+  transcribirAudios: env.TRANSCRIBIR_AUDIOS !== 'no',
+  /** Tope de audios por persona en una hora (cuidan el costo de la transcripción). */
+  audiosPorHora: Number(env.AUDIOS_POR_HORA ?? 20),
   openaiUrl: (env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, ''),
   /** POST /chat (charla con IA desde la web). Apagado: la web lleva a WhatsApp. Se prende con CHAT_WEB=si. */
   chatWeb: env.CHAT_WEB === 'si',
