@@ -13,7 +13,7 @@ export const BIENVENIDA = {
     '🔒 Tus datos se tratan según la Ley 1581 de 2012 y nunca se publican tu nombre ni tu número.',
   botones: [
     { id: 'registrarme', titulo: '✅ Registrarme' },
-    { id: 'reg_anonimo', titulo: '🕶️ Sin mi nombre' },
+    { id: 'reg_anonimo', titulo: '👤 Sin mi nombre' },
     { id: 'ahora_no', titulo: 'Ahora no' },
   ] as Boton[],
 };
@@ -77,7 +77,7 @@ export const CONSENTIMIENTO = {
   pie: 'Con tu número, la CRA te puede contactar si hace falta',
   botones: [
     { id: 'acepto', titulo: '✅ Con mi número' },
-    { id: 'anonimo', titulo: '🕶️ Anónimo' },
+    { id: 'anonimo', titulo: '👤 Anónimo' },
     { id: 'no_acepto', titulo: '❌ No acepto' },
   ] as Boton[],
 };
