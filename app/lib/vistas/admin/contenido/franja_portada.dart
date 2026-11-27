@@ -31,7 +31,7 @@ class _FranjaPortadaState extends State<FranjaPortada> {
         final hay = p.mensaje.isNotEmpty || aviso;
         final tt = Theme.of(context).textTheme;
         return AnimatedSize(
-          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
+          duration: MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : Zm.medio,
           curve: Zm.entrar,
           child: !hay
               ? const SizedBox(width: double.infinity)

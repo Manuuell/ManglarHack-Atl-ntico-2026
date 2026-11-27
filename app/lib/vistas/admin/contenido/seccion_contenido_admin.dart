@@ -108,7 +108,7 @@ class _SeccionContenidoAdminState extends State<SeccionContenidoAdmin> {
       },
     );
     final animado = AnimatedSwitcher(
-      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
+      duration: MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : Zm.medio,
       switchInCurve: Zm.entrar,
       child: editor,
     );
@@ -713,7 +713,7 @@ class _HojaJornadaState extends State<_HojaJornada> {
         ),
       ]),
       AnimatedSize(
-        duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.corto,
+        duration: MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : Zm.corto,
         child: _sinLimite
             ? const SizedBox(width: double.infinity)
             : Padding(

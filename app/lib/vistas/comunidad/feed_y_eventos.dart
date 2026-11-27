@@ -410,7 +410,7 @@ class TarjetaEvento extends StatelessWidget {
                 bottom: 12,
                 child: AnimatedScale(
                   scale: ya ? 1 : 0,
-                  duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
+                  duration: MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : Zm.medio,
                   curve: Curves.easeOutBack,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -456,7 +456,7 @@ class TarjetaEvento extends StatelessWidget {
               if (!compacta) ...[
                 const SizedBox(height: 12),
                 AnimatedSwitcher(
-                  duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.corto,
+                  duration: MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : Zm.corto,
                   child: ya
                       ? BotonZ(
                           key: const ValueKey('ya'),
@@ -671,7 +671,7 @@ class _ProximoEventoInicioState extends State<ProximoEventoInicio> {
     final tt = Theme.of(context).textTheme;
     final p = _proximo;
     return AnimatedSize(
-      duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : Zm.medio,
+      duration: MediaQuery.disableAnimationsOf(context) ? const Duration(milliseconds: 1) : Zm.medio,
       curve: Zm.entrar,
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(
