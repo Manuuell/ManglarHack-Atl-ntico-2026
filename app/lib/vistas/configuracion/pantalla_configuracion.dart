@@ -19,6 +19,7 @@ import '../guardian/borrar_datos.dart';
 import '../guardian/editar_perfil.dart';
 import 'piezas_configuracion.dart';
 import 'seccion_gestion.dart';
+import '../avisos/bandeja_avisos.dart';
 
 /// El engranaje de Inicio y Guardián: abre Configuración. 48 px de toque.
 class BotonConfiguracion extends StatelessWidget {
@@ -90,6 +91,7 @@ class PantallaConfiguracion extends StatelessWidget {
         children: [
           if (cuenta != null) _BloqueCuenta(cuenta: cuenta),
           const SeccionGestion(),
+          const SeccionPreferenciasAvisos(),
           GrupoAjustes(
             titulo: 'En este teléfono',
             nota:

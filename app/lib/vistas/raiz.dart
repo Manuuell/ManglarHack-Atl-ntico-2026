@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../datos/admin/controlador_admin.dart';
+import '../datos/avisos/centro_avisos.dart';
 import '../datos/cuenta/cuenta.dart';
 import '../datos/estado.dart';
 import '../nucleo/base/transicion_pestanas.dart';
@@ -59,6 +60,8 @@ class _RaizState extends State<Raiz> {
         panel: _admin,
       );
       unawaited(_cuenta!.restaurar());
+      // Avisos: alertas, jornadas inscritas y novedades de mis reportes (una sola vez).
+      unawaited(CentroAvisos.compartido.conectar(Zanky.leer(context)));
     }
     // Una sola vez: las imágenes de Zanky ya en memoria antes del primer cambio de ánimo.
     if (!_precargado) {

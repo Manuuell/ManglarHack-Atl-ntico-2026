@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../datos/avisos/centro_avisos.dart';
 import '../../datos/comunidad/comunidad.dart';
 import '../../datos/crecimiento/ranking_colegios.dart';
 import '../../datos/estado.dart';
@@ -318,6 +319,8 @@ class _InscripcionState extends State<_Inscripcion> {
         nombre: _nombre.text, telefono: _cel.text, aceptaDatos: _datos, aceptaWhatsapp: _whatsapp && _cel.text.trim().isNotEmpty);
     if (!mounted) return;
     if (r.ok) {
+      // Desde aquí se recuerda la jornada: la víspera y 2 h antes.
+      CentroAvisos.compartido.recordarJornada(widget.j).ignore();
       vibrar(Vibracion.media);
       Navigator.of(context).pop(true);
       avisar(context, '¡Listo! Quedaste en la lista. Te esperamos.', tipo: TipoAviso.exito);

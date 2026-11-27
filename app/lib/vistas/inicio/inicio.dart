@@ -38,6 +38,7 @@ import 'que_hago_ya.dart';
 import 'secciones_rol.dart';
 import '../crecimiento/pantalla_mi_manglar.dart';
 import '../crecimiento/zanky_crece.dart';
+import '../avisos/bandeja_avisos.dart';
 import '../raiz.dart';
 import '../reporte/flujo_reporte.dart';
 
@@ -300,6 +301,8 @@ class _InicioState extends State<Inicio> {
                     ],
                   ),
                 ),
+                const CampanaAvisos(),
+                const SizedBox(width: 8),
                 const BotonConfiguracion(),
                 const SizedBox(width: 4),
                 ZankyMascota(

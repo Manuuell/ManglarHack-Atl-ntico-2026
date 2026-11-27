@@ -39,6 +39,9 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
   /// por fin llegó («Listo: tu reporte ZK-… ya llegó») o un cambio de estado («Novedad de
   /// tu reporte…»). «Mis reportes» la muestra como aviso.
   final novedades = ValueNotifier<String?>(null);
+
+  /// El reporte de la última [novedades] (la bandeja de avisos abre ese reporte).
+  String? novedadReporteId;
   static const _uuid = Uuid();
   static const claveReportes = 'reportes.v1';
   static const _clavePerfil = 'perfil.v1';
@@ -451,7 +454,10 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
       _avisar();
       try {
         final idPublico = await servidor.enviar(r, await Fotos.leer(r.fotoRef));
-        if (r.capturadoSinSenal || r.intentos > 0) novedades.value = TextosCanal.enviadoTarde(r.caso);
+        if (r.capturadoSinSenal || r.intentos > 0) {
+          novedadReporteId = r.id;
+          novedades.value = TextosCanal.enviadoTarde(r.caso);
+        }
         r
           ..envio = Envio.enviado
           ..enviadoEn = DateTime.now()
@@ -566,6 +572,7 @@ class EstadoZanky extends ChangeNotifier with WidgetsBindingObserver {
       if (r.estado != e.estado) {
         r.estado = e.estado;
         r.historial.add(CambioEstado(e.estado, e.actualizado ?? DateTime.now(), e.nota));
+        novedadReporteId = r.id;
         novedades.value = TextosCanal.cambioDeEstado(r.caso, e.estado);
         este = true;
       }
