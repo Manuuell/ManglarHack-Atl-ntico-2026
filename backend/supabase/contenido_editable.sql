@@ -121,6 +121,17 @@ drop policy if exists historial_panel_lee_equipo on public.historial_panel;
 create policy historial_panel_lee_equipo on public.historial_panel for select to authenticated
   using (public.panel_rol_de(auth.uid()) is not null);
 
+-- Puntos QR: el público solo lee los activos (puntos.sql); quien gestiona puntos ve también los
+-- apagados, para poder volver a encenderlos desde el panel.
+do $$
+begin
+  if to_regclass('public.puntos_zanky') is not null then
+    execute 'drop policy if exists puntos_equipo_lee_todos on public.puntos_zanky';
+    execute 'create policy puntos_equipo_lee_todos on public.puntos_zanky for select to authenticated
+               using (public.tengo_permiso(''gestionar_puntos''))';
+  end if;
+end $$;
+
 -- Nadie escribe directo: solo guardar_ajuste().
 revoke all on public.ajustes_panel   from public, anon, authenticated;
 revoke all on public.historial_panel from public, anon, authenticated;

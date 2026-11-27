@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../datos/sensores/lecturas_sensor.dart';
 import '../../../datos/sensores/servicio_sensores.dart';
+import '../../../nucleo/base/esqueleto.dart';
 import '../../../nucleo/identidad.dart';
 import '../../../nucleo/presionable.dart';
 import '../../../nucleo/tema.dart';
@@ -61,8 +62,10 @@ class _SeccionSensoresAdminState extends State<SeccionSensoresAdmin> {
     final r = _r;
     final tt = Theme.of(context).textTheme;
     if (r == null) {
-      return const Center(
-        child: SizedBox.square(dimension: 26, child: CircularProgressIndicator(strokeWidth: 2.6, color: Cra.dorado)),
+      // Primera carga sin copia: el esqueleto de la sección (no un círculo suelto).
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+        children: const [Esqueleto.cabecera(), SizedBox(height: 12), Esqueleto.lista(3)],
       );
     }
     final ahora = relojSensores();

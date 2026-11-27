@@ -30,6 +30,25 @@ Enlace mágico: no está hecho (ver «Fuera»).
   barras por zona y por tipo, y los últimos 7 días.
 - **Avisos** (`../comun/capa_avisos.dart`, `../../datos/avisos_ciudadano.dart`).
 
+## Contenido editable (segmento «Contenido»)
+
+`contenido/seccion_contenido_admin.dart` + `../../datos/admin/contenido_panel.dart`. Cada sección pide su permiso
+(los nombres de `permisos_rol.sql`):
+
+| Sección | Permiso | Qué se edita |
+|---|---|---|
+| Portada | `editar_contenido` | Mensaje destacado y aviso del día (con interruptor). Se ven arriba de Inicio (`contenido/franja_portada.dart`). |
+| Jornadas | `gestionar_jornadas` | Crear, editar, cerrar/reabrir y quitar: título, fecha y hora, lugar, foto (https) y cupos «sin límite» o número. Aún no salen en la cartelera de Comunidad (pendiente). |
+| Noticias | `editar_contenido` | Fijar arriba (hasta 3) u ocultar. Comunidad las ordena y filtra (`contenido_publico.dart`). |
+| Puntos QR | `gestionar_puntos` | Activar o apagar cada punto (el servidor cambia `puntos_zanky.activo`). |
+| Umbrales | `gestionar_puntos` | Umbral de alerta por medida; el servidor lo copia a `sensores.umbral_alerta`. |
+| Historial | (todo el equipo) | Quién cambió qué y cuándo (`historial_panel`, últimos 50). |
+
+Cada guardado se ve al instante, ofrece **Deshacer** (que también queda en el historial) y, si el servidor no lo acepta,
+vuelve atrás y dice por qué. Origen a la vista: demostración (en memoria), valores de fábrica (sin `contenido_editable.sql`,
+no deja guardar), copia del teléfono sin señal. Teléfono: segmentos, una sección a la vez; desde 900 px: lista a la izquierda.
+Pruebas: `test/contenido_panel_test.dart`.
+
 ## Deshacer sin tocar el servidor
 
 El esquema no permite volver atrás un estado. Por eso la decisión se **ve al instante** pero solo sale
