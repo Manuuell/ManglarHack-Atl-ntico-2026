@@ -4,6 +4,8 @@ export type Entrada =
   | { tipo: 'opcion'; id: string }
   | { tipo: 'ubicacion'; lat: number; lon: number; nombre?: string; direccion?: string }
   | { tipo: 'imagen'; mediaId: string; sha256?: string; mime?: string; caption?: string }
+  /** Nota de voz o audio: index.ts la transcribe y la pasa al flujo como texto. */
+  | { tipo: 'audio'; mediaId: string; mime?: string }
   | { tipo: 'otro'; clase: string };
 
 export interface MensajeEntrante {
@@ -36,6 +38,8 @@ function entradaDe(m: Obj): Entrada {
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return { tipo: 'otro', clase: 'location' };
       return { tipo: 'ubicacion', lat, lon, nombre: m.location?.name, direccion: m.location?.address };
     }
+    case 'audio':
+      return m.audio?.id ? { tipo: 'audio', mediaId: String(m.audio.id), mime: m.audio.mime_type } : { tipo: 'otro', clase: 'audio' };
     case 'image':
       return m.image?.id
         ? { tipo: 'imagen', mediaId: String(m.image.id), sha256: m.image.sha256, mime: m.image.mime_type, caption: m.image.caption }

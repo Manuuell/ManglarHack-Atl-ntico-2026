@@ -72,6 +72,7 @@ export const COMO_FUNCIONA =
   '3. Si puedes, una foto tomada en el momento.\n' +
   '4. La CRA recibe tu reporte en su panel, lo verifica y decide cómo actuar.\n\n' +
   '🌱 *Jornadas:* toca *Jornadas* para ver las próximas siembras y limpiezas e inscribirte.\n\n' +
+  '⚠️ *Alertas:* escribe *alertas* para saber si viene mar de leva, aguaceros, vientos fuertes o riesgo de incendio en el manglar.\n\n' +
   '📶 *¿Sin señal?* Escríbeme igual: WhatsApp guarda tus mensajes y me llegan apenas vuelva la señal, con la hora en que los enviaste.\n\n' +
   '🔒 Nunca se publican tu nombre ni tu número. Los datos abiertos solo muestran el tipo, la zona aproximada y el estado.\n\n' +
   '⚠️ Si hay peligro para las personas, llama primero al *123*.';

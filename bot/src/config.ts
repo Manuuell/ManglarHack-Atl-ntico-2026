@@ -38,6 +38,11 @@ export const config = {
   /** OpenAI: Zanky conversa en la burbuja de la web (POST /chat) y responde preguntas libres en WhatsApp. */
   openaiKey: env.OPENAI_API_KEY ?? '',
   openaiModel: env.OPENAI_MODEL ?? 'gpt-4o-mini',
+  /** Notas de voz: se transcriben con este modelo y siguen la conversación como texto. TRANSCRIBIR_AUDIOS=no las apaga. */
+  openaiTranscribeModel: env.OPENAI_TRANSCRIBE_MODEL ?? 'gpt-4o-mini-transcribe',
+  transcribirAudios: env.TRANSCRIBIR_AUDIOS !== 'no',
+  /** Tope de audios por persona en una hora (cuidan el costo de la transcripción). */
+  audiosPorHora: Number(env.AUDIOS_POR_HORA ?? 20),
   openaiUrl: (env.OPENAI_BASE_URL ?? 'https://api.openai.com/v1').replace(/\/$/, ''),
   /** POST /chat (charla con IA desde la web). Apagado: la web lleva a WhatsApp. Se prende con CHAT_WEB=si. */
   chatWeb: env.CHAT_WEB === 'si',
@@ -47,6 +52,20 @@ export const config = {
   /** Tope de preguntas a la IA: por IP cada 10 minutos y en total por hora (para que el costo no se dispare). */
   chatPorIp: Number(env.CHAT_POR_IP ?? 20),
   chatPorHora: Number(env.CHAT_POR_HORA ?? 400),
+  /** Web de Zanky (enlaces de invitación y CORS de la API /api). */
+  webUrl: (env.WEB_URL ?? 'https://mimanglar.sentralabs.co').replace(/\/$/, ''),
+  /**
+   * Panel admin: cuentas de la web (Supabase Auth) con rol admin o moderador_cra en panel_roles, o con su correo
+   * en esta lista (separados por coma). Los scripts del servidor pueden usar además x-api-key = PANEL_API_KEY.
+   */
+  adminCorreos: (env.ADMIN_CORREOS ?? '').split(',').map(c => c.trim().toLowerCase()).filter(Boolean),
+  /** Plantilla aprobada de WhatsApp para invitar a una jornada: imagen, 4 variables, botón de URL y «No podré ir». */
+  plantillaInvitacion: env.PLANTILLA_INVITACION ?? 'nodo_recordatorio_evento',
+  plantillaIdioma: env.PLANTILLA_IDIOMA ?? 'es',
+  /** El botón de URL de la plantilla termina en este sufijo + id de la jornada; nginx lo redirige a la web. */
+  prefijoBotonEvento: env.PREFIJO_BOTON_EVENTO ?? 'zanky-',
+  /** Imagen del encabezado de la invitación cuando la jornada no trae la suya (JPG o PNG público, menos de 5 MB). */
+  imagenInvitacion: env.IMAGEN_INVITACION ?? 'https://zanqui.sentralabs.co/invitaciones/jornada-limpieza-manglar.jpg',
   /** Reportes por persona en una hora antes de frenar el envío. */
   maxReportesPorHora: 5,
   sesionTtlMs: 30 * 60 * 1000,

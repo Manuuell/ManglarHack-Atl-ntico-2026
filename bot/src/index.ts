@@ -14,6 +14,12 @@ import { backendActivo } from './backend/supabase';
 import { sondearEstados } from './backend/avisos';
 import { enviadoTarde } from './flujos/textos';
 import { ErrorIA, iaActiva, responder, Turno } from './ia/zanky';
+import path from 'path';
+import { api } from './api/rutas';
+import { iniciarJornadas } from './api/almacenJornadas';
+import { atenderRespuestaInvitacion } from './api/respuestas';
+import { escucharAudio } from './ia/audio';
+import { alertasActuales, alertasSimulacro, iniciarAlertas } from './alertas/motor';
 
 type ConCuerpoCrudo = Request & { cuerpoCrudo?: Buffer };
 
@@ -33,6 +39,10 @@ app.use(
     },
   }),
 );
+
+// API de la web y del panel admin (jornadas, inscripciones, cuentas, invitaciones) e imágenes de invitación.
+app.use('/api', api);
+app.use('/invitaciones', express.static(path.join(__dirname, '../publico/invitaciones'), { maxAge: '1h' }));
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, simulacion: config.dryRun, reportes: almacen.todos().length });
@@ -60,7 +70,15 @@ function encolar(m: MensajeEntrante): void {
     .then(async () => {
       console.log(`[entrante] ${quien} ${m.entrada.tipo}`);
       await whatsapp.marcarLeido(m.messageId).catch(err => console.warn(`[leido] ${(err as Error).message}`));
-      await atender(m);
+      // «No podré ir» de una invitación por plantilla: se atiende aparte del flujo de conversación.
+      // Nota de voz: se transcribe y sigue como si la persona lo hubiera escrito (si falla, ya se le respondió).
+      let mensaje = m;
+      if (m.entrada.tipo === 'audio') {
+        const texto = await escucharAudio(m.de, m.entrada.mediaId, m.entrada.mime);
+        if (texto === null) return;
+        mensaje = { ...m, entrada: { tipo: 'texto', texto } };
+      }
+      if (!(await atenderRespuestaInvitacion(mensaje))) await atender(mensaje);
       console.log(`[respondido] ${quien}`);
     })
     .catch(err => console.error(`[flujo] error atendiendo ${m.messageId}:`, (err as Error).message))
@@ -147,6 +165,20 @@ app.post('/chat', async (req, res) => {
     // En el log va el error, nunca lo que escribió la persona.
     console.warn(`[chat] ${(err as Error).message.slice(0, 200)}`);
     res.status(err instanceof ErrorIA ? 502 : 500).json({ error: 'fallo', mensaje: 'Se me enredó la respuesta. ¿Me lo preguntas otra vez?' });
+  }
+});
+
+// --- Alertas del manglar (públicas: datos del IDEAM, DIMAR, la C.R.A. y la comunidad) ---------
+
+app.get('/alertas', async (req, res) => {
+  // Datos públicos y sin nada personal: cualquier sitio puede mostrarlos.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, max-age=60');
+  try {
+    res.json(req.query.simulacro === '1' ? await alertasSimulacro() : await alertasActuales());
+  } catch (err) {
+    console.warn(`[alertas] ${(err as Error).message}`);
+    res.status(502).json({ error: 'sin_datos', mensaje: 'No pudimos leer las fuentes en este momento.' });
   }
 });
 
@@ -237,9 +269,11 @@ async function reintentarPendientes(): Promise<void> {
 
 export function iniciar(): void {
   almacen.iniciarAlmacen();
+  iniciarJornadas();
   const n = cargarZonas(config.zonasGeojson);
   const nArea = cargarAreaReporte(config.areaReporteGeojson);
   for (const aviso of avisosDeConfiguracion()) console.warn(`[config] ${aviso}`);
+  iniciarAlertas();
   setInterval(() => void reintentarPendientes(), 60_000);
   void reintentarPendientes();
   // Aviso al ciudadano cuando la C.R.A. cambia el estado en el panel (sondeo de estado_de_reportes).

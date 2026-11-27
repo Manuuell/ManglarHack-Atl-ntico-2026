@@ -15,6 +15,7 @@ import { buscarJornada, proximasJornadas } from '../jornadas/jornadas';
 import { config as configBot } from '../config';
 import * as T from './textos';
 import { iaActiva, limpiarHistorial, responder, Turno } from '../ia/zanky';
+import { alertasActuales, alertasSimulacro, textoWhatsApp } from '../alertas/motor';
 
 type Paso =
   | 'menu'
@@ -343,6 +344,18 @@ async function recibirFoto(de: string, s: Sesion, mediaId: string, sha256Meta?: 
 const webJornadas = () => `${new URL(configBot.jornadasUrl).origin}/plataforma/jornadas`;
 
 /** Lista las próximas jornadas comunitarias que publica la web. */
+/** Alertas del manglar: oleaje, pleamar, lluvia, viento, riesgo de incendio y reportes que coinciden. */
+async function mostrarAlertas(de: string, s: Sesion, simulacro: boolean): Promise<void> {
+  ir(s, 'menu');
+  try {
+    const r = simulacro ? await alertasSimulacro() : await alertasActuales();
+    await whatsapp.texto(de, textoWhatsApp(r, new URL(configBot.jornadasUrl).origin));
+  } catch (err) {
+    console.warn(`[alertas] ${(err as Error).message}`);
+    await whatsapp.texto(de, 'No pude leer las alertas en este momento 😕. Intenta de nuevo en unos minutos.');
+  }
+}
+
 async function mostrarJornadas(de: string, s: Sesion): Promise<void> {
   ir(s, 'jornadas');
   try {
@@ -364,7 +377,8 @@ async function enviarInvitacion(de: string, s: Sesion, id: string): Promise<void
   const { aviso } = await proximasJornadas().catch(() => ({ aviso: '' }));
   const j = buscarJornada(id);
   if (!j) return mostrarJornadas(de, s);
-  await whatsapp.texto(de, T.invitacionJornada(j, aviso));
+  // Las jornadas del almacén dicen una por una si son de ejemplo; las reales van sin el aviso.
+  await whatsapp.texto(de, T.invitacionJornada(j, j.ejemplo === false ? '' : aviso));
   await whatsapp.botones(de, '¿Qué más quieres hacer?', T.BOTONES_DESPUES_DE_JORNADA);
 }
 
@@ -424,6 +438,8 @@ export async function atender(m: MensajeEntrante): Promise<void> {
   }
   if (texto === 'registro' || texto === 'registrarme') return empezarRegistro(de, s);
   if (texto === 'jornadas' || texto === 'jornada' || texto === 'eventos') return mostrarJornadas(de, s);
+  if (/^(alertas?|alerta del manglar|clima|mar de leva|oleaje|calamidad(es)?)$/.test(texto)) return mostrarAlertas(de, s, false);
+  if (texto === 'simulacro' || texto === 'alertas simulacro') return mostrarAlertas(de, s, true);
   if (texto === 'ayuda' || texto === 'como funciona') {
     await whatsapp.texto(de, T.COMO_FUNCIONA);
     return enviarMenu(de, s);
