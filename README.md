@@ -1,8 +1,8 @@
-# Zanqui: monitoreo ciudadano del manglar del Atlántico
+# Zanky: monitoreo ciudadano del manglar del Atlántico
 
 Proyecto para **Manglar Hack Atlántico 2026**, organizado por la CRA y la Universidad Simón Bolívar.
 
-**Zanqui** es una herramienta de ciencia ciudadana para que cualquier persona (habitantes, pescadores, colegios o turistas) reporte **en tiempo real y con ubicación** las amenazas al manglar del Atlántico. Funciona con o sin internet. Los reportes llegan a un panel de la Corporación, donde se priorizan y se validan, y se publican como datos abiertos.
+**Zanky** es una herramienta de ciencia ciudadana para que cualquier persona (habitantes, pescadores, colegios o turistas) reporte **en tiempo real y con ubicación** las amenazas al manglar del Atlántico. Funciona con o sin internet. Los reportes llegan a un panel de la Corporación, donde se priorizan y se validan, y se publican como datos abiertos.
 
 ## Componentes
 
@@ -10,7 +10,7 @@ Proyecto para **Manglar Hack Atlántico 2026**, organizado por la CRA y la Unive
 |---|---|---|
 | `app/` | App móvil (Flutter) | En construcción |
 | `web/` | Aplicación web: panel de la CRA y vista pública | En construcción |
-| `bot/` | Bot de WhatsApp | En construcción |
+| `bot/` | Zanky BOT, el canal de WhatsApp. Ver [bot/README.md](bot/README.md) | Funciona en modo simulación; falta conectarlo a Meta |
 | `datos/` | Polígonos del manglar y datos de prueba | Capa de INVEMAR de referencia |
 | `handoff/` | Documentación del equipo: reto, solución y datos | Ver [handoff/README.md](handoff/README.md) |
 
