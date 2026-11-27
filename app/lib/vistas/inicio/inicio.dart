@@ -28,6 +28,7 @@ import '../comun/zanky_mascota.dart';
 import '../contenido/bloques_contenido.dart';
 import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
+import '../admin/contenido/franja_portada.dart';
 import '../guardian/editar_perfil.dart';
 import '../configuracion/pantalla_configuracion.dart';
 import '../comunidad/comunidad_inicio.dart';
@@ -321,6 +322,7 @@ class _InicioState extends State<Inicio> {
           ),
           const SizedBox(height: 14),
           const FranjaConexion(),
+          const FranjaPortada(),
           for (final seccion in secciones) ...[
             EntradaEscalonada(index: i++, child: _conMenu(context, seccion, _seccion(context, seccion, estado, progreso, resumen))),
             const SizedBox(height: 16),

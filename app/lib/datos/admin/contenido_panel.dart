@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../permisos/permisos_rol.dart';
 import '../sensores/lecturas_sensor.dart';
 import '../servidor.dart';
+import 'contenido_publico.dart';
 
 /// Lo que el equipo puede editar desde el panel. La clave es la de `ajustes_panel` en
 /// `backend/supabase/contenido_editable.sql`; el permiso, el de `permisos_rol.sql`.
@@ -389,6 +390,7 @@ class ControladorContenidoPanel extends ChangeNotifier {
       contenido = ContenidoPanel.deFilas(filas);
       origen = OrigenContenido.servidor;
       sinSenal = false;
+      contenidoPublico.value = contenido;
       unawaited(_guardarCopia());
     } on SinTablaContenido {
       contenido = ContenidoPanel.fabrica;
@@ -419,6 +421,8 @@ class ControladorContenidoPanel extends ChangeNotifier {
     _avisar();
     final f = fuente;
     if (f == null) {
+      // Demostración: se ve en la app de este teléfono (Inicio, Comunidad) mientras dure la sesión.
+      contenidoPublico.value = contenido;
       historial = [
         CambioPanel(cuando: _reloj(), quien: 'Demostración', seccion: s, resumen: resumen),
         ...historial,
@@ -429,6 +433,7 @@ class ControladorContenidoPanel extends ChangeNotifier {
     try {
       await f.guardar(s.clave, contenido.valorDe(s), resumen);
       unawaited(_guardarCopia());
+      contenidoPublico.value = contenido;
       historial = [CambioPanel(cuando: _reloj(), quien: 'Tú', seccion: s, resumen: resumen), ...historial];
       _avisar();
       return null;

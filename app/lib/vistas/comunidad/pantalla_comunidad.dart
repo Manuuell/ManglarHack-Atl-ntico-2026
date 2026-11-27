@@ -22,6 +22,7 @@ import '../comun/zanky_mascota.dart';
 import '../../datos/comunidad/feed.dart';
 import 'feed_y_eventos.dart';
 import 'piezas_comunidad.dart';
+import '../../datos/admin/contenido_publico.dart';
 
 /// Abre «Comunidad» (desde la tarjeta de Inicio).
 Future<void> abrirComunidad(BuildContext context) =>
@@ -90,7 +91,7 @@ class _PantallaComunidadState extends State<PantallaComunidad> {
     await Future.wait([
       _fuente.alertas().then((v) => mounted ? setState(() => _alertas = v) : null),
       _fuente.reportes().then((v) => mounted ? setState(() => _reportes = v) : null),
-      _fuente.noticias().then((v) => mounted ? setState(() => _noticias = v) : null),
+      _fuente.noticias().then(ajustarLoteNoticias).then((v) => mounted ? setState(() => _noticias = v) : null),
       _fuenteJornadas.cargar().then((v) => mounted ? setState(() => _jornadas = v) : null).catchError((_) => null),
       _cargarRanking(servidor),
     ]);

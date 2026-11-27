@@ -10,6 +10,7 @@ import 'pantalla_comunidad.dart';
 import '../../datos/experiencia/jornada.dart';
 import 'feed_y_eventos.dart';
 import 'piezas_comunidad.dart';
+import '../../datos/admin/contenido_publico.dart';
 
 /// En Inicio: la alerta oficial del servidor (`/alertas`, la misma de la portada web) con las cifras
 /// oficiales de «Ahora», la entrada a «Comunidad» y la noticia destacada de la CRA
@@ -42,7 +43,7 @@ class _ComunidadInicioState extends State<ComunidadInicio> {
   Future<void> _cargar() async {
     await Future.wait([
       _f.alertas().then((v) => mounted ? setState(() => _alertas = v) : null),
-      _f.noticias().then((v) => mounted ? setState(() => _noticias = v) : null),
+      _f.noticias().then(ajustarLoteNoticias).then((v) => mounted ? setState(() => _noticias = v) : null),
     ]);
   }
 

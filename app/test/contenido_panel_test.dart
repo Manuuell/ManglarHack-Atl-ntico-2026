@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zanky/datos/admin/contenido_panel.dart';
+import 'package:zanky/datos/admin/contenido_publico.dart';
+import 'package:zanky/vistas/admin/contenido/franja_portada.dart';
 import 'package:zanky/datos/comunidad/comunidad.dart';
 import 'package:zanky/datos/permisos/permisos_rol.dart';
 import 'package:zanky/datos/sensores/lecturas_sensor.dart';
@@ -150,6 +152,33 @@ void main() {
       await c.cargarPuntos();
       expect(c.puntos!.single.codigo, 'muelle-1');
       expect(c.contenido.puntosInactivos, {'muelle-1'});
+    });
+  });
+
+  group('en la app', () {
+    NoticiaManglar n(int id) =>
+        NoticiaManglar(id: id, fecha: DateTime(2026, 11, id), titulo: 'N$id', resumen: '', parrafos: const [], enlace: '', imagen: null);
+
+    test('noticias: sin las ocultas y con las fijadas arriba', () {
+      final c = ContenidoPanel.fabrica.copiar(fijadas: {3}, ocultas: {2});
+      expect(aplicarAjustesNoticias([n(1), n(2), n(3)], c).map((x) => x.id), [3, 1]);
+      expect(aplicarAjustesNoticias([n(1), n(2)], ContenidoPanel.fabrica).map((x) => x.id), [1, 2]);
+    });
+
+    testWidgets('Inicio: la franja sale al guardar la portada y no ocupa nada si está vacía', (tester) async {
+      reiniciarContenidoPublico();
+      await tester.pumpWidget(MaterialApp(theme: temaCra(), home: const Scaffold(body: Column(children: [FranjaPortada()]))));
+      await tester.pump();
+      expect(find.text('DE LA CRA'), findsNothing);
+      final c = ControladorContenidoPanel();
+      await c.cargar();
+      await c.guardar(SeccionContenido.portada,
+          c.contenido.copiar(portada: const PortadaPanel(mensaje: 'Siembra el sábado', aviso: 'Marea alta', avisoActivo: true)), 'r');
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Siembra el sábado'), findsOneWidget);
+      expect(find.text('Marea alta'), findsOneWidget);
+      reiniciarContenidoPublico();
+      await tester.pump(const Duration(milliseconds: 400));
     });
   });
 
