@@ -59,11 +59,26 @@ class _CampanaAvisosState extends State<CampanaAvisos> with SingleTickerProvider
   void initState() {
     super.initState();
     _centro.nuevo.addListener(_alNuevo);
+    _centro.pedido.addListener(_alPedido);
+    // La app se abrió desde un aviso del navegador: se abre en cuanto haya pantalla.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _alPedido());
+  }
+
+  /// Tocaron un aviso del navegador: lleva al lugar exacto (si ya cargó la bandeja).
+  void _alPedido() {
+    final clave = _centro.pedido.value;
+    if (clave == null || !mounted || !_centro.cargado) return;
+    _centro.pedido.value = null;
+    final a = _centro.avisos.where((x) => x.clave == clave).firstOrNull;
+    if (a == null) return;
+    _centro.marcarLeido(a);
+    unawaited(abrirAviso(context, a));
   }
 
   @override
   void dispose() {
     _centro.nuevo.removeListener(_alNuevo);
+    _centro.pedido.removeListener(_alPedido);
     _meneo.dispose();
     super.dispose();
   }

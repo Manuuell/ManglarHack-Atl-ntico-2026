@@ -105,3 +105,20 @@ self.addEventListener('fetch', (evento) => {
     return respuesta;
   })());
 });
+
+// Tocar un aviso de Zanky: trae al frente la pestaña abierta (o abre la app) y le dice qué
+// aviso abrir; la app lleva al lugar exacto (alerta en el mapa, jornada o reporte).
+self.addEventListener('notificationclick', (evento) => {
+  evento.notification.close();
+  const clave = evento.notification.data && evento.notification.data.clave;
+  evento.waitUntil((async () => {
+    const ventanas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const ventana = ventanas.find((v) => v.url.startsWith(self.registration.scope));
+    if (ventana) {
+      await ventana.focus();
+      if (clave) ventana.postMessage({ tipo: 'zanky-aviso', clave });
+      return;
+    }
+    await self.clients.openWindow(self.registration.scope + (clave ? `?aviso=${encodeURIComponent(clave)}` : ''));
+  })());
+});

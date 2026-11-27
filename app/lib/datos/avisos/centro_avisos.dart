@@ -8,6 +8,7 @@ import '../admin/aviso_navegador.dart';
 import '../comunidad/comunidad.dart';
 import '../estado.dart';
 import '../experiencia/jornada.dart';
+import 'notificador_nada.dart' if (dart.library.js_interop) 'notificador_web.dart' as notificador;
 import 'reglas_avisos.dart';
 
 /// El centro de avisos: junta las alertas del manglar, los recordatorios de las jornadas
@@ -23,7 +24,18 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
   CentroAvisos({FuenteComunidad? fuente, DateTime Function()? reloj, AvisoNavegador? navegador})
       : _fuente = fuente ?? FuenteComunidad.compartida,
         _reloj = reloj ?? DateTime.now,
-        navegador = navegador ?? AvisoNavegador();
+        navegador = navegador ?? AvisoNavegador() {
+    // Un navegador de prueba recibe los avisos; el de verdad usa el service worker.
+    _sistema = navegador != null
+        ? ((a) => navegador.mostrar(a.titulo, a.cuerpo))
+        : ((a) => unawaited(notificador.mostrar(a.titulo, a.cuerpo, a.clave, _pedir)));
+  }
+
+  late final void Function(AvisoApp) _sistema;
+
+  /// Clave del aviso que la persona tocó fuera de la app (aviso del navegador): la campana lo abre.
+  final pedido = ValueNotifier<String?>(null);
+  void _pedir(String clave) => pedido.value = clave;
 
   static final compartido = CentroAvisos();
 
@@ -63,7 +75,10 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
     _estado = estado;
     estado.novedades.addListener(_alNovedad);
     WidgetsBinding.instance.addObserver(this);
+    notificador.escucharToques(_pedir);
     await cargar();
+    final desdeAviso = notificador.avisoDeLaDireccion();
+    if (desdeAviso != null) _pedir(desdeAviso);
     if (_estado != estado) return; // se desconectó mientras cargaba
     _temporizador = Timer.periodic(cadaCuanto, (_) => unawaited(revisar()));
     // Después del primer cuadro: lo primero es que la app pinte.
@@ -162,7 +177,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
     final primero = permitidos.firstWhere((a) => a.nivel == 'roja', orElse: () => permitidos.first);
     if (navegador.activo) {
       for (final a in permitidos.take(3)) {
-        navegador.mostrar(a.titulo, a.cuerpo);
+        _sistema(a);
       }
     }
     nuevo.value = primero;
@@ -237,6 +252,7 @@ class CentroAvisos extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     desconectar();
     nuevo.dispose();
+    pedido.dispose();
     super.dispose();
   }
 }
