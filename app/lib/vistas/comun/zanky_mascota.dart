@@ -12,7 +12,8 @@ enum Animo { feliz, curioso, preocupado, celebrando }
 
 String _rutaArte(Animo a) => 'assets/zanky/zanky-${a.name}.webp';
 
-String _rutaEtapa(int etapa) => 'assets/zanky/etapas/etapa-${etapa.clamp(1, 5)}.webp';
+// «-sola»: recortada a su dibujo (a escala, el propágulo era una mancha en 64 px). Las de escala sirven para comparar.
+String _rutaEtapa(int etapa) => 'assets/zanky/etapas/etapa-${etapa.clamp(1, 5)}-sola.webp';
 
 /// Carga en memoria las 4 imágenes de Zanky (y las 5 etapas de crecimiento) para que el primer cambio de ánimo no parpadee.
 /// Se llama una vez desde la raíz de la app (con un contexto que ya tenga `MediaQuery`/bundle).

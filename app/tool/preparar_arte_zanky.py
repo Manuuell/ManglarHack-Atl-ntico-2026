@@ -146,6 +146,12 @@ def etapas():
         lienzo = Image.new("RGBA", (lw, lh), (0, 0, 0, 0))
         lienzo.paste(rec, ((lw - rec.width) // 2, lh - 8 - rec.height), rec)
         webp(lienzo, ASSETS / "etapas" / f"etapa-{i}.webp", 80)
+        # Sola: recortada a su dibujo en un lienzo cuadrado. A escala, el propágulo ocupa el 31 % x 27 % del lienzo y
+        # mostrado solo en 64 px se ve como una mancha; para eso está esta versión (la de escala sirve para comparar).
+        lado = max(rec.width, rec.height) + 16
+        sola = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
+        sola.paste(rec, ((lado - rec.width) // 2, lado - 8 - rec.height), rec)
+        webp(sola.resize((256, 256), Image.LANCZOS), ASSETS / "etapas" / f"etapa-{i}-sola.webp", 80)
     print("  proporciones (alto/ancho de lienzo):", round(lh / lw, 4))
 
 
