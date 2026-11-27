@@ -24,6 +24,7 @@ import '../admin/piezas_admin.dart';
 import '../comun/burbuja.dart';
 import '../comun/comunes.dart';
 import '../comun/zanky_mascota.dart';
+import '../contenido/bloques_contenido.dart';
 import '../experiencia/puerta_evento.dart';
 import '../experiencia/widgets_evento.dart' show EntradaEvento;
 import '../guardian/editar_perfil.dart';
@@ -294,6 +295,10 @@ class _InicioState extends State<Inicio> {
             EntradaEscalonada(index: i++, child: _conMenu(context, seccion, _seccion(context, seccion, estado, progreso, resumen))),
             const SizedBox(height: 16),
           ],
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: BloquesContenido(ambito: 'global'),
+          ),
           if (_ocultas.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),

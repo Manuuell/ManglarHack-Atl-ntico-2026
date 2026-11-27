@@ -89,6 +89,13 @@ class ControladorAdmin extends ChangeNotifier with WidgetsBindingObserver {
   bool get dentro => fase == FaseAdmin.dentro;
   bool get demostracion => _repo?.demostracion ?? false;
 
+  /// Token de la sesión del panel para editores adicionales. Nunca se persiste.
+  Future<String?> tokenParaContenido() async {
+    if (!dentro || demostracion || _sesion == null) return null;
+    await _renovarSesion();
+    return _sesion?.token;
+  }
+
   /// Reportes pendientes que el equipo aún no ha visto: el número del ícono.
   int get sinVer => reportes.where((r) => r.estado == EstadoReporte.recibido && !_vistos.contains(r.id)).length;
 

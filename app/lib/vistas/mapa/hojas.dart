@@ -6,6 +6,7 @@ import '../../nucleo/base/hoja.dart';
 import '../../nucleo/presionable.dart';
 import '../../nucleo/tema.dart';
 import '../comun/comunes.dart';
+import '../biodiversidad/pantalla_biodiversidad.dart';
 import 'capa_prioridad.dart';
 import 'modelo.dart';
 
@@ -109,6 +110,17 @@ Future<void> abrirHojaZona(
             onTap: () {
               Navigator.of(c).pop();
               alReportar();
+            },
+          ),
+          const SizedBox(height: 10),
+          BotonZ(
+            texto: 'Especies vistas cerca y marea',
+            icono: Icons.travel_explore_rounded,
+            secundario: true,
+            onTap: () {
+              Navigator.of(c).pop();
+              Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => PantallaBiodiversidad(zona: zona)));
             },
           ),
         ],

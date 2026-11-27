@@ -1,4 +1,5 @@
 import '../../nucleo/kit/ruta_borde.dart';
+import '../contenido/entrada_contenido.dart';
 import 'package:flutter/material.dart';
 
 import '../../datos/admin/controlador_admin.dart';
@@ -160,6 +161,14 @@ class _Cabecera extends StatelessWidget {
               etiqueta: 'Actualizar reportes',
               alTocar: () => c.actualizar(),
             ),
+            if (c.rol == 'admin') ...[
+              const SizedBox(width: 4),
+              BotonIcono(
+                icono: Icons.edit_note_rounded,
+                etiqueta: 'Editar contenido de la app',
+                alTocar: () => abrirEditorContenido(context, c),
+              ),
+            ],
             const SizedBox(width: 4),
             BotonIcono(
               icono: Icons.logout_rounded,

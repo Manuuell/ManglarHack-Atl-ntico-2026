@@ -13,6 +13,7 @@ import 'piezas.dart';
 import 'reto_zanky.dart';
 import 'organizadores_evento.dart';
 import 'avisos_web.dart';
+import '../contenido/bloques_contenido.dart';
 
 /// El modo evento: Zanky da la bienvenida a la jornada y ofrece asistencia, charla, reto y atajos.
 class PantallaEvento extends StatefulWidget {
@@ -187,6 +188,8 @@ class _PantallaEventoState extends State<PantallaEvento> {
             onTap: () => abrirRetoZanky(context, e),
           ),
         ),
+        const SizedBox(height: 14),
+        BloquesContenido(ambito: 'evento:${e.codigo}'),
         const SizedBox(height: 22),
         EntradaEscalonada(
           index: i++,
