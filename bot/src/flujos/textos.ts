@@ -114,13 +114,17 @@ export function ubicacionRecibida(dentro: boolean, distanciaM: number, zona?: st
   return `✅ Ubicación recibida: está a ${distanciaM} m del manglar${lugar}. Lo que pasa cerca también lo afecta.`;
 }
 
-export function ubicacionLejana(distanciaM: number): string {
-  return `🤔 Esa ubicación está a ${(distanciaM / 1000).toFixed(1)} km del manglar más cercano. ¿Seguro que es ahí?`;
+/** El punto queda a más de RADIO_INFLUENCIA_M de la cobertura de manglar de la C.R.A.: no se crea el reporte. */
+export function fueraDelArea(radioM: number): string {
+  return (
+    '📍 Ese punto queda fuera del manglar; si afecta a uno cercano, comparte la ubicación del manglar afectado.\n\n' +
+    `Zanky recibe denuncias dentro del manglar del Atlántico o a menos de ${radioM} m de él.`
+  );
 }
 
-export const BOTONES_LEJOS: Boton[] = [
-  { id: 'seguir', titulo: 'Sí, es ahí' },
-  { id: 'otra_ubicacion', titulo: '📍 Cambiarla' },
+export const BOTONES_FUERA_DEL_AREA: Boton[] = [
+  { id: 'otra_ubicacion', titulo: '📍 Cambiar ubicación' },
+  { id: 'menu', titulo: '🏠 Volver al menú' },
 ];
 
 export const PEDIR_FOTO =

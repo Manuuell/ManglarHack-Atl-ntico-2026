@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { config } from '../config';
 import { whatsapp } from '../whatsapp/cloudApi';
 import { MensajeEntrante } from '../whatsapp/parser';
-import { ubicar } from '../geo/zonas';
+import { enAreaDeReporte, ubicar } from '../geo/zonas';
 import { ubicacionDesdeTexto } from '../geo/ubicacionTexto';
 import * as almacen from '../reportes/almacen';
 import { confianza, corroboraciones, prioridad } from '../reportes/evaluacion';
@@ -23,7 +23,7 @@ type Paso =
   | 'consentimiento'
   | 'tipo'
   | 'ubicacion'
-  | 'confirmar_lejos'
+  | 'fuera_area'
   | 'foto'
   | 'descripcion'
   | 'cuando'
@@ -190,9 +190,11 @@ async function registrarUbicacion(de: string, s: Sesion, lat: number, lon: numbe
     municipio: u.municipio,
     prioridadZona: u.prioridadZona,
   });
-  if (!u.dentro && u.distanciaM > config.distanciaSospechosaM) {
-    ir(s, 'confirmar_lejos');
-    await whatsapp.botones(de, T.ubicacionLejana(u.distanciaM), T.BOTONES_LEJOS);
+  // Regla común con la web: dentro de la cobertura C.R.A. 1:5.000 o a menos de RADIO_INFLUENCIA_M. Más lejos
+  // (por ejemplo, el casco urbano de Barranquilla) la denuncia no corresponde y no se crea el reporte.
+  if (!enAreaDeReporte(u, config.radioInfluenciaM)) {
+    ir(s, 'fuera_area');
+    await whatsapp.botones(de, T.fueraDelArea(config.radioInfluenciaM), T.BOTONES_FUERA_DEL_AREA);
     return;
   }
   await whatsapp.texto(de, T.ubicacionRecibida(u.dentro, u.distanciaM, u.zona));
@@ -510,11 +512,15 @@ export async function atender(m: MensajeEntrante): Promise<void> {
       return;
     }
 
-    case 'confirmar_lejos': {
-      if (opcion === 'seguir') return pedirFoto(de, s);
+    case 'fuera_area': {
       if (opcion === 'otra_ubicacion') return pedirUbicacion(de, s);
+      if (opcion === 'menu') return enviarMenu(de, s);
       if (entrada.tipo === 'ubicacion') return registrarUbicacion(de, s, entrada.lat, entrada.lon, 'gps', m.timestamp);
-      await whatsapp.botones(de, T.ubicacionLejana(s.borrador.distanciaM ?? 0), T.BOTONES_LEJOS);
+      if (entrada.tipo === 'texto') {
+        const coords = await ubicacionDesdeTexto(entrada.texto);
+        if (coords) return registrarUbicacion(de, s, coords.lat, coords.lon, 'enlace', m.timestamp);
+      }
+      await whatsapp.botones(de, T.fueraDelArea(config.radioInfluenciaM), T.BOTONES_FUERA_DEL_AREA);
       return;
     }
 

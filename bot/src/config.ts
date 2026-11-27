@@ -19,12 +19,22 @@ export const config = {
   dataDir: path.resolve(env.DATA_DIR ?? './data'),
   /** Zonas de manglar: el mismo archivo que usan la app y el backend (4 zonas con id y prioridad). */
   zonasGeojson: path.resolve(env.ZONAS_GEOJSON ?? '../app/assets/datos/manglar_zonas.json'),
+  /** Área donde se admiten denuncias: la cobertura de manglar de la C.R.A. 1:5.000 (la misma regla que la web). */
+  areaReporteGeojson: path.resolve(env.AREA_REPORTE_GEOJSON ?? '../datos/cra/manglar_cra_escala_1-5000.geojson'),
   /** Backend común (backend/supabase). Sin estos dos valores los reportes se quedan en la copia local. */
   supabaseUrl: (env.SUPABASE_URL ?? '').replace(/\/$/, ''),
   supabaseAnon: env.SUPABASE_ANON_KEY ?? '',
   /** Jornadas comunitarias publicadas por la web (siembras, limpiezas, recorridos). */
   jornadasUrl: env.JORNADAS_URL ?? 'https://mimanglar.sentralabs.co/datos/jornadas.json',
+  /** Hasta esta distancia (m) de la cobertura C.R.A. se admite la denuncia; más lejos no se crea el reporte. */
   radioInfluenciaM: Number(env.RADIO_INFLUENCIA_M ?? 500),
+  /** Cada cuánto se pregunta al backend si la C.R.A. cambió el estado de un reporte (para avisar por WhatsApp). */
+  sondeoEstadosMs: Math.max(60_000, Number(env.SONDEO_ESTADOS_MS ?? 5 * 60_000)),
+  /**
+   * Página de la web para seguir un caso. Si se define, el bot manda <SEGUIMIENTO_URL>#caso=<uuid> al ciudadano:
+   * la web lee el uuid del fragmento (no viaja al servidor) y consulta estado_de_reportes. Vacío: no se manda enlace.
+   */
+  seguimientoUrl: (env.SEGUIMIENTO_URL ?? '').trim(),
   /** OpenAI: Zanky conversa en la burbuja de la web (POST /chat) y responde preguntas libres en WhatsApp. */
   openaiKey: env.OPENAI_API_KEY ?? '',
   openaiModel: env.OPENAI_MODEL ?? 'gpt-4o-mini',
@@ -37,8 +47,6 @@ export const config = {
   /** Tope de preguntas a la IA: por IP cada 10 minutos y en total por hora (para que el costo no se dispare). */
   chatPorIp: Number(env.CHAT_POR_IP ?? 20),
   chatPorHora: Number(env.CHAT_POR_HORA ?? 400),
-  /** Más allá de esta distancia se pregunta si la ubicación es correcta. */
-  distanciaSospechosaM: 3000,
   /** Reportes por persona en una hora antes de frenar el envío. */
   maxReportesPorHora: 5,
   sesionTtlMs: 30 * 60 * 1000,

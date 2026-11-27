@@ -103,17 +103,18 @@ async function main() {
   process.env.OPENAI_BASE_URL = `http://127.0.0.1:${puerto}/v1`;
   process.env.JORNADAS_URL = `http://127.0.0.1:${puerto}/datos/jornadas.json`;
   process.env.ZONAS_GEOJSON = path.resolve(__dirname, '../../app/assets/datos/manglar_zonas.json');
+  process.env.AREA_REPORTE_GEOJSON = path.resolve(__dirname, '../../datos/cra/manglar_cra_escala_1-5000.geojson');
 
   const { bandejaSimulada } = await import('../src/whatsapp/cloudApi');
   const { parsearWebhook } = await import('../src/whatsapp/parser');
   const { atender } = await import('../src/flujos/zanky');
   const almacen = await import('../src/reportes/almacen');
-  const { cargarZonas } = await import('../src/geo/zonas');
+  const { cargarAreaReporte, cargarZonas } = await import('../src/geo/zonas');
   const { enviarReporte } = await import('../src/backend/envio');
   const { config } = await import('../src/config');
 
   almacen.iniciarAlmacen();
-  console.log(`Zonas cargadas: ${cargarZonas(config.zonasGeojson)} · backend de prueba en ${process.env.SUPABASE_URL}\n`);
+  console.log(`Zonas cargadas: ${cargarZonas(config.zonasGeojson)} · cobertura C.R.A.: ${cargarAreaReporte(config.areaReporteGeojson)} polígonos · backend de prueba en ${process.env.SUPABASE_URL}\n`);
 
   let persona = '573000000001';
   let n = 0;
@@ -156,6 +157,8 @@ async function main() {
     ['toca Menú', boton('menu')],
     ['pregunta algo libre', { type: 'text', text: { body: '¿Por qué es importante el manglar?' } }],
     ['sigue la charla', { type: 'text', text: { body: '¿Y cuándo es la próxima siembra?' } }],
+    ['manda una ubicación en el centro de Barranquilla (a 7 km del manglar)', { type: 'location', location: { latitude: 10.9878, longitude: -74.7889 } }],
+    ['toca Cambiar ubicación', boton('otra_ubicacion')],
     ['manda una ubicación fuera del Atlántico', { type: 'location', location: { latitude: 6.2442, longitude: -75.5812 } }],
   ];
 
@@ -181,7 +184,7 @@ async function main() {
   persona = '573000000001';
 
   // 1) Todo bien: el reporte llega al backend.
-  await correr(pasos.slice(0, -1).concat([['vuelve a reportar (para probar la ubicación fuera)', boton('menu')], ['toca Reportar', boton('reportar')], ['elige Quema', lista('quema')], pasos[pasos.length - 1]]));
+  await correr(pasos.slice(0, -3).concat([['vuelve a reportar (para probar las ubicaciones fuera)', boton('menu')], ['toca Reportar', boton('reportar')], ['elige Quema', lista('quema')], ...pasos.slice(-3)]));
 
   // 2) El backend se cae: el reporte queda pendiente y se reintenta después.
   console.log('\n\n=== El backend se cae durante el envío ===');

@@ -4,7 +4,7 @@ import { avisosDeConfiguracion, config } from './config';
 import { parsearWebhook, MensajeEntrante } from './whatsapp/parser';
 import { firmaValida } from './whatsapp/firma';
 import { whatsapp } from './whatsapp/cloudApi';
-import { cargarZonas } from './geo/zonas';
+import { cargarAreaReporte, cargarZonas } from './geo/zonas';
 import * as almacen from './reportes/almacen';
 import { aCSV, aGeoJSON, aKML } from './reportes/datosAbiertos';
 import { esEstado } from './reportes/modelo';
@@ -227,11 +227,12 @@ async function reintentarPendientes(): Promise<void> {
 export function iniciar(): void {
   almacen.iniciarAlmacen();
   const n = cargarZonas(config.zonasGeojson);
+  const nArea = cargarAreaReporte(config.areaReporteGeojson);
   for (const aviso of avisosDeConfiguracion()) console.warn(`[config] ${aviso}`);
   setInterval(() => void reintentarPendientes(), 60_000);
   void reintentarPendientes();
   app.listen(config.port, () => {
-    console.log(`Zanky BOT escuchando en el puerto ${config.port} · ${n} polígonos de manglar cargados`);
+    console.log(`Zanky BOT escuchando en el puerto ${config.port} · ${n} zonas de manglar · ${nArea} polígonos de la cobertura C.R.A. (área de reporte)`);
   });
 }
 
