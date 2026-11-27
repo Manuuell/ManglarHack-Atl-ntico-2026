@@ -66,6 +66,8 @@ const indiceDeHash = () => {
 
 export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   const [indice, setIndice] = useState(indiceDeHash);
+  // En pantallas estrechas la leyenda empieza plegada para no tapar el mapa.
+  const [leyendaAbierta] = useState(() => window.matchMedia('(min-width: 640px)').matches);
   const [capa, setCapa] = useState<Awaited<ReturnType<typeof obtenerCapaManglarCRA>> | null>(null);
   const [estadoCapa, setEstadoCapa] = useState<'cargando' | 'lista' | 'error'>('cargando');
   const [intento, setIntento] = useState(0);
@@ -105,6 +107,19 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   }, []);
 
   useEffect(() => {
+    // Con #pestaña en la URL, mostrar esa pestaña en la barra sin mover la página.
+    const boton = botones.current[indice];
+    const barra = boton?.parentElement;
+    if (boton && barra) barra.scrollLeft = boton.offsetLeft - (barra.clientWidth - boton.clientWidth) / 2;
+    // Un enlace a otra pestaña del mismo visor (#carbono) cambia de pestaña.
+    const alCambiarHash = () => setIndice(indiceDeHash());
+    window.addEventListener('hashchange', alCambiarHash);
+    return () => window.removeEventListener('hashchange', alCambiarHash);
+    // Solo al montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     const ajustar = () => {
       if (raiz.current) raiz.current.style.setProperty('--workflow-offset', `${raiz.current.getBoundingClientRect().top + window.scrollY}px`);
     };
@@ -129,7 +144,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
   }
 
   return <div ref={raiz} className="visor-workflow relative z-0 flex flex-col text-texto lg:flex-row">
-    <section className="workflow-mapa relative isolate min-w-0 flex-1" aria-label="Visor cartográfico">
+    <section className="workflow-mapa relative isolate min-w-0 flex-none lg:flex-1" aria-label="Visor cartográfico">
       <MapContainer maxBounds={LIMITES_MANGLAR} maxBoundsViscosity={1} minZoom={9} center={[10.95, -75.03]} zoom={10} zoomControl={false} scrollWheelZoom={false} className="h-full w-full">
         <Pane name="teselas-workflow" className="workflow-teselas" style={{ zIndex: 200 }}>
           <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="© colaboradores de OpenStreetMap" eventHandlers={{ tileerror: () => setErrorTeselas(true) }} />
@@ -171,7 +186,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
         {errorCRA && <p className="bg-fondo-alt/95 px-3 py-2">No se pudieron leer las capas C.R.A. de este navegador.</p>}
         {capasCRA.length > 0 && <label className="pointer-events-auto flex min-h-11 items-center gap-2 bg-fondo-alt/95 px-3 py-2"><input type="checkbox" checked={mostrarCRA} onChange={e => setMostrarCRA(e.target.checked)} />Capas C.R.A. cargadas</label>}
       </div>
-      <details open className="workflow-leyenda absolute bottom-6 left-3 z-[500] max-h-[45%] w-[min(360px,calc(100%-4.5rem))] overflow-auto border border-linea bg-fondo-alt/90 p-3 text-xs">
+      <details open={leyendaAbierta} className="workflow-leyenda absolute bottom-6 left-3 z-[500] max-h-[45%] w-[min(360px,calc(100%-4.5rem))] overflow-auto border border-linea bg-fondo-alt/90 p-3 text-xs">
         <summary className="rotulo min-h-11 cursor-pointer text-dorado-300">Convenciones del workflow</summary>
         <ul className="space-y-2">
           {pendiente?.tipo === 'pendiente' && <li className="space-y-1 border-b border-linea-suave pb-2"><p className="font-semibold">{pendiente.capas[0]}: capa de la C.R.A. pendiente de entrega</p>{pendiente.convenciones && <p className="text-tenue">{pendiente.convenciones.join(' · ')}</p>}</li>}
@@ -190,7 +205,7 @@ export default function VisorWorkflow({ zonas }: { zonas: ZonasManglar }) {
         {PESTANAS_WORKFLOW.map((p, i) => <button key={p.id} ref={el => { botones.current[i] = el; }} id={`tab-${p.id}`} role="tab" aria-selected={i === indice} aria-controls={`panel-${p.id}`} tabIndex={i === indice ? 0 : -1} onClick={() => seleccionar(i)} onKeyDown={e => teclado(e, i)} className={`rotulo min-h-11 shrink-0 border-b-[3px] px-4 py-3 text-white ${i === indice ? 'border-dorado-500' : 'border-transparent hover:bg-white/5'}`}>{p.etiqueta}</button>)}
       </div>
       <div ref={contenido} className="min-h-0 flex-1 overflow-y-auto">
-        <section role="tabpanel" id={`panel-${pestana.id}`} aria-labelledby={`tab-${pestana.id}`} tabIndex={0} className="space-y-6 p-5">
+        <section key={pestana.id} role="tabpanel" id={`panel-${pestana.id}`} aria-labelledby={`tab-${pestana.id}`} tabIndex={0} className="space-y-6 p-5">
           <h2 className="titular text-2xl">{pestana.titulo}</h2>
           <details className="rounded-sm border border-linea-suave">
             <summary className="flex min-h-11 cursor-pointer items-center px-3 text-sm text-dorado-300">Resumen de la sección (texto del audio de la C.R.A.)</summary>

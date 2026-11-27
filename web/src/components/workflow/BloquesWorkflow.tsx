@@ -87,14 +87,14 @@ function Tabla({ titulo, columnas, filas, decimales = 0, colores, total, nota }:
       </div>)}
     </div>}
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[20rem] text-sm">
+      <table className="w-full min-w-[20rem] text-sm" lang="es">
         <caption className="sr-only">{titulo}</caption>
         <thead><tr className="border-b border-linea text-xs text-suave">
           <th scope="col" className="py-2 pr-2 text-left font-semibold">{filas.length === 1 ? 'Componente' : 'Categoría'}</th>
-          {columnas.map(c => <th key={c} scope="col" className="px-1.5 py-2 text-right font-semibold">{c}</th>)}
+          {columnas.map(c => <th key={c} scope="col" className="px-1.5 py-2 text-right font-semibold [overflow-wrap:normal] [hyphens:auto]">{c}</th>)}
         </tr></thead>
         <tbody>{filas.map(f => <tr key={f.etiqueta} className="border-b border-linea-suave">
-          <th scope="row" className="py-2 pr-2 text-left font-normal">{f.etiqueta}</th>
+          <th scope="row" className="whitespace-nowrap py-2 pr-2 text-left font-normal">{f.etiqueta}</th>
           {f.valores.map((v, i) => <td key={i} className={`whitespace-nowrap px-1.5 py-2 text-right tabular-nums ${total && i === f.valores.length - 1 ? 'font-semibold' : ''}`}>{v === null ? '—' : num(v, decimales)}</td>)}
         </tr>)}</tbody>
       </table>
