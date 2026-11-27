@@ -1,4 +1,18 @@
-import 'dart:html' as html;
+import 'dart:js_interop';
+
+@JS('window.open')
+external JSAny? _abrirVentana(JSString url, JSString destino);
+
+@JS('Blob')
+extension type _Blob._(JSObject _) implements JSObject {
+  external factory _Blob(JSArray<JSString> partes, JSObject opciones);
+}
+
+@JS('URL.createObjectURL')
+external JSString _crearUrl(_Blob blob);
+
+@JS('URL.revokeObjectURL')
+external void _revocarUrl(JSString url);
 
 bool get puedeImprimirCartel => true;
 
@@ -14,7 +28,8 @@ p{font-size:18pt}small{font-size:12pt}
 </style><body onload="window.print()"><h1>${_escapar(titulo)}</h1>
 <img alt="Código QR del punto" src="data:image/png;base64,$imagenBase64">
 <p>Escanea y descubre este punto del manglar</p><small>${_escapar(codigo)}</small></body></html>''';
-  final url = html.Url.createObjectUrlFromBlob(html.Blob([contenido], 'text/html;charset=utf-8'));
-  html.window.open(url, '_blank');
-  Future<void>.delayed(const Duration(minutes: 1), () => html.Url.revokeObjectUrl(url));
+  final opciones = {'type': 'text/html;charset=utf-8'}.jsify()! as JSObject;
+  final url = _crearUrl(_Blob([contenido.toJS].toJS, opciones));
+  _abrirVentana(url, '_blank'.toJS);
+  Future<void>.delayed(const Duration(minutes: 1), () => _revocarUrl(url));
 }

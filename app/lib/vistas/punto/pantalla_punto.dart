@@ -93,9 +93,14 @@ class _PantallaPuntoState extends State<PantallaPunto> {
           _visitaSinFicha = true;
         } catch (_) {}
       }
-      if (mounted) setState(() { _cargando = false; _error = _visitaSinFicha
-        ? 'Visita guardada en este teléfono. Se enviará cuando vuelva la señal. La ficha aparecerá al reintentar.'
-        : 'No se pudo cargar el punto. Revisa la señal e inténtalo de nuevo.'; });
+      if (mounted) {
+        setState(() {
+          _cargando = false;
+          _error = _visitaSinFicha
+              ? 'Visita guardada en este teléfono. Se enviará cuando vuelva la señal. La ficha aparecerá al reintentar.'
+              : 'No se pudo cargar el punto. Revisa la señal e inténtalo de nuevo.';
+        });
+      }
     }
   }
 
@@ -114,16 +119,16 @@ class _PantallaPuntoState extends State<PantallaPunto> {
                   Center(child: ZankyMascota(tamano: 120, animo: Animo.curioso)),
                   const SizedBox(height: 12),
                   if (!_servicio.servidor.configurado)
-                    const Semantics(label: 'Demostración sin servidor',
+                    Semantics(label: 'Demostración sin servidor',
                       child: Text('DEMOSTRACIÓN · esta visita no se publicará.')),
                   Semantics(header: true, child: Text(p.titulo, style: Theme.of(context).textTheme.headlineSmall)),
                   const SizedBox(height: 8),
                   Text(p.tipo.nombre),
                   if (p.zona.isNotEmpty) Text(p.zona),
-                  if (_pendiente) const Semantics(liveRegion: true,
+                  if (_pendiente) Semantics(liveRegion: true,
                     child: Padding(padding: EdgeInsets.symmetric(vertical: 12),
                       child: Text('Visita guardada en este teléfono. Se enviará cuando vuelva la señal.'))),
-                  if (_fotoPendiente) const Semantics(liveRegion: true,
+                  if (_fotoPendiente) Semantics(liveRegion: true,
                     child: Padding(padding: EdgeInsets.symmetric(vertical: 12),
                       child: Text('La foto quedó pendiente de vinculación. Se reintentará cuando llegue el reporte al servidor.'))),
                   const SizedBox(height: 16),
