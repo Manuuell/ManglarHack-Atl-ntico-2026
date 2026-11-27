@@ -70,7 +70,9 @@ export async function estacionesIdeam(): Promise<Map<string, Estacion>> {
 
 function limpiarNombre(n: string): string {
   const t = n.replace(/\s*-?\s*(AUT|MAG)\b/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
-  return t.replace(/(^|[\s(/.-])(\p{L})/gu, (_m, a: string, b: string) => a + b.toUpperCase());
+  return t
+    .replace(/(^|[\s(/.-])(\p{L})/gu, (_m, a: string, b: string) => a + b.toUpperCase())
+    .replace(/ (De|Del|La|Las|Los|Y)(?= )/g, (_m, p: string) => ` ${p.toLowerCase()}`);
 }
 
 /** Lecturas de las últimas `horas` en todo el Atlántico (lluvia, viento, temperatura, humedad, presión). */
