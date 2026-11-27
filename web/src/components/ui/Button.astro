@@ -1,0 +1,13 @@
+﻿---
+import type { HTMLAttributes } from 'astro/types';
+import { cn } from '../../lib/utils';
+type Props = (HTMLAttributes<'a'> | HTMLAttributes<'button'>) & { href?: string; variant?: 'primary' | 'secondary' | 'ghost'; size?: 'md' | 'lg' };
+const { href, variant = 'primary', size = 'md', class: clase, ...rest } = Astro.props;
+const estilos = cn('inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition active:scale-[0.97]', {
+ primary: 'bg-manglar-900 text-white hover:bg-manglar-800',
+ secondary: 'bg-superficie text-texto ring-1 ring-linea hover:ring-agua-500',
+ ghost: 'text-manglar-900 hover:bg-manglar-50',
+}[variant], size === 'lg' ? 'px-6 py-3.5 text-sm' : 'px-4 py-2.5 text-sm', clase);
+---
+{href ? <a href={href} class={estilos} {...(rest as HTMLAttributes<'a'>)}><slot /></a> : <button type="button" class={estilos} {...(rest as HTMLAttributes<'button'>)}><slot /></button>}
+

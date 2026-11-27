@@ -1,16 +1,17 @@
+﻿---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Hero from '../components/sections/Hero.astro';
+import Ecosistema from '../components/sections/Ecosistema.astro';
+import MapaSection from '../components/sections/MapaSection.astro';
+import PanelSection from '../components/sections/PanelSection.astro';
+import Comunidad from '../components/sections/Comunidad.astro';
+import { obtenerReportes, obtenerPoligonos, obtenerColegios } from '../lib/datos';
+const [reportes, poligonos, colegios] = await Promise.all([obtenerReportes(), obtenerPoligonos(), obtenerColegios()]);
 ---
----
-
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<BaseLayout>
+ <Hero totalReportes={reportes.length} totalZonas={poligonos.features.length} totalColegios={colegios.length} />
+ <Ecosistema />
+ <MapaSection reportes={reportes} poligonos={poligonos} />
+ <PanelSection reportes={reportes} poligonos={poligonos} />
+ <Comunidad colegios={colegios} />
+</BaseLayout>
