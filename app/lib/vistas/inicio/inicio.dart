@@ -492,7 +492,7 @@ class _SabiasQueState extends State<_SabiasQue> {
         'Necesita las dos. Un caño taponado le corta el agua dulce y lo enferma: también se reporta.'),
     (Icons.map_rounded, Zc.fango, 'Cuatro ciénagas',
         'En el Atlántico hay manglar en Mallorquín, Tubará, Juan de Acosta y Piojó: unas 775 ha según la CRA '
-            '(${widget.hectareas.round()} ha en la capa de INVEMAR que usa esta app).'),
+            '(${widget.hectareas.round()} ha en la capa de la CRA, cartografía 1:5.000, que usa esta app).'),
   ];
 
   @override
